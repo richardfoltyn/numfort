@@ -1,101 +1,101 @@
 module numfort
 
-    use iso_fortran_env, only : real64, int64
-
+    use iso_fortran_env, only : real32, real64, int32, int64
+    use array_creation
+    use array_indexing
+    
     implicit none
     private
 
-    public :: linspace, diag, identity, cumsum
-
-    interface linspace
-        procedure :: linspace_real64
-    end interface
-
-    interface diag
-        procedure :: diag_vec_real64, diag_mat_real64
-    end interface
-
-    interface identity
-        module procedure identity_real64
-    end interface
+    public :: cumsum, comb
+    ! exports from array_creation
+    public :: arange, linspace, diag, diag_matrix, identity
+    ! exports from array_indexing
+    public :: ind2sub, sub2ind
 
     interface cumsum
         module procedure cumsum_1d_real64, cumsum_2d_real64, cumsum_3d_real64
     end interface
 
     interface factorial
-        module procedure factorial_int
+        module procedure factorial_int32, factorial_int64
     end interface
-
+    
+    interface comb
+        module procedure comb_int32, comb_int64
+    end interface
+    
     ! Math constants
     real (real64), parameter :: PI = 3.141592653589793238462643383279502884d0
 
 contains
 
-pure function factorial_int(n) result(res)
-
-    integer, intent(in) :: n
-    integer :: res
-    integer :: i
+elemental function factorial_int32(n) result(res)
+    integer, parameter :: PREC = int32
+    integer (PREC), intent(in) :: n
+    integer (PREC) :: res
+    integer (PREC) :: i
 
     res = 1
-
     do i = 2, n
         res = res * i
     end do
-
 end function
 
-function linspace_real64(from, to, n) result(v)
+elemental function factorial_int64(n) result(res)
+    integer, parameter :: PREC = int64
+    integer (PREC), intent(in) :: n
+    integer (PREC) :: res
+    integer (PREC) :: i
 
-    real (real64), intent(in) :: from, to
-    integer, intent(in) :: n
-    real (real64) :: v(n)
-
-    real (real64) :: step
-    integer :: i
-
-    step = (to - from) / (n - 1)
-
-    v = [(from + i * step, i=0,n)]
-    ! avoid rounding errors in end point
-    v(n) = to
-
+    res = 1
+    do i = 2, n
+        res = res * i
+    end do
 end function
 
-subroutine identity_real64(out)
-
-    real (real64), intent(out), dimension(:,:) :: out
-    integer :: i
-
-    out = 0.0d0
-
-    forall (i=1:size(out, 1)) out(i,i) = 1.0d0
-
-end subroutine
-
-pure function diag_vec_real64(v) result(res)
-
-    real (real64), intent(in), dimension(:) :: v
-    real (real64), dimension(size(v), size(v)) :: res
-
-    integer :: i
-
-    res = 0.0d0
-
-    forall (i=1:size(v)) res(i,i) = v(i)
-
+elemental function comb_int32 (n, k, repetition) result(res)
+    integer, parameter :: PREC = int32
+    integer (PREC), intent(in) :: n, k
+    logical, intent(in), optional :: repetition
+    integer (PREC) :: res
+    
+    res = int(comb(int(n, int64), int(k, int64), repetition), int32)
 end function
 
-pure function diag_mat_real64(m) result(res)
-
-    real (real64), intent(in), dimension(:,:) :: m
-    real (real64), dimension(size(m, 1)) :: res
-
-    integer :: i
-
-    forall (i=1:size(m, 1)) res(i) = m(i,i)
-
+elemental function comb_int64 (n, k, repetition) result(res)
+    integer, parameter :: PREC = int64
+    integer (PREC), intent(in) :: n, k
+    logical, intent(in), optional :: repetition
+    integer (PREC) :: res
+    
+    integer (PREC) :: i
+    
+    logical :: lrep
+    lrep = .false.
+    
+    if (present(repetition)) lrep = repetition
+    
+    if (lrep) then
+        ! combination with repetition:
+        ! this is (n + k - 1)!/(k! (n-1)!)
+        ! First compute (n + k - 1)!/(n-1)! = (n+k-1) * ... * n
+        res = n
+        do i = res+1, n+k-1
+            res = res * i
+        end do
+    else
+        ! combination without repetition:
+        ! this is n-choose-k, ie \binomial{n}{k}
+        ! compute n! / (n-k)! = n * (n-1) * ... * (n-k+1)
+        res = n - k + 1
+        do i = res + 1, n
+            res = res * i
+        end do           
+    end if
+    
+    ! Adjust for k! ways to order k elements
+    res = res / factorial (k)
 end function
 
 

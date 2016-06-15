@@ -45,8 +45,10 @@ subroutine test_diag()
     real (real64), allocatable, dimension(:, :) :: mat1
 
     vec1 = [1,2,3,4,5]
-    mat1 = diag(vec1)
-    vec2 = diag(mat1)
+    
+    allocate (mat1(N,N), vec2(N))
+    call diag_matrix(vec1, mat1)
+    call diag(mat1, vec2)
 
     if (any(vec1 /= vec2)) then
         print *, "test_diag: vec1 and vec2 differ"

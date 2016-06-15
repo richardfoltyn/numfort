@@ -9,6 +9,6 @@ set(CUMSUM_SOURCE_FILES
 add_executable(cumsum ${CUMSUM_SOURCE_FILES})
 target_link_libraries(cumsum numfort_static)
 
-if (NOT WIN32)
+if (NOT USE_MKL)
 	target_link_libraries(cumsum ${NUMFORT_LAPACK_LIBRARIES})
-endif (NOT WIN32)
+endif (NOT USE_MKL)
