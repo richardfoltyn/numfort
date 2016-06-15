@@ -1,6 +1,7 @@
 module tests_numfort
 
     use numfort
+    use numfort_arrays
     use iso_fortran_env, only : real32, real64, int32, int64
 
     implicit none

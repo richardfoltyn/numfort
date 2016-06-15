@@ -1,17 +1,12 @@
 module numfort
 
     use iso_fortran_env, only : real32, real64, int32, int64
-    use array_creation
-    use array_indexing
+
     
     implicit none
     private
 
     public :: cumsum, comb
-    ! exports from array_creation
-    public :: arange, linspace, diag, diag_matrix, identity
-    ! exports from array_indexing
-    public :: ind2sub, sub2ind
 
     interface cumsum
         module procedure cumsum_1d_real64, cumsum_2d_real64, cumsum_3d_real64
