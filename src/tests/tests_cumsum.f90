@@ -124,8 +124,8 @@ subroutine test_cumsum_3d()
         shp = shapes(:, i)
 
         allocate (x(shp(1), shp(2), shp(3)))
-        allocate (res, mold=x)
-        allocate (resm, mold=x)
+        allocate (res(shp(1), shp(2), shp(3)))
+        allocate (resm(shp(1), shp(2), shp(3)))
 
         ! might exceed stack size
         x = reshape([(j, j=1,product(shp))], shape=shp)

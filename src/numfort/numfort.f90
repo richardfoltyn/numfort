@@ -2,7 +2,7 @@ module numfort
 
     use iso_fortran_env, only : real32, real64, int32, int64
 
-    
+
     implicit none
     private
 
@@ -15,11 +15,11 @@ module numfort
     interface factorial
         module procedure factorial_int32, factorial_int64
     end interface
-    
+
     interface comb
         module procedure comb_int32, comb_int64
     end interface
-    
+
     ! Math constants
     real (real64), parameter :: PI = 3.141592653589793238462643383279502884d0
 
@@ -54,7 +54,7 @@ elemental function comb_int32 (n, k, repetition) result(res)
     integer (PREC), intent(in) :: n, k
     logical, intent(in), optional :: repetition
     integer (PREC) :: res
-    
+
     res = int(comb(int(n, int64), int(k, int64), repetition), int32)
 end function
 
@@ -63,14 +63,14 @@ elemental function comb_int64 (n, k, repetition) result(res)
     integer (PREC), intent(in) :: n, k
     logical, intent(in), optional :: repetition
     integer (PREC) :: res
-    
+
     integer (PREC) :: i
-    
+
     logical :: lrep
     lrep = .false.
-    
+
     if (present(repetition)) lrep = repetition
-    
+
     if (lrep) then
         ! combination with repetition:
         ! this is (n + k - 1)!/(k! (n-1)!)
@@ -86,9 +86,9 @@ elemental function comb_int64 (n, k, repetition) result(res)
         res = n - k + 1
         do i = res + 1, n
             res = res * i
-        end do           
+        end do
     end if
-    
+
     ! Adjust for k! ways to order k elements
     res = res / factorial (k)
 end function
@@ -138,43 +138,6 @@ subroutine cumsum_nd_real64(x, shp, res, axis)
     real (real64), dimension(:) :: res
 
     include "cumsum_impl.finc"
-
-end subroutine
-
-subroutine mean_array_2d_real64(data, res, axis)
-
-    real (real64), intent(in), dimension(:,:), target, contiguous :: data
-    real (real64), dimension(:), pointer :: ptr_data => null()
-    real (real64), intent(out), dimension(:), allocatable :: res
-
-    integer, intent(in), optional :: axis
-    integer :: n, laxis, rnk, i
-    integer, dimension(:), allocatable :: shp, stride
-
-    if (present(axis)) laxis = axis
-
-    ! rank() does not seem to be in any Fortran standard
-    rnk = size(shape(data))
-
-    if (axis > rnk) then
-        stop "axis argument exceeds array rank!"
-    end if
-
-    allocate (shp(rnk), stride(rnk))
-    shp = shape(data)
-    n = size(data)
-
-    stride = 1
-    do i = 2,rnk
-        stride(i) = stride(i-1) * shp(i-1)
-    end do
-
-    ptr_data(1:n) => data
-
-
-
-
-    deallocate (shp)
 
 end subroutine
 

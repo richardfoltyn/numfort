@@ -40,7 +40,7 @@ subroutine benchmark_3d()
     integer :: i
 
     allocate (x(shp(1), shp(2), shp(3)))
-    allocate (res, mold=x)
+    allocate (res(shp(1), shp(2), shp(3)))
 
     call fill_3d (x)
 
@@ -59,7 +59,7 @@ subroutine benchmark_3d_manual()
     integer :: i, j, k, l
 
     allocate (x(shp(1), shp(2), shp(3)))
-    allocate (res, mold=x)
+    allocate (res(shp(1), shp(2), shp(3)))
 
     call fill_3d (x)
 

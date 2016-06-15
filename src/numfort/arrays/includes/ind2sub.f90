@@ -12,13 +12,13 @@ stride = 1
 do i = 2, rnk
     stride(i) = stride(i-1) * shp(i-1)
 end do
-    
+
 n = size(sub_indices, 1)
 d = size(sub_indices, 2)
-    
+
 ! automatically deallocated on procedure exit
-allocate (rem, source=lin_indices)
-    
+allocate (rem(n), source=lin_indices)
+
 do j = d, 2, -1
     stride_j = stride(j)
     ! current remainder for i
@@ -32,10 +32,9 @@ do j = d, 2, -1
         sub_indices(i, j) = s_ij + 1
     end do
 end do
-    
-! index on first dimension is just the remainder after all higher dimensions 
+
+! index on first dimension is just the remainder after all higher dimensions
 ! have been subtracted out
 sub_indices(:, 1) = rem
-    
 
-    
+
