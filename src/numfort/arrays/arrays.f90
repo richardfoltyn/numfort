@@ -32,6 +32,10 @@ module numfort_arrays
         module procedure ind2sub_int32, ind2sub_int64, ind2sub_1d_int32, ind2sub_1d_int64
     end interface
     
+    interface shape2sub
+        module procedure shape2sub_int32, shape2sub_int64
+    end interface
+    
     ! creation procedures
     public :: arange, diag, diag_matrix, identity, linspace
     ! indexing procedures
@@ -55,26 +59,26 @@ end subroutine
 ! ******************************************************************************
 ! ARANGE procedures
 
-subroutine arange_int32 (x)
+pure subroutine arange_int32 (x)
     integer, parameter :: INTSIZE = int32
     integer (INTSIZE), intent(out), dimension(:) :: x
     
     call arange (x, 1_INTSIZE, 1_INTSIZE)
 end subroutine
 
-subroutine arange_int64 (x)
+pure subroutine arange_int64 (x)
     integer, parameter :: INTSIZE = int64
     integer (INTSIZE), intent(out), dimension(:) :: x
     
     call arange (x, 1_INTSIZE, 1_INTSIZE)
 end subroutine
     
-subroutine arange_impl_int32 (x, ifrom, step)
+pure subroutine arange_impl_int32 (x, ifrom, step)
     integer, parameter :: INTSIZE = int32
     include "includes/arange_impl.f90"
 end subroutine
 
-subroutine arange_impl_int64 (x, ifrom, step)
+pure subroutine arange_impl_int64 (x, ifrom, step)
     integer, parameter :: INTSIZE = int64
     include "includes/arange_impl.f90"
 end subroutine
@@ -213,5 +217,37 @@ pure subroutine ind2sub_1d_int64 (shp, ind, sub)
     
     sub = ind
 end subroutine
+
+! ******************************************************************************
+! SHAPE TO SUBINDEX
+
+pure subroutine shape2sub_int64 (shp, sub)
+    integer, parameter :: INTSIZE = int64
+    integer (INTSIZE), intent(in), dimension(:) :: shp
+    integer (INTSIZE), intent(out), dimension(:, :) :: sub
+    
+    integer (INTSIZE), dimension(:), allocatable :: lidx
+    
+    allocate (lidx(product(shp)))
+    
+    call arange (lidx)
+    call ind2sub (shp, lidx, sub)
+    
+end subroutine
+
+pure subroutine shape2sub_int32 (shp, sub)
+    integer, parameter :: INTSIZE = int32
+    integer (INTSIZE), intent(in), dimension(:) :: shp
+    integer (INTSIZE), intent(out), dimension(:, :) :: sub
+    
+    integer (INTSIZE), dimension(:), allocatable :: lidx
+    
+    allocate (lidx(product(shp)))
+    
+    call arange (lidx)
+    call ind2sub (shp, lidx, sub)
+    
+end subroutine
+
 
 end module
