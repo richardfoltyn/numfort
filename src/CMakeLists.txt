@@ -1,5 +1,5 @@
-# Top-level cmake configuration
 # src/CMakeLists.txt
+# Top-level cmake configuration for numfort
 
 cmake_minimum_required(VERSION 2.8)
 
@@ -23,7 +23,8 @@ option(USE_MKL "Build against Intel MKL" ON)
 ###############################################################################
 # Additional CMAKE modules
 # include FindMKL module taken from ARMA project
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 # set(FC gfortran)
 
 include(FindLAPACK)
