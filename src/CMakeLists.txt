@@ -1,10 +1,11 @@
 # src/CMakeLists.txt
 # Top-level cmake configuration for numfort
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0)
 
 # include C in project languages, needed for LAPACK detection
 project(numfort C Fortran)
+set(LIBRARY_NAME ${CMAKE_PROJECT_NAME} CACHE STRING "File name of main library")
 
 # make sure that the default is a RELEASE
 if (NOT CMAKE_BUILD_TYPE)
@@ -19,6 +20,8 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 # User-definable options
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(USE_MKL "Build against Intel MKL" ON)
+option(BUILD_TESTS "Build unit tests" ON)
+option(BUILD_BENCHMARKS "Build benchmarks" OFF)
 
 ###############################################################################
 # Additional CMAKE modules
@@ -56,6 +59,14 @@ else()
 endif()
 
 ###############################################################################
+# Testing
+
+if(BUILD_TESTS)
+    enable_testing()
+    find_package(fcore)
+endif()
+
+###############################################################################
 # Set Fortran compiler FLAGS
 get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
 
@@ -67,7 +78,7 @@ elseif (Fortran_COMPILER_NAME MATCHES "ifort.*")
  	if (WIN32)
         set (${PROJECT_NAME}_Fortran_FLAGS "/nologo /warn:all /standard-semantics /stand:f08")
 		if (USE_MKL)
-			set (${PROJECT_NAME}_Fortran_FLAGS "/Qmkl")
+			set (${PROJECT_NAME}_Fortran_FLAGS "${${PROJECT_NAME}_Fortran_FLAGS} /Qmkl")
 		endif (USE_MKL)
 # 		set (${PROJECT_NAME}_Fortran_FLAGS_RELEASE "/O2")
 # 		set (${PROJECT_NAME}_Fortran_FLAGS_DEBUG " /debug:full /Od")
@@ -79,16 +90,16 @@ elseif (Fortran_COMPILER_NAME MATCHES "ifort.*")
 endif (Fortran_COMPILER_NAME MATCHES "gfortran.*")
 
 # append additional FLAGS to default cmake FLAGS
-set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${${PROJECT_NAME}_Fortran_FLAGS}")
-set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} ${${PROJECT_NAME}_Fortran_FLAGS_RELEASE}")
-set (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${${PROJECT_NAME}_Fortran_FLAGS_DEBUG}")
+set (CMAKE_Fortran_FLAGS ${CMAKE_Fortran_FLAGS} ${${PROJECT_NAME}_Fortran_FLAGS})
+set (CMAKE_Fortran_FLAGS_RELEASE ${CMAKE_Fortran_FLAGS_RELEASE} ${${PROJECT_NAME}_Fortran_FLAGS_RELEASE})
+set (CMAKE_Fortran_FLAGS_DEBUG ${CMAKE_Fortran_FLAGS_DEBUG} ${${PROJECT_NAME}_Fortran_FLAGS_DEBUG})
 
 # On Windows FFLAGS don't seem to be automatically added to compiler flags
 if (Win32)
-	set(CMAKE_Fortran_FLAGS "${ENV_FFLAGS} ${CMAKE_Fortran_FLAGS}")
-	set(CMAKE_Fortran_FLAGS_RELEASE "${ENV_FLAGS} ${CMAKE_Fortran_FLAGS_RELEASE}")
-	set(CMAKE_Fortran_FLAGS_DEBUG "${ENV_FLAGS} ${CMAKE_Fortran_FLAGS_DEBUG}")
-endif (Win32) 
+	set(CMAKE_Fortran_FLAGS ${ENV_FFLAGS} ${CMAKE_Fortran_FLAGS})
+	set(CMAKE_Fortran_FLAGS_RELEASE ${ENV_FLAGS} ${CMAKE_Fortran_FLAGS_RELEASE})
+	set(CMAKE_Fortran_FLAGS_DEBUG ${ENV_FLAGS} ${CMAKE_Fortran_FLAGS_DEBUG})
+endif (Win32)
 
 ###############################################################################
 # Report options and settings
@@ -124,6 +135,15 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 set(CMAKE_Fortran_MODULE_DIRECTORY "${NUMFORT_MODDIR}")
 
+# store test executables in this root directory
+set(${PROJECT_NAME}_TESTS_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")
+
 add_subdirectory(numfort)
-add_subdirectory(tests)
-add_subdirectory(benchmarks)
+
+if (BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
+
+if (BUILD_BENCHMARKS)
+    add_subdirectory(benchmarks)
+endif()
