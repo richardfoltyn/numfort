@@ -5,6 +5,7 @@ unset(SOURCE_FILES)
 
 # include relevant subdirectories
 add_subdirectory(arrays)
+add_subdirectory(interp)
 
 set(SOURCE_FILES
 	${SOURCE_FILES}
