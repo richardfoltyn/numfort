@@ -82,65 +82,45 @@ endif ()
 
 ################################################################################
 # Set Fortran compiler FLAGS
-get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
 
-if (Fortran_COMPILER_NAME MATCHES "gfortran.*")
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     set (${PROJECT_NAME}_Fortran_FLAGS "-Wall -Wextra -Wimplicit-interface -Wimplicit-procedure -std=f2008")
-# 	set (${PROJECT_NAME}_Fortran_FLAGS_RELEASE "-O2")
-# 	set (${PROJECT_NAME}_Fortran_FLAGS_DEBUG "-O0 -g")
-elseif (Fortran_COMPILER_NAME MATCHES "ifort.*")
+elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
-        set (${PROJECT_NAME}_Fortran_FLAGS "/nologo /warn:all /standard-semantics /stand:f08")
+        set (${PROJECT_NAME}_Fortran_FLAGS "/warn:all /standard-semantics /stand:f08")
 		if (USE_MKL)
 			set (${PROJECT_NAME}_Fortran_FLAGS "${${PROJECT_NAME}_Fortran_FLAGS} /Qmkl")
 		endif (USE_MKL)
-# 		set (${PROJECT_NAME}_Fortran_FLAGS_RELEASE "/O2")
-# 		set (${PROJECT_NAME}_Fortran_FLAGS_DEBUG " /debug:full /Od")
- 	elseif (WIN32)
- 		set (${PROJECT_NAME}_Fortran_FLAGS "-nologo -warn all -standard-semantics -std08")
-# 		set (${PROJECT_NAME}_Fortran_FLAGS_RELEASE "-O2")
-# 		set (${PROJECT_NAME}_Fortran_FLAGS_DEBUG "-g -O0")
- 	endif (WIN32)
+    elseif (WIN32)
+        set (${PROJECT_NAME}_Fortran_FLAGS "-warn all -standard-semantics -std08")
+    endif (WIN32)
 else ()
     message(FATAL_ERROR "Unsupported Fortran compiler: ${Fortran_COMPILER_NAME}")
-endif (Fortran_COMPILER_NAME MATCHES "gfortran.*")
+endif ()
 
 # append additional FLAGS to default cmake FLAGS
 set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${${PROJECT_NAME}_Fortran_FLAGS}")
 set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} ${${PROJECT_NAME}_Fortran_FLAGS_RELEASE}")
 set (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${${PROJECT_NAME}_Fortran_FLAGS_DEBUG}")
 
-# On Windows FFLAGS don't seem to be automatically added to compiler flags
-if (Win32)
-	set(CMAKE_Fortran_FLAGS "${ENV_FFLAGS} ${CMAKE_Fortran_FLAGS}")
-	set(CMAKE_Fortran_FLAGS_RELEASE "${ENV_FLAGS} ${CMAKE_Fortran_FLAGS_RELEASE}")
-	set(CMAKE_Fortran_FLAGS_DEBUG "${ENV_FLAGS} ${CMAKE_Fortran_FLAGS_DEBUG}")
-endif (Win32)
-
 ###############################################################################
 # Report options and settings
 if (BUILD_SHARED_LIBS)
-	message("*** Building SHARED libraries")
+    message(STATUS "Building SHARED libraries")
 else(BUILD_SHARED_LIBS)
-	message("*** Building STATIC libraries")
+    message(STATUS "Building STATIC libraries")
 endif(BUILD_SHARED_LIBS)
 
 if (USE_MKL)
-	message("*** Building against Intel MKL")
+	message(STATUS "Building against Intel MKL")
 endif (USE_MKL)
 
-message("*** Build type: ${CMAKE_BUILD_TYPE}")
-if (CMAKE_BUILD_TYPE MATCHES DEBUG)
-	message("*** Fortran compiler flags: ${CMAKE_Fortran_FLAGS_DEBUG}")
-elseif (CMAKE_BUILD_TYPE MATCHES RELEASE)
-	message("*** Fortran compiler flags: ${CMAKE_Fortran_FLAGS_RELEASE}")
-else()
-	message("*** Fortran compiler flags: ${CMAKE_Fortran_FLAGS}")
-endif()
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "Fortran compiler flags: ${CMAKE_Fortran_FLAGS}")
+message(STATUS "Additional Fortran compiler flags for ${CMAKE_BUILD_TYPE}: ${CMAKE_Fortran_FLAGS_${CMAKE_BUILD_TYPE}}")
 
 ################################################################################
 # Output directories
-
 
 set(NUMFORT_MODDIR "${CMAKE_BINARY_DIR}/include")
 
@@ -148,7 +128,6 @@ set(NUMFORT_MODDIR "${CMAKE_BINARY_DIR}/include")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-
 set(CMAKE_Fortran_MODULE_DIRECTORY "${NUMFORT_MODDIR}")
 
 # store test executables in this root directory
