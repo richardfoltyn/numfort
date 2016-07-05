@@ -19,12 +19,12 @@ find_target_arch()
 
 # additional subdirectories to look through when searching for include files
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-    set(INCLUDE_SUBDIR "gfortran")
+    set(FCORE_ARCH_SUBDIR "gfortran")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (TARGET_ARCH_BITS STREQUAL "64")
-        set(FCORE_INCLUDE_SUBDIR "intel64")
+        set(FCORE_ARCH_SUBDIR "intel64")
     else()
-        set(FCORE_INCLUDE_SUBDIR "intel")
+        set(FCORE_ARCH_SUBDIR "intel")
     endif()
 endif ()
 
@@ -38,6 +38,10 @@ set(FCORE_MODFILES assertion_mod.mod
 
 find_library(${FCORE_NAME}_LIBRARY
     NAMES ${FCORE_NAME}
+    HINTS
+    ${HOME}/lib/${FCORE_ARCH_SUBDIR}
+    ${HOME}/local/lib/${FCORE_ARCH_SUBDIR}
+    ${HOME}/.local/lib/${FCORE_ARCH_SUBDIR}    
     PATHS
     ${CMAKE_SYSTEM_LIBRARY_PATH}
     ${HOME}/lib
@@ -47,9 +51,9 @@ find_library(${FCORE_NAME}_LIBRARY
 
 find_path(${FCORE_NAME}_INCLUDE_DIR NAMES ${FCORE_MODFILES}
     HINTS
-    ${HOME}/include/${FCORE_INCLUDE_SUBDIR}
-    ${HOME}/local/include/${FCORE_INCLUDE_SUBDIR}
-    ${HOME}/.local/include/${FCORE_INCLUDE_SUBDIR}
+    ${HOME}/include/${FCORE_ARCH_SUBDIR}
+    ${HOME}/local/include/${FCORE_ARCH_SUBDIR}
+    ${HOME}/.local/include/${FCORE_ARCH_SUBDIR}
     PATHS
     ${HOME}/include
     ${HOME}/local/include
