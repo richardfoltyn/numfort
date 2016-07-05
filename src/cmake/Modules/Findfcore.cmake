@@ -14,12 +14,26 @@ else ()
     set(HOME $ENV{HOME})
 endif ()
 
+include(FindTargetArch)
+find_target_arch()
+
+# additional subdirectories to look through when searching for include files
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+    set(INCLUDE_SUBDIR "gfortran")
+elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+    if (TARGET_ARCH_BITS STREQUAL "64")
+        set(FCORE_INCLUDE_SUBDIR "intel64")
+    else()
+        set(FCORE_INCLUDE_SUBDIR "intel")
+    endif()
+endif ()
+
 set(FCORE_NAME fcore)
 set(FCORE_MODFILES assertion_mod.mod
     collection_mod.mod
     foounit_mod.mod
     linked_list_mod.mod
-    string_mod.mod
+    corelib_string.mod
     test_case_mod.mod)
 
 find_library(${FCORE_NAME}_LIBRARY
@@ -32,6 +46,10 @@ find_library(${FCORE_NAME}_LIBRARY
 )
 
 find_path(${FCORE_NAME}_INCLUDE_DIR NAMES ${FCORE_MODFILES}
+    HINTS
+    ${HOME}/include/${FCORE_INCLUDE_SUBDIR}
+    ${HOME}/local/include/${FCORE_INCLUDE_SUBDIR}
+    ${HOME}/.local/include/${FCORE_INCLUDE_SUBDIR}
     PATHS
     ${HOME}/include
     ${HOME}/local/include

@@ -16,20 +16,19 @@ endif (NOT CMAKE_BUILD_TYPE)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-###############################################################################
+################################################################################
 # User-definable options
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(USE_MKL "Build against Intel MKL" ON)
 option(BUILD_TESTS "Build unit tests" ON)
 option(BUILD_BENCHMARKS "Build benchmarks" OFF)
 
-###############################################################################
+################################################################################
 # Additional CMAKE modules
 # include FindMKL module taken from ARMA project
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 # set(FC gfortran)
-
 include(FindLAPACK)
 include(FindMKL)
 
@@ -58,7 +57,7 @@ else()
 	endif()
 endif()
 
-###############################################################################
+################################################################################
 # Testing
 
 if(BUILD_TESTS)
@@ -66,16 +65,31 @@ if(BUILD_TESTS)
     find_package(fcore)
 endif()
 
-###############################################################################
+################################################################################
+# Detect target architecture
+include(FindTargetArch)
+find_target_arch()
+
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+    set(INCLUDE_SUBDIR "gfortran")
+elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+    if (TARGET_ARCH_BITS STREQUAL "64")
+        set(INCLUDE_SUBDIR "intel64")
+    else()
+        set(INCLUDE_SUBDIR "intel")
+    endif()
+endif ()
+
+################################################################################
 # Set Fortran compiler FLAGS
 get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
 
 if (Fortran_COMPILER_NAME MATCHES "gfortran.*")
- 	set (${PROJECT_NAME}_Fortran_FLAGS "-Wall -Wextra -Wimplicit-interface -Wimplicit-procedure -std=f2008")
+    set (${PROJECT_NAME}_Fortran_FLAGS "-Wall -Wextra -Wimplicit-interface -Wimplicit-procedure -std=f2008")
 # 	set (${PROJECT_NAME}_Fortran_FLAGS_RELEASE "-O2")
 # 	set (${PROJECT_NAME}_Fortran_FLAGS_DEBUG "-O0 -g")
 elseif (Fortran_COMPILER_NAME MATCHES "ifort.*")
- 	if (WIN32)
+    if (WIN32)
         set (${PROJECT_NAME}_Fortran_FLAGS "/nologo /warn:all /standard-semantics /stand:f08")
 		if (USE_MKL)
 			set (${PROJECT_NAME}_Fortran_FLAGS "${${PROJECT_NAME}_Fortran_FLAGS} /Qmkl")
@@ -87,18 +101,20 @@ elseif (Fortran_COMPILER_NAME MATCHES "ifort.*")
 # 		set (${PROJECT_NAME}_Fortran_FLAGS_RELEASE "-O2")
 # 		set (${PROJECT_NAME}_Fortran_FLAGS_DEBUG "-g -O0")
  	endif (WIN32)
+else ()
+    message(FATAL_ERROR "Unsupported Fortran compiler: ${Fortran_COMPILER_NAME}")
 endif (Fortran_COMPILER_NAME MATCHES "gfortran.*")
 
 # append additional FLAGS to default cmake FLAGS
-set (CMAKE_Fortran_FLAGS ${CMAKE_Fortran_FLAGS} ${${PROJECT_NAME}_Fortran_FLAGS})
-set (CMAKE_Fortran_FLAGS_RELEASE ${CMAKE_Fortran_FLAGS_RELEASE} ${${PROJECT_NAME}_Fortran_FLAGS_RELEASE})
-set (CMAKE_Fortran_FLAGS_DEBUG ${CMAKE_Fortran_FLAGS_DEBUG} ${${PROJECT_NAME}_Fortran_FLAGS_DEBUG})
+set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${${PROJECT_NAME}_Fortran_FLAGS}")
+set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} ${${PROJECT_NAME}_Fortran_FLAGS_RELEASE}")
+set (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${${PROJECT_NAME}_Fortran_FLAGS_DEBUG}")
 
 # On Windows FFLAGS don't seem to be automatically added to compiler flags
 if (Win32)
-	set(CMAKE_Fortran_FLAGS ${ENV_FFLAGS} ${CMAKE_Fortran_FLAGS})
-	set(CMAKE_Fortran_FLAGS_RELEASE ${ENV_FLAGS} ${CMAKE_Fortran_FLAGS_RELEASE})
-	set(CMAKE_Fortran_FLAGS_DEBUG ${ENV_FLAGS} ${CMAKE_Fortran_FLAGS_DEBUG})
+	set(CMAKE_Fortran_FLAGS "${ENV_FFLAGS} ${CMAKE_Fortran_FLAGS}")
+	set(CMAKE_Fortran_FLAGS_RELEASE "${ENV_FLAGS} ${CMAKE_Fortran_FLAGS_RELEASE}")
+	set(CMAKE_Fortran_FLAGS_DEBUG "${ENV_FLAGS} ${CMAKE_Fortran_FLAGS_DEBUG}")
 endif (Win32)
 
 ###############################################################################
@@ -122,7 +138,7 @@ else()
 	message("*** Fortran compiler flags: ${CMAKE_Fortran_FLAGS}")
 endif()
 
-###############################################################################
+################################################################################
 # Output directories
 
 
