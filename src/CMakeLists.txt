@@ -27,7 +27,8 @@ option(BUILD_BENCHMARKS "Build benchmarks" OFF)
 # Additional CMAKE modules
 # include FindMKL module taken from ARMA project
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
+list(APPEND CMAKE_MODULE_PATH
+"${CMAKE_CURRENT_SOURCE_DIR}/submodules/cmake-modules/Modules")
 # set(FC gfortran)
 include(FindLAPACK)
 include(FindMKL)
