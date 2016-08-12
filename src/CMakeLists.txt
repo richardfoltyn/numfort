@@ -14,13 +14,11 @@ if (NOT CMAKE_BUILD_TYPE)
       FORCE)
 endif (NOT CMAKE_BUILD_TYPE)
 
-set(CMAKE_VERBOSE_MAKEFILE ON)
-
 ################################################################################
 # User-definable options
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(USE_MKL "Build against Intel MKL" ON)
-option(BUILD_TESTS "Build unit tests" ON)
+option(BUILD_TESTS "Build unit tests" OFF)
 option(BUILD_BENCHMARKS "Build benchmarks" OFF)
 
 ################################################################################
@@ -29,96 +27,59 @@ option(BUILD_BENCHMARKS "Build benchmarks" OFF)
 
 list(APPEND CMAKE_MODULE_PATH
   "${CMAKE_CURRENT_SOURCE_DIR}/submodules/cmake/Modules")
-# set(FC gfortran)
-include(FindLAPACK)
-include(FindMKL)
 
-# if (LAPACK_FOUND)
-	# message("LAPACK_LINKER_FLAGS: ${LAPACK_LINKER_FLAGS}")
-	# message("LAPACK_LIBRARIES: ${LAPACK_LIBRARIES}")
-# endif (LAPACK_FOUND)
-
-# if (MKL_FOUND)
-	# message("MLK_LIBRARIES: ${MKL_LIBRARIES}")
-# endif (MKL_FOUND)
-
-if (USE_MKL AND (NOT MKL_FOUND))
-	message(FATAL_ERROR "MKL build requested but MKL not found")
-endif()
-
-if ((NOT LAPACK_FOUND) AND (NOT MKL_FOUND))
-	message(FATAL_ERROR "Neither MKL nor other LAPACK library found.")
-else()
-	if (MKL_FOUND)
-		set(NUMFORT_LAPACK_LIBRARIES ${MKL_LIBRARIES})
-	elseif (LAPACK_FOUND)
-		set(NUMFORT_LAPACK_LIBRARIES ${MKL_LIBRARIES})
-		set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${LAPACK_LINKER_FLAGS})
-		set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${LAPACK_LINKER_FLAGS})
-	endif()
-endif()
+if (USE_MKL)
+    find_package(MKL REQUIRED)
+    set(NUMFORT_LAPACK_LIBRARIES ${MKL_LIBRARIES})
+else ()
+    find_package(LAPACK REQUIRED)
+    set(NUMFORT_LAPACK_LIBRARIES ${LAPACK_LIBRARIES})
+    set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${LAPACK_LINKER_FLAGS})
+    set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${LAPACK_LINKER_FLAGS})
+endif ()
 
 ################################################################################
 # Testing
 
 if(BUILD_TESTS)
     enable_testing()
-    find_package(fcore)
+    find_package(FCore)
 endif()
 
-################################################################################
-# Detect target architecture
-include(FindTargetArch)
-find_target_arch()
+###############################################################################
+# Path suffixes beneath CMAKE_INSTALL_PREFIX
 
 # if INSTALL_LIBRARY_PREFIX or INSTALL_INCLUDE_PREFIX were specified on the
 # command line, use those as prefixes beneath CMAKE_INSTALL_PREFIX where
 # library and include files should be placed.
 
 if (NOT INSTALL_LIBRARY_PREFIX)
-  set(INSTALL_LIBRARY_PREFIX lib)
+    set(INSTALL_LIBRARY_PREFIX lib)
 endif()
 
-# Otherwise define compiler- and architecture-specific prefixes so that
-# MOD files from gfortran and ifort can coexist in the same CMAKE_INSTALL_PREFIX
 if (NOT INSTALL_INCLUDE_PREFIX)
-    if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-        set(INCLUDE_SUBDIR "gfortran")
-    elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
-      set(INCLUDE_SUBDIR "intel")
-        # if (TARGET_ARCH_BITS STREQUAL "64")
-        #     set(INCLUDE_SUBDIR "intel64")
-        # else()
-        #     set(INCLUDE_SUBDIR "intel")
-        # endif()
-    endif ()
-    set(INSTALL_INCLUDE_PREFIX "include/${INCLUDE_SUBDIR}"
-        CACHE STRING "Relative installation directory for MOD files" FORCE
-    )
+    set(INSTALL_INCLUDE_PREFIX include/numfort)
 endif()
 
 ################################################################################
 # Set Fortran compiler FLAGS
 
+set(_FFLAGS)
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-    set (${PROJECT_NAME}_Fortran_FLAGS "-Wall -Wextra -Wimplicit-interface -Wimplicit-procedure -std=f2008")
+    # explicitly add -cpp to run C preprocessor if required
+    set(GNU_WARN "-Wall -Wextra -Wimplicit-interface -Wimplicit-procedure \
+      -Warray-temporaries -Wrealloc-lhs -pedantic")
+    set(_FFLAGS "${GNU_WARN} -std=f2008")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
-        set (${PROJECT_NAME}_Fortran_FLAGS "/warn:all /standard-semantics /stand:f08")
-		if (USE_MKL)
-			set (${PROJECT_NAME}_Fortran_FLAGS "${${PROJECT_NAME}_Fortran_FLAGS} /Qmkl")
-		endif (USE_MKL)
-    elseif (WIN32)
-        set (${PROJECT_NAME}_Fortran_FLAGS "-warn all -standard-semantics -std08")
+        set (_FFLAGS "/warn:all /standard-semantics /stand:f08")
+    else ()
+        set (_FFLAGS "-warn all -standard-semantics -std08")
     endif (WIN32)
-else ()
-    message(FATAL_ERROR "Unsupported Fortran compiler: ${Fortran_COMPILER_NAME}")
 endif ()
 
 # append additional FLAGS to default cmake FLAGS
-set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${${PROJECT_NAME}_Fortran_FLAGS}")
-set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} ${${PROJECT_NAME}_Fortran_FLAGS_RELEASE}")
-set (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${${PROJECT_NAME}_Fortran_FLAGS_DEBUG}")
+set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS}")
 
 ###############################################################################
 # Report options and settings
@@ -134,7 +95,9 @@ endif (USE_MKL)
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Fortran compiler flags: ${CMAKE_Fortran_FLAGS}")
-message(STATUS "Additional Fortran compiler flags for ${CMAKE_BUILD_TYPE}: ${CMAKE_Fortran_FLAGS_${CMAKE_BUILD_TYPE}}")
+# Make sure build type is upper case, otherwise the wrong flags will be shown
+string(TOUPPER "${CMAKE_BUILD_TYPE}" _BUILD_TYPE)
+message(STATUS "Additional Fortran compiler flags for ${CMAKE_BUILD_TYPE}: ${CMAKE_Fortran_FLAGS_${_BUILD_TYPE}}")
 
 message(STATUS "Library install directory: ${CMAKE_INSTALL_PREFIX}/${INSTALL_LIBRARY_PREFIX}")
 message(STATUS "MOD file install directory: ${CMAKE_INSTALL_PREFIX}/${INSTALL_INCLUDE_PREFIX}")
@@ -143,11 +106,6 @@ message(STATUS "MOD file install directory: ${CMAKE_INSTALL_PREFIX}/${INSTALL_IN
 # Output directories
 
 set(NUMFORT_MODDIR "${CMAKE_BINARY_DIR}/include")
-
-# Set output directory for static and shared libraries
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(CMAKE_Fortran_MODULE_DIRECTORY "${NUMFORT_MODDIR}")
 
 # store test executables in this root directory

@@ -4,12 +4,14 @@
 set(TEST_DIRS arrays)
 set(TEST_SOURCE_FILES_ARRAYS arrays/indexing.f90)
 
-set(LIBS ${LIBRARY_NAME}_static ${fcore_LIBRARIES})
+set(LIBS ${LIBRARY_NAME}_static ${FCore_LIBRARIES})
 if (NOT USE_MKL)
 	target_link_libraries(LIBS ${LIBS} ${NUMFORT_LAPACK_LIBRARIES})
 endif (NOT USE_MKL)
 
-include_directories(${fcore_INCLUDE_DIRS} ${NUMFORT_MODDIR})
+include_directories(${FCore_INCLUDE_DIRS} ${NUMFORT_MODDIR})
+
+message(${FCore_INCLUDE_DIRS})
 
 foreach (dir IN LISTS TEST_DIRS)
 

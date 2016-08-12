@@ -13,20 +13,19 @@ set(SOURCE_FILES
 	numfort_linalg.f90)
 
 # always build additional static library to be used when linking tests and benchmarks
-add_library(${LIBRARY_NAME}_static STATIC ${SOURCE_FILES})
-set_target_properties(${LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME ${LIBRARY_NAME})
+
+if (BUILD_TESTS OR BUILD_BENCHMARKS)
+	add_library(${LIBRARY_NAME}_static STATIC ${SOURCE_FILES})
+	set_target_properties(${LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME ${LIBRARY_NAME})
+endif()
 
 add_library(${LIBRARY_NAME} ${SOURCE_FILES})
-
-if (NOT USE_MKL)
-	target_link_libraries(${LIBRARY_NAME} ${NUMFORT_LAPACK_LIBRARIES})
-endif (NOT USE_MKL)
+target_link_libraries(${LIBRARY_NAME} ${NUMFORT_LAPACK_LIBRARIES})
 
 # set mod-file output directory
 set_target_properties(${LIBRARY_NAME} PROPERTIES
-    Fortran_MODULE_DIRECTORY "${NUMFORT_MODDIR}")
-set_target_properties(${LIBRARY_NAME} PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
+    Fortran_MODULE_DIRECTORY "${NUMFORT_MODDIR}"
+)
 
 install(TARGETS ${LIBRARY_NAME}
     RUNTIME DESTINATION "${INSTALL_LIBRARY_PREFIX}"
@@ -34,6 +33,4 @@ install(TARGETS ${LIBRARY_NAME}
     ARCHIVE DESTINATION "${INSTALL_LIBRARY_PREFIX}"
 )
 
-install(DIRECTORY ${NUMFORT_MODDIR}/
-    DESTINATION "${INSTALL_INCLUDE_PREFIX}/${LIBRARY_NAME}"
-)
+install(DIRECTORY ${NUMFORT_MODDIR}/ DESTINATION "${INSTALL_INCLUDE_PREFIX}")
