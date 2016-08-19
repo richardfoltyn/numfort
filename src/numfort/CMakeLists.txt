@@ -1,7 +1,7 @@
 # src/numfort/CMakeLists.txt
 # CMake configuration for numfort library
 
-set(COMPONENTS core arrays interpolate linalg)
+set(COMPONENTS core common arrays interpolate linalg optimize)
 
 foreach (_comp IN LISTS COMPONENTS)
 	add_subdirectory(${_comp})
