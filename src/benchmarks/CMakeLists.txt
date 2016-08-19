@@ -10,5 +10,5 @@ add_executable(cumsum ${CUMSUM_SOURCE_FILES})
 target_link_libraries(cumsum numfort_static)
 
 if (NOT USE_MKL)
-	target_link_libraries(cumsum ${NUMFORT_LAPACK_LIBRARIES})
+	target_link_libraries(cumsum ${${PROJECT_NAME}_BLA_LIBRARIES})
 endif (NOT USE_MKL)

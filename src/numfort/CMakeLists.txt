@@ -7,7 +7,7 @@ foreach (_comp IN LISTS COMPONENTS)
 	add_subdirectory(${_comp})
 	# set mod-file output directory
 	set_target_properties(${_comp} PROPERTIES
-	    Fortran_MODULE_DIRECTORY "${NUMFORT_MODDIR}"
+	    Fortran_MODULE_DIRECTORY "${${PROJECT_NAME}_MODDIR}"
 	)
 endforeach()
 
@@ -17,11 +17,10 @@ foreach (_comp IN LISTS COMPONENTS)
 endforeach()
 
 add_library(${LIBRARY_NAME} ${COMPONENT_OBJECTS})
-target_link_libraries(${LIBRARY_NAME} ${NUMFORT_LAPACK_LIBRARIES})
+target_link_libraries(${LIBRARY_NAME} ${${PROJECT_NAME}_BLA_LIBRARIES})
 
 # for benchmarks, examples, etc
 add_library(${LIBRARY_NAME}_static STATIC ${COMPONENT_OBJECTS})
-target_link_libraries(${LIBRARY_NAME} ${NUMFORT_LAPACK_LIBRARIES})
 
 install(TARGETS ${LIBRARY_NAME}
     RUNTIME DESTINATION "${INSTALL_LIBRARY_PREFIX}"
@@ -29,4 +28,6 @@ install(TARGETS ${LIBRARY_NAME}
     ARCHIVE DESTINATION "${INSTALL_LIBRARY_PREFIX}"
 )
 
-install(DIRECTORY ${NUMFORT_MODDIR}/ DESTINATION "${INSTALL_INCLUDE_PREFIX}")
+install(DIRECTORY ${${PROJECT_NAME}_MODDIR}/
+	DESTINATION "${INSTALL_INCLUDE_PREFIX}"
+)

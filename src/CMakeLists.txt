@@ -35,10 +35,10 @@ list(APPEND CMAKE_MODULE_PATH
 
 if (USE_MKL)
     find_package(MKL REQUIRED)
-    set(NUMFORT_LAPACK_LIBRARIES ${MKL_LIBRARIES})
+    set(${PROJECT_NAME}_BLA_LIBRARIES ${MKL_LIBRARIES})
 else ()
     find_package(LAPACK REQUIRED)
-    set(NUMFORT_LAPACK_LIBRARIES ${LAPACK_LIBRARIES})
+    set(${PROJECT_NAME}_BLA_LIBRARIES ${LAPACK_LIBRARIES})
     set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${LAPACK_LINKER_FLAGS})
     set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${LAPACK_LINKER_FLAGS})
 endif ()
@@ -119,8 +119,8 @@ message(STATUS "MOD file install directory: ${CMAKE_INSTALL_PREFIX}/${INSTALL_IN
 ################################################################################
 # Output directories
 
-set(NUMFORT_MODDIR "${CMAKE_BINARY_DIR}/include")
-set(CMAKE_Fortran_MODULE_DIRECTORY "${NUMFORT_MODDIR}")
+set(${PROJECT_NAME}_MODDIR "${CMAKE_BINARY_DIR}/include")
+set(CMAKE_Fortran_MODULE_DIRECTORY "${${PROJECT_NAME}_MODDIR}")
 
 # store test executables in this root directory
 set(${PROJECT_NAME}_TESTS_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")

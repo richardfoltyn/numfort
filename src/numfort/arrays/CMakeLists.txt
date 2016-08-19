@@ -7,6 +7,6 @@ set(SOURCE_FILES
 )
 
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
-
-# set_source_files_properties(array_creation.f90 PROPERTIES
-#	Fortran_MODULE_DIRECTORY "${NUMFORT_MODDIR}")
+set_target_properties(${COMPONENT_NAME}
+	PROPERTIES COMPILE_FLAGS "${${PROJECT_NAME}_FFLAGS}"
+)
