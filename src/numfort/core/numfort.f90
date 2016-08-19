@@ -118,7 +118,7 @@ subroutine cumsum_2d_real64(x, res, axis)
     real (real64), dimension(:, :), target, contiguous :: res
     real (real64), dimension(:), pointer :: ptr_x => null(), ptr_res => null()
 
-    include "cumsum_wrapper.finc"
+    include "includes/cumsum_wrapper.f90"
 
 end subroutine
 
@@ -128,7 +128,7 @@ subroutine cumsum_3d_real64(x, res, axis)
     real (real64), dimension(:,:,:), target, contiguous :: res
     real (real64), dimension(:), pointer :: ptr_x => null(), ptr_res => null()
 
-    include "cumsum_wrapper.finc"
+    include "includes/cumsum_wrapper.f90"
 
 end subroutine
 
@@ -137,7 +137,7 @@ subroutine cumsum_nd_real64(x, shp, res, axis)
     real (real64), intent(in), dimension(:) :: x
     real (real64), dimension(:) :: res
 
-    include "cumsum_impl.finc"
+    include "includes/cumsum_impl.f90"
 
 end subroutine
 

@@ -1,31 +1,27 @@
 # src/numfort/CMakeLists.txt
 # CMake configuration for numfort library
 
-unset(SOURCE_FILES)
+set(COMPONENTS core arrays interpolate linalg)
 
-# include relevant subdirectories
-add_subdirectory(arrays)
-add_subdirectory(interp)
+foreach (_comp IN LISTS COMPONENTS)
+	add_subdirectory(${_comp})
+	# set mod-file output directory
+	set_target_properties(${_comp} PROPERTIES
+	    Fortran_MODULE_DIRECTORY "${NUMFORT_MODDIR}"
+	)
+endforeach()
 
-set(SOURCE_FILES
-	${SOURCE_FILES}
-	numfort.f90
-	numfort_linalg.f90)
+set(COMPONENT_OBJECTS)
+foreach (_comp IN LISTS COMPONENTS)
+	list(APPEND COMPONENT_OBJECTS $<TARGET_OBJECTS:${_comp}>)
+endforeach()
 
-# always build additional static library to be used when linking tests and benchmarks
-
-if (BUILD_TESTS OR BUILD_BENCHMARKS)
-	add_library(${LIBRARY_NAME}_static STATIC ${SOURCE_FILES})
-	set_target_properties(${LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME ${LIBRARY_NAME})
-endif()
-
-add_library(${LIBRARY_NAME} ${SOURCE_FILES})
+add_library(${LIBRARY_NAME} ${COMPONENT_OBJECTS})
 target_link_libraries(${LIBRARY_NAME} ${NUMFORT_LAPACK_LIBRARIES})
 
-# set mod-file output directory
-set_target_properties(${LIBRARY_NAME} PROPERTIES
-    Fortran_MODULE_DIRECTORY "${NUMFORT_MODDIR}"
-)
+# for benchmarks, examples, etc
+add_library(${LIBRARY_NAME}_static STATIC ${COMPONENT_OBJECTS})
+target_link_libraries(${LIBRARY_NAME} ${NUMFORT_LAPACK_LIBRARIES})
 
 install(TARGETS ${LIBRARY_NAME}
     RUNTIME DESTINATION "${INSTALL_LIBRARY_PREFIX}"
