@@ -2,8 +2,10 @@
 
 module numfort_optimize
 
-    use lbfgsb, only: minimize_lbfgsb
-    use numfort_optim_result_mod, only: optim_result
+    use numfort_optimize_lbfgsb, only: minimize_lbfgsb
+    use numfort_optimize_common
+    use numfort_optim_result_mod
+    use numfort_common, only : workspace
     implicit none
 
 end module

@@ -136,3 +136,7 @@ endif()
 if (BUILD_BENCHMARKS)
     add_subdirectory(benchmarks)
 endif()
+
+if (BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif ()

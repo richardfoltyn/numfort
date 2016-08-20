@@ -1,5 +1,5 @@
 
-module lbfgsb
+module numfort_optimize_lbfgsb
 
     use, intrinsic :: ieee_arithmetic
     use, intrinsic :: iso_fortran_env, only: real64
@@ -33,7 +33,7 @@ module lbfgsb
         end subroutine
     end interface
 
-    public :: workspace, minimize_lbfgsb
+    public :: minimize_lbfgsb
 contains
 
 subroutine lbfgsb_real64 (func, x0, grad, lbounds, ubounds, maxiter, maxfun, &
@@ -44,7 +44,7 @@ subroutine lbfgsb_real64 (func, x0, grad, lbounds, ubounds, maxiter, maxfun, &
     procedure (fobj_real64) :: func
     real (PREC), intent(in out), dimension(:) :: x0
     procedure (grad_real64) :: grad
-    real (PREC), intent(in), optional :: lbounds, ubounds
+    real (PREC), intent(in), dimension(:), optional :: lbounds, ubounds
     integer, intent(in), optional :: maxiter, maxfun, m, iprint
     real (PREC), intent(in), optional :: factr, pgtol
     class (workspace), intent(in out), optional, target :: work
