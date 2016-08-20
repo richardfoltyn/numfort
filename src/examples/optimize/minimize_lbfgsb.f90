@@ -27,13 +27,13 @@ subroutine example1 ()
     lbnd(2:n:2) = -100_PREC
     ubnd(2:n:2) = 100_PREC
 
-    call minimize_lbfgsb (fobj1, x, grad1, lbounds=lbnd, ubounds=ubnd, &
+    call minimize_lbfgsb (fobj1, x, grad1, m=m, lbounds=lbnd, ubounds=ubnd, &
         iprint=iprint, work=ws, res=res)
 
-    print "('Function value at minimum: ', g16.8e3)", res%fx_opt
-    print "('Number of iterations: ', i)", res%nit
-    print "('Number of function evaluations: ', i)", res%nfev
-    print "('Optimum located at: [', (g10.3e2, :, ', '), ']')", res%x_opt
+    print "('Function value at minimum: ', en22.15e3)", res%fx_opt
+    print "('Number of iterations: ', i0)", res%nit
+    print "('Number of function evaluations: ', i0)", res%nfev
+    print "('Optimum located at: [', *(f5.2, :, ', '), ']')", res%x_opt
 
 end subroutine
 

@@ -10,6 +10,8 @@ module numfort_optimize_lbfgsb
     implicit none
     private
 
+    integer, parameter :: PREC = real64
+
     enum, bind(c)
         enumerator :: BOUNDS_NONE = 0, BOUNDS_LOWER = 1, &
             BOUNDS_BOTH = 2, BOUNDS_UPPER = 3
@@ -33,13 +35,27 @@ module numfort_optimize_lbfgsb
         end subroutine
     end interface
 
+    ! interface for F77 setulb, should be useful in eliminating errors at
+    ! compile time
+    interface
+        subroutine if_setulb (n, m, x, l, u, nbd, f, g, factr, pgtol, wa, iwa, &
+            task, iprint, csave, lsave, isave, dsave)
+
+            character (60) :: task, csave
+            logical :: lsave(4)
+            integer ::n, m, iprint, nbd(n), iwa(3*n), isave(44)
+            double precision :: f, factr, pgtol, x(n), l(n), u(n), g(n), &
+                wa(2*m*n + 5*n + 11*m*m + 8*m), dsave(29)
+        end subroutine
+    end interface
+
+    procedure (if_setulb) :: setulb
+
     public :: minimize_lbfgsb
 contains
 
 subroutine lbfgsb_real64 (func, x0, grad, lbounds, ubounds, maxiter, maxfun, &
     m, factr, pgtol, iprint, work, res)
-
-    integer, parameter :: PREC = real64
 
     procedure (fobj_real64) :: func
     real (PREC), intent(in out), dimension(:) :: x0
@@ -74,13 +90,12 @@ subroutine lbfgsb_real64 (func, x0, grad, lbounds, ubounds, maxiter, maxfun, &
     ! lower/upper bound flags passed to setulb
     integer, dimension(size(x0)) :: nbd
 
-    ! variables to store function and gradobian
+    ! variables to store function and gradiant
     real (PREC) :: fx, gradx(size(x0))
-
+    ! number of iterations and function evaluations
     integer :: iter, nfeval
 
     status = OPTIM_STATUS_INVALID_INPUT
-
     x = x0
 
     ! set defaults for optional parameters
@@ -149,12 +164,12 @@ subroutine lbfgsb_real64 (func, x0, grad, lbounds, ubounds, maxiter, maxfun, &
     nfeval = 0
 
     do while (.true.)
-        call setulb (n, lm, x, llbounds, lubounds, nbd, fx, gradx, &
+        call setulb (n, lm, x, llbounds, lubounds, nbd, fx, gradx, lfactr, lpgtol, &
             ptr_wa, ptr_iwa, task, liprint, csave, lsave, ptr_isave, ptr_dsave)
 
         if (task(1:2) == 'FG') then
-            fx = func (x0)
-            call grad (x0, gradx)
+            fx = func (x)
+            call grad (x, gradx)
         else if (task(1:5) == 'NEW_X') then
             ! retrieve statitics stored in working array
             iter = ptr_isave(30)
@@ -186,24 +201,7 @@ subroutine lbfgsb_real64 (func, x0, grad, lbounds, ubounds, maxiter, maxfun, &
     x0 = x
 
     if (present(res)) then
-        res%fx_opt = fx
-        res%success = (status == OPTIM_STATUS_CONVERGED)
-        res%status = status
-        res%msg = msg
-        ! allocate array to store minimum, if needed
-        if (allocated(res%x_opt)) then
-            if (size(res%x_opt) < n) then
-                deallocate (res%x_opt)
-                allocate (res%x_opt(n), source=x)
-            else
-                res%x_opt(1:n) = x
-            end if
-        else
-            allocate (res%x_opt(n), source=x)
-        end if
-
-        res%nit = iter
-        res%nfev = nfeval
+        call res%update (x, fx, status, iter, nfeval, msg)
     end if
 
     return

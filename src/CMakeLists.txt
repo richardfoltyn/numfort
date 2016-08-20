@@ -79,6 +79,8 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     set(GNU_WARN "-Wall -Wextra -Wimplicit-interface -Wimplicit-procedure \
       -Warray-temporaries -Wrealloc-lhs -pedantic")
     set(_FFLAGS "${GNU_WARN} -std=f2008")
+    # enable optimization that does not break debugging
+    # set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} -Og")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
         set (_FFLAGS "/warn:all /standard-semantics /stand:f08")
