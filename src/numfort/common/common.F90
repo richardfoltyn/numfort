@@ -9,6 +9,8 @@
 #define __REAL_KIND_DECL integer, kind :: PREC = __DEFAULT_REAL_KIND
 #define __RWRK_KIND PREC
 #else
+#define __KIND_PARAM_DECL
+#define __REAL_KIND_DECL
 #define __RWRK_KIND __DEFAULT_REAL_KIND
 #endif
 
