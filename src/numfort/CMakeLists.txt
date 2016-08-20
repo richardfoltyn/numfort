@@ -9,6 +9,12 @@ foreach (_comp IN LISTS COMPONENTS)
 	set_target_properties(${_comp} PROPERTIES
 	    Fortran_MODULE_DIRECTORY "${${PROJECT_NAME}_MODDIR}"
 	)
+
+    # we need to make sure that -fPIC etc. is passed to compiler when building
+    # object libraries that will be used to create a shared lib
+    if (BUILD_SHARED_LIBS)
+        set_target_properties(${_comp} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    endif ()
 endforeach()
 
 set(COMPONENT_OBJECTS)
@@ -16,11 +22,7 @@ foreach (_comp IN LISTS COMPONENTS)
 	list(APPEND COMPONENT_OBJECTS $<TARGET_OBJECTS:${_comp}>)
 endforeach()
 
-set(_SHARED STATIC)
-if (BUILD_SHARED_LIBS)
-	set(_SHARED SHARED)
-endif ()
-add_library(${LIBRARY_NAME} ${_SHARED} ${COMPONENT_OBJECTS})
+add_library(${LIBRARY_NAME} ${COMPONENT_OBJECTS})
 target_link_libraries(${LIBRARY_NAME} ${${PROJECT_NAME}_BLA_LIBRARIES})
 set_target_properties(${LIBRARY_NAME} PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
