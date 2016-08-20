@@ -3,7 +3,7 @@
 set(COMPONENT_NAME common)
 
 set(SOURCE_FILES
-	common.f90
+	common.F90
 )
 
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
