@@ -1,0 +1,10 @@
+module numfort_version_mod
+
+    implicit none
+
+    integer, parameter, dimension(${NUMFORT_VERSION_COUNT}) :: NUMFORT_VERSION_COMPONENTS = &
+        [${NUMFORT_VERSION_MAJOR}, ${NUMFORT_VERSION_MINOR}, ${NUMFORT_VERSION_PATCH}]
+
+    character (*), parameter :: NUMFORT_VERSION = '${NUMFORT_VERSION}'
+
+end module

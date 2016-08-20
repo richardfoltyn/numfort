@@ -1,4 +1,4 @@
-module numfort
+module numfort_core
 
     use iso_fortran_env, only : real32, real64, int32, int64
 

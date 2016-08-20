@@ -3,7 +3,7 @@
 set(COMPONENT_NAME core)
 
 set(SOURCE_FILES
-	numfort.f90
+	core.f90
 )
 
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})

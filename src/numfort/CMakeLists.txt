@@ -1,6 +1,25 @@
 # src/numfort/CMakeLists.txt
 # CMake configuration for numfort library
 
+# number of version components
+set(NUMFORT_VERSION_COUNT 3)
+set(NUMFORT_VERSION_MAJOR 0)
+set(NUMFORT_VERSION_MINOR 1)
+set(NUMFORT_VERSION_PATCH 0)
+set(NUMFORT_VERSION
+	"${NUMFORT_VERSION_MAJOR}.${NUMFORT_VERSION_MINOR}.${NUMFORT_VERSION_PATCH}"
+)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.f90.in
+	${CMAKE_BINARY_DIR}/version.f90
+)
+
+set(SOURCE_FILES
+	${CMAKE_BINARY_DIR}/version.f90
+	numfort.f90
+)
+
+# add individual numfort components as object libraries
 set(COMPONENTS core common arrays interpolate linalg optimize)
 
 foreach (_comp IN LISTS COMPONENTS)
@@ -22,7 +41,7 @@ foreach (_comp IN LISTS COMPONENTS)
 	list(APPEND COMPONENT_OBJECTS $<TARGET_OBJECTS:${_comp}>)
 endforeach()
 
-add_library(${LIBRARY_NAME} ${COMPONENT_OBJECTS})
+add_library(${LIBRARY_NAME} ${SOURCE_FILES} ${COMPONENT_OBJECTS})
 target_link_libraries(${LIBRARY_NAME} ${${PROJECT_NAME}_BLA_LIBRARIES})
 set_target_properties(${LIBRARY_NAME} PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
