@@ -2,20 +2,28 @@
 
 module numfort_optim_result_mod
 
-    use iso_fortran_env, only: real32, real64
+    use iso_fortran_env, only: real32, real64, int32
+    use numfort_common, only: ENUM_KIND
 
     implicit none
+    private
 
-    enum, bind(c)
-        enumerator :: OPTIM_STATUS_CONVERGED = 0, &
-            OPTIM_STATUS_MAXITER = 1, &
-            OPTIM_STATUS_MAXFUN = 2, &
-            OPTIM_STATUS_NOT_CONVERGED = 4, &
-            OPTIM_STATUS_INVALID_INPUT = 8, &
-            OPTIM_STATUS_UNKNOWN = 16
-    end enum
+    integer (ENUM_KIND), parameter :: OPTIM_STATUS_CONVERGED = 0
+    integer (ENUM_KIND), parameter :: OPTIM_STATUS_MAXITER = 1
+    integer (ENUM_KIND), parameter :: OPTIM_STATUS_MAXFUN = 2
+    integer (ENUM_KIND), parameter :: OPTIM_STATUS_NOT_CONVERGED = 4
+    integer (ENUM_KIND), parameter :: OPTIM_STATUS_INVALID_INPUT = 2 ** 29
+    integer (ENUM_KIND), parameter :: OPTIM_STATUS_UNKNOWN = 2 ** 30
 
-    type optim_result
+    public :: &
+        OPTIM_STATUS_CONVERGED, &
+        OPTIM_STATUS_MAXITER, &
+        OPTIM_STATUS_MAXFUN, &
+        OPTIM_STATUS_NOT_CONVERGED, &
+        OPTIM_STATUS_INVALID_INPUT, &
+        OPTIM_STATUS_UNKNOWN
+
+    type, public :: optim_result
         real (real64) :: fx_opt
         real (real64), dimension(:), allocatable :: x_opt
         integer :: nfev = -1, nit = -1, status = OPTIM_STATUS_UNKNOWN
