@@ -1,3 +1,7 @@
+! Sample code demonstrating the use of curfit and splev from
+! the numfort_interpolate module.
+! Author: Richard Foltyn
+
 program curfit01
 
     use iso_fortran_env
@@ -11,7 +15,11 @@ program curfit01
 
 contains
 
-! replicates original fitpack examples from mncurf.f
+! replicates original fitpack examples from mncurf.f, see this file
+! for some hints of what is going on exactly.
+! For a given set of (x,y) points, fit splines of degree 3 and 5 using
+! various smoothness parameters, as well as LS.
+! Report results and fitted points.
 subroutine example1 ()
 
     ! number of points
@@ -82,8 +90,6 @@ subroutine print_report (ii, iopt, s, k, ssr, status, n, knots, coefs, x, y, yha
     print "(t6, a)", 'Evaluated points:'
     print "(t6, 5(3(a5, tr1), tr2))", ('x(i)', 'y(i)', 'sp(i)', i=1,5)
     print "(*(t6, 5(3(f5.1, :, tr1), tr2), :, /))", (x(i), y(i), yhat(i), i=1,size(x))
-
-
 end subroutine
 
 end program
