@@ -70,6 +70,8 @@ subroutine example1 ()
 
         call splev (knots, coefs, k, x, yhat, SPLEV_EXTRAPOLATE, status)
         call print_report (ii, iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat)
+
+        ii = ii + 1
     end do
 
 end subroutine
