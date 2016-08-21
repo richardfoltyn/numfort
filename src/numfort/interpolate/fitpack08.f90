@@ -161,8 +161,8 @@ end subroutine
 
 subroutine splev_wrapper (knots, coefs, k, x, fx, ext, status)
     integer, intent(in) :: k
-    real (PREC), intent(in), dimension(:) :: knots, coefs, x
-    real (PREC), intent(out), dimension(:) :: fx
+    real (PREC), intent(in), dimension(:), contiguous :: knots, coefs, x
+    real (PREC), intent(out), dimension(:), contiguous :: fx
     integer, intent(in) :: ext
     integer, intent(out) :: status
 
@@ -198,7 +198,7 @@ end subroutine
 
 subroutine splev_scalar (knots, coefs, k, x, fx, ext, status)
     integer, intent(in) :: k
-    real (PREC), intent(in), dimension(:) :: knots, coefs
+    real (PREC), intent(in), dimension(:), contiguous :: knots, coefs
     real (PREC), intent(in) :: x
     real (PREC), intent(out) :: fx
     integer, intent(in) :: ext
