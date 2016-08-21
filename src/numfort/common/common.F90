@@ -22,10 +22,16 @@ module numfort_common
     private
     public :: workspace
 
+    integer, public, parameter :: ENUM_KIND = int32
+
+    integer, parameter :: SIZE_UNALLOCATED = -1
+
     type, abstract :: workspace_base
         integer, dimension(:), allocatable :: iwrk
         logical, dimension(:), allocatable :: lwrk
         character (len=:), allocatable :: cwrk
+        integer :: nrwrk = SIZE_UNALLOCATED, niwrk = SIZE_UNALLOCATED, &
+            ncwrk = SIZE_UNALLOCATED, nlwrk = SIZE_UNALLOCATED
     contains
         procedure (iface_assert_allocated), pass, deferred :: assert_allocated
     end type
@@ -63,44 +69,47 @@ pure subroutine workspace_assert_allocated (self, nrwrk, niwrk, ncwrk, nlwrk)
     class (__WORKSPACE_TYPE), intent(in out) :: self
     integer, intent(in), optional :: nrwrk, niwrk, ncwrk, nlwrk
 
-    call assert_allocated (self%rwrk, nrwrk)
-    call assert_allocated (self%iwrk, niwrk)
-    call assert_allocated (self%cwrk, ncwrk)
-    call assert_allocated (self%lwrk, nlwrk)
+    call assert_allocated (self%rwrk, self%nrwrk, nrwrk)
+    call assert_allocated (self%iwrk, self%niwrk, niwrk)
+    call assert_allocated (self%cwrk, self%ncwrk, ncwrk)
+    call assert_allocated (self%lwrk, self%nlwrk, nlwrk)
 
 end subroutine
 
-pure subroutine assert_allocated_real64 (arr, n)
+pure subroutine assert_allocated_real64 (arr, n_attr, n)
     real (real64), dimension(:) :: arr, tmp
     include "include/workspace_assert_allocated_impl.f90"
 end subroutine
 
-pure subroutine assert_allocated_real32 (arr, n)
+pure subroutine assert_allocated_real32 (arr, n_attr, n)
     real (real32), dimension(:) :: arr, tmp
     include "include/workspace_assert_allocated_impl.f90"
 end subroutine
 
-pure subroutine assert_allocated_int(arr, n)
+pure subroutine assert_allocated_int(arr, n_attr, n)
     integer, dimension(:) :: arr, tmp
     include "include/workspace_assert_allocated_impl.f90"
 end subroutine
 
-pure subroutine assert_allocated_char(arr, n)
+pure subroutine assert_allocated_char(arr, n_attr, n)
     character (len=:), intent(in out), allocatable :: arr
+    integer, intent(in out) :: n_attr
     integer, intent(in), optional :: n
     character (len=:), allocatable :: tmp
 
     if (present(n)) then
         if (.not. allocated(arr)) then
             allocate (character (n) :: arr)
+            n_attr = n
         else if (len(arr) < n) then
             allocate (character (n) :: tmp)
             call move_alloc (tmp, arr)
+            n_attr = n
         end if
     end if
 end subroutine
 
-pure subroutine assert_allocated_bool(arr, n)
+pure subroutine assert_allocated_bool(arr, n_attr, n)
     logical, dimension(:) :: arr, tmp
     include "include/workspace_assert_allocated_impl.f90"
 end subroutine
