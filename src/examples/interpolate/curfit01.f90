@@ -28,10 +28,9 @@ subroutine example1 ()
     real (PREC), dimension(m) :: x, y, yhat
     real (PREC) :: s, svec(6) = [ real(PREC) :: 1000, 60, 10, 30, 30, 0]
     integer :: iopt, ioptvec(6) = [0, 1, 1, 1, 0, 0]
-    integer :: i, k, nest_max, n, status, ii, j
+    integer :: i, k, nest_max, n, status, j
     real (PREC) :: ssr
     real (PREC), dimension(:), allocatable :: knots, coefs
-
     type (workspace) :: ws
 
     ! initialize data
@@ -43,8 +42,6 @@ subroutine example1 ()
     nest_max = curfit_get_nest(m=m, k=5)
     allocate (knots(nest_max), coefs(nest_max))
 
-    ii = 1
-
     do k = 3,5,2
         ! iterate through various smoothing parameters and interpolation tasks
         do i = 1, size(svec)
@@ -55,9 +52,7 @@ subroutine example1 ()
                 coefs=coefs, ssr=ssr, status=status)
 
             call splev (knots, coefs, k, x, yhat, SPLEV_EXTRAPOLATE, status)
-            call print_report (ii, iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat)
-
-            ii = ii + 1
+            call print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat)
         end do
 
         ! least-squares fitting
@@ -69,18 +64,17 @@ subroutine example1 ()
             coefs=coefs, ssr=ssr, status=status)
 
         call splev (knots, coefs, k, x, yhat, SPLEV_EXTRAPOLATE, status)
-        call print_report (ii, iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat)
-
-        ii = ii + 1
+        call print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat)
     end do
 
 end subroutine
 
-subroutine print_report (ii, iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat)
-    integer, intent(in) :: ii, iopt, k, status, n
+subroutine print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat)
+    integer, intent(in) :: iopt, k, status, n
     real (PREC), intent(in) :: s, ssr, knots(:), coefs(:)
     real (PREC), intent(in), dimension(:) :: x, y, yhat
 
+    integer, save :: ii = 1
     integer :: i
 
     print "(/,'(', i0, ')', t6, 'iopt: ', i2, '; smoothing factor: ', f6.1, '; spline degree: ', i1)", &
@@ -92,6 +86,8 @@ subroutine print_report (ii, iopt, s, k, ssr, status, n, knots, coefs, x, y, yha
     print "(t6, a)", 'Evaluated points:'
     print "(t6, 5(3(a5, tr1), tr2))", ('x(i)', 'y(i)', 'sp(i)', i=1,5)
     print "(*(t6, 5(3(f5.1, :, tr1), tr2), :, /))", (x(i), y(i), yhat(i), i=1,size(x))
+
+    ii = ii + 1
 end subroutine
 
 end program
