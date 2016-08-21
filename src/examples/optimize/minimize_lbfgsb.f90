@@ -30,10 +30,12 @@ subroutine example1 ()
     call minimize_lbfgsb (fobj1, x, grad1, m=m, lbounds=lbnd, ubounds=ubnd, &
         iprint=iprint, work=ws, res=res)
 
-    print "('Function value at minimum: ', en22.15e3)", res%fx_opt
+    print "('Function value at minimum: ', en22.15e2)", res%fx_opt
     print "('Number of iterations: ', i0)", res%nit
     print "('Number of function evaluations: ', i0)", res%nfev
-    print "('Optimum located at: [', *(f5.2, :, ', '), ']')", res%x_opt
+    write (OUTPUT_UNIT, advance='no', &
+        fmt="('Optimum located at: [', t23, *(t23, 5(f6.4, :, ', '), :, /))") res%x_opt
+    print *, ' ]'
 
 end subroutine
 
