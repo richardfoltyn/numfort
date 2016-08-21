@@ -4,8 +4,10 @@ cc                 mnspde : splder test program                       cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       real*8 x(7),y(42),t(20),c(20),wrk(20),d(6)
-      integer i,ier,j,k,k1,l,m,n,nk1,nu
+      integer i,ier,j,k,k1,l,m,n,nk1,nu,e
       real*8 ai
+c  Extrapolate spline from boundaries
+      e = 0
 c  set up the points where the spline derivatives will be evaluated.
       m = 7
       x(1) = 0.
@@ -44,7 +46,7 @@ c  evaluate the spline derivatives.
         do 40 i=1,k1
 c  nu denotes the order of the derivative
           nu = i-1
-          call splder(t,n,c,k,nu,x,y(j),m,wrk,ier)
+          call splder(t,n,c,k,nu,x,y(j),m,e,wrk,ier)
           j = j+m
   40    continue
 c  print the results.
