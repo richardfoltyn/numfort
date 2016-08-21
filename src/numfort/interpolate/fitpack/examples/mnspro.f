@@ -6,9 +6,9 @@ cc      cubic spline curve   x = sx(u)   y = sy(u)   with             cc
 cc      a straight line   alfa*x + beta*y = gamma                     cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real t(13),c(26),zero(20),sp(40),cc(13)
+      real*8 t(13),c(26),zero(20),sp(40),cc(13)
       integer i,idim,ier,is,i1,i2,j,k,k1,l1,l2,m,mest,n,nc,nk1
-      real alfa,beta,gamma,per
+      real*8 alfa,beta,gamma,per
 c  we have a planar curve
       idim = 2
 c  we have a cubic spline curve.

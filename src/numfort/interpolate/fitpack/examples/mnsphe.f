@@ -3,13 +3,13 @@ cc                                                                    cc
 cc             mnsphe : sphere test program                           cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real teta(192),phi(192),r(192),w(192),tp(30),tt(30),c(300),
+      real*8 teta(192),phi(192),r(192),w(192),tp(30),tt(30),c(300),
      * p(9),t(9),f(81),wrk1(12000),wrk2(72)
       integer iwrk(300)
-      real eps,fp,pi,pi2,pi4,s,scale,scp,sct,ai
+      real*8 eps,fp,pi,pi2,pi4,s,scale,scp,sct,ai
       integer i,ier,iopt,j,kwrk,lwrk1,lwrk2,l1,l2,l,m,np,npest,nt,ntest
      * ,is,i1,i2,nc,ntt,npp
-      real atan,testsp
+      real*8 atan,testsp
 c  set constants
       pi4 = atan(0.1e+01)
       pi = pi4*4
@@ -139,11 +139,11 @@ c  format statements.
  975  format(6h  teta)
  980  format(1h ,f6.3,2x,9f7.3)
       end
-      real function testsp(v,u)
+      real*8 function testsp(v,u)
 c function program testsp calculates the value of a test function for
 c the sphere package.
 c ..
-      real cos,cu,cv,rad1,rad2,rad3,sin,sqrt,su,sv,u,v
+      real*8 cos,cu,cv,rad1,rad2,rad3,sin,sqrt,su,sv,u,v
       cu = cos(u)
       cv = cos(v)
       su = sin(u)

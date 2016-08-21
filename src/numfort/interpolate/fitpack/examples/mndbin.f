@@ -3,9 +3,9 @@ cc                                                                    cc
 cc              mndbin : dblint test program                          cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real fac,facx,aint,exint,dblint,xb,xe,yb,ye
+      real*8 fac,facx,aint,exint,dblint,xb,xe,yb,ye
       integer i,j,kx,kx1,ky,ky1,mx,my,m0,m1,m2,m3,nc,nkx1,nky1,nx,ny
-      real tx(15),ty(15),c(100),x(6),y(6),wrk(50)
+      real*8 tx(15),ty(15),c(100),x(6),y(6),wrk(50)
 c  we set up the end points of the integration domains.
       mx = 6
       my = 6

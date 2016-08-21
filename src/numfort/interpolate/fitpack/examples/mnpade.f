@@ -3,10 +3,10 @@ cc                                                                    cc
 cc              mnpade : parder test program                          cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real fac,facx
+      real*8 fac,facx
       integer i,ix,iy,ier,j,kx,kx1,ky,ky1,mx,my,m0,m1,m2,m3,nc,
      * nkx1,nky1,nux,nuy,nx,ny
-      real tx(15),ty(15),c(100),x(6),y(6),z(36),wrk(200)
+      real*8 tx(15),ty(15),c(100),x(6),y(6),z(36),wrk(200)
       integer iwrk(20)
 c  we set up the grid points for evaluating the spline derivatives.
       mx = 6

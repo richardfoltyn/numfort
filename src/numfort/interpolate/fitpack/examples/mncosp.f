@@ -3,11 +3,11 @@ cc                                                                    cc
 cc                 mncosp : cocosp test program                       cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real x(10),y(10),w(10),sx(10),s2(10),t(20),c(20),e(20),wrk(550)
+      real*8 x(10),y(10),w(10),sx(10),s2(10),t(20),c(20),e(20),wrk(550)
       integer iwrk(450)
       logical bind(20)
       integer i,ier,is,j,j3,kwrk,lwrk,m,maxbin,maxtr,n,n4,n6
-      real sq
+      real*8 sq
 c  the absciss values of the data points.
       data x(1),x(2),x(3),x(4),x(5),x(6),x(7),x(8),x(9),x(10)/0.25,
      * 0.5,0.75,1.25,1.75,2.25,2.75,3.25,6.25,12.25/

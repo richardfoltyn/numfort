@@ -5,9 +5,9 @@ cc             evaluation of a closed planar curve                    cc
 cc                    x = sx(u) , y = sy(u)                           cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real u(20),t(20),c(40),sp(40)
+      real*8 u(20),t(20),c(40),sp(40)
       integer i,idim,i1,i2,ier,j,jn,j1,j2,j3,j4,k,k1,m,mx,n,nc,nk,nk1
-      real ai,per
+      real*8 ai,per
 c  we have a planar curve
       idim = 2
 c  set up the dimension information

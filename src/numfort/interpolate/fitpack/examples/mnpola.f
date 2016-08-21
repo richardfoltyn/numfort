@@ -3,13 +3,13 @@ cc                                                                    cc
 cc                 mnpola : polar test program                        cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real x(200),y(200),z(200),w(200),u(200),v(200),tu(30),tv(30),
+      real*8 x(200),y(200),z(200),w(200),u(200),v(200),tu(30),tv(30),
      * c(300),exact(200),f(200),wrk1(15000),wrk2(5700)
       integer iopt(3),iwrk(500)
       integer i,is,ier,kwrk,l,lwrk1,lwrk2,l1,l2,m,m1,m2,nc,nu,nv,
      * nuest,nvest
-      real s,fp,eps,sum,ermax,error,ai
-      real abs,rad1,rad2,testpo,evapol
+      real*8 s,fp,eps,sum,ermax,error,ai
+      real*8 abs,rad1,rad2,testpo,evapol
       external rad1,rad2
 c  we fetch the number of data points.
       m1 = 200
@@ -165,24 +165,24 @@ c  format statements
  975  format(33h0spline values at selected points)
  980  format(1h0,3(3x,1hx,6x,1hy,6x,1hf,5x))
       end
-      real function rad1(v)
+      real*8 function rad1(v)
 c  function program rad1 defines in polar coordinates, the boundary of
 c  the approximation domain  x**2+y**2<=1.
-      real v
+      real*8 v
       rad1 = 1.
       return
       end
-      real function rad2(v)
+      real*8 function rad2(v)
 c  function program rad2 defines in polar coordinates, the boundary of
 c  the approximation domain  3*x**2+3*y**2-4*x*y<=1.
-      real sqrt,sin,v
+      real*8 sqrt,sin,v
       rad2 = 1./sqrt(3.-2.*sin(v+v))
       return
       end
-      real function testpo(x,y)
+      real*8 function testpo(x,y)
 c  function program testpo evaluates the test function for the polar
 c  package.
-      real x,y
+      real*8 x,y
       testpo=(x**2+y**2)/((x+y)**2+0.5)
       return
       end

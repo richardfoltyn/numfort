@@ -4,18 +4,18 @@ cc                  mnpogr : pogrid test program                      cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c  ..local scalars..
-      real cv,del,ermax,er0,exz0,fp,pi,r,sum,sv,x,y,z0,one,ai,s
+      real*8 cv,del,ermax,er0,exz0,fp,pi,r,sum,sv,x,y,z0,one,ai,s
       integer i,ier,is,j,k,kwrk,lwrk,m,mu,mv,nc,nuest,nu,nvest,nv
 c  ..local arrays..
       integer ider(2),iopt(3),iwrk(100),iw(29)
-      real u(9),v(20),z(180),c(300),tu(50),tv(50),f(180),wk(116),
+      real*8 u(9),v(20),z(180),c(300),tu(50),tv(50),f(180),wk(116),
      * exact(180),err(9),sp(9),wrk(1600)
 c  ..function references..
-      real abs,atan2,cos,sin,tespog
+      real*8 abs,atan2,cos,sin,tespog
 c  ..
 c  set constants
       one = 1
-      pi = atan2(0.,-one)
+      pi = atan2(0.0d0,-one)
 c we set up the radius of the disc
       r = one
 c we set up the number of u (radius)-values of the grid.
@@ -43,7 +43,7 @@ c the exact value of the test function underlying the data.
       write(6,905)
       write(6,910) (i,i=1,mu)
       write(6,915)
-      exz0 = tespog(0.,0.)
+      exz0 = tespog(0.0d0,0.0d0)
       er0 = abs(exz0-z0)
       ermax = er0
       sum = er0
@@ -185,12 +185,12 @@ c  evaluation of the spline approximation
 1000  format(25h0spline value at (0,0) = ,f7.3,5x,8herror = ,f7.3)
       end
 c
-      real function tespog(x,y)
+      real*8 function tespog(x,y)
 c function program tespog calculates the value of the test function
 c underlying the data.
 c  ..
 c  ..scalar arguments..
-      real x,y,f
+      real*8 x,y,f
 c  ..
       f = 1.-((3.*x-1.)**2+(3.*y-1.)**2)/(11.-6.*(x+y))
       tespog = f-(1.-x**2-y**2)*(x+y)*54./121.

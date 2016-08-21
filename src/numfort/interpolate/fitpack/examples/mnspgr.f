@@ -4,18 +4,18 @@ cc                  mnspgr : spgrid test program                      cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c  ..local scalars..
-      real del,ermax,erf,exr0,exr1,fp,pi,sum,r0,r1,one,ai,s
+      real*8 del,ermax,erf,exr0,exr1,fp,pi,sum,r0,r1,one,ai,s
       integer i,ier,is,j,k,kwrk,lwrk,m,mu,mv,nc,nuest,nu,nvest,nv
 c  ..local arrays..
       integer ider(4),iopt(3),iwrk(70),iw(25)
-      real u(11),v(14),r(154),c(300),tu(25),tv(25),f(154),wk(100),
+      real*8 u(11),v(14),r(154),c(300),tu(25),tv(25),f(154),wk(100),
      * exact(154),err(14),sp(14),wrk(1500)
 c  ..function references..
-      real abs,atan2,tesspg
+      real*8 abs,atan2,tesspg
 c  ..
 c  set constants
       one = 1
-      pi = atan2(0.,-one)
+      pi = atan2(0.0d0,-one)
       del = pi*0.05
 c we set up the number of u (latitude)-values of the grid.
       mu = 11
@@ -41,8 +41,8 @@ c the exact value of the test function underlying the data.
       write(6,910)
       write(6,915) (j,j=1,mv,2)
       write(6,920)
-      exr0 = tesspg(0.,0.)
-      exr1 = tesspg(pi,0.)
+      exr0 = tesspg(0.0d0,0.0d0)
+      exr1 = tesspg(pi,0.0d0)
       ermax = 0.
       sum = 0.
       l = 0
@@ -203,10 +203,10 @@ c  evaluation of the spline approximation
 1005  format(28h spline values at the poles ,f7.3,5x,f7.3)
       end
 c
-      real function tesspg(u,v)
+      real*8 function tesspg(u,v)
 c function program tesspg calculates the value of the test function
 c underlying the data.
-      real u,v,sin,cos
+      real*8 u,v,sin,cos
       tesspg = 2./(4.1+cos(3.*u)+3.*cos(v+v+u*0.25)*sin(u)**2)
       return
       end

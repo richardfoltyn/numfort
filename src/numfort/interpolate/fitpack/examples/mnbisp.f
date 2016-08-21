@@ -3,9 +3,9 @@ cc                                                                    cc
 cc              mnbisp : bispev test program                          cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real fac,facx
+      real*8 fac,facx
       integer i,ier,j,kx,kx1,ky,ky1,mx,my,m0,m1,m2,m3,nc,nkx1,nky1,nx,ny
-      real tx(15),ty(15),c(100),x(6),y(6),z(36),wrk(100)
+      real*8 tx(15),ty(15),c(100),x(6),y(6),z(36),wrk(100)
       integer iwrk(20)
 c  we set up the grid points for evaluating the tensor product splines.
       mx = 6

@@ -3,10 +3,10 @@ cc                                                                    cc
 cc               mnpasu : parsur test program                         cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real u(21),v(11),f(693),tu(27),tv(17),c(900),wrk(2000),z(693),
+      real*8 u(21),v(11),f(693),tu(27),tv(17),c(900),wrk(2000),z(693),
      * wk(128)
       integer iwrk(80),iw(32),ipar(2)
-      real ai,fp,s
+      real*8 ai,fp,s
       integer kwrk,lwrk,m,mu,mv,j0,j1,j2,j3,nc,nu,nuest,nv,nvest,
      * i,idim,ier,is,iopt,j,l
 c  we generate the u-coordinates of the grid.

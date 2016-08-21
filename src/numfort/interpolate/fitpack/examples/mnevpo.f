@@ -3,9 +3,9 @@ cc                                                                    cc
 cc              mnevpo : evapol test program                          cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real fac,r1,r2
+      real*8 fac,r1,r2
       integer i,ir,j,m,mx,my,m0,m1,m2,nc,nu4,nv4,nu,nv
-      real tu(11),tv(10),c(42),x(6),y(6),f(36)
+      real*8 tu(11),tv(10),c(42),x(6),y(6),f(36)
       external r1,r2
 c  we set up the grid points for evaluating the polar spline.
       mx = 6
@@ -108,13 +108,13 @@ c  format statements.
  975  format(3x,1hy)
  980  format(1x,f4.1,6f7.3)
       end
-      real function r1(v)
-      real v
+      real*8 function r1(v)
+      real*8 v
       r1 = 1.
       return
       end
-      real function r2(v)
-      real v,cos
+      real*8 function r2(v)
+      real*8 v,cos
       r2 = (1.+cos(v)**2)*0.5
       return
       end

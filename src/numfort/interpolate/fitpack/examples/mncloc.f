@@ -3,9 +3,9 @@ cc                                                                    cc
 cc                mncloc : clocur test program                        cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real x(38),w(19),u(19),t(40),c(80),wrk(1500),sp(40)
+      real*8 x(38),w(19),u(19),t(40),c(80),wrk(1500),sp(40)
       integer iwrk(40)
-      real al,del,fp,s
+      real*8 al,del,fp,s
       integer i,idim,ier,iopt,ipar,is,i1,i2,j,j1,k,l,lwrk,l1,m,mx,
      * n,nc,nest,nk1
 c  the data absciss values

@@ -3,12 +3,12 @@ cc                                                                    cc
 cc                 mncoco : concon test program                       cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real x(16),y(16),w(16),v(16),sx(16),s2(16),t(20),c(20),wrk(550),
+      real*8 x(16),y(16),w(16),v(16),sx(16),s2(16),t(20),c(20),wrk(550),
      * s(3)
       integer iwrk(450)
       logical bind(20)
       integer i,ier,iopt,is,j,j3,kwrk,lwrk,m,maxbin,maxtr,n,nest,n4,n6
-      real sq
+      real*8 sq
 c  the absciss values of the data points.
       data x(1),x(2),x(3),x(4),x(5),x(6),x(7),x(8),x(9),x(10),x(11),
      * x(12),x(13),x(14),x(15),x(16)/0.1,0.3,0.5,0.7,0.9,1.25,1.75,

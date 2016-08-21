@@ -3,10 +3,10 @@ cc                                                                    cc
 cc              mnprof : profil test program                          cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real fac,facx,u
+      real*8 fac,facx,u
       integer i,ier,iopt,j,kx,kx1,ky,ky1,m,mx,my,m0,m1,m2,m3,nc,
      * nkx1,nky1,nx,ny
-      real tx(15),ty(15),c(100),x(6),y(6),z(36),cc(15)
+      real*8 tx(15),ty(15),c(100),x(6),y(6),z(36),cc(15)
 c  we set up the grid points for evaluating the tensor product splines.
       mx = 6
       my = 6

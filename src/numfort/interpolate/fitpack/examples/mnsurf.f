@@ -3,12 +3,12 @@ cc                                                                    cc
 cc        mnsurf : surfit test program                                cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real x(80),y(80),z(80),w(80),tx(15),ty(15),c(200),wrk1(12000),
+      real*8 x(80),y(80),z(80),w(80),tx(15),ty(15),c(200),wrk1(12000),
      * wrk2(6000),xx(11),yy(11),zz(121)
       integer iwrk(300)
       integer i,ier,iopt,is,j,kwrk,kx,ky,lwrk1,lwrk2,m,mx,my,nc,
      * nmax,nx,nxest,ny,nyest
-      real ai,delta,eps,fp,s,ww,xb,xe,yb,ye
+      real*8 ai,delta,eps,fp,s,ww,xb,xe,yb,ye
 c  we fetch the number of data points
       read(5,900) m
       write(6,905) m

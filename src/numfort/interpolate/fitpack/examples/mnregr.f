@@ -3,10 +3,10 @@ cc                                                                    cc
 cc               mnregr : regrid test program                         cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real x(11),y(11),z(121),tx(17),ty(17),c(300),wrk(850),f(121),
+      real*8 x(11),y(11),z(121),tx(17),ty(17),c(300),wrk(850),f(121),
      * wk(132)
       integer iwrk(60),iw(22)
-      real ai,fp,s,xb,xe,yb,ye
+      real*8 ai,fp,s,xb,xe,yb,ye
       integer kx,ky,kwrk,lwrk,m,mx,my,m1,m2,nc,nx,nxest,ny,nyest,
      * i,ier,is,iopt,j
 c  we fetch the number of x-coordinates of the grid.

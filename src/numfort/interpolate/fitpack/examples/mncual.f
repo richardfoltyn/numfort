@@ -7,10 +7,10 @@ cc            through its polynomial representation                   cc
 cc                    in each knot interval.                          cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real t(20),c(40),u(20),sp(40),d(12),cof(2,6)
+      real*8 t(20),c(40),u(20),sp(40),d(12),cof(2,6)
       integer i,idim,ier,ii,ip,i1,i2,j,jj,jn,j1,j2,j3,j4,k,kk,k1,
      * l,l1,m,n,nc,nd,nk,nk1
-      real ai,aj,arg,fac,per,pol,tt,uu
+      real*8 ai,aj,arg,fac,per,pol,tt,uu
 c  we have a planar curve
       idim = 2
 c  set up the dimension information

@@ -3,9 +3,9 @@ cc                                                                    cc
 cc                 mnspin : splint test program                       cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real t(20),c(20),wrk(20)
+      real*8 t(20),c(20),wrk(20)
       integer i,j,k,k1,n,nk1,ier
-      real a,aint,ak,b,exint,splint
+      real*8 a,aint,ak,b,exint,splint
 c  as an example we calculate some integrals of the form
 c          / b
 c         !     (1-x)**k  dx

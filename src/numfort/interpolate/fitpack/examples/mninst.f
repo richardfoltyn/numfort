@@ -5,9 +5,9 @@ cc      application : to find the sum of two periodic splines         cc
 cc                 with different sets of knots                       cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real t1(30),c1(30),t2(30),c2(30),x(21),y(21),y1(21),y2(21)
+      real*8 t1(30),c1(30),t2(30),c2(30),x(21),y(21),y1(21),y2(21)
       integer i,ier,iopt,ip,i1,i2,j,j1,j2,k,k1,m,nest,nk,n1,n1k1,n2,n2k1
-      real ai,per
+      real*8 ai,per
 c  set up the points where the splines will be evaluated.
       m = 21
       do 10 i=1,m

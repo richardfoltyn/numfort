@@ -5,9 +5,9 @@ cc    evaluation of a spline function through its polynomial          cc
 cc            representation in each knot interval.                   cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real x(21),y(21),t(20),c(20),d(6),cof(6)
+      real*8 x(21),y(21),t(20),c(20),d(6),cof(6)
       integer i,i1,i2,ier,j,jj,k,k1,l,l1,m,n,nk1
-      real ai,aj,arg,fac,pol,tt,xx
+      real*8 ai,aj,arg,fac,pol,tt,xx
 c  set up the points where the splines will be evaluated.
       m = 21
       do 10 i=1,m

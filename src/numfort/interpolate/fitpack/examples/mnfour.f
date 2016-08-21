@@ -3,9 +3,9 @@ cc                                                                    cc
 cc                 mnfour : fourco test program                       cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real c(20),t(20),wrk1(20),wrk2(20),alfa(10),ress(10),resc(10)
+      real*8 c(20),t(20),wrk1(20),wrk2(20),alfa(10),ress(10),resc(10)
       integer i,ier,j,k,k1,m,n,nk1
-      real ak,rc,rs
+      real*8 ak,rc,rs
 c  as an example we calculate some integrals of the form
 c          / 1                               / 1
 c         !    x * sin(alfa*x) dx  and      !   x * cos(alfa*x) dx
@@ -77,9 +77,9 @@ c                 / 1
 c      rc =      !    x*cos(alfa*x) dx
 c             0 /
       integer k,k2
-      real aa,ak,alfa,cc,c1,half,one,rc,rs,ss,s1,three
+      real*8 aa,ak,alfa,cc,c1,half,one,rc,rs,ss,s1,three
 c  ..function references..
-      real cos,sin,abs
+      real*8 cos,sin,abs
 c  set constants
       one = 0.1e+01
       three = 0.3e+01

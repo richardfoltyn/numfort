@@ -3,9 +3,9 @@ cc                                                                    cc
 cc              mnsuev : surev test program                           cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real fac
+      real*8 fac
       integer i,idim,ier,j,m,mu,mv,m0,m1,m2,m3,nc,nu4,nv4,nu,nv,l
-      real tu(11),tv(10),c(126),u(6),v(6),f(108),wrk(48)
+      real*8 tu(11),tv(10),c(126),u(6),v(6),f(108),wrk(48)
       integer iwrk(12)
 c  we set up the grid points for evaluating the spline surface.
       mu = 6

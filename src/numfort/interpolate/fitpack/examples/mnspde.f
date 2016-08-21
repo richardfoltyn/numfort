@@ -3,9 +3,9 @@ cc                                                                    cc
 cc                 mnspde : splder test program                       cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real x(7),y(42),t(20),c(20),wrk(20),d(6)
+      real*8 x(7),y(42),t(20),c(20),wrk(20),d(6)
       integer i,ier,j,k,k1,l,m,n,nk1,nu
-      real ai
+      real*8 ai
 c  set up the points where the spline derivatives will be evaluated.
       m = 7
       x(1) = 0.

@@ -3,10 +3,10 @@ cc                                                                    cc
 cc                mnconc : concur test program                        cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real x(62),w(31),u(31),t(50),c(100),wrk(1400),xx(62),db(6),de(6),
-     * cp(24),dd(12),sp(62)
+      real*8 x(62),w(31),u(31),t(50),c(100),wrk(1400),xx(62),db(6),
+     * de(6),cp(24),dd(12),sp(62)
       integer iwrk(50)
-      real ai,atan,del,fp,pi,s,sigma,ww
+      real*8 ai,atan,del,fp,pi,s,sigma,ww
       integer i,ib,idim,ie,ier,iopt,is,i1,i2,j,j1,k,kk,k1,l,lwrk,l1,l2,
      * m,mx,n,nb,nc,ndd,ne,nest,nk1,np
 c  the data absciss values

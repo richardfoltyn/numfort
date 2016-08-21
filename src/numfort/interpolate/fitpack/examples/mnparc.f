@@ -3,9 +3,9 @@ cc                                                                    cc
 cc                mnparc : parcur test program                        cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real x(64),w(32),u(32),t(40),c(80),wrk(1200),sp(64)
+      real*8 x(64),w(32),u(32),t(40),c(80),wrk(1200),sp(64)
       integer iwrk(40)
-      real al,del,fp,s,ub,ue
+      real*8 al,del,fp,s,ub,ue
       integer i,idim,ier,iopt,ipar,is,i1,i2,j,j1,k,l,lwrk,l1,m,mx,
      * n,nc,nest,nk1
 c  the data parameter values

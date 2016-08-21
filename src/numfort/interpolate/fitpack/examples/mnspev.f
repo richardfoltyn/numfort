@@ -3,9 +3,9 @@ cc                                                                    cc
 cc                 mnspev : splev test program                        cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real x(21),y(21),t(20),c(20)
+      real*8 x(21),y(21),t(20),c(20)
       integer i,i1,i2,ier,j,k,k1,m,n,nk1
-      real ai
+      real*8 ai
 c  set up the points where the splines will be evaluated.
       m = 21
       do 10 i=1,m

@@ -3,9 +3,9 @@ cc                                                                    cc
 cc                mnperc : percur test program                        cc
 cc                                                                    cc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      real x(27),y(27),w(27),t(37),c(37),wrk(1400),sp(27)
+      real*8 x(27),y(27),w(27),t(37),c(37),wrk(1400),sp(27)
       integer iwrk(37)
-      real al,fp,s
+      real*8 al,fp,s
       integer i,ier,iopt,is,j,k,l,lwrk,l1,l2,m,m1,n,nest,nk1
 c  the data absciss values
       data x(1),x(2),x(3),x(4),x(5),x(6),x(7),x(8),x(9),x(10),x(11),
