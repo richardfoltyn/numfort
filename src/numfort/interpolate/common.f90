@@ -1,4 +1,4 @@
-module numfort_interpolate
+module numfort_interpolate_common
 
     use iso_fortran_env
     implicit none
@@ -12,11 +12,7 @@ module numfort_interpolate
         module procedure interp_find_real32, interp_find_real64
     end interface
 
-    interface interp
-        module procedure interp_real32, interp_real64
-    end interface
-
-    public :: interp, interp_find, bsearch
+    public :: interp_find, bsearch
 
     contains
 
@@ -50,18 +46,6 @@ pure function interp_find_real32 (needle, haystack) result (res)
 
 end function
 
-pure subroutine interp_real32 (x, xp, fp, fx, ext, left, right)
-    integer, parameter :: PREC = real32
-    integer, parameter :: INTSIZE = int32
 
-    include "include/interp_impl.f90"
-end subroutine
-
-pure subroutine interp_real64 (x, xp, fp, fx, ext, left, right)
-    integer, parameter :: PREC = real64
-    integer, parameter :: INTSIZE = int32
-
-    include "include/interp_impl.f90"
-end subroutine
 
 end module
