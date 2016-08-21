@@ -26,9 +26,15 @@ module fitpack_interfaces
             real (PREC) :: t(n), c(n), x(m), y(m)
         end subroutine
 
+        subroutine splder_if (t,n,c,k,nu,x,y,m,e,wrk,ier)
+            import PREC
+            integer :: n,k,nu,m,e,ier
+            real (PREC) :: t(n),c(n),x(m),y(m),wrk(n)
+        end subroutine
+
     end interface
 
-    public :: curfit_if, splev_if
+    public :: curfit_if, splev_if, splder_if
 
 contains
 

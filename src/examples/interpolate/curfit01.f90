@@ -51,7 +51,7 @@ subroutine example1 ()
             call curfit (iopt, x, y, k=k, s=s, work=ws, n=n, knots=knots, &
                 coefs=coefs, ssr=ssr, status=status)
 
-            call splev (knots, coefs, k, x, yhat, SPLEV_EXTRAPOLATE, status)
+            call splev (knots, coefs, k, x, yhat, SPLINE_EVAL_EXTRAPOLATE, status)
             call print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat)
         end do
 
@@ -63,7 +63,7 @@ subroutine example1 ()
         call curfit (iopt, x, y, k=k, s=s, work=ws, n=n, knots=knots, &
             coefs=coefs, ssr=ssr, status=status)
 
-        call splev (knots, coefs, k, x, yhat, SPLEV_EXTRAPOLATE, status)
+        call splev (knots, coefs, k, x, yhat, SPLINE_EVAL_EXTRAPOLATE, status)
         call print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat)
     end do
 

@@ -2,7 +2,7 @@ module numfort_interpolate_fitpack08
 
     use iso_fortran_env
     ! interface specifications for F77 routines
-    use fitpack_interfaces, only: splev_if, curfit_if
+    use fitpack_interfaces
     use numfort_interpolate_result
     use numfort_common, only: workspace, ENUM_KIND
     implicit none
@@ -13,11 +13,13 @@ module numfort_interpolate_fitpack08
     integer, parameter :: MIN_SPLINE_DEGREE = 1, MAX_SPLINE_DEGREE = 5, &
         DEFAULT_SPLINE_DEGREE = 3
 
-    integer (ENUM_KIND), parameter :: SPLEV_EXTRAPOLATE = 0
-    integer (ENUM_KIND), parameter :: SPLEV_ZERO = 1
-    integer (ENUM_KIND), parameter :: SPLEV_BOUNDARY = 3
+    integer (ENUM_KIND), parameter :: SPLINE_EVAL_EXTRAPOLATE = 0
+    integer (ENUM_KIND), parameter :: SPLINE_EVAL_ZERO = 1
+    integer (ENUM_KIND), parameter :: SPLINE_EVAL_ERROR = 2
+    integer (ENUM_KIND), parameter :: SPLINE_EVAL_BOUNDARY = 3
 
-    public :: SPLEV_EXTRAPOLATE, SPLEV_ZERO, SPLEV_BOUNDARY
+    public :: SPLINE_EVAL_EXTRAPOLATE, SPLINE_EVAL_ZERO, SPLINE_EVAL_ERROR, &
+        SPLINE_EVAL_BOUNDARY
 
     interface splev
         module procedure splev_wrapper, splev_scalar
@@ -27,13 +29,20 @@ module numfort_interpolate_fitpack08
         module procedure curfit_wrapper
     end interface
 
-    public :: curfit_get_nest, curfit, splev
+    interface splder
+        module procedure splder_wrapper, splder_scalar
+    end interface
+
+    public :: curfit_get_nest, curfit, splev, splder
 
 contains
 
-subroutine curfit_check_input (iopt, x, y, w, k, knots, coefs, stat, msg)
+! ******************************************************************************
+! INPUT CHECKING used by various routines.
 
-    integer, intent(in) :: iopt, k
+subroutine check_input (x, y, w, k, knots, coefs, stat, msg)
+
+    integer, intent(in) :: k
     real (PREC), intent(in), dimension(:) :: x, y, w, knots, coefs
     integer, intent(out) :: stat
     character (len=*), intent(out) :: msg
@@ -74,6 +83,32 @@ subroutine curfit_check_input (iopt, x, y, w, k, knots, coefs, stat, msg)
 
 100 stat = INTERP_STATUS_INVALID_INPUT
 
+end subroutine
+
+subroutine check_input_ext (ext, stat, msg)
+    integer :: ext, stat
+    character (len=*) :: msg
+
+    intent(in) :: ext
+    intent(out) :: stat, msg
+
+    integer :: i
+    logical :: is_valid
+    integer, parameter :: valid(4) = [SPLINE_EVAL_ZERO, SPLINE_EVAL_EXTRAPOLATE, &
+        SPLINE_EVAL_ERROR, SPLINE_EVAL_BOUNDARY]
+
+    is_valid = .false.
+
+    do i = 1, size(valid)
+        is_valid = is_valid .or. (ext == valid(i))
+    end do
+
+    if (.not. is_valid) then
+        stat = INTERP_STATUS_INVALID_INPUT
+        msg = "Invalid value extrapolation mode"
+    else
+        stat = 0
+    end if
 end subroutine
 
 ! ******************************************************************************
@@ -120,7 +155,7 @@ subroutine curfit_wrapper (iopt, x, y, w, xb, xe, k, s, work, n, knots, coefs, s
     if (present(k)) lk = k
     if (present(s)) ls = s
 
-    call curfit_check_input (iopt, x, y, w, k, knots, coefs, istatus, msg)
+    call check_input (x, y, w, k, knots, coefs, istatus, msg)
 
     if (istatus == 0) then
 
@@ -170,7 +205,8 @@ subroutine splev_wrapper (knots, coefs, k, x, fx, ext, status)
 
     procedure (splev_if) :: splev
 
-    integer :: m, n, lstatus, lext, lk
+    integer :: m, n, lstatus, lext, lk, istatus
+    character (100) :: msg
 
     lstatus = INTERP_STATUS_INVALID_INPUT
 
@@ -185,14 +221,23 @@ subroutine splev_wrapper (knots, coefs, k, x, fx, ext, status)
     end if
 
     ! by default set function values outside of domain to boundary values
-    lext = SPLEV_BOUNDARY
+    lext = SPLINE_EVAL_EXTRAPOLATE
 
     if (present(k)) lk = k
-    if (present(ext)) lext = ext
+    if (present(ext)) then
+        call check_input_ext (ext, istatus, msg)
+        if (istatus /= 0) goto 100
+        lext = ext
+    end if
 
     call splev (knots, n, coefs, lk, x, fx, m, lext, lstatus)
 
     if (present(status)) status = lstatus
+
+    return
+
+100 if (present(status)) status = INTERP_STATUS_INVALID_INPUT
+    write (ERROR_UNIT, *) msg
 
 end subroutine
 
@@ -214,6 +259,90 @@ subroutine splev_scalar (knots, coefs, k, x, fx, ext, status)
 
     ! write back result
     fx = lfx(1)
+end subroutine
+
+! ******************************************************************************
+! Evaluation of derivatives
+
+subroutine splder_wrapper (knots, coefs, k, order, x, y, ext, work, status)
+    integer :: k, ext, status, order
+    real (PREC), dimension(:), contiguous :: knots, coefs, x, y
+    class (workspace), intent(in out), optional, target :: work
+
+    intent (in) :: k, ext, knots, coefs, x, order
+    intent (out) :: y, status
+
+    optional :: ext, status, k, order
+
+    type (workspace), target :: lwork
+    type (workspace), pointer :: ptr_work
+
+    integer :: lext, lorder, lstatus, lk, n, istatus, m
+    character (100) :: msg
+
+    procedure (splder_if) :: splder
+
+    call check_input (x, y, k=k, knots=knots, coefs=coefs, stat=istatus, msg=msg)
+    if (istatus /= 0) go to 100
+
+    lk = DEFAULT_SPLINE_DEGREE
+    lorder = 1
+    lext = SPLINE_EVAL_EXTRAPOLATE
+    n = size(knots)
+    m = size(x)
+
+    if (present(k)) lk = k
+
+    if (present(order)) then
+        if (order < 0 .or. order > k) then
+            msg = 'Invalid value: 0 <= order <= k required'
+            goto 100
+        end if
+        lorder = order
+    end if
+
+    if (present(ext)) then
+        call check_input_ext (ext, istatus, msg)
+        if (istatus /= 0) goto 100
+        lext = ext
+    end if
+
+    if (present(work)) then
+        ptr_work => work
+    else
+        call lwork%assert_allocated (nrwrk = n)
+        ptr_work => lwork
+    end if
+
+    call splder (knots, n, coefs, lk, lorder, x, y, m, lext, ptr_work%rwrk, lstatus)
+
+    if (present(status)) status = lstatus
+    return
+
+100 if (present(status)) status = INTERP_STATUS_INVALID_INPUT
+    write (ERROR_UNIT, *) msg
+end subroutine
+
+! SPLDER_SCALAR evaluates the derivate of a spline at a single scalar point
+! x and stores the result in scalar y.
+! Implemented as a wrapper for SPLDER_WRAPPER that creates local size-1 arrays.
+subroutine splder_scalar (knots, coefs, k, order, x, y, ext, work, status)
+    integer :: k, ext, status, order
+    real (PREC), dimension(:), contiguous :: knots, coefs
+    real (PREC) :: x, y
+    class (workspace), intent(in out), optional, target :: work
+
+    intent (in) :: k, ext, knots, coefs, x, order
+    intent (out) :: y, status
+
+    real (PREC), dimension(1) :: lx, ly
+
+    lx(1) = x
+    ly(1) = y
+
+    call splder_wrapper (knots, coefs, k, order, lx, ly, ext, work, status)
+
+    y = ly(1)
 end subroutine
 
 ! ******************************************************************************
