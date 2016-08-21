@@ -21,6 +21,9 @@ module numfort_interpolate_fitpack08
     public :: SPLINE_EVAL_EXTRAPOLATE, SPLINE_EVAL_ZERO, SPLINE_EVAL_ERROR, &
         SPLINE_EVAL_BOUNDARY
 
+    ! used for internal input checking
+    integer, parameter :: STATUS_INPUT_VALID = 0
+
     interface splev
         module procedure splev_wrapper, splev_scalar
     end interface
@@ -48,10 +51,7 @@ subroutine check_input (x, y, w, k, knots, coefs, stat, msg)
     character (len=*), intent(out) :: msg
     optional :: w
 
-    integer :: nwrk, nest, m
-    integer, parameter :: SUCCESS = 0
-
-    stat = SUCCESS
+    stat = STATUS_INPUT_VALID
 
     if (size(x) /= size(y)) then
         msg = "Non-conformable arrays x, y"
@@ -71,11 +71,8 @@ subroutine check_input (x, y, w, k, knots, coefs, stat, msg)
         goto 100
     end if
 
-    m = size(x)
-    call curfit_get_wrk_size(m, k, nwrk, nest)
-
-    if (size(knots) < nest .or. size(coefs) < nest) then
-        msg = "knots or coefs array is too small"
+    if (size(knots) /= size(coefs)) then
+        msg = "knots and coefs arrays must be of equal size"
         goto 100
     end if
 
@@ -107,7 +104,7 @@ subroutine check_input_ext (ext, stat, msg)
         stat = INTERP_STATUS_INVALID_INPUT
         msg = "Invalid value extrapolation mode"
     else
-        stat = 0
+        stat = STATUS_INPUT_VALID
     end if
 end subroutine
 
@@ -155,39 +152,45 @@ subroutine curfit_wrapper (iopt, x, y, w, xb, xe, k, s, work, n, knots, coefs, s
     if (present(k)) lk = k
     if (present(s)) ls = s
 
-    call check_input (x, y, w, k, knots, coefs, istatus, msg)
+    call check_input (x, y, w, lk, knots, coefs, istatus, msg)
+    if (istatus /= STATUS_INPUT_VALID) goto 100
 
-    if (istatus == 0) then
+    call curfit_get_wrk_size (m, k, nwrk, nest)
 
-        call curfit_get_wrk_size (m, k, nwrk, nest)
-
-        if (present(work)) then
-            ptr_work => work
-        else
-            ptr_work => lwork
-        end if
-
-        ! assert that working arrays are sufficiently large
-        if (present(w)) then
-            call ptr_work%assert_allocated (nrwrk=nwrk, niwrk=nest)
-            ptr_w => w
-        else
-            ! allocate real working array such that we can append uniform
-            ! weights at the end
-            call ptr_work%assert_allocated (nrwrk=nwrk + m, niwrk=nest)
-            ptr_w => ptr_work%rwrk(nwrk + 1:)
-            ptr_w = 1.0_PREC
-        end if
-
-        ! call fitpack routine wrapper
-        call curfit (liopt, m, x, y, ptr_w, lxb, lxe, lk, ls, nest, n, &
-            knots, coefs, lssr, ptr_work%rwrk, nwrk, ptr_work%iwrk, lstatus)
-    else
-        print *, msg
+    if (size(knots) < nest .or. size(coefs) < nest) then
+        msg = "knots or coefs array is too small"
+        goto 100
     end if
+
+    if (present(work)) then
+        ptr_work => work
+    else
+        ptr_work => lwork
+    end if
+
+    ! assert that working arrays are sufficiently large
+    if (present(w)) then
+        call ptr_work%assert_allocated (nrwrk=nwrk, niwrk=nest)
+        ptr_w => w
+    else
+        ! allocate real working array such that we can append uniform
+        ! weights at the end
+        call ptr_work%assert_allocated (nrwrk=nwrk + m, niwrk=nest)
+        ptr_w => ptr_work%rwrk(nwrk + 1:)
+        ptr_w = 1.0_PREC
+    end if
+
+    ! call fitpack routine wrapper
+    call curfit (liopt, m, x, y, ptr_w, lxb, lxe, lk, ls, nest, n, &
+        knots, coefs, lssr, ptr_work%rwrk, nwrk, ptr_work%iwrk, lstatus)
 
     if (present(status)) status = lstatus
     if (present(ssr)) ssr = lssr
+
+    return
+
+100 if(present(status)) status = INTERP_STATUS_INVALID_INPUT
+    write (ERROR_UNIT, *) msg
 
 end subroutine
 
@@ -282,9 +285,6 @@ subroutine splder_wrapper (knots, coefs, k, order, x, y, ext, work, status)
 
     procedure (splder_if) :: splder
 
-    call check_input (x, y, k=k, knots=knots, coefs=coefs, stat=istatus, msg=msg)
-    if (istatus /= 0) go to 100
-
     lk = DEFAULT_SPLINE_DEGREE
     lorder = 1
     lext = SPLINE_EVAL_EXTRAPOLATE
@@ -292,6 +292,9 @@ subroutine splder_wrapper (knots, coefs, k, order, x, y, ext, work, status)
     m = size(x)
 
     if (present(k)) lk = k
+
+    call check_input (x, y, k=lk, knots=knots, coefs=coefs, stat=istatus, msg=msg)
+    if (istatus /= STATUS_INPUT_VALID) goto 100
 
     if (present(order)) then
         if (order < 0 .or. order > k) then
@@ -310,9 +313,9 @@ subroutine splder_wrapper (knots, coefs, k, order, x, y, ext, work, status)
     if (present(work)) then
         ptr_work => work
     else
-        call lwork%assert_allocated (nrwrk = n)
         ptr_work => lwork
     end if
+    call ptr_work%assert_allocated (nrwrk = n)
 
     call splder (knots, n, coefs, lk, lorder, x, y, m, lext, ptr_work%rwrk, lstatus)
 
