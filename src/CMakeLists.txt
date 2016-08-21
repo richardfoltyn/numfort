@@ -73,22 +73,27 @@ set(_FFLAGS)
 # FFLAGS for external libraries (these are most likely F77 code, avoid
 # enforcing any Fortran standards, etc.)
 set(_FFLAGS_EXTERNAL)
+set(_FFLAGS_DEBUG)
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     # explicitly add -cpp to run C preprocessor if required
     set(GNU_WARN "-Wall -Wextra -Wimplicit-interface -Wimplicit-procedure \
       -Warray-temporaries -Wrealloc-lhs -pedantic")
     set(_FFLAGS "${GNU_WARN} -std=f2008")
+    set(_FFLAGS_DEBUG "-fcheck=all -Og")
     # enable optimization that does not break debugging
     # set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} -Og")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
         set (_FFLAGS "/warn:all /standard-semantics /stand:f08")
+        set(_FFLAGS_DEBUG "/check:all")
     else ()
         set (_FFLAGS "-warn all -standard-semantics -std08")
+        set(_FFLAGS_DEBUG "-check all")
     endif (WIN32)
 endif ()
 
+set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${_FFLAGS_DEBUG}")
 set (${PROJECT_NAME}_FFLAGS "${_FFLAGS}")
 set (${PROJECT_NAME}_FFLAGS_EXTERNAL "${_FFLAGS_EXTERNAL}")
 
