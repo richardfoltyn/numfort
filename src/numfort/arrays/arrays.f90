@@ -1,13 +1,13 @@
 module numfort_arrays
-    
+
     use iso_fortran_env, only: int32, int64, real32, real64
     implicit none
     private
-    
+
     interface arange
         module procedure arange_impl_int32, arange_impl_int64, arange_int32, arange_int64
     end interface
-    
+
     interface linspace
         module procedure linspace_real32, linspace_real64
     end interface
@@ -15,7 +15,7 @@ module numfort_arrays
     interface diag
         module procedure diag_real32, diag_real64
     end interface
-    
+
     interface diag_matrix
         module procedure diag_matrix_real32, diag_matrix_real64
     end interface
@@ -23,37 +23,37 @@ module numfort_arrays
     interface identity
         module procedure identity_real32, identity_real64
     end interface
-    
+
     interface sub2ind
         module procedure sub2ind_int32, sub2ind_int64, sub2ind_1d_int32, sub2ind_1d_int64
     end interface
-    
+
     interface ind2sub
         module procedure ind2sub_int32, ind2sub_int64, ind2sub_1d_int32, ind2sub_1d_int64
     end interface
-    
+
     interface shape2sub
         module procedure shape2sub_int32, shape2sub_int64
     end interface
-    
+
     ! creation procedures
     public :: arange, diag, diag_matrix, identity, linspace
     ! indexing procedures
     public :: ind2sub, sub2ind
-    
+
     contains
-    
-    
+
+
 ! ******************************************************************************
 ! LINSPACE procedures
 subroutine linspace_real64(x, xfrom, xto)
     integer, parameter :: PREC = real64
-    include "includes/linspace_impl.f90"
+    include "include/linspace_impl.f90"
 end subroutine
 
 subroutine linspace_real32(x, xfrom, xto)
     integer, parameter :: PREC = real32
-    include "includes/linspace_impl.f90"
+    include "include/linspace_impl.f90"
 end subroutine
 
 ! ******************************************************************************
@@ -62,25 +62,25 @@ end subroutine
 pure subroutine arange_int32 (x)
     integer, parameter :: INTSIZE = int32
     integer (INTSIZE), intent(out), dimension(:) :: x
-    
+
     call arange (x, 1_INTSIZE, 1_INTSIZE)
 end subroutine
 
 pure subroutine arange_int64 (x)
     integer, parameter :: INTSIZE = int64
     integer (INTSIZE), intent(out), dimension(:) :: x
-    
+
     call arange (x, 1_INTSIZE, 1_INTSIZE)
 end subroutine
-    
+
 pure subroutine arange_impl_int32 (x, ifrom, step)
     integer, parameter :: INTSIZE = int32
-    include "includes/arange_impl.f90"
+    include "include/arange_impl.f90"
 end subroutine
 
 pure subroutine arange_impl_int64 (x, ifrom, step)
     integer, parameter :: INTSIZE = int64
-    include "includes/arange_impl.f90"
+    include "include/arange_impl.f90"
 end subroutine
 
 ! ******************************************************************************
@@ -142,7 +142,7 @@ pure subroutine diag_real64(mat, v)
     integer :: i
 
     forall (i=1:size(mat, 1)) v(i) = mat(i,i)
-    
+
 end subroutine
 
 pure subroutine diag_real32(mat, v)
@@ -153,7 +153,7 @@ pure subroutine diag_real32(mat, v)
     integer :: i
 
     forall (i=1:size(mat, 1)) v(i) = mat(i,i)
-    
+
 end subroutine
 
 ! ******************************************************************************
@@ -161,12 +161,12 @@ end subroutine
 
 pure subroutine sub2ind_int64 (shp, sub_indices, lin_indices)
     integer, parameter :: INTSIZE = int64
-    include "includes/sub2ind.f90"
+    include "include/sub2ind.f90"
 end subroutine
 
 pure subroutine sub2ind_int32 (shp, sub_indices, lin_indices)
     integer, parameter :: INTSIZE = int32
-    include "includes/sub2ind.f90"
+    include "include/sub2ind.f90"
 end subroutine
 
 pure subroutine sub2ind_1d_int32 (shp, sub, ind)
@@ -174,7 +174,7 @@ pure subroutine sub2ind_1d_int32 (shp, sub, ind)
     integer (INTSIZE), intent(in), dimension(:) :: shp
     integer (INTSIZE), intent(in), dimension(:) :: sub
     integer (INTSIZE), intent(out), dimension(:) :: ind
-    
+
     ind = sub
 end subroutine
 
@@ -183,7 +183,7 @@ pure subroutine sub2ind_1d_int64 (shp, sub, ind)
     integer (INTSIZE), intent(in), dimension(:) :: shp
     integer (INTSIZE), intent(in), dimension(:) :: sub
     integer (INTSIZE), intent(out), dimension(:) :: ind
-    
+
     ind = sub
 end subroutine
 
@@ -192,12 +192,12 @@ end subroutine
 
 pure subroutine ind2sub_int64 (shp, lin_indices, sub_indices)
     integer, parameter :: INTSIZE = int64
-    include "includes/ind2sub.f90"    
+    include "include/ind2sub.f90"
 end subroutine
 
 pure subroutine ind2sub_int32 (shp, lin_indices, sub_indices)
     integer, parameter :: INTSIZE = int32
-    include "includes/ind2sub.f90"
+    include "include/ind2sub.f90"
 end subroutine
 
 pure subroutine ind2sub_1d_int32 (shp, ind, sub)
@@ -205,7 +205,7 @@ pure subroutine ind2sub_1d_int32 (shp, ind, sub)
     integer (INTSIZE), intent(in), dimension(:) :: shp
     integer (INTSIZE), intent(in), dimension(:) :: ind
     integer (INTSIZE), intent(out), dimension(:) :: sub
-    
+
     sub = ind
 end subroutine
 
@@ -214,7 +214,7 @@ pure subroutine ind2sub_1d_int64 (shp, ind, sub)
     integer (INTSIZE), intent(in), dimension(:) :: shp
     integer (INTSIZE), intent(in), dimension(:) :: ind
     integer (INTSIZE), intent(out), dimension(:) :: sub
-    
+
     sub = ind
 end subroutine
 
@@ -225,28 +225,28 @@ pure subroutine shape2sub_int64 (shp, sub)
     integer, parameter :: INTSIZE = int64
     integer (INTSIZE), intent(in), dimension(:) :: shp
     integer (INTSIZE), intent(out), dimension(:, :) :: sub
-    
+
     integer (INTSIZE), dimension(:), allocatable :: lidx
-    
+
     allocate (lidx(product(shp)))
-    
+
     call arange (lidx)
     call ind2sub (shp, lidx, sub)
-    
+
 end subroutine
 
 pure subroutine shape2sub_int32 (shp, sub)
     integer, parameter :: INTSIZE = int32
     integer (INTSIZE), intent(in), dimension(:) :: shp
     integer (INTSIZE), intent(out), dimension(:, :) :: sub
-    
+
     integer (INTSIZE), dimension(:), allocatable :: lidx
-    
+
     allocate (lidx(product(shp)))
-    
+
     call arange (lidx)
     call ind2sub (shp, lidx, sub)
-    
+
 end subroutine
 
 

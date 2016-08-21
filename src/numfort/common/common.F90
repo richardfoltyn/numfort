@@ -72,17 +72,17 @@ end subroutine
 
 pure subroutine assert_allocated_real64 (arr, n)
     real (real64), dimension(:) :: arr, tmp
-    include "includes/workspace_assert_allocated_impl.f90"
+    include "include/workspace_assert_allocated_impl.f90"
 end subroutine
 
 pure subroutine assert_allocated_real32 (arr, n)
     real (real32), dimension(:) :: arr, tmp
-    include "includes/workspace_assert_allocated_impl.f90"
+    include "include/workspace_assert_allocated_impl.f90"
 end subroutine
 
 pure subroutine assert_allocated_int(arr, n)
     integer, dimension(:) :: arr, tmp
-    include "includes/workspace_assert_allocated_impl.f90"
+    include "include/workspace_assert_allocated_impl.f90"
 end subroutine
 
 pure subroutine assert_allocated_char(arr, n)
@@ -102,7 +102,7 @@ end subroutine
 
 pure subroutine assert_allocated_bool(arr, n)
     logical, dimension(:) :: arr, tmp
-    include "includes/workspace_assert_allocated_impl.f90"
+    include "include/workspace_assert_allocated_impl.f90"
 end subroutine
 
 end module
