@@ -2,7 +2,7 @@
 ! These should facility better compile-time error checking when calling
 ! these functions.
 
-module fitpack_interfaces
+module numfort_fitpack_interfaces
 
     use iso_fortran_env, only: real64
     implicit none
