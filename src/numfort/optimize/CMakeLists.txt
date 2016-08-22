@@ -6,8 +6,9 @@ set(SOURCE_FILES
     common.f90
     optim_result.f90
     minimize_lbfgsb.f90
+    minimize_simplex.f90
 )
 
-include_directories(${${PROJECT_NAME}_MODDIR})
+include_directories(${${CMAKE_PROJECT_NAME}_INCLUDE_DIRS})
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
 add_dependencies(${COMPONENT_NAME} common)
