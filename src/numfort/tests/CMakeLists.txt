@@ -4,17 +4,15 @@
 set(TEST_DIRS arrays)
 set(TEST_SOURCE_FILES_ARRAYS arrays/indexing.f90)
 
-set(LIBS ${LIBRARY_NAME}_static ${FCore_LIBRARIES})
-if (NOT USE_MKL)
-	target_link_libraries(LIBS ${LIBS} ${${PROJECT_NAME}_BLA_LIBRARIES})
-endif (NOT USE_MKL)
+set(LIBS ${${CMAKE_PROJECT_NAME}_LIBRARIES} ${FCore_LIBRARIES})
 
-include_directories(${FCore_INCLUDE_DIRS} ${${PROJECT_NAME}_MODDIR})
+include_directories(${FCore_INCLUDE_DIRS} ${${CMAKE_PROJECT_NAME}_INCLUDE_DIRS})
 
 foreach (dir IN LISTS TEST_DIRS)
 
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY
-        "${${PROJECT_NAME}_TESTS_DIRECTORY}/${dir}")
+		"${${CMAKE_PROJECT_NAME}_TESTS_DIRECTORY}/${dir}"
+	)
 
     string(TOUPPER "${dir}" DIR_UPPER)
     set(TEST_SOURCE_FILES ${TEST_SOURCE_FILES_${DIR_UPPER}})

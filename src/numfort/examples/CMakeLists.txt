@@ -13,7 +13,7 @@ foreach (_c IN LISTS _children)
 	endif ()
 endforeach()
 
-include_directories("${${PROJECT_NAME}_MODDIR}")
+include_directories("${${CMAKE_PROJECT_NAME}_INCLUDE_DIRS}")
 
 # Add all tests as separate executables
 foreach (_dir IN LISTS _MODULES)
@@ -30,11 +30,8 @@ foreach (_dir IN LISTS _MODULES)
 		set_target_properties(${_target} PROPERTIES
 			RUNTIME_OUTPUT_DIRECTORY "${_OUTPUT_DIR}"
 			OUTPUT_NAME ${exe_name}
-            COMPILE_FLAGS "${${PROJECT_NAME}_FFLAGS}"
 		)
-		target_link_libraries(${_target}
-			${LIBRARY_NAME}_static ${${PROJECT_NAME}_BLA_LIBRARIES}
-		)
+		target_link_libraries(${_target} ${${CMAKE_PROJECT_NAME}_LIBRARIES})
 	endforeach ()
 endforeach ()
 

@@ -5,7 +5,20 @@ cmake_minimum_required(VERSION 3.0)
 
 # include C in project languages, needed for LAPACK detection
 project(numfort C Fortran)
-set(LIBRARY_NAME ${CMAKE_PROJECT_NAME} CACHE STRING "File name of main library")
+set(${PROJECT_NAME}_LIBRARY_NAME ${CMAKE_PROJECT_NAME})
+
+# number of version components
+set(NUMFORT_VERSION_COUNT 3)
+set(NUMFORT_VERSION_MAJOR 0)
+set(NUMFORT_VERSION_MINOR 1)
+set(NUMFORT_VERSION_PATCH 0)
+set(NUMFORT_VERSION
+	"${NUMFORT_VERSION_MAJOR}.${NUMFORT_VERSION_MINOR}.${NUMFORT_VERSION_PATCH}"
+)
+
+# list of libraries for targets that link against the final numfort library
+# (for examples, benchmarks, etc.)
+list(APPEND ${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_LIBRARY_NAME}_static)
 
 # make sure that the default is a RELEASE
 if (NOT CMAKE_BUILD_TYPE)
@@ -22,7 +35,7 @@ else ()
     option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif ()
 option(USE_MKL "Build against Intel MKL" ON)
-option(BUILD_TESTS "Build (unit) test executables" OFF)
+option(BUILD_TESTS "Build (unit) tests" OFF)
 option(BUILD_EXAMPLES "Build examples/demo code" OFF)
 option(BUILD_BENCHMARKS "Build benchmarks" OFF)
 
@@ -33,6 +46,16 @@ option(BUILD_BENCHMARKS "Build benchmarks" OFF)
 list(APPEND CMAKE_MODULE_PATH
   "${CMAKE_CURRENT_SOURCE_DIR}/submodules/cmake/Modules")
 
+################################################################################
+# Testing
+
+if(BUILD_TESTS)
+    enable_testing()
+    find_package(FCore)
+endif()
+
+################################################################################
+# MKL
 if (USE_MKL)
     find_package(MKL REQUIRED)
     set(${PROJECT_NAME}_BLA_LIBRARIES ${MKL_LIBRARIES})
@@ -43,13 +66,7 @@ else ()
     set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${LAPACK_LINKER_FLAGS})
 endif ()
 
-################################################################################
-# Testing
-
-if(BUILD_TESTS)
-    enable_testing()
-    find_package(FCore)
-endif()
+list(APPEND ${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_BLA_LIBRARIES})
 
 ###############################################################################
 # Path suffixes beneath CMAKE_INSTALL_PREFIX
@@ -66,40 +83,6 @@ if (NOT INSTALL_INCLUDE_PREFIX)
     set(INSTALL_INCLUDE_PREFIX include/numfort)
 endif()
 
-################################################################################
-# Set Fortran compiler FLAGS
-
-set(_FFLAGS)
-# FFLAGS for external libraries (these are most likely F77 code, avoid
-# enforcing any Fortran standards, etc.)
-set(_FFLAGS_EXTERNAL)
-set(_FFLAGS_DEBUG)
-
-if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-    # explicitly add -cpp to run C preprocessor if required
-    set(GNU_WARN "-Wall -Wextra -Wimplicit-interface -Wimplicit-procedure \
-      -Warray-temporaries -Wrealloc-lhs -pedantic")
-    set(_FFLAGS "${GNU_WARN} -std=f2008")
-    set(_FFLAGS_DEBUG "-fcheck=all -Og")
-    # enable optimization that does not break debugging
-    # set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} -Og")
-elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
-    if (WIN32)
-        set (_FFLAGS "/warn:all /standard-semantics /stand:f08")
-        set(_FFLAGS_DEBUG "/check:all")
-    else ()
-        set (_FFLAGS "-warn all -standard-semantics -std08")
-        set(_FFLAGS_DEBUG "-check all")
-    endif (WIN32)
-endif ()
-
-set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${_FFLAGS_DEBUG}")
-set (${PROJECT_NAME}_FFLAGS "${_FFLAGS}")
-set (${PROJECT_NAME}_FFLAGS_EXTERNAL "${_FFLAGS_EXTERNAL}")
-
-# append additional FLAGS to default cmake FLAGS
-# set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS}")
-
 ###############################################################################
 # Report options and settings
 if (BUILD_SHARED_LIBS)
@@ -113,13 +96,6 @@ if (USE_MKL)
 endif (USE_MKL)
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "Default compiler flags: ${CMAKE_Fortran_FLAGS}")
-message(STATUS "Add. compiler flags: ${${PROJECT_NAME}_FFLAGS}")
-message(STATUS "Add. compiler flags for external libs: ${${PROJECT_NAME}_FFLAGS_EXTERNAL}")
-# Make sure build type is upper case, otherwise the wrong flags will be shown
-string(TOUPPER "${CMAKE_BUILD_TYPE}" _BUILD_TYPE)
-message(STATUS "Add. compiler flags for ${CMAKE_BUILD_TYPE}: ${CMAKE_Fortran_FLAGS_${_BUILD_TYPE}}")
-
 message(STATUS "Library install directory: ${CMAKE_INSTALL_PREFIX}/${INSTALL_LIBRARY_PREFIX}")
 message(STATUS "MOD file install directory: ${CMAKE_INSTALL_PREFIX}/${INSTALL_INCLUDE_PREFIX}")
 
@@ -129,21 +105,66 @@ message(STATUS "MOD file install directory: ${CMAKE_INSTALL_PREFIX}/${INSTALL_IN
 set(${PROJECT_NAME}_MODDIR "${CMAKE_BINARY_DIR}/include")
 set(CMAKE_Fortran_MODULE_DIRECTORY "${${PROJECT_NAME}_MODDIR}")
 
+# set include directory to directory where MOD files are stored
+list(APPEND ${PROJECT_NAME}_INCLUDE_DIRS "${${PROJECT_NAME}_MODDIR}")
+
 # store test executables in this root directory
 set(${PROJECT_NAME}_TESTS_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")
 set(${PROJECT_NAME}_EXAMPLES_DIRECTORY "${CMAKE_BINARY_DIR}/bin/examples")
 set(${PROJECT_NAME}_BENCHMARKS_DIRECTORY "${CMAKE_BINARY_DIR}/bin/benchmarks")
 
+################################################################################
+
+add_subdirectory(external)
 add_subdirectory(numfort)
 
-if (BUILD_TESTS)
-    add_subdirectory(tests)
-endif()
+################################################################################
+# Targets
+# Create single numfort library by merging all object libraries
 
-if (BUILD_BENCHMARKS)
-    add_subdirectory(benchmarks)
-endif()
+# Update fortran version module with current version information
+configure_file(numfort/version.f90.in
+	${CMAKE_BINARY_DIR}/version.f90
+)
 
-if (BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif ()
+# Add a few general source files, makes it easier in case generator does
+# not support targets w/o source files.
+set(SOURCE_FILES
+	${CMAKE_BINARY_DIR}/version.f90
+	numfort/numfort.f90
+)
+
+include_directories("${${PROJECT_NAME}_MODDIR}")
+
+# get list of targets the ultimate library depends on. This list is populated
+# in the sub-components' directories
+get_property(_TARGETS GLOBAL PROPERTY ${CMAKE_PROJECT_NAME}_COMPONENT_TARGETS)
+
+set(COMPONENT_OBJECTS)
+foreach (_comp IN LISTS _TARGETS)
+    list(APPEND COMPONENT_OBJECTS $<TARGET_OBJECTS:${_comp}>)
+endforeach ()
+
+set(LIBRARY_NAME ${${PROJECT_NAME}_LIBRARY_NAME})
+add_library(${LIBRARY_NAME} ${SOURCE_FILES} ${COMPONENT_OBJECTS})
+target_link_libraries(${LIBRARY_NAME} ${${PROJECT_NAME}_BLA_LIBRARIES})
+set_target_properties(${LIBRARY_NAME} PROPERTIES
+	Fortran_MODULE_DIRECTORY "${${PROJECT_NAME}_MODDIR}"
+	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+	LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+	ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+)
+
+# for benchmarks, examples, etc
+add_library(${LIBRARY_NAME}_static STATIC ${SOURCE_FILES} ${COMPONENT_OBJECTS})
+add_dependencies(${LIBRARY_NAME}_static ${_TARGETS})
+
+install(TARGETS ${LIBRARY_NAME}
+    RUNTIME DESTINATION "${INSTALL_LIBRARY_PREFIX}"
+    LIBRARY DESTINATION "${INSTALL_LIBRARY_PREFIX}"
+    ARCHIVE DESTINATION "${INSTALL_LIBRARY_PREFIX}"
+)
+
+install(DIRECTORY ${${PROJECT_NAME}_MODDIR}/
+	DESTINATION "${INSTALL_INCLUDE_PREFIX}"
+)

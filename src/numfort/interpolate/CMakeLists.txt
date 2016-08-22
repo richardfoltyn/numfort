@@ -11,11 +11,6 @@ set(SOURCE_FILES
 	fitpack08.f90
 )
 
-set_source_files_properties(${SOURCE_FILES}
-	PROPERTIES COMPILE_FLAGS "${${PROJECT_NAME}_FFLAGS}"
-)
-
-# Add directory with F77 FITPACK code; Adds F77 files to SOURCE_FILES
-add_subdirectory(fitpack)
-
+include_directories(${${PROJECT_NAME}_MODDIR})
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
+add_dependencies(${COMPONENT_NAME} common)

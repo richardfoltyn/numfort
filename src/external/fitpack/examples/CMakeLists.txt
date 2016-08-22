@@ -33,23 +33,19 @@ set(TEST_SOURCE_FILES
 	mnsurf.f)
 
 # set output directory to test directory
-set(_OUTPUT_DIR "${${PROJECT_NAME}_EXAMPLES_DIRECTORY}/interpolate/fitpack-dierckx")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${${PROJECT_NAME}_EXAMPLES_DIRECTORY}")
 
 # Add all tests as separate executables
 foreach (_file IN LISTS TEST_SOURCE_FILES)
 	get_filename_component(exe_name "${_file}" NAME_WE)
-	set(_target interpolate_dierckx_${exe_name})
+	set(_target dierckx_${exe_name})
 
 	add_executable(${_target} "${_file}")
-	target_link_libraries(${_target} ${LIBRARY_NAME}_static)
-	set_target_properties(${_target} PROPERTIES
-		OUTPUT_NAME ${exe_name}
-		RUNTIME_OUTPUT_DIRECTORY "${_OUTPUT_DIR}"
-		COMPILE_FLAGS "${${PROJECT_NAME}_FFLAGS_EXTERNAL}"
-	)
+	target_link_libraries(${_target} ${${PROJECT_NAME}_LIBRARIES})
+	set_target_properties(${_target} PROPERTIES OUTPUT_NAME ${exe_name})
 
 endforeach (_file)
 
 # copy sample data from samples/ subdirectory to test directory
 file(GLOB FITPACK_SAMPLE_DATA "da*.txt")
-file(COPY ${FITPACK_SAMPLE_DATA} DESTINATION "${_OUTPUT_DIR}")
+file(COPY ${FITPACK_SAMPLE_DATA} DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
