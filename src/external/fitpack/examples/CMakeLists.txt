@@ -1,7 +1,7 @@
 # src/fitpack/fitpack/CMakeLists.txt
 # CMake configuration for numfort library
 
-set(TEST_SOURCE_FILES
+set(SOURCE_FILES
 	mnbisp.f
 	mncloc.f
 	mncoco.f
@@ -36,7 +36,7 @@ set(TEST_SOURCE_FILES
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${${PROJECT_NAME}_EXAMPLES_DIRECTORY}")
 
 # Add all tests as separate executables
-foreach (_file IN LISTS TEST_SOURCE_FILES)
+foreach (_file IN LISTS SOURCE_FILES)
 	get_filename_component(exe_name "${_file}" NAME_WE)
 	set(_target dierckx_${exe_name})
 

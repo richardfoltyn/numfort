@@ -4,6 +4,7 @@
 cmake_minimum_required(VERSION 3.0)
 
 project(fitpack Fortran)
+set(PROJECT_NAME_PRETTY FITPACK)
 set(${PROJECT_NAME}_LIBRARY_NAME ${PROJECT_NAME})
 
 # make sure that the default is a RELEASE
@@ -28,7 +29,7 @@ option(BUILD_EXAMPLES "Build examples/demo code" OFF)
 if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
 	set(BUILD_OBJECT_LIBS ON)
 	set(${PROJECT_NAME}_EXAMPLES_DIRECTORY
-		"${CMAKE_PROJECT_NAME}_EXAMPLES_DIRECTORY/external/fitpack"
+		"${${CMAKE_PROJECT_NAME}_EXAMPLES_DIRECTORY}/external/${PROJECT_NAME}"
 	)
     # link against final numfort library
 	set(${PROJECT_NAME}_LIBRARIES ${${CMAKE_PROJECT_NAME}_LIBRARIES})
@@ -38,12 +39,12 @@ if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
         PROPERTY ${CMAKE_PROJECT_NAME}_COMPONENT_TARGETS
         ${${PROJECT_NAME}_LIBRARY_NAME}
     )
-    message(STATUS "Building FITPACK as sub-project")
+    message(STATUS "Building ${PROJECT_NAME_PRETTY} as sub-project")
 else ()
 	set(BUILD_OBJECT_LIBS OFF)
 	set(${PROJECT_NAME}_EXAMPLES_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 	set(${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_LIBRARY_NAME})
-	message(STATUS "Building FITPACK as standalone project")
+	message(STATUS "Building ${PROJECT_NAME_PRETTY} as standalone project")
 endif ()
 
 ################################################################################

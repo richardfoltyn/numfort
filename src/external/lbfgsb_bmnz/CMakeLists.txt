@@ -3,6 +3,7 @@
 cmake_minimum_required(VERSION 3.0)
 
 project(lbfgsb_bmnz Fortran)
+set(PROJECT_NAME_PRETTY L-BFGS-B)
 set(${PROJECT_NAME}_LIBRARY_NAME ${PROJECT_NAME})
 
 # make sure that the default is a RELEASE
@@ -29,7 +30,7 @@ option(USE_MKL "Build against Intel MKL" ON)
 if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
 	set(BUILD_OBJECT_LIBS ON)
 	set(${PROJECT_NAME}_EXAMPLES_DIRECTORY
-		"${CMAKE_PROJECT_NAME}_EXAMPLES_DIRECTORY/external/lbfgsb_bmnz"
+		"${${CMAKE_PROJECT_NAME}_EXAMPLES_DIRECTORY}/external/${PROJECT_NAME}"
 	)
 	set(${PROJECT_NAME}_LIBRARIES ${${CMAKE_PROJECT_NAME}_LIBRARIES})
     # add to list of object libraries that will be used to create ultimate
@@ -38,12 +39,12 @@ if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
         PROPERTY ${CMAKE_PROJECT_NAME}_COMPONENT_TARGETS
         ${${PROJECT_NAME}_LIBRARY_NAME}
     )
-	message(STATUS "Building L-BFGS-B as sub-project")
+	message(STATUS "Building ${PROJECT_NAME_PRETTY} as sub-project")
 else ()
 	set(BUILD_OBJECT_LIBS OFF)
 	set(${PROJECT_NAME}_EXAMPLES_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 	set(${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_LIBRARY_NAME})
-	message(STATUS "Building L-BFGS-B as standalone project")
+	message(STATUS "Building ${PROJECT_NAME_PRETTY} as standalone project")
 endif ()
 
 ################################################################################
