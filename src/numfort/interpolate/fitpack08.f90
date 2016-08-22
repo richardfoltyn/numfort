@@ -119,7 +119,7 @@ subroutine curfit_wrapper (iopt, x, y, w, xb, xe, k, s, work, n, knots, coefs, s
 
     intent(in) :: iopt, k, x, y, w, s, xe, xb
     intent(in out) :: knots, coefs, n, status, ssr
-    optional :: iopt, w, xb, xe, k, s, status, ssr, work
+    optional :: iopt, w, xb, xe, k, s, status, ssr
     target :: w
 
     real (PREC), dimension(:), pointer, contiguous :: ptr_w
