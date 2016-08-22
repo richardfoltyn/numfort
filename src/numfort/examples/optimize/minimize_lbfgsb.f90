@@ -30,6 +30,7 @@ subroutine example1 ()
     call minimize_lbfgsb (fobj1, x, grad1, m=m, lbounds=lbnd, ubounds=ubnd, &
         iprint=iprint, work=ws, res=res)
 
+    print "('Exit status: ', i0)", res%status
     print "('Function value at minimum: ', en22.15e2)", res%fx_opt
     print "('Number of iterations: ', i0)", res%nit
     print "('Number of function evaluations: ', i0)", res%nfev
@@ -41,9 +42,9 @@ end subroutine
 
 ! fobj1 corresponds to the objective function used in the example in
 ! driver1.f90 in the original L-BGFS-B package
-pure function fobj1 (x) result(fx)
+pure subroutine fobj1 (x, fx)
     real (PREC), intent(in), dimension(:) :: x
-    real (PREC) :: fx
+    real (PREC), intent(out) :: fx
 
     integer :: i, n
 
@@ -54,7 +55,7 @@ pure function fobj1 (x) result(fx)
         fx = fx + (x(i)-x(i-1)**2)**2
     end do
     fx = 4 * fx
-end function
+end subroutine
 
 ! gradient of fobj1
 pure subroutine grad1 (x, g)

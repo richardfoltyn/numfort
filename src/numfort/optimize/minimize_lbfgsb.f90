@@ -22,11 +22,11 @@ module numfort_optimize_lbfgsb
     end interface
 
     interface
-        function fobj_real64 (x) result(fx)
+        subroutine fobj_real64 (x, fx)
             import real64
             real (real64), intent(in), dimension(:) :: x
-            real (real64) :: fx
-        end function
+            real (real64), intent(out) :: fx
+        end subroutine
 
         subroutine grad_real64 (x, fpx)
             import real64
@@ -168,7 +168,7 @@ subroutine lbfgsb_real64 (func, x0, grad, lbounds, ubounds, maxiter, maxfun, &
             ptr_wa, ptr_iwa, task, liprint, csave, lsave, ptr_isave, ptr_dsave)
 
         if (task(1:2) == 'FG') then
-            fx = func (x)
+            call func (x, fx)
             call grad (x, gradx)
         else if (task(1:5) == 'NEW_X') then
             ! retrieve statitics stored in working array
