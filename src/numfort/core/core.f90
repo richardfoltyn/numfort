@@ -7,6 +7,7 @@ module numfort_core
     private
 
     public :: cumsum, comb
+    public :: PI, PI_REAL32
 
     interface cumsum
         module procedure cumsum_1d_real64, cumsum_2d_real64, cumsum_3d_real64
@@ -22,6 +23,7 @@ module numfort_core
 
     ! Math constants
     real (real64), parameter :: PI = 3.141592653589793238462643383279502884d0
+    real (real32), parameter :: PI_REAL32 = 3.141592653589793238462643383279502884
 
 contains
 
