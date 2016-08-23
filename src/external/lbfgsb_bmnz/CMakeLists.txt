@@ -32,7 +32,6 @@ if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
 	set(${PROJECT_NAME}_EXAMPLES_DIRECTORY
 		"${${CMAKE_PROJECT_NAME}_EXAMPLES_DIRECTORY}/external/${PROJECT_NAME}"
 	)
-	set(${PROJECT_NAME}_LIBRARIES ${${CMAKE_PROJECT_NAME}_LIBRARIES})
     # add to list of object libraries that will be used to create ultimate
     # numfort library
     set_property(GLOBAL APPEND
@@ -43,9 +42,11 @@ if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
 else ()
 	set(BUILD_OBJECT_LIBS OFF)
 	set(${PROJECT_NAME}_EXAMPLES_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-	set(${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_LIBRARY_NAME})
 	message(STATUS "Building ${PROJECT_NAME_PRETTY} as standalone project")
 endif ()
+
+# Link demo executables against these libraries
+set(${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_LIBRARY_NAME}_static)
 
 ################################################################################
 # BLAS libraries
@@ -77,17 +78,20 @@ set(SOURCE_FILES
     timer.f
 )
 
-if (BUILD_OBJECT_LIBS)
-	set(_OBJECT OBJECT)
+set(_name ${${PROJECT_NAME}_LIBRARY_NAME})
+add_library(${_name} OBJECT ${SOURCE_FILES})
+if (BUILD_SHARED_LIBS)
+    set_target_properties(${_name} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif ()
 
-add_library(${${PROJECT_NAME}_LIBRARY_NAME} ${_OBJECT} ${SOURCE_FILES})
-if (BUILD_SHARED_LIBS)
-    set_target_properties(${${PROJECT_NAME}_LIBRARY_NAME}
-        PROPERTIES POSITION_INDEPENDENT_CODE ON
-    )
+# build shared/static library from object library only if standalone build.
+# Otherwise, parent project will use object library directly.
+if (${PROJECT_NAME}_STANDALONE)
+    add_library(${_name} $<TARGET_OBJECTS:${_name}>)
 endif ()
 
 if (BUILD_EXAMPLES)
-    add_subdirectory(examples)
+    # create static library which examples can link against
+    add_library(${_name}_static $<TARGET_OBJECTS:${_name}>)
+	add_subdirectory(examples)
 endif ()
