@@ -211,9 +211,14 @@ subroutine splev_wrapper (knots, coefs, k, x, y, ext, status)
     ! assume cubic splines by default
     lk = DEFAULT_SPLINE_DEGREE
 
-    if (size(y) /= m .or. size(coefs) /= n) then
-        if (present(status)) status = lstatus
-        return
+    if (size(y) /= m) then
+        msg = 'x and y array lengths differ'
+        goto 100
+    end if
+
+    if (size(coefs) /= n) then
+        msg = 'knots and coefs array lengths differ'
+        goto 100
     end if
 
     ! by default set function values outside of domain to boundary values
@@ -222,7 +227,7 @@ subroutine splev_wrapper (knots, coefs, k, x, y, ext, status)
     if (present(k)) lk = k
     if (present(ext)) then
         call check_input_ext (ext, istatus, msg)
-        if (istatus /= 0) goto 100
+        if (istatus /= STATUS_INPUT_VALID) goto 100
         lext = ext
     end if
 
