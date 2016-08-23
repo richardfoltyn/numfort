@@ -197,10 +197,10 @@ end subroutine
 ! ******************************************************************************
 ! CURFIT evaluation
 
-subroutine splev_wrapper (knots, coefs, k, x, fx, ext, status)
+subroutine splev_wrapper (knots, coefs, k, x, y, ext, status)
     integer, intent(in) :: k
     real (PREC), intent(in), dimension(:), contiguous :: knots, coefs, x
-    real (PREC), intent(out), dimension(:), contiguous :: fx
+    real (PREC), intent(out), dimension(:), contiguous :: y
     integer, intent(in) :: ext
     integer, intent(out) :: status
 
@@ -218,7 +218,7 @@ subroutine splev_wrapper (knots, coefs, k, x, fx, ext, status)
     ! assume cubic splines by default
     lk = DEFAULT_SPLINE_DEGREE
 
-    if (size(fx) /= m .or. size(coefs) /= n) then
+    if (size(y) /= m .or. size(coefs) /= n) then
         if (present(status)) status = lstatus
         return
     end if
@@ -233,7 +233,7 @@ subroutine splev_wrapper (knots, coefs, k, x, fx, ext, status)
         lext = ext
     end if
 
-    call splev (knots, n, coefs, lk, x, fx, m, lext, lstatus)
+    call splev (knots, n, coefs, lk, x, y, m, lext, lstatus)
 
     if (present(status)) status = lstatus
 
@@ -244,24 +244,24 @@ subroutine splev_wrapper (knots, coefs, k, x, fx, ext, status)
 
 end subroutine
 
-subroutine splev_scalar (knots, coefs, k, x, fx, ext, status)
+subroutine splev_scalar (knots, coefs, k, x, y, ext, status)
     integer, intent(in) :: k
     real (PREC), intent(in), dimension(:), contiguous :: knots, coefs
     real (PREC), intent(in) :: x
-    real (PREC), intent(out) :: fx
+    real (PREC), intent(out) :: y
     integer, intent(in) :: ext
     integer, intent(out) :: status
 
     optional :: ext, status, k
 
-    real (PREC) :: lx(1), lfx(1)
+    real (PREC) :: lx(1), ly(1)
 
     lx(1) = x
 
-    call splev_wrapper (knots, coefs, k, lx, lfx, ext, status)
+    call splev_wrapper (knots, coefs, k, lx, ly, ext, status)
 
     ! write back result
-    fx = lfx(1)
+    y = ly(1)
 end subroutine
 
 ! ******************************************************************************
