@@ -169,5 +169,5 @@ install(TARGETS ${LIBRARY_NAME}
 # by external projects
 install(DIRECTORY ${${PROJECT_NAME}_MODDIR}/
 	DESTINATION "${INSTALL_INCLUDE_PREFIX}"
-	FILES_MATCHING PATTERN "numfort_*.mod"
+	FILES_MATCHING PATTERN "numfort*.mod"
 )
