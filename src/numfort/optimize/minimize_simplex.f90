@@ -82,7 +82,7 @@ subroutine minimize_simplex_real64 (func, x, tol, maxfun, quad, iprint, res)
     status = 0
     simp = 1d-6
 
-    call minim (x, step, n, fopt, lmaxfun, iprint, tol, nloop, iquad, &
+    call minim (x, step, n, fopt, lmaxfun, liprint, tol, nloop, iquad, &
         simp, var, func, status)
 
     ! map mimum status into numfort_optimize status
