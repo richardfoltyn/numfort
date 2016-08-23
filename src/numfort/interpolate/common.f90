@@ -1,8 +1,17 @@
 module numfort_interpolate_common
 
     use iso_fortran_env
+    use numfort_common, only: ENUM_KIND
     implicit none
     private
+
+    integer (ENUM_KIND), parameter :: INTERP_EVAL_EXTRAPOLATE = 0
+    integer (ENUM_KIND), parameter :: INTERP_EVAL_ZERO = 1
+    integer (ENUM_KIND), parameter :: INTERP_EVAL_ERROR = 2
+    integer (ENUM_KIND), parameter :: INTERP_EVAL_BOUNDARY = 3
+
+    public :: INTERP_EVAL_EXTRAPOLATE, INTERP_EVAL_ZERO, &
+        INTERP_EVAL_ERROR, INTERP_EVAL_BOUNDARY
 
     interface bsearch
         module procedure bsearch_real64, bsearch_real32

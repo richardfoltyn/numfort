@@ -2,9 +2,10 @@ module numfort_interpolate_fitpack08
 
     use iso_fortran_env
     ! interface specifications for F77 routines
+    use numfort_common, only: workspace, ENUM_KIND
+    use numfort_interpolate_common
     use numfort_fitpack_interfaces
     use numfort_interpolate_result
-    use numfort_common, only: workspace, ENUM_KIND
     implicit none
     private
 
@@ -12,14 +13,6 @@ module numfort_interpolate_fitpack08
 
     integer, parameter :: MIN_SPLINE_DEGREE = 1, MAX_SPLINE_DEGREE = 5, &
         DEFAULT_SPLINE_DEGREE = 3
-
-    integer (ENUM_KIND), parameter :: SPLINE_EVAL_EXTRAPOLATE = 0
-    integer (ENUM_KIND), parameter :: SPLINE_EVAL_ZERO = 1
-    integer (ENUM_KIND), parameter :: SPLINE_EVAL_ERROR = 2
-    integer (ENUM_KIND), parameter :: SPLINE_EVAL_BOUNDARY = 3
-
-    public :: SPLINE_EVAL_EXTRAPOLATE, SPLINE_EVAL_ZERO, SPLINE_EVAL_ERROR, &
-        SPLINE_EVAL_BOUNDARY
 
     ! used for internal input checking
     integer, parameter :: STATUS_INPUT_VALID = 0
@@ -91,8 +84,8 @@ subroutine check_input_ext (ext, stat, msg)
 
     integer :: i
     logical :: is_valid
-    integer, parameter :: valid(4) = [SPLINE_EVAL_ZERO, SPLINE_EVAL_EXTRAPOLATE, &
-        SPLINE_EVAL_ERROR, SPLINE_EVAL_BOUNDARY]
+    integer, parameter :: valid(4) = [INTERP_EVAL_ZERO, INTERP_EVAL_EXTRAPOLATE, &
+        INTERP_EVAL_ERROR, INTERP_EVAL_BOUNDARY]
 
     is_valid = .false.
 
@@ -224,7 +217,7 @@ subroutine splev_wrapper (knots, coefs, k, x, y, ext, status)
     end if
 
     ! by default set function values outside of domain to boundary values
-    lext = SPLINE_EVAL_EXTRAPOLATE
+    lext = INTERP_EVAL_EXTRAPOLATE
 
     if (present(k)) lk = k
     if (present(ext)) then
@@ -287,7 +280,7 @@ subroutine splder_wrapper (knots, coefs, k, order, x, y, ext, work, status)
 
     lk = DEFAULT_SPLINE_DEGREE
     lorder = 1
-    lext = SPLINE_EVAL_EXTRAPOLATE
+    lext = INTERP_EVAL_EXTRAPOLATE
     n = size(knots)
     m = size(x)
 
