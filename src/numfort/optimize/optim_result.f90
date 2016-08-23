@@ -1,4 +1,6 @@
-
+! Module implements OPTIM_RESULT, a type used as optimization result
+! object for all optimization routines.
+! Author: Richard Foltyn
 
 module numfort_optim_result_mod
 
@@ -28,7 +30,7 @@ module numfort_optim_result_mod
         real (real64), dimension(:), allocatable :: x_opt
         integer :: nfev = -1, nit = -1, status = OPTIM_STATUS_UNKNOWN
         logical :: success = .false.
-        character (len=100) :: msg
+        character (len=:), allocatable :: msg
     contains
         procedure, pass, private :: update_real64
         procedure, pass, private :: update_real32
@@ -44,11 +46,25 @@ pure subroutine update_real64 (self, x, fx, status, nit, nfev, msg)
     character (len=*) :: msg
 
     intent (in) :: x, fx, nit, nfev, msg, status
-    optional :: fx, nit, nfev, msg, status
+    optional :: x, fx, nit, nfev, msg, status
 
-    integer :: n
+    integer :: n, nmsg
 
-    n = size(x)
+    if (present(x)) then
+        n = size(x)
+        ! allocate array to store optimal point, if needed
+        if (allocated(self%x_opt)) then
+            if (size(self%x_opt) /= n) then
+                deallocate (self%x_opt)
+            end if
+        end if
+
+        if (.not. allocated(self%x_opt)) then
+            allocate (self%x_opt(n))
+        end if
+
+        self%x_opt(1:n) = x
+    end if
 
     if (present(fx)) self%fx_opt = fx
     if (present(status)) then
@@ -56,18 +72,19 @@ pure subroutine update_real64 (self, x, fx, status, nit, nfev, msg)
         self%status = status
     end if
 
-    if (present(msg)) self%msg = msg
-
-    ! allocate array to store minimum, if needed
-    if (allocated(self%x_opt)) then
-        if (size(self%x_opt) < n) then
-            deallocate (self%x_opt)
-            allocate (self%x_opt(n), source=x)
-        else
-            self%x_opt(1:n) = x
+    if (present(msg)) then
+        nmsg = len_trim(msg)
+        if (allocated(self%msg)) then
+            if (len(self%msg) < nmsg) then
+                deallocate (self%msg)
+            end if
         end if
-    else
-        allocate (self%x_opt(n), source=x)
+
+        if (.not. allocated (self%msg)) then
+            allocate (character (nmsg) :: self%msg)
+        end if
+
+        self%msg = msg
     end if
 
     if (present(nit)) self%nit = nit
@@ -82,6 +99,8 @@ pure subroutine update_real32 (self, x, fx, status, nit, nfev, msg)
     character (len=*) :: msg
 
     intent (in) :: x, fx, nit, nfev, msg, status
+    ! Note: x cannot be optional in this routine, otherwise generic interface
+    ! will not compile
     optional :: fx, nit, nfev, msg, status
 
     real (real64), dimension(size(x)) :: x64

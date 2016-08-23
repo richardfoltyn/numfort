@@ -1,3 +1,6 @@
+! Wrapper for simplex minimizer.
+! Author: Richard Foltyn
+
 module numfort_optimize_simplex
 
     use, intrinsic :: iso_fortran_env

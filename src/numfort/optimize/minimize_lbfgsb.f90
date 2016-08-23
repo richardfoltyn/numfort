@@ -208,8 +208,7 @@ subroutine lbfgsb_real64 (func, x0, grad, lbounds, ubounds, maxiter, maxfun, &
 
     ! input error handling
 100 if (present(res)) then
-        res%status = OPTIM_STATUS_INVALID_INPUT
-        res%msg = msg
+        call res%update (status=OPTIM_STATUS_INVALID_INPUT, msg=msg)
     end if
 
 end subroutine
