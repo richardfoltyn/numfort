@@ -165,6 +165,9 @@ install(TARGETS ${LIBRARY_NAME}
     ARCHIVE DESTINATION "${INSTALL_LIBRARY_PREFIX}"
 )
 
+# Install only numfort's MOD files, ignore any modules potentially created
+# by external projects
 install(DIRECTORY ${${PROJECT_NAME}_MODDIR}/
 	DESTINATION "${INSTALL_INCLUDE_PREFIX}"
+	FILES_MATCHING PATTERN "numfort_*.mod"
 )
