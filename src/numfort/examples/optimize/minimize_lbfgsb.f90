@@ -8,6 +8,7 @@ program lbfgsb
     integer, parameter :: PREC = real64
 
     call example1 ()
+    call example2 ()
 
 contains
 
@@ -29,15 +30,7 @@ subroutine example1 ()
 
     call minimize_lbfgsb (fobj1, x, grad1, m=m, lbounds=lbnd, ubounds=ubnd, &
         iprint=iprint, work=ws, res=res)
-
-    print "('Exit status: ', i0)", res%status
-    print "('Function value at minimum: ', en22.15e2)", res%fx_opt
-    print "('Number of iterations: ', i0)", res%nit
-    print "('Number of function evaluations: ', i0)", res%nfev
-    write (OUTPUT_UNIT, advance='no', &
-        fmt="('Optimum located at: [', t23, *(t23, 5(f6.4, :, ', '), :, /))") res%x_opt
-    print *, ' ]'
-
+    call print_report (res)
 end subroutine
 
 ! fobj1 corresponds to the objective function used in the example in
@@ -75,6 +68,55 @@ pure subroutine grad1 (x, g)
        g(i) = 8.d0*t2 - 1.6d1*x(i)*t1
     end do
     g(n) = 8.d0*t1
+
+end subroutine
+
+! Identical to example 1, except that now be use a function argument
+! that returns both the function value and the gradient.
+subroutine example2 ()
+    type (workspace) :: ws
+    type (optim_result) :: res
+    integer, parameter :: n = 25, m = 5, iprint = OPTIM_PRINT_MINIMAL
+    ! boundaries
+    real (PREC), dimension(n) :: x, lbnd, ubnd
+
+    ! starting point
+    x = 3.0_PREC
+    ! lower and upper bounds for odd indices
+    lbnd(1:n:2) = 1.0_PREC
+    ubnd(1:n:2) = 100_PREC
+    lbnd(2:n:2) = -100_PREC
+    ubnd(2:n:2) = 100_PREC
+
+    call minimize_lbfgsb (fobj_grad, x, m=m, lbounds=lbnd, ubounds=ubnd, &
+        iprint=iprint, work=ws, res=res)
+
+    call print_report (res)
+end subroutine
+
+subroutine fobj_grad (x, fx, g)
+    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(out) :: fx, g(:)
+
+    call fobj1 (x, fx)
+    call grad1 (x, g)
+end subroutine
+
+subroutine print_report(res)
+
+    class (optim_result), intent(in) :: res
+    integer, save :: ii = 1
+
+    print "('#', t3, 'Example ', i0)", ii
+    print "(t3, 'Exit status: ', i0)", res%status
+    print "(t3, 'Function value at minimum: ', en22.15e2)", res%fx_opt
+    print "(t3, 'Number of iterations: ', i0)", res%nit
+    print "(t3, 'Number of function evaluations: ', i0)", res%nfev
+    write (OUTPUT_UNIT, advance='no', &
+        fmt="(t3, 'Optimum located at: [', t25, *(t25, 5(f6.4, :, ', '), :, /))") res%x_opt
+    print *, ' ]'
+
+    ii = ii + 1
 
 end subroutine
 

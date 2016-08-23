@@ -18,7 +18,7 @@ module numfort_optimize_lbfgsb
     end enum
 
     interface minimize_lbfgsb
-        module procedure lbfgsb_real64
+        module procedure lbfgsb_real64, lbfgsb_grad_real64
     end interface
 
     interface
@@ -32,6 +32,12 @@ module numfort_optimize_lbfgsb
             import real64
             real (real64), intent(in), dimension(:) :: x
             real (real64), intent(out), dimension(:) :: fpx
+        end subroutine
+
+        subroutine fobj_grad_real64 (x, fx, fpx)
+            import real64
+            real (real64), intent(in), dimension(:) :: x
+            real (real64), intent(out) :: fx, fpx(:)
         end subroutine
     end interface
 
@@ -54,23 +60,53 @@ module numfort_optimize_lbfgsb
     public :: minimize_lbfgsb
 contains
 
-subroutine lbfgsb_real64 (func, x0, grad, lbounds, ubounds, maxiter, maxfun, &
+subroutine lbfgsb_grad_real64 (func, x, grad, lbounds, ubounds, maxiter, maxfun, &
     m, factr, pgtol, iprint, work, res)
 
     procedure (fobj_real64) :: func
-    real (PREC), intent(in out), dimension(:) :: x0
+    real (PREC), intent(in out), dimension(:), contiguous :: x
     procedure (grad_real64) :: grad
-    real (PREC), intent(in), dimension(:), optional :: lbounds, ubounds
-    integer, intent(in), optional :: maxiter, maxfun, m, iprint
-    real (PREC), intent(in), optional :: factr, pgtol
+    real (PREC), dimension(:) :: lbounds, ubounds
+    integer :: maxiter, maxfun, m, iprint
+    real (PREC) :: factr, pgtol
     class (workspace), intent(in out), optional, target :: work
     class (optim_result), intent(in out), optional :: res
 
-    ! actual point in function domain passed to setulb. Need to
-    ! have a local copy, otherwise the compiler creates a copy on each
-    ! invocation of setulb
-    real (PREC), dimension(size(x0)) :: x
-    real (PREC), dimension(size(x0)) :: llbounds, lubounds
+    intent(in) :: lbounds, ubounds, maxiter, maxfun, m, iprint, factr, pgtol
+    optional :: lbounds, ubounds, maxiter, maxfun, m, iprint, factr, pgtol
+
+    call minimize_lbfgsb (fobj_grad, x, lbounds, ubounds, maxiter, maxfun, &
+        m, factr, pgtol, iprint, work, res)
+
+contains
+
+    ! 'unified' objective function used as wrapper to recover both the
+    ! function valud and the gradient simultaneosly.
+    subroutine fobj_grad (x, fx, fpx)
+        real (real64), intent(in), dimension(:) :: x
+        real (real64), intent(out) :: fx, fpx(:)
+
+        call func(x, fx)
+        call grad(x, fpx)
+    end subroutine
+
+end subroutine
+
+subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
+    m, factr, pgtol, iprint, work, res)
+
+    procedure (fobj_grad_real64) :: func
+    real (PREC), intent(in out), dimension(:), contiguous :: x
+    real (PREC), dimension(:) :: lbounds, ubounds
+    integer :: maxiter, maxfun, m, iprint
+    real (PREC) :: factr, pgtol
+    class (workspace), intent(in out), optional, target :: work
+    class (optim_result), intent(in out), optional :: res
+
+    intent(in) :: lbounds, ubounds, maxiter, maxfun, m, iprint, factr, pgtol
+    optional :: lbounds, ubounds, maxiter, maxfun, m, iprint, factr, pgtol
+
+    real (PREC), dimension(size(x)) :: llbounds, lubounds
     integer :: lmaxiter, lmaxfun, lm, liprint
     real (PREC) :: lfactr, lpgtol
     type (workspace), allocatable, target :: lwork
@@ -88,15 +124,14 @@ subroutine lbfgsb_real64 (func, x0, grad, lbounds, ubounds, maxiter, maxfun, &
     character (ncsave) :: csave, task
 
     ! lower/upper bound flags passed to setulb
-    integer, dimension(size(x0)) :: nbd
+    integer, dimension(size(x)) :: nbd
 
     ! variables to store function and gradiant
-    real (PREC) :: fx, gradx(size(x0))
+    real (PREC) :: fx, gradx(size(x))
     ! number of iterations and function evaluations
     integer :: iter, nfeval
 
     status = OPTIM_STATUS_INVALID_INPUT
-    x = x0
 
     ! set defaults for optional parameters
     if (present(lbounds)) then
@@ -133,7 +168,7 @@ subroutine lbfgsb_real64 (func, x0, grad, lbounds, ubounds, maxiter, maxfun, &
     if (present(pgtol)) lpgtol = pgtol
 
     ! work array dimensions
-    n = size(x0)
+    n = size(x)
     niwrk = 3 * n
     nrwrk = 2*lm*n + 5*n + 11*lm*lm + 8*lm
 
@@ -168,8 +203,7 @@ subroutine lbfgsb_real64 (func, x0, grad, lbounds, ubounds, maxiter, maxfun, &
             ptr_wa, ptr_iwa, task, liprint, csave, lsave, ptr_isave, ptr_dsave)
 
         if (task(1:2) == 'FG') then
-            call func (x, fx)
-            call grad (x, gradx)
+            call func (x, fx, gradx)
         else if (task(1:5) == 'NEW_X') then
             ! retrieve statitics stored in working array
             iter = ptr_isave(30)
@@ -196,9 +230,6 @@ subroutine lbfgsb_real64 (func, x0, grad, lbounds, ubounds, maxiter, maxfun, &
         msg = "STOP: number of function evaluations exceeded limit"
         status = OPTIM_STATUS_MAXFUN
     end if
-
-    ! store found minimum back into argument array
-    x0 = x
 
     if (present(res)) then
         call res%update (x, fx, status, iter, nfeval, msg)
