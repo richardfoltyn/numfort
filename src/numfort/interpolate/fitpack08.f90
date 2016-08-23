@@ -175,7 +175,7 @@ subroutine curfit_wrapper (iopt, x, y, w, xb, xe, k, s, work, n, knots, coefs, s
 
     ! call fitpack routine wrapper
     call curfit (liopt, m, x, y, ptr_w, lxb, lxe, lk, ls, nest, n, &
-        knots, coefs, lssr, ptr_work%rwrk, nwrk, ptr_work%iwrk, lstatus)
+        knots, coefs, lssr, ptr_work%rwrk(1:nwrk), nwrk, ptr_work%iwrk, lstatus)
 
     if (present(status)) status = lstatus
     if (present(ssr)) ssr = lssr
