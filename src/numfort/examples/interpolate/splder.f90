@@ -26,7 +26,7 @@ subroutine example1 ()
     type (workspace) :: ws
     real (PREC) :: ai
 
-    ext = SPLINE_EVAL_EXTRAPOLATE
+    ext = INTERP_EVAL_EXTRAPOLATE
 
     ! initialize x
     x(1) = 0.0_PREC

@@ -2,7 +2,7 @@
 ! the numfort_interpolate module.
 ! Author: Richard Foltyn
 
-program curfit01
+program curfit_demo
 
     use iso_fortran_env
     use numfort_interpolate
@@ -12,6 +12,7 @@ program curfit01
     integer, parameter :: PREC = real64
 
     call example1 ()
+    call example2 ()
 
 contains
 
@@ -42,6 +43,8 @@ subroutine example1 ()
     nest_max = curfit_get_nest(m=m, k=5)
     allocate (knots(nest_max), coefs(nest_max))
 
+    print "(/, '### Example ', i0)", 1
+
     do k = 3,5,2
         ! iterate through various smoothing parameters and interpolation tasks
         do i = 1, size(svec)
@@ -51,7 +54,7 @@ subroutine example1 ()
             call curfit (iopt, x, y, k=k, s=s, work=ws, n=n, knots=knots, &
                 coefs=coefs, ssr=ssr, status=status)
 
-            call splev (knots, coefs, k, x, yhat, SPLINE_EVAL_EXTRAPOLATE, status)
+            call splev (knots, coefs, k, x, yhat, INTERP_EVAL_EXTRAPOLATE, status)
             call print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat)
         end do
 
@@ -63,19 +66,68 @@ subroutine example1 ()
         call curfit (iopt, x, y, k=k, s=s, work=ws, n=n, knots=knots, &
             coefs=coefs, ssr=ssr, status=status)
 
-        call splev (knots, coefs, k, x, yhat, SPLINE_EVAL_EXTRAPOLATE, status)
+        call splev (knots, coefs, k, x, yhat, INTERP_EVAL_EXTRAPOLATE, status)
         call print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat)
     end do
 
 end subroutine
 
-subroutine print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat)
-    integer, intent(in) :: iopt, k, status, n
+subroutine example2 ()
+
+    ! number of points
+    integer, parameter :: m = 25
+
+    real (PREC), dimension(m) :: x, y, yhat, eps, w
+    real (PREC) :: s
+    integer :: i, k, nest, n, status, iopt, nseed, ext
+    real (PREC) :: ssr
+    real (PREC), dimension(:), allocatable :: knots, coefs, seed
+    type (workspace) :: ws
+
+    print "(/, '### Example ', i0)", 2
+
+    x = [real (PREC) :: (i, i = 0, m-1)]
+    ! create some reproducible random numbers
+    call random_seed (size=nseed)
+    allocate (seed(nseed))
+    seed = 1.0_PREC
+    call random_number (eps)
+    eps = eps * 2
+    ! create something that looks similar to a utility function, plus add
+    ! some noise
+    y = log(x + 0.1) + eps
+    ! spline degree
+    k = 3
+    iopt = 0
+    s = 100.0_PREC
+    w = 1/eps
+
+    nest = curfit_get_nest (m=m, k=k)
+    allocate (knots(nest), coefs(nest))
+
+    call curfit (iopt, x, y, w=w, k=k, s=s, work=ws, n=n, knots=knots, coefs=coefs, &
+        ssr=ssr, status=status)
+
+    ! evaluate spline at original x points
+    ext = INTERP_EVAL_BOUNDARY
+    call splev (knots, coefs, k, x, yhat, ext, status)
+
+    call print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat, &
+        counter=1)
+
+end subroutine
+
+subroutine print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat, &
+        counter)
+    integer, intent(in) :: iopt, k, status, n, counter
     real (PREC), intent(in) :: s, ssr, knots(:), coefs(:)
     real (PREC), intent(in), dimension(:) :: x, y, yhat
 
+    optional :: counter
     integer, save :: ii = 1
     integer :: i
+
+    if (present(counter)) ii = counter
 
     print "(/,'(', i0, ')', t6, 'iopt: ', i2, '; smoothing factor: ', f6.1, '; spline degree: ', i1)", &
         ii, iopt, s, k
