@@ -71,16 +71,27 @@ list(APPEND ${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_BLA_LIBRARIES})
 ###############################################################################
 # Path suffixes beneath CMAKE_INSTALL_PREFIX
 
-# if INSTALL_LIBRARY_PREFIX or INSTALL_INCLUDE_PREFIX were specified on the
+# if CMAKE_INSTALL_LIBDIR or CMAKE_INSTALL_INCLUDEDIR were specified on the
 # command line, use those as prefixes beneath CMAKE_INSTALL_PREFIX where
 # library and include files should be placed.
 
-if (NOT INSTALL_LIBRARY_PREFIX)
-    set(INSTALL_LIBRARY_PREFIX lib)
+# store values in tempoprary variables, will be overwritten by GNUInstallDirs
+set(_INSTALL_LIBDIR "${CMAKE_INSTALL_LIBDIR}")
+set(_INSTALL_INCLUDEDDIR "${CMAKE_INSTALL_INCLUDEDIR}")
+
+include(GNUInstallDirs)
+
+# fill in any missing values
+if (_INSTALL_LIBDIR)
+    set(CMAKE_INSTALL_LIBDIR "${_INSTALL_LIBDIR}")
+elseif (NOT CMAKE_INSTALL_LIBDIR)
+    set(CMAKE_INSTALL_LIBDIR lib)
 endif()
 
-if (NOT INSTALL_INCLUDE_PREFIX)
-    set(INSTALL_INCLUDE_PREFIX include/numfort)
+if (_INSTALL_INCLUDEDDIR)
+    set(CMAKE_INSTALL_INCLUDEDIR "${_INSTALL_INCLUDEDDIR}")
+elseif (NOT CMAKE_INSTALL_INCLUDEDIR)
+    set(CMAKE_INSTALL_INCLUDEDIR include)
 endif()
 
 ###############################################################################
@@ -96,8 +107,8 @@ if (USE_MKL)
 endif (USE_MKL)
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "Library install directory: ${CMAKE_INSTALL_PREFIX}/${INSTALL_LIBRARY_PREFIX}")
-message(STATUS "MOD file install directory: ${CMAKE_INSTALL_PREFIX}/${INSTALL_INCLUDE_PREFIX}")
+message(STATUS "Library install directory: ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+message(STATUS "MOD file install directory: ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}")
 
 ################################################################################
 # Output directories
@@ -160,14 +171,14 @@ add_library(${LIBRARY_NAME}_static STATIC ${SOURCE_FILES} ${COMPONENT_OBJECTS})
 add_dependencies(${LIBRARY_NAME}_static ${_TARGETS})
 
 install(TARGETS ${LIBRARY_NAME}
-    RUNTIME DESTINATION "${INSTALL_LIBRARY_PREFIX}"
-    LIBRARY DESTINATION "${INSTALL_LIBRARY_PREFIX}"
-    ARCHIVE DESTINATION "${INSTALL_LIBRARY_PREFIX}"
+    RUNTIME DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 )
 
 # Install only numfort's MOD files, ignore any modules potentially created
 # by external projects
 install(DIRECTORY ${${PROJECT_NAME}_MODDIR}/
-	DESTINATION "${INSTALL_INCLUDE_PREFIX}"
+	DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 	FILES_MATCHING PATTERN "numfort*.mod"
 )
