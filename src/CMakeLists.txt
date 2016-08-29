@@ -179,6 +179,6 @@ install(TARGETS ${LIBRARY_NAME}
 # Install only numfort's MOD files, ignore any modules potentially created
 # by external projects
 install(DIRECTORY ${${PROJECT_NAME}_MODDIR}/
-	DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+	DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/numfort"
 	FILES_MATCHING PATTERN "numfort*.mod"
 )
