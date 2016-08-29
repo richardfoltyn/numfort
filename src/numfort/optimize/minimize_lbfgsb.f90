@@ -24,23 +24,21 @@ module numfort_optimize_lbfgsb
     interface
         subroutine fobj_real64 (x, fx)
             import real64
-            real (real64), intent(in), dimension(:) :: x
+            real (real64), intent(in), dimension(:), contiguous :: x
             real (real64), intent(out) :: fx
-            contiguous :: x
         end subroutine
 
         subroutine grad_real64 (x, fpx)
             import real64
-            real (real64), intent(in), dimension(:) :: x
-            real (real64), intent(out), dimension(:) :: fpx
-            contiguous :: x, fpx
+            real (real64), intent(in), dimension(:), contiguous :: x
+            real (real64), intent(out), dimension(:), contiguous :: fpx
         end subroutine
 
         subroutine fobj_grad_real64 (x, fx, fpx)
             import real64
-            real (real64), intent(in), dimension(:) :: x
-            real (real64), intent(out) :: fx, fpx(:)
-            contiguous :: x, fpx
+            real (real64), intent(in), dimension(:), contiguous :: x
+            real (real64), intent(out) :: fx
+            real (real64), intent(out), dimension(:), contiguous :: fpx
         end subroutine
     end interface
 
