@@ -38,6 +38,7 @@ end subroutine
 pure subroutine fobj1 (x, fx)
     real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(out) :: fx
+    contiguous :: x
 
     integer :: i, n
 
@@ -54,6 +55,7 @@ end subroutine
 pure subroutine grad1 (x, g)
     real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(out), dimension(:) :: g
+    contiguous :: x, g
 
     real (PREC) :: t1, t2
     integer :: i, n
@@ -97,6 +99,7 @@ end subroutine
 subroutine fobj_grad (x, fx, g)
     real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(out) :: fx, g(:)
+    contiguous :: x, g
 
     call fobj1 (x, fx)
     call grad1 (x, g)

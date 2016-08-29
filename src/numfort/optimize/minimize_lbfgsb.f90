@@ -26,18 +26,21 @@ module numfort_optimize_lbfgsb
             import real64
             real (real64), intent(in), dimension(:) :: x
             real (real64), intent(out) :: fx
+            contiguous :: x
         end subroutine
 
         subroutine grad_real64 (x, fpx)
             import real64
             real (real64), intent(in), dimension(:) :: x
             real (real64), intent(out), dimension(:) :: fpx
+            contiguous :: x, fpx
         end subroutine
 
         subroutine fobj_grad_real64 (x, fx, fpx)
             import real64
             real (real64), intent(in), dimension(:) :: x
             real (real64), intent(out) :: fx, fpx(:)
+            contiguous :: x, fpx
         end subroutine
     end interface
 
@@ -85,6 +88,7 @@ contains
     subroutine fobj_grad (x, fx, fpx)
         real (real64), intent(in), dimension(:) :: x
         real (real64), intent(out) :: fx, fpx(:)
+        contiguous :: x, fpx
 
         call func(x, fx)
         call grad(x, fpx)
