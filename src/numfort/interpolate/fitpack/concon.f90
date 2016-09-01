@@ -25,7 +25,7 @@ contains
 ! ******************************************************************************
 ! INPUT CHECKING used by various routines.
 
-pure subroutine concon_check_input (x, y, w, v, knots, coefs, sx, &
+pure subroutine check_input (x, y, w, v, knots, coefs, sx, &
         bind, stat, msg)
 
     real (PREC), dimension(:) :: x, y, w, v, knots, coefs, sx
@@ -63,6 +63,7 @@ pure subroutine concon_check_input (x, y, w, v, knots, coefs, sx, &
 
     if (size(knots) < 8) then
         msg = "knots/coefs arrays too small: size(knots) >= 8 required"
+        goto 100
     end if
 
     if (present(sx)) then
