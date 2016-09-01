@@ -9,6 +9,7 @@ set(SOURCE_FILES
 	interp_linear.f90
 	fitpack_interfaces.f90
 	fitpack08.f90
+	fitpack/concon.f90
 )
 
 include_directories(${${PROJECT_NAME}_MODDIR})

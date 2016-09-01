@@ -6,11 +6,25 @@ module numfort_fitpack_interfaces
 
     use iso_fortran_env, only: real64
     implicit none
-    private
 
-    integer, parameter :: PREC = real64
+    integer, private, parameter :: PREC = real64
 
     interface
+
+        subroutine concon_if (iopt,m,x,y,w,v,s,nest,maxtr,maxbin,n,t,c,sq, &
+            sx,bind,wrk,lwrk,iwrk,kwrk,ier)
+            import PREC
+
+            real (PREC) :: s, sq
+            integer :: iopt, m, nest, maxtr, maxbin, n, lwrk, kwrk, ier
+            real (PREC) :: x(m), y(m), w(m), v(m), t(nest), c(nest), wrk(lwrk), sx(m)
+            integer :: iwrk(kwrk)
+            logical :: bind(nest)
+
+            intent (in) :: iopt, m, x, y, w, s, nest, maxtr, maxbin
+            intent (out) :: n, t, c, sq, sx, bind, wrk, iwrk, ier
+        end subroutine
+
         subroutine curfit_if (iopt,m,x,y,w,xb,xe,k,s,nest,n,t,c,fp,wrk,lwrk,iwrk,ier)
             import PREC
             real (PREC) :: xb,xe,s,fp
@@ -31,10 +45,7 @@ module numfort_fitpack_interfaces
             integer :: n,k,nu,m,e,ier
             real (PREC) :: t(n),c(n),x(m),y(m),wrk(n)
         end subroutine
-
     end interface
-
-    public :: curfit_if, splev_if, splder_if
 
 contains
 

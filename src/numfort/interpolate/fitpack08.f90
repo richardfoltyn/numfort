@@ -1,7 +1,6 @@
 module numfort_interpolate_fitpack08
 
     use iso_fortran_env
-    ! interface specifications for F77 routines
     use numfort_common, only: workspace, ENUM_KIND
     use numfort_interpolate_common
     use numfort_fitpack_interfaces
