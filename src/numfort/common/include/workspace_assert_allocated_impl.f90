@@ -13,6 +13,7 @@ if (present(n)) then
             n_attr = n
         else if (size(arr) < n) then
             allocate (tmp(n))
+            tmp(1:size(arr)) =  arr
             call move_alloc (tmp, arr)
             n_attr = n
         end if

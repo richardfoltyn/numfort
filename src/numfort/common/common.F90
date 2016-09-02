@@ -98,13 +98,15 @@ pure subroutine assert_allocated_char(arr, n_attr, n)
     character (len=:), allocatable :: tmp
 
     if (present(n)) then
-        if (.not. allocated(arr)) then
-            allocate (character (n) :: arr)
-            n_attr = n
-        else if (len(arr) < n) then
-            allocate (character (n) :: tmp)
-            call move_alloc (tmp, arr)
-            n_attr = n
+        if (n > 0) then
+            if (.not. allocated(arr)) then
+                allocate (character (n) :: arr)
+                n_attr = n
+            else if (len(arr) < n) then
+                allocate (character (n) :: tmp)
+                call move_alloc (tmp, arr)
+                n_attr = n
+            end if
         end if
     end if
 end subroutine
