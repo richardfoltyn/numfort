@@ -1,6 +1,7 @@
 module numfort_interpolate_concon
 
     use iso_fortran_env
+    use numfort_core, only: comb
     use numfort_common, only: workspace, ENUM_KIND
     use numfort_interpolate_common
     use numfort_fitpack_interfaces
@@ -61,6 +62,8 @@ pure subroutine check_input (x, y, w, v, knots, coefs, sx, &
         goto 100
     end if
 
+    ! check for number of knots even though this is checked in concon again,
+    ! as this defines nest, and nest is needed to compute maxtr
     if (size(knots) < 8) then
         msg = "knots/coefs arrays too small: size(knots) >= 8 required"
         goto 100
@@ -120,22 +123,23 @@ subroutine concon_wrapper (iopt, x, y, w, v, s, maxtr, maxbin, n, knots, coefs, 
     liopt = 0
     m = size(x)
     ls = 0.0_PREC
-    lmaxtr = 100
     lmaxbin = 10
+    lmaxtr = 200
     ! lower bound of recommended interval for s
     if (present(w)) ls = m - sqrt(2*real(m, PREC))
 
     ! override default values if any of the optional parameters were provided
     if (present(iopt)) liopt = iopt
-    if (present(maxtr)) lmaxtr = maxtr
     if (present(maxbin)) lmaxbin = maxbin
+    if (present(maxtr)) lmaxtr = maxtr
     if (present(s)) ls = s
 
     call check_input (x, y, w, v, knots, coefs, sx, bind, istatus, msg)
     if (istatus /= STATUS_INPUT_VALID) goto 100
 
     nest = size(knots)
-    call concon_get_wrk_size (m, maxtr, maxbin, nest, nrwrk, niwrk)
+
+    call concon_get_wrk_size (m, lmaxtr, lmaxbin, nest, nrwrk, niwrk)
 
     if (present(work)) then
         ptr_work => work
