@@ -123,21 +123,21 @@ subroutine concon_wrapper (iopt, x, y, w, v, s, maxtr, maxbin, n, knots, coefs, 
     liopt = 0
     m = size(x)
     ls = 0.0_PREC
-    lmaxbin = 10
-    lmaxtr = 200
     ! lower bound of recommended interval for s
     if (present(w)) ls = m - sqrt(2*real(m, PREC))
 
     ! override default values if any of the optional parameters were provided
     if (present(iopt)) liopt = iopt
-    if (present(maxbin)) lmaxbin = maxbin
-    if (present(maxtr)) lmaxtr = maxtr
     if (present(s)) ls = s
 
     call check_input (x, y, w, v, knots, coefs, sx, bind, istatus, msg)
     if (istatus /= STATUS_INPUT_VALID) goto 100
 
     nest = size(knots)
+    lmaxbin = nest - 6
+    lmaxtr = 200
+    if (present(maxbin)) lmaxbin = maxbin
+    if (present(maxtr)) lmaxtr = maxtr
 
     call concon_get_wrk_size (m, lmaxtr, lmaxbin, nest, nrwrk, niwrk)
 
