@@ -187,6 +187,10 @@ subroutine concon_wrapper (iopt, x, y, w, v, s, maxtr, maxbin, n, knots, coefs, 
         ptr_bind => ptr_work%lwrk(1:nlwrk)
     end if
 
+    ! initialize to zero as this is going to be used to store a tree where
+    ! 0 denotes no node
+    if (liopt == 0) ptr_work%iwrk = 0
+
     ! call fitpack routine wrapper
     call concon (liopt, m, x, y, ptr_w, v, ls, nest, lmaxtr, lmaxbin, n, &
         knots, coefs, lssr, ptr_sx, ptr_bind, ptr_work%rwrk(1:nrwrk), nrwrk, &

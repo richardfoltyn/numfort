@@ -321,7 +321,8 @@ c  test whether the number of knots where s''(x)=0 exceeds maxbin.
       ibind(n1) = 0
 c  search which cases with nbind constraints in equality form
 c  are going to be considered.
-      call fpdeno(maxtr,up,left,right,nbind,merk)
+      call fpdeno2 (maxtr, up, left, right, nbind, merk)
+      
 c  test whether the quadratic programming problem has a solution.
       if(merk.eq.1) go to 570
 c  find a new case with nbind constraints in equality form.
