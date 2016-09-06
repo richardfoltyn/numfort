@@ -68,6 +68,44 @@ endif ()
 
 list(APPEND ${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_BLA_LIBRARIES})
 
+################################################################################
+# Compiler FLAGS
+
+set(_FFLAGS)
+set(_FFLAGS_DEBUG)
+
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
+    # explicitly add -cpp to run C preprocessor if required
+    set(GNU_WARN "-Wall -Wextra -Wimplicit-interface -Wimplicit-procedure \
+      -Warray-temporaries -Wrealloc-lhs -pedantic")
+    set(_FFLAGS "${GNU_WARN} -std=f2008")
+    set(_FFLAGS_DEBUG "-fcheck=all -Og")
+elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+    if (WIN32)
+        set (_FFLAGS "/warn:all /standard-semantics /stand:f08")
+        set(_FFLAGS_DEBUG "/check:all")
+    else ()
+        set (_FFLAGS "-warn all -standard-semantics -std08")
+        set(_FFLAGS_DEBUG "-check all")
+    endif (WIN32)
+endif ()
+
+message(STATUS "Default compiler flags: ${CMAKE_Fortran_FLAGS}")
+# Make sure build type is upper case, otherwise the wrong flags will be shown
+string(TOUPPER "${CMAKE_BUILD_TYPE}" _CONFIG)
+if (CMAKE_Fortran_FLAGS_${_CONFIG})
+    message(STATUS "Default compiler flags for ${CMAKE_BUILD_TYPE}: ${CMAKE_Fortran_FLAGS_${_CONFIG}}")
+endif ()
+if (_FFLAGS)
+    message(STATUS "Add. compiler flags: ${_FFLAGS}")
+endif ()
+if (_FFLAGS_${_CONFIG})
+    message(STATUS "Add. compiler flags for ${CMAKE_BUILD_TYPE}: ${_FFLAGS_${_CONFIG}}")
+endif ()
+
+set(${CMAKE_PROJECT_NAME}_FFLAGS "${_FFLAGS}")
+set(${CMAKE_PROJECT_NAME}_FFLAGS_DEBUG "${_FFLAGS_DEBUG}")
+
 ###############################################################################
 # Path suffixes beneath CMAKE_INSTALL_PREFIX
 
