@@ -146,8 +146,21 @@ set(SOURCE_FILES
 	surfit.f
 )
 
-# rewritten implementation of fpdeno that does not produce infinite loops
-list(APPEND SOURCE_FILES fpdeno.f90)
+# additional files replacing original FITPACK implementation, written in F90
+list(APPEND F90_SOURCES constraints_tree.f90)
+if (${CMAKE_PROJECT_NAME}_FFLAGS)
+    set_source_files_properties(${F90_SOURCES} PROPERTIES
+        COMPILE_FLAGS "${${CMAKE_PROJECT_NAME}_FFLAGS}"
+    )
+endif ()
+string(TOUPPER ${CMAKE_BUILD_TYPE} _build)
+if (${CMAKE_PROJECT_NAME}_FFLAGS_${_build})
+    set_source_files_properties(${F90_SOURCES} PROPERTIES
+        COMPILE_FLAGS "${${CMAKE_PROJECT_NAME}_FFLAGS_${_build}}"
+    )
+endif ()
+
+list(APPEND SOURCE_FILES ${F90_SOURCES})
 
 set(_name ${${PROJECT_NAME}_LIBRARY_NAME})
 add_library(${_name} OBJECT ${SOURCE_FILES})
