@@ -232,59 +232,90 @@ pure subroutine add_constraint (self, ibind, status)
         vinsert = ibind(level)
 
         if (vnode == vinsert) then
-            ! need to pass execution on to child node
-            if (level < nbind) then
-                ! if child node exists, then pass processing of the remaining tail
-                ! to child instance; otherwise create child node first
-                if (self%left(inode) == 0) then
-                    ! need to create child note first
-                    call insert_node (self, inode, vinsert, inew, status, leftof=inode)
-                    if (status /= TREE_STATUS_SUCCESS) goto 100
-                    inode = inew
-                else
-                    inode = self%left(inode)
-                end if
-
-                level = level + 1
-            end if
+            ! reached end of branch and terminal value is correctly set,
+            ! so nothing left to do
+            if (level == nbind) return
+            ! need to store next constraint in child node
+            call handle_child (self, level, inode, status)
         else if (vnode < vinsert) then
-            ! move to the right, if necessary creating a right node first
-            if (self%right(inode) == 0) then
-                call insert_node (self, self%up(inode), vinsert, inew, status, rightof=inode)
-                if (status /= TREE_STATUS_SUCCESS) goto 100
-                inode = inew
-            else
-                inode = self%right(inode)
-            end if
+            ! need to add constraint to the right
+            call handle_right_sibling (self, inode, status)
         else
-            ! Handle case vnode > vinsert:
-            ! need to insert a new node the current one
-            ! first, so find the node with right pointing to current node
-            il = self%left(self%up(inode))
-            if (il == inode) then
-                ! current node is the first child
-                call insert_node (self, self%up(inode), vinsert, inew, status, leftof=self%up(inode))
-            else
-                ! Need to insert a sibling whose right reference points to current
-                ! node. Note that even if there are other siblings to the right,
-                ! it must be true that their info < val, as otherwise we wouldn't
-                ! end up at this point.
-                do while (self%right(il) /= inode)
-                    il = self%right(il)
-                end do
-                call insert_node (self, self%up(inode), vinsert, inew, status, rightof=il)
-            end if
-
-            if (status /= TREE_STATUS_SUCCESS) goto 100
-
-            self%right(inew) = inode
-            inode = inew
+            ! Handle case vnode > vinsert
+            call handle_left_sibling (self, inode, status)
         end if
+        
+        if (status /= TREE_STATUS_SUCCESS) goto 100
     end do
 
     ! No special error handling required at this point
     return
 100 continue
+
+contains
+    
+    pure subroutine handle_child (self, level, inode, status)
+        class (constraints_tree), intent(in out) :: self
+        integer, intent(in out) :: inode, level, status
+        integer :: inew
+        
+        ! if child node exists, then pass processing of the remaining tail
+        ! to child instance; otherwise create child node first
+        if (self%left(inode) == 0) then
+            ! need to create child note first
+            call insert_node (self, inode, ibind(level+1), inew, status, &
+                leftof=inode)
+            if (status /= TREE_STATUS_SUCCESS) return
+            inode = inew
+        else
+            inode = self%left(inode)
+        end if
+
+        level = level + 1
+    end subroutine 
+    
+    pure subroutine handle_right_sibling (self, inode, status)
+        class (constraints_tree), intent(in out) :: self
+        integer, intent(in out) :: inode, status
+        integer :: inew
+        
+        if (self%right(inode) == 0) then
+            call insert_node (self, self%up(inode), vinsert, inew, status, rightof=inode)
+            if (status /= TREE_STATUS_SUCCESS) return
+            inode = inew
+        else
+            inode = self%right(inode)
+        end if
+    end subroutine
+    
+    pure subroutine handle_left_sibling (self, inode, status)
+        class (constraints_tree), intent(in out) :: self
+        integer, intent(in out) :: inode, status
+        integer :: inew, il
+        
+        ! need to insert a new node the current one
+        ! first, so find the node with right pointing to current node
+        il = self%left(self%up(inode))
+        if (il == inode) then
+            ! current node is the first child
+            call insert_node (self, self%up(inode), vinsert, inew, status, &
+                leftof=self%up(inode))
+        else
+            ! Need to insert a sibling whose right reference points to current
+            ! node. Note that even if there are other siblings to the right,
+            ! it must be true that their info < val, as otherwise we wouldn't
+            ! end up at this point.
+            do while (self%right(il) /= inode)
+                il = self%right(il)
+            end do
+            call insert_node (self, self%up(inode), vinsert, inew, status, rightof=il)
+        end if
+
+        if (status /= TREE_STATUS_SUCCESS) return
+
+        self%right(inew) = inode
+        inode = inew
+    end subroutine
 
 end subroutine
 
