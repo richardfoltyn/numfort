@@ -6,41 +6,9 @@ project(numfort C Fortran)
 ################################################################################
 # Compiler FLAGS
 
-set(_FFLAGS)
-set(_FFLAGS_DEBUG)
-
-if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
-    # explicitly add -cpp to run C preprocessor if required
-    set(GNU_WARN "-Wall -Wextra -Wimplicit-interface -Wimplicit-procedure \
-      -Warray-temporaries -Wrealloc-lhs -pedantic")
-    set(_FFLAGS "${GNU_WARN} -std=f2008")
-    set(_FFLAGS_DEBUG "-fcheck=all -Og")
-elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
-    if (WIN32)
-        set (_FFLAGS "/warn:all /standard-semantics /stand:f08")
-        set(_FFLAGS_DEBUG "/check:all")
-    else ()
-        set (_FFLAGS "-warn all -standard-semantics -std08")
-        set(_FFLAGS_DEBUG "-check all")
-    endif (WIN32)
-endif ()
-
-message(STATUS "Default compiler flags: ${CMAKE_Fortran_FLAGS}")
-# Make sure build type is upper case, otherwise the wrong flags will be shown
-string(TOUPPER "${CMAKE_BUILD_TYPE}" _CONFIG)
-if (CMAKE_Fortran_FLAGS_${_CONFIG})
-    message(STATUS "Default compiler flags for ${CMAKE_BUILD_TYPE}: ${CMAKE_Fortran_FLAGS_${_CONFIG}}")
-endif ()
-if (_FFLAGS)
-    message(STATUS "Add. compiler flags: ${_FFLAGS}")
-endif ()
-if (_FFLAGS_${_CONFIG})
-    message(STATUS "Add. compiler flags for ${CMAKE_BUILD_TYPE}: ${_FFLAGS_${_CONFIG}}")
-endif ()
-
 # set FFLAGS for all code in numfort/* directories
-set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS}")
-set (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${_FFLAGS_DEBUG}")
+set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${${CMAKE_PROJECT_NAME}_FFLAGS}")
+set (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${${CMAKE_PROJECT_NAME}_FFLAGS_DEBUG}")
 
 ################################################################################
 # Target definitions

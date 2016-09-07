@@ -1,6 +1,8 @@
       subroutine fpcosp(m,x,y,w,n,t,e,maxtr,maxbin,c,sq,sx,bind,nm,mb,a,
      *
      * b,const,z,zz,u,q,info,up,left,right,jbind,ibind,ier)
+
+      use constraints_tree_mod
 c  ..
 c  ..scalar arguments..
       real*8 sq
@@ -12,11 +14,13 @@ c  ..array arguments..
      * ibind(mb)
       logical bind(n)
 c  ..local scalars..
-      integer count,i,i1,j,j1,j2,j3,k,kdim,k1,k2,k3,k4,k5,k6,
-     * l,lp1,l1,l2,l3,merk,nbind,number,n1,n4,n6
+      integer i,i1,j,j1,j2,j3,k,kdim,k1,k2,k3,k4,k5,k6,
+     * l,lp1,l1,l2,l3,nbind,number,n1,n4,n6
       real*8 f,wi,xi
 c  ..local array..
       real*8 h(4)
+      target :: up, left, right, info
+      type (constraints_tree) :: tree
 c  ..subroutine references..
 c    fpbspl,fpadno,fpdeno,fpfrno,fpseno
 c  ..
@@ -42,12 +46,7 @@ c  fix the parameters which determine these constraints.
   10  continue
 c  initialize the triply linked tree which is used to find the subset
 c  of constraints ibind(1),...ibind(nbind).
-      count = 1
-      info(1) = 0
-      left(1) = 0
-      right(1) = 0
-      up(1) = 1
-      merk = 1
+      call tree%init (maxtr, up, left, right, info)
 c  set up the normal equations  n'nc=n'y  where n denotes the m x (n-4)
 c  observation matrix with elements ni,j = wi*nj(xi)  and y is the
 c  column vector with elements yi*wi.
@@ -303,17 +302,18 @@ c  arranged in increasing order.
         do 420 i=k,nbind
           jbind(i+1) = ibind(i)
  420    continue
- 430    call fpadno(maxtr,up,left,right,info,count,merk,jbind,n1,ier)
+c 430    call fpadno(maxtr,up,left,right,info,count,merk,jbind,n1,ier)
+ 430    call tree%add_constraint (jbind(1:n1), ier)
 c  test whether the storage space which is required for the tree,exceeds
 c  the available storage space.
-        if(ier.ne.0) go to 560
+        if (ier /= TREE_STATUS_SUCCESS) go to 560
  440  continue
 c  test whether the solution of the least-squares problem with equality
 c  constraints is a feasible solution.
       if(number.eq.0) go to 470
 c  test whether there are still cases with nbind constraints in
 c  equality form to be considered.
- 450  if(merk.gt.1) go to 460
+ 450  if(tree%has_constraints()) go to 460
       nbind = n1
 c  test whether the number of knots where s''(x)=0 exceeds maxbin.
       if(nbind.gt.maxbin) go to 550
@@ -321,12 +321,14 @@ c  test whether the number of knots where s''(x)=0 exceeds maxbin.
       ibind(n1) = 0
 c  search which cases with nbind constraints in equality form
 c  are going to be considered.
-      call fpdeno2 (maxtr, up, left, right, nbind, merk)
-      
+c      call fpdeno2 (maxtr, up, left, right, nbind, merk)
+      call tree%remove_constraints (nbind)
 c  test whether the quadratic programming problem has a solution.
-      if(merk.eq.1) go to 570
+c      if(merk.eq.1) go to 570
+      if (.not. tree%has_constraints()) go to 570
 c  find a new case with nbind constraints in equality form.
- 460  call fpseno(maxtr,up,left,right,info,merk,ibind,nbind)
+c 460  call fpseno(maxtr,up,left,right,info,merk,ibind,nbind)
+ 460  call tree%next_constraint (ibind(1:nbind))
       go to 150
 c  test whether the feasible solution is optimal.
  470  ier = 0
