@@ -46,7 +46,7 @@ c  fix the parameters which determine these constraints.
   10  continue
 c  initialize the triply linked tree which is used to find the subset
 c  of constraints ibind(1),...ibind(nbind).
-      call tree%init (maxtr, up, left, right, info)
+      call tree%init (up, left, right, info)
 c  set up the normal equations  n'nc=n'y  where n denotes the m x (n-4)
 c  observation matrix with elements ni,j = wi*nj(xi)  and y is the
 c  column vector with elements yi*wi.
@@ -322,7 +322,9 @@ c  test whether the number of knots where s''(x)=0 exceeds maxbin.
 c  search which cases with nbind constraints in equality form
 c  are going to be considered.
 c      call fpdeno2 (maxtr, up, left, right, nbind, merk)
-      call tree%remove_constraints (nbind)
+      call tree%keep_constraints (nbind)
+c  Reset branch pointer to the left-most branch of length nbind
+      call tree%reset_branch_pointer ()
 c  test whether the quadratic programming problem has a solution.
 c      if(merk.eq.1) go to 570
       if (.not. tree%has_constraints()) go to 570

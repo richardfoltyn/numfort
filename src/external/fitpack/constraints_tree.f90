@@ -13,25 +13,24 @@ module constraints_tree_mod
         integer :: ifree = 1, ncount = 0, maxtr = -1, ibranch = -1
     contains
         procedure, public, pass :: init => tree_init
-        procedure, public, pass :: remove_constraints
+        procedure, public, pass :: keep_constraints
         procedure, public, pass :: add_constraint
         procedure, public, pass :: has_constraints
         procedure, public, pass :: next_constraint
+        procedure, public, pass :: reset_branch_pointer
         procedure, pass :: insert_node
         procedure, pass :: delete_node
-        procedure, pass :: reset_branch_pointer
         procedure, pass :: remove_subtree
         procedure, pass :: insert_tail
     end type
 
 contains
 
-subroutine tree_init (self, maxtr, up, left, right, info)
+subroutine tree_init (self, up, left, right, info)
     class (constraints_tree), intent(in out) :: self
-    integer :: maxtr
-    integer, dimension(maxtr), target :: up, left, right, info
+    integer, dimension(:), target, contiguous :: up, left, right, info
 
-    intent (in) :: maxtr, up, left, right, info
+    intent (in) :: up, left, right, info
 
     integer :: status, idx
 
@@ -39,10 +38,17 @@ subroutine tree_init (self, maxtr, up, left, right, info)
     self%left => left
     self%right => right
     self%info => info
-    self%maxtr = maxtr
+    self%maxtr = size(up)
 
     self%ifree = 1
     self%ncount = 0
+
+    ! erase remaining space to make sure there is no nodes from previous call
+    ! of fpcosp
+    self%up = 0
+    self%left = 0
+    self%right = 0
+    self%info = 0
 
     ! insert root node
     call insert_node (self, 1, 0, idx, status)
@@ -133,7 +139,7 @@ pure function has_constraints (self) result(res)
     res = (self%ibranch > 1)
 end function
 
-pure subroutine remove_constraints (self, nbind)
+pure subroutine keep_constraints (self, nbind)
     class (constraints_tree), intent(in out) :: self
     integer, intent (in) :: nbind
 
@@ -142,8 +148,6 @@ pure subroutine remove_constraints (self, nbind)
         ! remove reference to left child node if it was deleted
         if (self%up(self%left(1)) == 0) self%left(1) = 0
     end if
-
-    call reset_branch_pointer (self)
 end subroutine
 
 
@@ -219,8 +223,6 @@ pure subroutine add_constraint (self, ibind, status)
     end if
 
     call insert_tail (self, il, ibind, status)
-
-    call reset_branch_pointer (self)
 end subroutine
 
 recursive pure subroutine insert_tail (self, idx, ibind, status)
@@ -296,44 +298,64 @@ pure subroutine next_constraint (self, ibind)
     integer, dimension(:), intent(in out) :: ibind
 
     integer :: inode, i, nbind, level
-    
+
     ! branch length
     nbind = size(ibind)
 
     ! no valid pointer to last branch
     if (self%ibranch == 1 .or. nbind == 0) return
-    
+
     inode = self%ibranch
     do i = nbind, 1, -1
         ibind(i) = self%info(inode)
         inode = self%up(inode)
     end do
 
-    ! find new branch endpoint and store it in merk. We assume that *all*
-    ! branches in tree are of length nbind, since fpseno is called right
-    ! after fpdeno in fpcosp.
+    ! find new branch endpoint and store it in merk. This algorithm only
+    ! searches for candidate branches to the right of the current branch.
+    ! This should be sufficient since reset_branch_pointer() is called
+    ! in fpcosp prior to first calling this routine for a particular number
+    ! of binding constraints. Thus when next_constraint() is called for the
+    ! first time for a particular value of nbind, the branch pointer should
+    ! point to the left-most branch.
     inode = self%ibranch
     level = nbind
-    do while (self%right(inode) == 0 .and. level > 0)
-        inode = self%up(inode)
-        level = level - 1
-    end do
+    start_search : do while (.true.)
+        do while (self%right(inode) == 0 .and. level > 0)
+            inode = self%up(inode)
+            level = level - 1
+        end do
 
-    if (inode == 1) then
+        ! reached root node, no other branch found
+        if (inode == 1) exit
+
+        ! at this point we found a node with a sibling to the right;
+        ! move left/right until we reached desired level; if branch is not
+        ! long enough we need to go back up and move to the right.
+        inode = self%right(inode)
+        do while (level < nbind)
+            if (self%left(inode) /= 0) then
+                inode = self%left(inode)
+            else if (self%right(inode) /= 0) then
+                inode  = self%right(inode)
+            else
+                ! dead end: have not reached desired level yet, but cannot
+                ! go either down or right; need to move back up until we
+                ! find a sibling to the right
+                cycle start_search
+            end if
+            level = level + 1
+        end do
+        ! check that the node found is at level nbind, ie does not have
+        ! child nodes; in that case we are done.
+        if (level == nbind .and. self%left(inode) == 0) exit
+    end do start_search
+
+    ! this should never happen!
+    if (inode /= 1 .and. level /= nbind) then
         self%ibranch = 1
-        return
     end if
 
-    ! at this point we found a node with a sibling to the right
-    inode = self%right(inode)
-    do while (level < nbind)
-        if (self%left(inode) /= 0) then
-            inode = self%left(inode)
-        else if (self%right(inode) /= 0) then
-            inode  = self%right(inode)
-        end if
-        level = level + 1
-    end do
     self%ibranch = inode
 
 end subroutine
