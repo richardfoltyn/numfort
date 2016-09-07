@@ -112,10 +112,11 @@ subroutine concon_wrapper (iopt, x, y, w, v, s, maxtr, maxbin, n, knots, coefs, 
     character (len=100) :: msg
     real (PREC) :: ls, lssr
     type (workspace), target :: lwork
-    class (workspace), pointer :: ptr_work => null()
+    class (workspace), pointer :: ptr_work
 
     procedure (concon_if) :: concon
 
+    nullify (ptr_work)
     ! check for conformable arrays
     lstatus = INTERP_STATUS_INVALID_INPUT
 

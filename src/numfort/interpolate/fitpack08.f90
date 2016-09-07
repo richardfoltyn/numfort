@@ -119,12 +119,13 @@ subroutine curfit_wrapper (iopt, x, y, w, xb, xe, k, s, work, n, knots, coefs, s
     character (len=100) :: msg
     real (PREC) :: lxb, lxe, ls, lssr
     type (workspace), target :: lwork
-    class (workspace), pointer :: ptr_work => null()
+    class (workspace), pointer :: ptr_work
 
     procedure (curfit_if) :: curfit
 
     ! check for conformable arrays
     lstatus = INTERP_STATUS_INVALID_INPUT
+    nullify(ptr_work)
 
     ! initialize default values
     lk = DEFAULT_SPLINE_DEGREE

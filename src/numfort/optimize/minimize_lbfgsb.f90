@@ -112,7 +112,7 @@ subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
     integer :: lmaxiter, lmaxfun, lm, liprint
     real (PREC) :: lfactr, lpgtol
     type (workspace), allocatable, target :: lwork
-    type (workspace), pointer :: ptr_work => NULL()
+    type (workspace), pointer :: ptr_work
     character (len=100) :: msg
 
     integer :: nrwrk, niwrk, n, status
@@ -134,6 +134,7 @@ subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
     integer :: iter, nfeval
 
     status = OPTIM_STATUS_INVALID_INPUT
+    nullify (ptr_work)
 
     ! set defaults for optional parameters
     if (present(lbounds)) then
