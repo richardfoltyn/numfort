@@ -21,7 +21,6 @@ module constraints_tree_mod
         procedure, pass :: insert_node
         procedure, pass :: delete_node
         procedure, pass :: remove_subtree
-        procedure, pass :: insert_tail
     end type
 
 contains
@@ -212,85 +211,81 @@ pure subroutine add_constraint (self, ibind, status)
     integer, dimension(:), intent(in) :: ibind
     integer, intent(out) :: status
 
-    integer :: il
+    integer :: nbind, inode, vnode, vinsert, inew, il, level
 
-    if (size(ibind) == 0) return
+    status = TREE_STATUS_SUCCESS
+    nbind = size(ibind)
 
-    il = self%left(1)
-    if (il == 0) then
-        call insert_node (self, 1, ibind(1), il, status, leftof=1)
+    if (nbind == 0) return
+
+    inode = self%left(1)
+    level = 1
+
+    if (inode == 0) then
+        call insert_node (self, 1, ibind(1), inode, status, leftof=1)
         if (status /= TREE_STATUS_SUCCESS) return
+        level = level + 1
     end if
 
-    call insert_tail (self, il, ibind, status)
-end subroutine
+    do while (level <= nbind)
+        vnode = self%info(inode)
+        vinsert = ibind(level)
 
-recursive pure subroutine insert_tail (self, idx, ibind, status)
-    class (constraints_tree), intent(in out) :: self
-    integer :: idx, status
-    integer, dimension(:) :: ibind
+        if (vnode == vinsert) then
+            ! need to pass execution on to child node
+            if (level < nbind) then
+                ! if child node exists, then pass processing of the remaining tail
+                ! to child instance; otherwise create child node first
+                if (self%left(inode) == 0) then
+                    ! need to create child note first
+                    call insert_node (self, inode, vinsert, inew, status, leftof=inode)
+                    if (status /= TREE_STATUS_SUCCESS) goto 100
+                    inode = inew
+                else
+                    inode = self%left(inode)
+                end if
 
-    intent (in) :: idx, ibind
-    intent (out) :: status
-
-    integer :: val, maxtr, il, inew
-
-    val = self%info(idx)
-    status = TREE_STATUS_SUCCESS
-
-    if (val == ibind(1)) then
-        if (size(ibind) > 1) then
-            ! if child node exists, then pass processing of the remaining tail
-            ! to child instance; otherwise create child node first
-            if (self%left(idx) == 0) then
-                ! need to create child note first
-                call insert_node (self, idx, ibind(2), inew, status, leftof=idx)
+                level = level + 1
+            end if
+        else if (vnode < vinsert) then
+            ! move to the right, if necessary creating a right node first
+            if (self%right(inode) == 0) then
+                call insert_node (self, self%up(inode), vinsert, inew, status, rightof=inode)
                 if (status /= TREE_STATUS_SUCCESS) goto 100
+                inode = inew
+            else
+                inode = self%right(inode)
+            end if
+        else
+            ! Handle case vnode > vinsert:
+            ! need to insert a new node the current one
+            ! first, so find the node with right pointing to current node
+            il = self%left(self%up(inode))
+            if (il == inode) then
+                ! current node is the first child
+                call insert_node (self, self%up(inode), vinsert, inew, status, leftof=self%up(inode))
+            else
+                ! Need to insert a sibling whose right reference points to current
+                ! node. Note that even if there are other siblings to the right,
+                ! it must be true that their info < val, as otherwise we wouldn't
+                ! end up at this point.
+                do while (self%right(il) /= inode)
+                    il = self%right(il)
+                end do
+                call insert_node (self, self%up(inode), vinsert, inew, status, rightof=il)
             end if
 
-            call insert_tail (self, self%left(idx), ibind(2:), status)
             if (status /= TREE_STATUS_SUCCESS) goto 100
-        ! else
-        !     ! end of branch reached, nothing more to insert. Set current
-        !     ! branch pointer to this index.
-        !     self%ibranch = idx
-        end if
-    else if (val < ibind(1)) then
-        ! move to the right, if necessary creating a right node first
-        if (self%right(idx) == 0) then
-            call insert_node (self, self%up(idx), ibind(1), inew, status, rightof=idx)
-            if (status /= TREE_STATUS_SUCCESS) goto 100
-        end if
 
-        call insert_tail (self, self%right(idx), ibind, status)
-        if (status /= TREE_STATUS_SUCCESS) goto 100
-    else if (val > ibind(1)) then
-        ! need to insert a new node before the current one
-        ! first, find the node with right pointing to current node
-        il = self%left(self%up(idx))
-        if (il == idx) then
-            ! current node is the first child
-            call insert_node (self, self%up(idx), ibind(1), inew, status, leftof=self%up(idx))
-        else
-            ! Need to insert a sibling whose right reference points to current
-            ! node. Note that even if there are other siblings to the right,
-            ! it must be true that their info < val, as otherwise we wouldn't
-            ! end up at this point.
-            do while (self%right(il) /= idx)
-                il = self%right(il)
-            end do
-            call insert_node (self, self%up(idx), ibind(1), inew, status, rightof=il)
+            self%right(inew) = inode
+            inode = inew
         end if
-
-        if (status /= TREE_STATUS_SUCCESS) goto 100
-        self%right(inew) = idx
-
-        call insert_tail (self, inew, ibind, status)
-        if (status /= TREE_STATUS_SUCCESS) goto 100
-    end if
+    end do
 
     ! No special error handling required at this point
+    return
 100 continue
+
 end subroutine
 
 pure subroutine next_constraint (self, ibind)
