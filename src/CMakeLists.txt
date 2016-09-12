@@ -73,6 +73,7 @@ list(APPEND ${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_BLA_LIBRARIES})
 
 set(_FFLAGS)
 set(_FFLAGS_DEBUG)
+unset(IFORT_STANDARD_SEMANTICS)
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     # explicitly add -cpp to run C preprocessor if required
@@ -84,11 +85,17 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
         set (_FFLAGS "/warn:all /standard-semantics /stand:f08")
         set(_FFLAGS_DEBUG "/check:all")
+        set(IFORT_STANDARD_SEMANTICS "/standard-semantics")
     else ()
         set (_FFLAGS "-warn all -standard-semantics -std08")
         set(_FFLAGS_DEBUG "-check all")
+        set(IFORT_STANDARD_SEMANTICS "-standard-semantics")
     endif (WIN32)
 endif ()
+
+# add standard semantics to compiler flags even for F77 files, in case
+# these reference any submodules
+set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${IFORT_STANDARD_SEMANTICS}")
 
 message(STATUS "Default compiler flags: ${CMAKE_Fortran_FLAGS}")
 # Make sure build type is upper case, otherwise the wrong flags will be shown
