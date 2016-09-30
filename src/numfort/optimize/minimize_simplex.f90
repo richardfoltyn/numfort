@@ -88,7 +88,7 @@ subroutine minimize_simplex_real64 (func, x, tol, maxfun, quad, iprint, res)
     ! map mimum status into numfort_optimize status
     call map_ifault (status, msg)
 
-    if (status /= OPTIM_STATUS_CONVERGED) then
+    if (status /= OPTIM_STATUS_CONVERGED .and. iprint > OPTIM_PRINT_NONE) then
         write (ERROR_UNIT, *) msg
     end if
 
