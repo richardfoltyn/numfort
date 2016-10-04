@@ -117,13 +117,13 @@ subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
 
     integer :: nrwrk, niwrk, n, status
     ! lenghts of additional working arrays
-    integer, parameter :: ndsave = 29, nisave = 44, nlsave = 4, ncsave = 60
+    integer, parameter :: ndsave = 29, nisave = 44, nlsave = 4, ncsave = 60, ntask = 60
 
     ! working arrays passed to setulb
     real (PREC), dimension(:), pointer, contiguous :: ptr_wa, ptr_dsave
     integer, dimension(:), pointer, contiguous :: ptr_iwa, ptr_isave
-    logical, dimension(nlsave) :: lsave
-    character (ncsave) :: csave, task
+    logical, dimension(:), pointer, contiguous :: ptr_lsave
+    character (len=:), pointer :: ptr_csave, ptr_task
 
     ! lower/upper bound flags passed to setulb
     integer, dimension(size(x)) :: nbd
@@ -183,54 +183,63 @@ subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
     end if
 
     ! lump together real work array and dsave, and integer work
-    ! array and isave
-    call ptr_work%assert_allocated (nrwrk + ndsave, niwrk + nisave, ncsave, nlsave)
+    ! array and isave, task and csave
+    call ptr_work%assert_allocated (nrwrk + ndsave, niwrk + nisave, ncsave + ntask, nlsave)
 
     ptr_wa => ptr_work%rwrk(1:nrwrk)
     ptr_iwa => ptr_work%iwrk(1:niwrk)
     ptr_dsave => ptr_work%rwrk(nrwrk+1:)
     ptr_isave => ptr_work%iwrk(niwrk+1:)
+    ptr_lsave => ptr_work%lwrk(1:nlsave)
+    ptr_csave => ptr_work%cwrk(1:ncsave)
+    ptr_task => ptr_work%cwrk(ncsave+1:ncsave+ntask)
 
     ! transform boundaries to arguments accepted by routine
     call set_bounds_flags (llbounds, lubounds, nbd)
     ! overwrite local print level with value accepted by setulb
     liprint = set_print_level (liprint)
 
-    task = 'START'
+    ptr_task = 'START'
 
     iter = 0
     nfeval = 0
 
     do while (.true.)
         call setulb (n, lm, x, llbounds, lubounds, nbd, fx, gradx, lfactr, lpgtol, &
-            ptr_wa, ptr_iwa, task, liprint, csave, lsave, ptr_isave, ptr_dsave)
+            ptr_wa, ptr_iwa, ptr_task, liprint, ptr_csave, ptr_lsave, ptr_isave, ptr_dsave)
 
-        if (task(1:2) == 'FG') then
+        if (ptr_task(1:2) == 'FG') then
             call func (x, fx, gradx)
-        else if (task(1:5) == 'NEW_X') then
-            ! retrieve statitics stored in working array
+        else if (ptr_task(1:5) == 'NEW_X') then
+            ! retrieve statistics stored in working array
             iter = ptr_isave(30)
             nfeval = ptr_isave(34)
-            if (iter > lmaxiter .or. nfeval > lmaxfun) exit
+
+            ! check whether limits have been exceeded
+            if (iter > lmaxiter) then
+                ptr_task = 'STOP: Number of iterations exceeds limit'
+            else if (nfeval > lmaxfun) then
+                ptr_task = 'STOP: Total number of function evaluations exceeds limit'
+            end if
         else
             exit
         end if
     end do
 
-    if (task(1:4) == 'CONV') then
-        msg = task
+    if (ptr_task(1:4) == 'CONV') then
+        msg = ptr_task
         status = OPTIM_STATUS_CONVERGED
-    else if (task(1:5) == 'ERROR') then
-        msg = task
+    else if (ptr_task(1:5) == 'ERROR') then
+        msg = ptr_task
         status = OPTIM_STATUS_INVALID_INPUT
-    else if (task(1:4) == 'ABNO') then
-        msg = task
+    else if (ptr_task(1:4) == 'ABNO') then
+        msg = ptr_task
         status = OPTIM_STATUS_NOT_CONVERGED
     else if (iter > lmaxiter) then
-        msg = "STOP: number of iterations exceeded limit"
+        msg = "Number of iterations exceeded limit"
         status = OPTIM_STATUS_MAXITER
     else if (nfeval > lmaxfun) then
-        msg = "STOP: number of function evaluations exceeded limit"
+        msg = "Number of function evaluations exceeded limit"
         status = OPTIM_STATUS_MAXFUN
     end if
 
