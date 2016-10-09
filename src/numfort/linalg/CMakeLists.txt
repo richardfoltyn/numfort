@@ -7,3 +7,4 @@ set(SOURCE_FILES
 )
 
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
+add_dependencies(${COMPONENT_NAME} interfaces)

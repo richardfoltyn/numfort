@@ -172,6 +172,7 @@ set(${PROJECT_NAME}_BENCHMARKS_DIRECTORY "${CMAKE_BINARY_DIR}/bin/benchmarks")
 ################################################################################
 
 add_subdirectory(external)
+add_subdirectory(interfaces)
 add_subdirectory(numfort)
 
 ################################################################################
