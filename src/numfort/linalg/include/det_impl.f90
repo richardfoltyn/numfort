@@ -13,6 +13,9 @@ integer, dimension(:), allocatable :: ipiv
 
 integer :: pow, n, linfo, i
 
+! initialize to avoid compiler warnings
+d = 0.0_PREC
+
 if (size(a, 1) /= size(a, 2)) then
     write (ERROR_UNIT, *) "DET: a must be square matrix"
     return
