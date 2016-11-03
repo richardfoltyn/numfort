@@ -26,8 +26,8 @@ module numfort_optim_result_mod
         OPTIM_STATUS_UNKNOWN
 
     type, public :: optim_result
-        real (real64) :: fx_opt
-        real (real64), dimension(:), allocatable :: x_opt
+        real (real64) :: fx
+        real (real64), dimension(:), allocatable :: x
         integer :: nfev = -1, nit = -1, status = OPTIM_STATUS_UNKNOWN
         logical :: success = .false.
         character (len=:), allocatable :: msg
@@ -53,20 +53,20 @@ pure subroutine update_real64 (self, x, fx, status, nit, nfev, msg)
     if (present(x)) then
         n = size(x)
         ! allocate array to store optimal point, if needed
-        if (allocated(self%x_opt)) then
-            if (size(self%x_opt) /= n) then
-                deallocate (self%x_opt)
+        if (allocated(self%x)) then
+            if (size(self%x) /= n) then
+                deallocate (self%x)
             end if
         end if
 
-        if (.not. allocated(self%x_opt)) then
-            allocate (self%x_opt(n))
+        if (.not. allocated(self%x)) then
+            allocate (self%x(n))
         end if
 
-        self%x_opt(1:n) = x
+        self%x(1:n) = x
     end if
 
-    if (present(fx)) self%fx_opt = fx
+    if (present(fx)) self%fx = fx
     if (present(status)) then
         self%success = (status == OPTIM_STATUS_CONVERGED)
         self%status = status

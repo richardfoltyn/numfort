@@ -112,11 +112,11 @@ subroutine print_report(res)
 
     print "('#', t3, 'Example ', i0)", ii
     print "(t3, 'Exit status: ', i0)", res%status
-    print "(t3, 'Function value at minimum: ', en22.15e2)", res%fx_opt
+    print "(t3, 'Function value at minimum: ', en22.15e2)", res%fx
     print "(t3, 'Number of iterations: ', i0)", res%nit
     print "(t3, 'Number of function evaluations: ', i0)", res%nfev
     write (OUTPUT_UNIT, advance='no', &
-        fmt="(t3, 'Optimum located at: [', t25, *(t25, 5(f6.4, :, ', '), :, /))") res%x_opt
+        fmt="(t3, 'Optimum located at: [', t25, *(t25, 5(f6.4, :, ', '), :, /))") res%x
     print *, ' ]'
 
     ii = ii + 1
