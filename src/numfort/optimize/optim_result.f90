@@ -10,6 +10,8 @@ module numfort_optim_result_mod
     implicit none
     private
 
+    integer, parameter :: PREC = real64
+
     integer (ENUM_KIND), parameter :: OPTIM_STATUS_CONVERGED = 0
     integer (ENUM_KIND), parameter :: OPTIM_STATUS_MAXITER = 1
     integer (ENUM_KIND), parameter :: OPTIM_STATUS_MAXFUN = 2
@@ -25,16 +27,21 @@ module numfort_optim_result_mod
         OPTIM_STATUS_INVALID_INPUT, &
         OPTIM_STATUS_UNKNOWN
 
+    integer, parameter :: UNINITIALIZED_COUNTER = -1
+
     type, public :: optim_result
-        real (real64) :: fx
-        real (real64), dimension(:), allocatable :: x
-        integer :: nfev = -1, nit = -1, status = OPTIM_STATUS_UNKNOWN
+        real (PREC) :: fx = 0.0_PREC
+        real (PREC), dimension(:), allocatable :: x
+        integer :: nfev = UNINITIALIZED_COUNTER, nit = UNINITIALIZED_COUNTER
+        integer :: status = OPTIM_STATUS_UNKNOWN
         logical :: success = .false.
-        character (len=:), allocatable :: msg
+        character (100) :: msg
     contains
         procedure, pass, private :: update_real64
         procedure, pass, private :: update_real32
         generic, public :: update => update_real32, update_real64
+
+        procedure, pass, private :: reset
     end type
 
 contains
@@ -48,7 +55,9 @@ pure subroutine update_real64 (self, x, fx, status, nit, nfev, msg)
     intent (in) :: x, fx, nit, nfev, msg, status
     optional :: x, fx, nit, nfev, msg, status
 
-    integer :: n, nmsg
+    integer :: n
+
+    call self%reset ()
 
     if (present(x)) then
         n = size(x)
@@ -67,25 +76,13 @@ pure subroutine update_real64 (self, x, fx, status, nit, nfev, msg)
     end if
 
     if (present(fx)) self%fx = fx
+
     if (present(status)) then
         self%success = (status == OPTIM_STATUS_CONVERGED)
         self%status = status
     end if
 
-    if (present(msg)) then
-        nmsg = len_trim(msg)
-        if (allocated(self%msg)) then
-            if (len(self%msg) < nmsg) then
-                deallocate (self%msg)
-            end if
-        end if
-
-        if (.not. allocated (self%msg)) then
-            allocate (character (nmsg) :: self%msg)
-        end if
-
-        self%msg = msg
-    end if
+    if (present(msg)) self%msg = msg
 
     if (present(nit)) self%nit = nit
     if (present(nfev)) self%nfev = nfev
@@ -109,6 +106,17 @@ pure subroutine update_real32 (self, x, fx, status, nit, nfev, msg)
 
     call update_real64 (self, x64, real(fx, real64), status, nit, nfev, msg)
 
+end subroutine
+
+pure subroutine reset (self)
+    class (optim_result), intent(in out) :: self
+
+    self%nit = UNINITIALIZED_COUNTER
+    self%nfev = UNINITIALIZED_COUNTER
+    self%msg = ""
+    self%fx = 0.0_PREC
+    self%status = OPTIM_STATUS_UNKNOWN
+    self%success = .false.
 end subroutine
 
 end module
