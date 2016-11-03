@@ -7,6 +7,7 @@ set(SOURCE_FILES
     optim_result.f90
     minimize_lbfgsb.f90
     minimize_simplex.f90
+    brent.f90
 )
 
 include_directories(${${CMAKE_PROJECT_NAME}_INCLUDE_DIRS})

@@ -9,6 +9,8 @@ module numfort_optimize
 
     use numfort_optimize_lbfgsb, only: minimize_lbfgsb
     use numfort_optimize_simplex, only: minimize_simplex
+
+    use numfort_optimize_brent, only: brentq
     
     implicit none
 
