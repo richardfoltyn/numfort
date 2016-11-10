@@ -34,7 +34,8 @@ contains
 subroutine root_hybrd_real64 (f, x, xtol, maxfev, ml, mu, eps, factor, diag, work, res)
     integer, parameter :: PREC = real64
     procedure (func_vec_vec_real64) :: f
-    real (PREC), dimension(:) :: x
+    ! Note: will be passed using F77 implicit interface, ensure contiguous array.
+    real (PREC), dimension(:), contiguous :: x
     real (PREC), dimension(:), target :: diag
     real (PREC) :: xtol, eps, factor
     integer :: maxfev, ml, mu

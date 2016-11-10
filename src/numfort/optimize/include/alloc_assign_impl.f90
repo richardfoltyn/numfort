@@ -12,7 +12,7 @@ if (present(src)) then
     end if
 
     if (.not. allocated(dst)) then
-        allocate (dst, source=src)
+        allocate (dst(n), source=src)
     else
         dst(1:n) = src
     end if

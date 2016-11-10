@@ -15,4 +15,4 @@ include_directories(${${CMAKE_PROJECT_NAME}_INCLUDE_DIRS})
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
 add_dependencies(${COMPONENT_NAME} common)
 # external libraries
-add_dependencies(${COMPONENT_NAME} simplex_csiro lbfgsb_bmnz minpack)
+add_dependencies(${COMPONENT_NAME} interfaces simplex_csiro lbfgsb_bmnz minpack)
