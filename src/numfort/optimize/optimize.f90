@@ -11,7 +11,9 @@ module numfort_optimize
     use numfort_optimize_simplex, only: minimize_simplex
 
     use numfort_optimize_brent, only: brentq
-    
+
+    use numfort_optimize_minpack, only: root_hybrd
+
     implicit none
 
 end module

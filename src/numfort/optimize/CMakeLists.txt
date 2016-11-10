@@ -8,10 +8,11 @@ set(SOURCE_FILES
     minimize_lbfgsb.f90
     minimize_simplex.f90
     brent.f90
+    minpack.f90
 )
 
 include_directories(${${CMAKE_PROJECT_NAME}_INCLUDE_DIRS})
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
 add_dependencies(${COMPONENT_NAME} common)
 # external libraries
-add_dependencies(${COMPONENT_NAME} simplex_csiro lbfgsb_bmnz)
+add_dependencies(${COMPONENT_NAME} simplex_csiro lbfgsb_bmnz minpack)
