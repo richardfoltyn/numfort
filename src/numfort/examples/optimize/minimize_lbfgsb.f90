@@ -112,7 +112,7 @@ subroutine print_report(res)
 
     print "('#', t3, 'Example ', i0)", ii
     print "(t3, 'Exit status: ', i0)", res%status
-    print "(t3, 'Function value at minimum: ', en22.15e2)", res%fx
+    print "(t3, 'Function value at minimum: ', en22.15e2)", res%fx(1)
     print "(t3, 'Number of iterations: ', i0)", res%nit
     print "(t3, 'Number of function evaluations: ', i0)", res%nfev
     write (OUTPUT_UNIT, advance='no', &

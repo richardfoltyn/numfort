@@ -30,8 +30,7 @@ module numfort_optim_result_mod
     integer, parameter :: UNINITIALIZED_COUNTER = -1
 
     type, public :: optim_result
-        real (PREC) :: fx = 0.0_PREC
-        real (PREC), dimension(:), allocatable :: x
+        real (PREC), dimension(:), allocatable :: x, fx
         integer :: nfev = UNINITIALIZED_COUNTER, nit = UNINITIALIZED_COUNTER
         integer :: status = OPTIM_STATUS_UNKNOWN
         logical :: success = .false.
@@ -39,43 +38,70 @@ module numfort_optim_result_mod
     contains
         procedure, pass, private :: update_real64
         procedure, pass, private :: update_real32
-        generic, public :: update => update_real32, update_real64
-
+        procedure, pass, private :: update_scalar_scalar_real64
+        procedure, pass, private :: update_vec_scalar_real64
+        generic, public :: update => update_real32, update_real64, &
+            update_scalar_scalar_real64, update_vec_scalar_real64
         procedure, pass, private :: reset
     end type
 
+    interface alloc_assign
+        module procedure alloc_assign_real32, alloc_assign_real64
+    end interface
+
 contains
+
+! ------------------------------------------------------------------------------
+! Implementations for update() generic routine
+
+pure subroutine update_scalar_scalar_real64 (self, x, fx, status, nit, nfev, msg)
+    integer, parameter :: PREC = real64
+    class (optim_result), intent(in out) :: self
+    real (PREC) :: x, fx
+    integer :: nit, nfev, status
+    character (len=*) :: msg
+
+    intent (in) :: x, fx, nit, nfev, msg, status
+    optional :: nit, nfev, msg, status
+
+    real (PREC), dimension(1) :: x1, fx1
+
+    x1(1) = x
+    fx1(1) = fx
+
+    call self%update (x1, fx1, status, nit, nfev, msg)
+end subroutine
+
+pure subroutine update_vec_scalar_real64 (self, x, fx, status, nit, nfev, msg)
+    integer, parameter :: PREC = real64
+    class (optim_result), intent(in out) :: self
+    real (PREC) :: x(:), fx
+    integer :: nit, nfev, status
+    character (len=*) :: msg
+
+    intent (in) :: x, fx, nit, nfev, msg, status
+    optional :: nit, nfev, msg, status
+
+    real (PREC), dimension(1) :: fx1
+
+    fx1(1) = fx
+
+    call self%update (x, fx1, status, nit, nfev, msg)
+end subroutine
 
 pure subroutine update_real64 (self, x, fx, status, nit, nfev, msg)
     class (optim_result), intent(in out) :: self
-    real (real64) :: x(:), fx
+    real (real64), dimension(:) :: x, fx
     integer :: nit, nfev, status
     character (len=*) :: msg
 
     intent (in) :: x, fx, nit, nfev, msg, status
     optional :: x, fx, nit, nfev, msg, status
 
-    integer :: n
-
     call self%reset ()
 
-    if (present(x)) then
-        n = size(x)
-        ! allocate array to store optimal point, if needed
-        if (allocated(self%x)) then
-            if (size(self%x) /= n) then
-                deallocate (self%x)
-            end if
-        end if
-
-        if (.not. allocated(self%x)) then
-            allocate (self%x(n))
-        end if
-
-        self%x(1:n) = x
-    end if
-
-    if (present(fx)) self%fx = fx
+    call alloc_assign (x, self%x)
+    call alloc_assign (fx, self%fx)
 
     if (present(status)) then
         self%success = (status == OPTIM_STATUS_CONVERGED)
@@ -104,7 +130,7 @@ pure subroutine update_real32 (self, x, fx, status, nit, nfev, msg)
 
     x64 = real(x, real64)
 
-    call update_real64 (self, x64, real(fx, real64), status, nit, nfev, msg)
+    call self%update (x64, real(fx, real64), status, nit, nfev, msg)
 
 end subroutine
 
@@ -117,6 +143,16 @@ pure subroutine reset (self)
     self%fx = 0.0_PREC
     self%status = OPTIM_STATUS_UNKNOWN
     self%success = .false.
+end subroutine
+
+pure subroutine alloc_assign_real64 (src, dst)
+    integer, parameter :: PREC = real64
+    include "include/alloc_assign_impl.f90"
+end subroutine
+
+pure subroutine alloc_assign_real32 (src, dst)
+    integer, parameter :: PREC = real32
+    include "include/alloc_assign_impl.f90"
 end subroutine
 
 end module

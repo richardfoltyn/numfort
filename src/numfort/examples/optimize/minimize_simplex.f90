@@ -32,7 +32,7 @@ subroutine example1 ()
     call minimize_simplex (fobj1, x, tol, maxfun, quad, iprint, res)
 
     print "('Exit status: ', i0, ' - ', a100)", res%status, res%msg
-    print "('Function value at minimum: ', en22.15e2)", res%fx
+    print "('Function value at minimum: ', en22.15e2)", res%fx(1)
     write (OUTPUT_UNIT, advance='no', &
         fmt="('Optimum located at: [', t23, *(t23, 5(f6.4, :, ', '), :, /))") res%x
     print *, ' ]'
