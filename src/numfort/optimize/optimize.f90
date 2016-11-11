@@ -12,7 +12,7 @@ module numfort_optimize
 
     use numfort_optimize_brent, only: brentq
 
-    use numfort_optimize_minpack, only: root_hybrd
+    use numfort_optimize_minpack
 
     implicit none
 

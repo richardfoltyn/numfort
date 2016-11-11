@@ -6,7 +6,7 @@ module minpack_interfaces
     integer, private, parameter :: PREC = real64
 
     interface
-        subroutine hybrd_if (fcn,n,x,fvec,xtol,maxfev,ml,mu,epsfcn,diag, &
+        subroutine hybrd (fcn,n,x,fvec,xtol,maxfev,ml,mu,epsfcn,diag, &
                         mode,factor,nprint,info,nfev,fjac,ldfjac,r,lr, &
                         qtf,wa1,wa2,wa3,wa4)
             import PREC
@@ -18,13 +18,33 @@ module minpack_interfaces
             external fcn
         end subroutine
 
-        subroutine hybrd1_if (fcn,n,x,fvec,tol,info,wa,lwa)
+        subroutine lmdif (fcn,m,n,x,fvec,ftol,xtol,gtol,maxfev,epsfcn, &
+                        diag,mode,factor,nprint,info,nfev,fjac,ldfjac, &
+                        ipvt,qtf,wa1,wa2,wa3,wa4)
+
             import PREC
-            integer, intent(in) :: n, lwa
-            integer, intent(out) :: info
-            real (PREC), intent(in) :: tol
-            real (PREC), intent(in out) :: x(n), fvec(n), wa(lwa)
             external fcn
+            integer, intent(in) :: m, n, maxfev, mode, nprint, ldfjac
+            integer, intent(out) :: info, nfev
+            integer, intent(out) :: ipvt(n)
+            real (PREC), intent(in) :: ftol, xtol, gtol, epsfcn, factor
+            real (PREC), intent(in) :: diag(n)
+            real (PREC), intent(in out) :: x(n), fvec(n), fjac(ldfjac, n), &
+                qtf(n), wa1(n), wa2(n), wa3(n), wa4(n)
+        end subroutine
+
+        subroutine lmder (fcn,m,n,x,fvec,fjac,ldfjac,ftol,xtol,gtol, &
+                        maxfev,diag,mode,factor,nprint,info,nfev,njev, &
+                        ipvt,qtf,wa1,wa2,wa3,wa4)
+            import PREC
+            external fcn
+            integer, intent(in) :: m, n, maxfev, mode, nprint, ldfjac
+            integer, intent(out) :: info, nfev, njev
+            integer, intent(out) :: ipvt(n)
+            real (PREC), intent(in) :: ftol, xtol, gtol, factor
+            real (PREC), intent(in) :: diag(n)
+            real (PREC), intent(in out) :: x(n), fvec(n), fjac(ldfjac, n), &
+                qtf(n), wa1(n), wa2(n), wa3(n), wa4(n)
         end subroutine
     end interface
 

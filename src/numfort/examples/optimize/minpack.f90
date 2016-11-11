@@ -7,33 +7,55 @@ program minpack_examples
 
     integer, parameter :: PREC = real64
 
+    character (len=10) :: msg
+    read (*, *) msg
+
     call example1 ()
+    call example2 ()
 
 contains
 
 
-! Example using a linear equation system
+! Examples for hybr() implemenetation of Powell's hybrid method
 subroutine example1 ()
 
-    real (PREC), dimension(2) :: x
+    real (PREC), dimension(2) :: x, fx
     type (optim_result) :: res
     type (workspace) :: work
-
-    !character (len=100) :: msg
 
     ! solution for func1 is x1 = 22/23 and x2 = 18/23
     x = 0.0
 
-    !read (*,*) msg
-
-    call root_hybrd (func1, x, work=work, res=res)
+    call root_hybr (func1, x, fx, work=work, res=res)
     call print_report (res)
 
     ! nonlinear equation system
     ! (one?) solution for func2 == 0 is x1 = 1.21741 and x2 = 2.69888
     x = 2.0
     ! test call without passing in workspace object
-    call root_hybrd (func2, x, res=res)
+    call root_hybr (func2, x, fx, res=res)
+    call print_report (res)
+
+end subroutine
+
+! Examples for lstsq using the Levenberg-Marquardt algorithm
+subroutine example2 ()
+
+    real (PREC), dimension(2) :: x, fx
+    type (optim_result) :: res
+    type (workspace) :: work
+
+    ! solution for func1 is x1 = 22/23 and x2 = 18/23
+    x = 0.0
+
+    call root_lstsq (func1, x, fx, work=work, res=res)
+    call print_report (res)
+
+    ! nonlinear equation system
+    ! (one?) solution for func2 == 0 is x1 = 1.21741 and x2 = 2.69888
+    x = 2.0
+    ! test call without passing in workspace object
+    call root_lstsq (func2, x, fx, res=res)
     call print_report (res)
 
 end subroutine
