@@ -51,7 +51,6 @@ list(APPEND CMAKE_MODULE_PATH
 
 if(BUILD_TESTS)
     enable_testing()
-    find_package(FCore)
 endif()
 
 ################################################################################

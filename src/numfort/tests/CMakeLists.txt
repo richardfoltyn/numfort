@@ -1,12 +1,13 @@
 # src/tests/CMakeLists.txt
 # Configuration file for numfort unit tests
 
-set(TEST_DIRS arrays)
-set(TEST_SOURCE_FILES_ARRAYS arrays/indexing.f90)
+find_package(FCorelib REQUIRED)
 
-set(LIBS ${${CMAKE_PROJECT_NAME}_LIBRARIES} ${FCore_LIBRARIES})
+set(TEST_DIRS arrays interpolate)
 
-include_directories(${FCore_INCLUDE_DIRS} ${${CMAKE_PROJECT_NAME}_INCLUDE_DIRS})
+set(LIBS ${${CMAKE_PROJECT_NAME}_LIBRARIES} ${FCorelib_LIBRARIES})
+
+include_directories(${FCorelib_INCLUDE_DIRS} ${${CMAKE_PROJECT_NAME}_INCLUDE_DIRS})
 
 foreach (dir IN LISTS TEST_DIRS)
 
@@ -14,10 +15,10 @@ foreach (dir IN LISTS TEST_DIRS)
 		"${${CMAKE_PROJECT_NAME}_TESTS_DIRECTORY}/${dir}"
 	)
 
-    string(TOUPPER "${dir}" DIR_UPPER)
-    set(TEST_SOURCE_FILES ${TEST_SOURCE_FILES_${DIR_UPPER}})
+    unset(SOURCE_FILES)
+    file(GLOB SOURCE_FILES RELATIVE "${CMAKE_CURRENT_LIST_DIR}" "${dir}/*.f90")
 
-    foreach (test_source IN LISTS TEST_SOURCE_FILES)
+    foreach (test_source IN LISTS SOURCE_FILES)
         get_filename_component(stub "${test_source}" NAME_WE)
         set(exe_name ${dir}_${stub})
     	add_executable(${exe_name} "${test_source}")
