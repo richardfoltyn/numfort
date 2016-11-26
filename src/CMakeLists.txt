@@ -227,3 +227,19 @@ install(DIRECTORY ${${PROJECT_NAME}_MODDIR}/
 	DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/numfort"
 	FILES_MATCHING PATTERN "numfort*.mod"
 )
+
+
+################################################################################
+# Tests, examples, etc.
+
+if (BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
+
+if (BUILD_BENCHMARKS)
+    add_subdirectory(benchmarks)
+endif()
+
+if (BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif ()

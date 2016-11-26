@@ -36,15 +36,3 @@ foreach (_comp IN LISTS COMPONENTS)
 		PROPERTY ${CMAKE_PROJECT_NAME}_COMPONENT_TARGETS ${_comp}
 	)
 endforeach()
-
-if (BUILD_TESTS)
-    add_subdirectory(tests)
-endif()
-
-if (BUILD_BENCHMARKS)
-    add_subdirectory(benchmarks)
-endif()
-
-if (BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif ()
