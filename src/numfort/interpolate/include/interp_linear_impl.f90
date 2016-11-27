@@ -3,10 +3,20 @@
 ! Should be called from wrapper routines doing the optional argument handling,
 ! etc.
 
+!>  x-coordinate of the interpolated value
 real (PREC), intent(in) :: x
-real (PREC), intent(in), dimension(:) :: xp, fp
+!>  x-coordinates of data points in increasing order
+real (PREC), intent(in), dimension(:) :: xp
+!>  y-coordinates of the data points, same length as xp.
+real (PREC), intent(in), dimension(:) :: fp
+!>  If true, extrapolate function value at point x if x < xp(1) or
+!>  x > x(size(x)).
 logical, intent(in) :: ext
-real (PREC), intent(in) :: left, right
+!>  Value to return if x < xp(1)
+real (PREC), intent(in) :: left
+!>  Value to return if x > xp(size(xp))
+real (PREC), intent(in) :: right
+!>  Interpolated value
 real (PREC), intent(out) :: fx
 
 integer (INTSIZE) :: ilb, iub
