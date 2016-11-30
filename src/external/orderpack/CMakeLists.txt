@@ -1,10 +1,10 @@
-# minpack/CMakeLists.txt
-# CMake configuration for MINPACK library
+# orderpack/CMakeLists.txt
+# Build configuration for ORDERPACK library
 
 cmake_minimum_required(VERSION 3.0)
 
-project(minpack Fortran)
-set(PROJECT_NAME_PRETTY MINPACK)
+project(orderpack Fortran)
+set(PROJECT_NAME_PRETTY ORDERPACK)
 set(${PROJECT_NAME}_LIBRARY_NAME ${PROJECT_NAME})
 
 # make sure that the default is a RELEASE
@@ -21,7 +21,6 @@ if (WIN32)
 else ()
     option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif ()
-option(BUILD_EXAMPLES "Build examples/demo code" OFF)
 
 ################################################################################
 # Numfort subproject setup
@@ -45,7 +44,7 @@ else ()
 endif ()
 
 # Link demo executables against these libraries
-set(${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_LIBRARY_NAME}_static)
+# set(${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_LIBRARY_NAME}_static)
 
 ################################################################################
 # Set Fortran compiler FLAGS
@@ -59,29 +58,27 @@ endif ()
 # Target definitions
 
 set(SOURCE_FILES
-    chkder.f
-    dogleg.f
-    dpmpar.f
-    enorm.f
-    fdjac1.f
-    fdjac2.f
-    hybrd.f
-    hybrd1.f
-    hybrj.f
-    hybrj1.f
-    lmder.f
-    lmder1.f
-    lmdif.f
-    lmdif1.f
-    lmpar.f
-    lmstr.f
-    lmstr1.f
-    qform.f
-    qrfac.f
-    qrsolv.f
-    r1mpyq.f
-    r1updt.f
-    rwupdt.f
+    ctrper.f90
+    fndnth.f90
+    indmed.f90
+    indnth.f90
+    inspar.f90
+    inssor.f90
+    median.f90
+    mrgref.f90
+    mrgrnk.f90
+    mulcnt.f90
+    rapknr.f90
+    refpar.f90
+    refsor.f90
+    rinpar.f90
+    rnkpar.f90
+    uniinv.f90
+    unipar.f90
+    unirnk.f90
+    unista.f90
+    valmed.f90
+    valnth.f90
 )
 
 set(_name ${${PROJECT_NAME}_LIBRARY_NAME})
@@ -95,9 +92,3 @@ endif ()
 if (${PROJECT_NAME}_STANDALONE)
     add_library(${_name} $<TARGET_OBJECTS:${_name}>)
 endif ()
-
-# if (BUILD_EXAMPLES)
-#     # create static library which examples can link against
-#     add_library(${_name}_static $<TARGET_OBJECTS:${_name}>)
-# 	add_subdirectory(examples)
-# endif ()
