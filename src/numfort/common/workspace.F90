@@ -14,15 +14,13 @@
 #define __RWRK_KIND __DEFAULT_REAL_KIND
 #endif
 
-module numfort_common
+module numfort_common_workspace
 
     use, intrinsic :: iso_fortran_env, only : real32, real64, int32
 
     implicit none
     private
     public :: workspace
-
-    integer, public, parameter :: ENUM_KIND = int32
 
     integer, parameter :: SIZE_UNALLOCATED = -1
 
