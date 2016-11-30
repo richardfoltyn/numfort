@@ -14,7 +14,7 @@ set (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${${CMAKE_PROJECT_N
 # Target definitions
 
 # add individual numfort components as object libraries
-set(COMPONENTS core common arrays interpolate linalg optimize)
+set(COMPONENTS core common arrays interpolate linalg optimize stats)
 # set(COMPONENTS core arrays interpolate linalg)
 
 include_directories("${${PROJECT_NAME}_MODDIR}")
