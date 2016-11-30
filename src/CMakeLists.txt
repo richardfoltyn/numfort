@@ -76,6 +76,18 @@ endif ()
 list(APPEND ${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_BLA_LIBRARIES})
 
 ################################################################################
+# Detect features supported by Fortran compiler
+
+include(CheckFortranPDT)
+if (Fortran_SUPPORTS_PDT_KIND)
+    add_definitions(-D__FORTRAN_SUPPORTS_PDT_KIND__)
+endif()
+
+if (Fortran_SUPPORTS_PDT_LEN)
+    add_definitions(-D__FORTRAN_SUPPORTS_PDT_LEN__)
+endif()
+
+################################################################################
 # Compiler FLAGS
 
 unset(_FFLAGS)
