@@ -1,6 +1,9 @@
 integer (INTSIZE), intent(in), dimension(:) :: shp
+    !!  Shape of array to use to unravel flat indices.
 integer (INTSIZE), intent(in), dimension(:) :: lin_indices
+    !!  Array of flat indices to convert.
 integer (INTSIZE), intent(out), dimension(:,:) :: sub_indices
+    !!  Array to store unraveled coordinate tuples.
 
 integer (INTSIZE), dimension(size(shp)) :: stride
 integer (INTSIZE) :: i, j, n, d, rnk, stride_j, rem_i, s_ij
@@ -39,5 +42,3 @@ end do
 ! index on first dimension is just the remainder after all higher dimensions
 ! have been subtracted out
 sub_indices(:, 1) = rem + 1
-
-
