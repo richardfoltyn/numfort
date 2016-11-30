@@ -147,6 +147,7 @@ set(SOURCE_FILES
 )
 
 # additional files replacing original FITPACK implementation, written in F90
+# These FLAGS are appended to any other previously defined FLAGS.
 list(APPEND F90_SOURCES constraints_tree.f90)
 if (${CMAKE_PROJECT_NAME}_FFLAGS)
     set_source_files_properties(${F90_SOURCES} PROPERTIES

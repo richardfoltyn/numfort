@@ -39,6 +39,14 @@ option(BUILD_TESTS "Build (unit) tests" OFF)
 option(BUILD_EXAMPLES "Build examples/demo code" OFF)
 option(BUILD_BENCHMARKS "Build benchmarks" OFF)
 
+# If enabled, pass -assume std_mod_proc_name to ifort such that module
+# names will use _MP_ as module name / procedure name separator.
+# Off by default, this causes major pain since most third-party libraries
+# are compiled without this option.
+option(IFORT_STD_MOD_PROC_NAME
+    "Assume standard-compliant name mangling for module procedures" OFF
+)
+
 ################################################################################
 # Additional CMAKE modules
 # include FindMKL module taken from ARMA project
@@ -70,9 +78,11 @@ list(APPEND ${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_BLA_LIBRARIES})
 ################################################################################
 # Compiler FLAGS
 
-set(_FFLAGS)
-set(_FFLAGS_DEBUG)
-unset(IFORT_STANDARD_SEMANTICS)
+unset(_FFLAGS)
+unset(_FFLAGS_DEBUG)
+# global _FFLAGS will be added to CMAKE_Fortran_FLAGS and thus effect
+# compilation of F77 external code
+unset(_FFLAGS_GLOBAL)
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     # explicitly add -cpp to run C preprocessor if required
@@ -83,18 +93,24 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
         set (_FFLAGS "/warn:all /standard-semantics /stand:f08")
-        set(_FFLAGS_DEBUG "/check:all")
-        set(IFORT_STANDARD_SEMANTICS "/standard-semantics")
+		set(_FFLAGS_DEBUG "/check:all")
+
+		if (NOT IFORT_STD_MOD_PROC_NAME)
+            set(_FFLAGS_GLOBAL "/assume:nostd_mod_proc_name")
+        endif ()
     else ()
         set (_FFLAGS "-warn all -standard-semantics -std08")
         set(_FFLAGS_DEBUG "-check all")
-        set(IFORT_STANDARD_SEMANTICS "-standard-semantics")
+
+		if (NOT IFORT_STD_MOD_PROC_NAME)
+            set(_FFLAGS_GLOBAL "-assume nostd_mod_proc_name")
+        endif ()
     endif (WIN32)
 endif ()
 
 # add standard semantics to compiler flags even for F77 files, in case
 # these reference any submodules
-set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${IFORT_STANDARD_SEMANTICS}")
+set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS_GLOBAL}")
 
 message(STATUS "Default compiler flags: ${CMAKE_Fortran_FLAGS}")
 # Make sure build type is upper case, otherwise the wrong flags will be shown
