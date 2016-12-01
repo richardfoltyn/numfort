@@ -209,10 +209,13 @@ if (Fortran_SUPPORTS_PDT_LEN)
     add_definitions(-D__SUPPORTS_PDT_LEN__)
 endif()
 
-add_definitions(-D__DEFAULT_INT_KIND__=${Fortran_DEFAULT_INT_KIND}
+add_definitions(
+	-D__DEFAULT_INT_KIND__=${Fortran_DEFAULT_INT_KIND}
 	-D__DEFAULT_INT_SIZE__=${Fortran_DEFAULT_INT_SIZE}
 	-D__DEFAULT_REAL_KIND__=${Fortran_DEFAULT_REAL_KIND}
 	-D__DEFAULT_REAL_SIZE__=${Fortran_DEFAULT_REAL_SIZE}
+	-D__INT32_KIND__=${Fortran_INT32_KIND}
+	-D__INT64_KIND__=${Fortran_INT64_KIND}
 )
 
 ################################################################################
@@ -247,6 +250,7 @@ endforeach ()
 set(LIBRARY_NAME ${${PROJECT_NAME}_LIBRARY_NAME})
 add_library(${LIBRARY_NAME} ${SOURCE_FILES} ${COMPONENT_OBJECTS})
 target_link_libraries(${LIBRARY_NAME} ${${PROJECT_NAME}_BLA_LIBRARIES})
+
 set_target_properties(${LIBRARY_NAME} PROPERTIES
 	Fortran_MODULE_DIRECTORY "${${PROJECT_NAME}_MODDIR}"
 	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"

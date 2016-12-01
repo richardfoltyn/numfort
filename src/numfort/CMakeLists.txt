@@ -17,7 +17,9 @@ set (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${${CMAKE_PROJECT_N
 set(COMPONENTS core common arrays interpolate linalg optimize stats)
 # set(COMPONENTS core arrays interpolate linalg)
 
-include_directories("${${PROJECT_NAME}_MODDIR}")
+set(FPP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
+include_directories("${${PROJECT_NAME}_MODDIR}" ${FPP_DIR})
 foreach (_comp IN LISTS COMPONENTS)
 	add_subdirectory(${_comp})
 	# set mod-file output directory
