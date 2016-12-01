@@ -76,18 +76,6 @@ endif ()
 list(APPEND ${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_BLA_LIBRARIES})
 
 ################################################################################
-# Detect features supported by Fortran compiler
-
-include(CheckFortranPDT)
-if (Fortran_SUPPORTS_PDT_KIND)
-    add_definitions(-D__FORTRAN_SUPPORTS_PDT_KIND__)
-endif()
-
-if (Fortran_SUPPORTS_PDT_LEN)
-    add_definitions(-D__FORTRAN_SUPPORTS_PDT_LEN__)
-endif()
-
-################################################################################
 # Compiler FLAGS
 
 unset(_FFLAGS)
@@ -197,14 +185,41 @@ set(${PROJECT_NAME}_EXAMPLES_DIRECTORY "${CMAKE_BINARY_DIR}/bin/examples")
 set(${PROJECT_NAME}_BENCHMARKS_DIRECTORY "${CMAKE_BINARY_DIR}/bin/benchmarks")
 
 ################################################################################
+# External projects
 
 add_subdirectory(external)
 add_subdirectory(interfaces)
-add_subdirectory(numfort)
+
+################################################################################
+# Detect features supported by Fortran compiler
+# Do this only after adding external projects to avoid any possible
+# re-definition
+
+include(CheckFortranPDT)
+include(CheckFortranKinds)
+
+check_Fortran_PDT()
+check_Fortran_kinds()
+
+if (Fortran_SUPPORTS_PDT_KIND)
+    add_definitions(-D__SUPPORTS_PDT_KIND__)
+endif()
+
+if (Fortran_SUPPORTS_PDT_LEN)
+    add_definitions(-D__SUPPORTS_PDT_LEN__)
+endif()
+
+add_definitions(-D__DEFAULT_INT_KIND__=${Fortran_DEFAULT_INT_KIND}
+	-D__DEFAULT_INT_SIZE__=${Fortran_DEFAULT_INT_SIZE}
+	-D__DEFAULT_REAL_KIND__=${Fortran_DEFAULT_REAL_KIND}
+	-D__DEFAULT_REAL_SIZE__=${Fortran_DEFAULT_REAL_SIZE}
+)
 
 ################################################################################
 # Targets
 # Create single numfort library by merging all object libraries
+
+add_subdirectory(numfort)
 
 # Update fortran version module with current version information
 configure_file(numfort/version.f90.in
