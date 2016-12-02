@@ -1,7 +1,7 @@
 
 #include "dist_pdt.h"
 
-module numfort_stats_uniform
+module numfort_stats_duniform
 
     use, intrinsic :: iso_fortran_env
     use numfort_stats_cont_dist, only: cont_dist
