@@ -92,7 +92,7 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     set(_FFLAGS_DEBUG "-fcheck=all -Og")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
-        set (_FFLAGS "/warn:all /standard-semantics /stand:f08")
+        set (_FFLAGS "/warn:all /standard-semantics /stand:f08 /Qsave-temps")
 		set(_FFLAGS_DEBUG "/check:all")
 
 		if (NOT IFORT_STD_MOD_PROC_NAME)

@@ -1,5 +1,5 @@
 
-#include "disc_dist.h"
+#include "dist_pdt.h"
 
 module numfort_stats_disc_dist
 

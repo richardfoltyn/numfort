@@ -5,7 +5,8 @@ set(SOURCE_FILES
     combinatorics.F90
     cont_dist.f90
     disc_dist.F90
-    dist_uniform.f90
+    dnorm.F90
+    duniform.f90
     dist_randint.F90
     stats.f90
 )
