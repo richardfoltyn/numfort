@@ -149,17 +149,17 @@ set(SOURCE_FILES
 # additional files replacing original FITPACK implementation, written in F90
 # These FLAGS are appended to any other previously defined FLAGS.
 list(APPEND F90_SOURCES constraints_tree.f90)
-if (${CMAKE_PROJECT_NAME}_FFLAGS)
-    set_source_files_properties(${F90_SOURCES} PROPERTIES
-        COMPILE_FLAGS "${${CMAKE_PROJECT_NAME}_FFLAGS}"
-    )
-endif ()
-string(TOUPPER ${CMAKE_BUILD_TYPE} _build)
-if (${CMAKE_PROJECT_NAME}_FFLAGS_${_build})
-    set_source_files_properties(${F90_SOURCES} PROPERTIES
-        COMPILE_FLAGS "${${CMAKE_PROJECT_NAME}_FFLAGS_${_build}}"
-    )
-endif ()
+# if (${CMAKE_PROJECT_NAME}_FFLAGS)
+#     set_source_files_properties(${F90_SOURCES} PROPERTIES
+#         COMPILE_FLAGS "${${CMAKE_PROJECT_NAME}_FFLAGS}"
+#     )
+# endif ()
+# string(TOUPPER ${CMAKE_BUILD_TYPE} _build)
+# if (${CMAKE_PROJECT_NAME}_FFLAGS_${_build})
+#     set_source_files_properties(${F90_SOURCES} PROPERTIES
+#         COMPILE_FLAGS "${${CMAKE_PROJECT_NAME}_FFLAGS_${_build}}"
+#     )
+# endif ()
 
 list(APPEND SOURCE_FILES ${F90_SOURCES})
 
@@ -177,6 +177,6 @@ endif ()
 
 if (BUILD_EXAMPLES)
     # create static library which examples can link against
-    add_library(${_name}_static $<TARGET_OBJECTS:${_name}>)
+    add_library(${_name}_static STATIC $<TARGET_OBJECTS:${_name}>)
 	add_subdirectory(examples)
 endif ()

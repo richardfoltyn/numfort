@@ -55,6 +55,28 @@ list(APPEND CMAKE_MODULE_PATH
   "${CMAKE_CURRENT_SOURCE_DIR}/submodules/cmake/Modules")
 
 ################################################################################
+# Detect features supported by Fortran compiler
+
+include(CheckFortranPDT)
+include(CheckFortranKinds)
+
+check_Fortran_PDT()
+check_Fortran_kinds()
+
+if (Fortran_SUPPORTS_PDT_KIND)
+  add_definitions(-D__NUMFORT_SUPPORTS_PDT_KIND__)
+endif()
+
+if (Fortran_SUPPORTS_PDT_LEN)
+  add_definitions(-D__NUMFORT_SUPPORTS_PDT_LEN__)
+endif()
+
+add_definitions(
+	-D__NUMFORT_DEFAULT_INT_KIND__=${Fortran_DEFAULT_INT_KIND}
+	-D__NUMFORT_DEFAULT_REAL_KIND__=${Fortran_DEFAULT_REAL_KIND}
+)
+
+################################################################################
 # Testing
 
 if(BUILD_TESTS)
@@ -74,59 +96,6 @@ else ()
 endif ()
 
 list(APPEND ${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_BLA_LIBRARIES})
-
-################################################################################
-# Compiler FLAGS
-
-unset(_FFLAGS)
-unset(_FFLAGS_DEBUG)
-# global _FFLAGS will be added to CMAKE_Fortran_FLAGS and thus effect
-# compilation of F77 external code
-unset(_FFLAGS_GLOBAL)
-
-if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
-    # explicitly add -cpp to run C preprocessor if required
-    set(GNU_WARN "-Wall -Wextra -Wimplicit-interface -Wimplicit-procedure \
-      -Warray-temporaries -Wrealloc-lhs -pedantic")
-    set(_FFLAGS "${GNU_WARN} -std=f2008")
-    set(_FFLAGS_DEBUG "-fcheck=all -Og")
-elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
-    if (WIN32)
-        set (_FFLAGS "/warn:all /standard-semantics /stand:f08 /Qsave-temps")
-		set(_FFLAGS_DEBUG "/check:all")
-
-		if (NOT IFORT_STD_MOD_PROC_NAME)
-            set(_FFLAGS_GLOBAL "/assume:nostd_mod_proc_name")
-        endif ()
-    else ()
-        set (_FFLAGS "-warn all -standard-semantics -std08")
-        set(_FFLAGS_DEBUG "-check all")
-
-		if (NOT IFORT_STD_MOD_PROC_NAME)
-            set(_FFLAGS_GLOBAL "-assume nostd_mod_proc_name")
-        endif ()
-    endif (WIN32)
-endif ()
-
-# add standard semantics to compiler flags even for F77 files, in case
-# these reference any submodules
-set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS_GLOBAL}")
-
-message(STATUS "Default compiler flags: ${CMAKE_Fortran_FLAGS}")
-# Make sure build type is upper case, otherwise the wrong flags will be shown
-string(TOUPPER "${CMAKE_BUILD_TYPE}" _CONFIG)
-if (CMAKE_Fortran_FLAGS_${_CONFIG})
-    message(STATUS "Default compiler flags for ${CMAKE_BUILD_TYPE}: ${CMAKE_Fortran_FLAGS_${_CONFIG}}")
-endif ()
-if (_FFLAGS)
-    message(STATUS "Add. compiler flags: ${_FFLAGS}")
-endif ()
-if (_FFLAGS_${_CONFIG})
-    message(STATUS "Add. compiler flags for ${CMAKE_BUILD_TYPE}: ${_FFLAGS_${_CONFIG}}")
-endif ()
-
-set(${CMAKE_PROJECT_NAME}_FFLAGS "${_FFLAGS}")
-set(${CMAKE_PROJECT_NAME}_FFLAGS_DEBUG "${_FFLAGS_DEBUG}")
 
 ###############################################################################
 # Path suffixes beneath CMAKE_INSTALL_PREFIX
@@ -154,6 +123,20 @@ elseif (NOT CMAKE_INSTALL_INCLUDEDIR)
     set(CMAKE_INSTALL_INCLUDEDIR include)
 endif()
 
+################################################################################
+# Output directories
+
+set(${PROJECT_NAME}_MODDIR "${CMAKE_BINARY_DIR}/include")
+set(CMAKE_Fortran_MODULE_DIRECTORY "${${PROJECT_NAME}_MODDIR}")
+
+# set include directory to directory where MOD files are stored
+list(APPEND ${PROJECT_NAME}_INCLUDE_DIRS "${${PROJECT_NAME}_MODDIR}")
+
+# store test executables in this root directory
+set(${PROJECT_NAME}_TESTS_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")
+set(${PROJECT_NAME}_EXAMPLES_DIRECTORY "${CMAKE_BINARY_DIR}/bin/examples")
+set(${PROJECT_NAME}_BENCHMARKS_DIRECTORY "${CMAKE_BINARY_DIR}/bin/benchmarks")
+
 ###############################################################################
 # Report options and settings
 if (BUILD_SHARED_LIBS)
@@ -171,51 +154,77 @@ message(STATUS "Library install directory: ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTA
 message(STATUS "MOD file install directory: ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}")
 
 ################################################################################
-# Output directories
+# Compiler FLAGS
 
-set(${PROJECT_NAME}_MODDIR "${CMAKE_BINARY_DIR}/include")
-set(CMAKE_Fortran_MODULE_DIRECTORY "${${PROJECT_NAME}_MODDIR}")
+unset(_FFLAGS)
+unset(_FFLAGS_DEBUG)
+# global _FFLAGS will be added to CMAKE_Fortran_FLAGS and thus effect
+# compilation of F77 external code
+unset(_FFLAGS_GLOBAL)
 
-# set include directory to directory where MOD files are stored
-list(APPEND ${PROJECT_NAME}_INCLUDE_DIRS "${${PROJECT_NAME}_MODDIR}")
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
+    # explicitly add -cpp to run C preprocessor if required
+    set(GNU_WARN "-Wall -Wextra -Wimplicit-interface -Wimplicit-procedure \
+      -Warray-temporaries -Wrealloc-lhs -pedantic")
+    set(_FFLAGS "${GNU_WARN} -std=f2008")
+    set(_FFLAGS_DEBUG "-fcheck=all -Og -S -save-temps")
+elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+    if (WIN32)
+        set (_FFLAGS "/warn:all /standard-semantics /stand:f08 /Qsave-temps")
+		set(_FFLAGS_DEBUG "/check:all")
 
-# store test executables in this root directory
-set(${PROJECT_NAME}_TESTS_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")
-set(${PROJECT_NAME}_EXAMPLES_DIRECTORY "${CMAKE_BINARY_DIR}/bin/examples")
-set(${PROJECT_NAME}_BENCHMARKS_DIRECTORY "${CMAKE_BINARY_DIR}/bin/benchmarks")
+		if (NOT IFORT_STD_MOD_PROC_NAME)
+            set(_FFLAGS_GLOBAL "/assume:nostd_mod_proc_name")
+        else ()
+            set(_FFLAGS_GLOBAL "/assume:std_mod_proc_name")
+        endif ()
+    else ()
+        set (_FFLAGS "-warn all -standard-semantics -std08 -save-temps")
+        set(_FFLAGS_DEBUG "-check all")
+
+		if (NOT IFORT_STD_MOD_PROC_NAME)
+            set(_FFLAGS_GLOBAL "-assume nostd_mod_proc_name")
+        else ()
+            set(_FFLAGS_GLOBAL "-assume std_mod_proc_name")
+        endif ()
+    endif (WIN32)
+endif ()
+
+# add standard semantics to compiler flags even for F77 files, in case
+# these reference any submodules
+set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS_GLOBAL}")
+
+message(STATUS "Default compiler flags: ${CMAKE_Fortran_FLAGS}")
+# Make sure build type is upper case, otherwise the wrong flags will be shown
+string(TOUPPER "${CMAKE_BUILD_TYPE}" _CONFIG)
+if (CMAKE_Fortran_FLAGS_${_CONFIG})
+    message(STATUS "Default compiler flags for ${CMAKE_BUILD_TYPE}: ${CMAKE_Fortran_FLAGS_${_CONFIG}}")
+endif ()
+if (_FFLAGS)
+    message(STATUS "Add. compiler flags: ${_FFLAGS}")
+endif ()
+if (_FFLAGS_${_CONFIG})
+    message(STATUS "Add. compiler flags for ${CMAKE_BUILD_TYPE}: ${_FFLAGS_${_CONFIG}}")
+endif ()
+
+set(${CMAKE_PROJECT_NAME}_FFLAGS "${_FFLAGS}")
+set(${CMAKE_PROJECT_NAME}_FFLAGS_DEBUG "${_FFLAGS_DEBUG}")
 
 ################################################################################
 # External projects
+
+# Add these subdirectories before setting any compiler numfort-specifc
+# compiler flags.
 
 add_subdirectory(external)
 add_subdirectory(interfaces)
 
 ################################################################################
-# Detect features supported by Fortran compiler
-# Do this only after adding external projects to avoid any possible
-# re-definition
+# FFLAGS for numfort, benchmark and testing subdirectories
 
-include(CheckFortranPDT)
-include(CheckFortranKinds)
-
-check_Fortran_PDT()
-check_Fortran_kinds()
-
-if (Fortran_SUPPORTS_PDT_KIND)
-    add_definitions(-D__SUPPORTS_PDT_KIND__)
-endif()
-
-if (Fortran_SUPPORTS_PDT_LEN)
-    add_definitions(-D__SUPPORTS_PDT_LEN__)
-endif()
-
-add_definitions(
-	-D__DEFAULT_INT_KIND__=${Fortran_DEFAULT_INT_KIND}
-	-D__DEFAULT_INT_SIZE__=${Fortran_DEFAULT_INT_SIZE}
-	-D__DEFAULT_REAL_KIND__=${Fortran_DEFAULT_REAL_KIND}
-	-D__DEFAULT_REAL_SIZE__=${Fortran_DEFAULT_REAL_SIZE}
-	-D__INT32_KIND__=${Fortran_INT32_KIND}
-	-D__INT64_KIND__=${Fortran_INT64_KIND}
+set(CMAKE_Fortran_FLAGS "${_FFLAGS} ${CMAKE_Fortran_FLAGS}")
+set(CMAKE_Fortran_FLAGS_DEBUG
+    "${_FFLAGS_DEBUG} ${CMAKE_Fortran_FLAGS_DEBUG}"
 )
 
 ################################################################################

@@ -2,26 +2,26 @@
 #include "dist_pdt.h"
 
 
-module numfort_stats_cont_dist
+module nf_stats_dcont
 
     use, intrinsic :: iso_fortran_env, only: real32, real64
     implicit none
     private
 
 
-    type, abstract :: cont_dist __PDT_PARAM_DECL (PREC)
+    type, abstract :: dcont __PDT_PARAM_DECL (PREC)
         __PDT_KIND_DECL(PREC, __DEFAULT_REAL_KIND)
     contains
         ! PDF method
-        procedure (cont_dist_func_real64), deferred, private, pass :: pdf_real64
+        procedure (x_fx_real64), deferred, private, pass :: pdf_real64
         generic, public :: pdf => pdf_real64
 
         ! CDF method
-        procedure (cont_dist_func_real64), deferred, private, pass :: cdf_real64
+        procedure (x_fx_real64), deferred, private, pass :: cdf_real64
         generic, public :: cdf => cdf_real64
 
         ! Random sample generation method
-        procedure (cont_dist_real64), deferred, private, pass :: rvs_real64
+        procedure (x_real64), deferred, private, pass :: rvs_real64
         generic, public :: rvs => rvs_real64
 
     end type
@@ -35,6 +35,6 @@ module numfort_stats_cont_dist
 #include "cont/interfaces.F90"
     end interface
 
-    public :: cont_dist
+    public :: dcont
 
 end module

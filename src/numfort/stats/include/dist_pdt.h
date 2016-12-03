@@ -12,10 +12,10 @@
 /* Real KIND parameter to use for PDTs */
 #define __DEFAULT_REAL_KIND real64
 /* Default INT paramter to use for PDTs -- use compiler default */
-#define __DEFAULT_INT_KIND __DEFAULT_INT_KIND__
+#define __DEFAULT_INT_KIND __NUMFORT_DEFAULT_INT_KIND__
 
 /* To be used when declaring attibutes of PDTs */
-#ifdef __SUPPORTS_PDT_KIND__
+#ifdef __NUMFORT_SUPPORTS_PDT_KIND__
 #define __PDT_INT_KIND INTSIZE
 #define __PDT_REAL_KIND PREC
 #else
@@ -23,4 +23,4 @@
 #define __PDT_REAL_KIND __DEFAULT_REAL_KIND
 #endif
 
-#endif __NUMFORT_DIST_PDT_H__
+#endif

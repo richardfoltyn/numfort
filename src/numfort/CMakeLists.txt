@@ -4,13 +4,6 @@
 project(numfort C Fortran)
 
 ################################################################################
-# Compiler FLAGS
-
-# set FFLAGS for all code in numfort/* directories
-set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${${CMAKE_PROJECT_NAME}_FFLAGS}")
-set (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${${CMAKE_PROJECT_NAME}_FFLAGS_DEBUG}")
-
-################################################################################
 # Target definitions
 
 # add individual numfort components as object libraries

@@ -1,17 +1,17 @@
 
 #include "dist_pdt.h"
 
-module numfort_stats_duniform
+module nf_stats_duniform
 
     use, intrinsic :: iso_fortran_env
-    use numfort_stats_cont_dist, only: cont_dist
+    use nf_stats_dcont, only: dcont
 
     implicit none
     private
 
     !>  Implementation of the continuous univariate uniform distribution
     !   on an interval [low,high]
-    type, extends(cont_dist) :: duniform
+    type, extends(dcont) :: duniform
         real (__PDT_REAL_KIND) :: low = 0.0
             !!  Lower bound of support
         real (__PDT_REAL_KIND) :: high = 1.0

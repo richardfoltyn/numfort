@@ -5,7 +5,7 @@
 #ifndef __NUMFORT_PDT_H__
 #define __NUMFORT_PDT_H__
 
-#ifdef __SUPPORTS_PDT_KIND__
+#ifdef __NUMFORT_SUPPORTS_PDT_KIND__
 #define __PDT_PARAM_DECL(name) (name)
 #define __PDT_PARAM_DECL_BOTH(name1, name2) (name1,name2)
 #define __PDT_KIND_DECL(name, val) integer, kind :: name = val
@@ -15,4 +15,4 @@
 #define __PDT_KIND_DECL(name, val)
 #endif
 
-#endif __NUMFORT_PDT_H__
+#endif

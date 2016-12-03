@@ -1,7 +1,7 @@
 
 #include "dist_pdt.h"
 
-module numfort_stats_dnorm
+module nf_stats_dnorm
 
     use, intrinsic :: iso_fortran_env
 
@@ -10,7 +10,7 @@ module numfort_stats_dnorm
     use random, only: random_normal
 
     use numfort_core, only : PI
-    use numfort_stats_cont_dist, only: cont_dist
+    use nf_stats_dcont, only: dcont
 
     implicit none
     private
@@ -18,7 +18,7 @@ module numfort_stats_dnorm
     real (real64), parameter :: NORM_CONST = 1/sqrt(2 * PI)
 
     !>  Implementation of the univariate normal distribution
-    type, extends(cont_dist) :: dnorm
+    type, extends(dcont) :: dnorm
         real (__PDT_REAL_KIND) :: mean = 0.0
             !!  Mean of normal distribution
         real (__PDT_REAL_KIND) :: sd = 1.0
