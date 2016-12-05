@@ -4,6 +4,7 @@
 include_directories(${${CMAKE_PROJECT_NAME}_INCLUDE_DIRS})
 
 list(APPEND COMPONENTS stats)
+set(LIBS ${${CMAKE_PROJECT_NAME}_LIBRARIES})
 
 # keep only child items that are directories
 foreach (_dir IN LISTS COMPONENTS)
