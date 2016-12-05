@@ -16,9 +16,9 @@ subroutine benchmark_cdf ()
     integer :: i, repeat
 
     real (real64), dimension(:,:), allocatable :: x, fx
-    real (real64), dimension(:,:), allocatable :: vals
+    real (real64), dimension(:), allocatable :: vals
 
-    repeat = 1000
+    repeat = 1
 
     allocate (x(N,N), fx(N,N), vals(N))
 
@@ -28,7 +28,7 @@ subroutine benchmark_cdf ()
         x(:, i) = vals
     end do
 
-    do i = 1, repeats
+    do i = 1, repeat
         call norm%cdf (x, fx)
     end do
 
