@@ -5,11 +5,13 @@ program test_numfort_stats_dnorm
     use corelib_strings
     use corelib_testing
     use numfort_arrays
-    use numfort_stats, only: dnorm, norm
+    use numfort_stats, only: dnorm, norm, mean, std
 
     implicit none
 
-    real (real64), parameter :: tol = 1d-12
+    integer, parameter :: PREC = real64
+
+    real (PREC), parameter :: tol = 1d-12
 
     call test_all ()
 
@@ -86,12 +88,13 @@ subroutine test_cdf_rvs (tests)
     class (test_case), pointer :: tc
 
     type (str) :: msg
-    real (real64), dimension(:), allocatable :: x, fx
-    real (real64), parameter, dimension(4) :: &
-        means = [0.0d0, -21.0d0, 1d-5, 1.234d4], &
-        sd = [1.0d0, 1d-4, 1d1, 1.2345d4]
-
-    integer :: i, n
+    real (PREC), dimension(:), allocatable :: x, fx
+    real (PREC), parameter, dimension(4) :: &
+        means = [real (PREC) :: 0.0d0, -21.0d0, 1d-5, 1.234d4], &
+        sd = [real (PREC) :: 1.0d0, 1d-4, 1d1, 1.2345d4]
+    real (PREC) :: m, s, s2
+    integer :: i, n, status
+    logical :: in_range
 
     tc => tests%add_test ("dnorm CDF(random) test cases")
 
@@ -103,12 +106,18 @@ subroutine test_cdf_rvs (tests)
             str(sd(i), 'g8.3e2') // ")"
 
         ! draw random sample of normally distributed RV
-        x = norm%rvs (mean=means(i), sd=sd(i))
+        call norm%rvs (x, mean=means(i), sd=sd(i))
         ! compute CDF(x): is standard uniformly distributed RV
         fx = norm%cdf (x, mean=means(i), sd=sd(i))
 
+        in_range = all(fx >= 0.0_PREC) .and. all(fx <= 1.0_PREC)
+
         ! compute mean and variance
-        
+        call std (fx, s, m, status=status)
+        s2 = s ** 2
+        call tc%assert_true (in_range .and. abs(m-0.5) < 1d-3 .and. abs(s2 - 1.0d0/12) < 1d-3, &
+            "Check that CDF(x) close to std. uniform" // msg)
+
     end do
 
     deallocate (x, fx)
