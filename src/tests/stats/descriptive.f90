@@ -24,6 +24,7 @@ subroutine test_all ()
 
     call test_degenerate (tests)
     call test_1d (tests)
+    call test_2d (tests)
 
     ! print test statistics
     call tests%print ()
@@ -107,13 +108,58 @@ subroutine test_1d (tests)
     call tc%assert_true (abs(m - (N+1)/2) < 1d-15 .and. status == STATUS_OK, &
         "Mean of 1d sequence")
 
-    ! compute std. deviation manually (numerical instability should be 
+    ! compute std. deviation manually (numerical instability should be
     ! negligible in this case)
     s2 = sqrt(sum((x -m) ** 2) / (N-1))
     call std (x, s, m2, status=status)
     call tc%assert_true (m == m2 .and. abs(s-s2) < 1d-15 .and. status == STATUS_OK, &
         "Std of 1d sequence")
 
+end subroutine
+
+subroutine test_2d (tests)
+    class (test_suite) :: tests
+    class (test_case), pointer :: tc
+
+    integer, parameter :: N = 100
+    real (PREC), dimension(N,N) :: x
+    real (PREC), dimension(N) :: m, m2, s, s2
+    integer :: i, status
+
+    tc => tests%add_test ("2d input arrays")
+
+    ! draw some random sample
+    call random_number (x)
+
+    ! test reduction over dim=1
+    do i = 1, N
+        m2(i) = sum(x(:, i)) / N
+        s2(i) = sqrt(sum((x(:, i) - m2(i)) ** 2) / (N-1))
+    end do
+
+    ! Compute using library routines
+    call mean (x, m, dim=1, status=status)
+    call tc%assert_true (all(abs(m-m2) < tol) .and. status == STATUS_OK, &
+        "Mean of 2d array along dim=1")
+
+    call std (x, s, m, dim=1, status=status)
+    call tc%assert_true (all(abs(m-m2) < tol) .and. all(abs(s-s2) < tol) .and. status == STATUS_OK, &
+        "Std of 2d array along dim=1")
+
+    ! test reduction over dim=2
+    do i = 1, N
+        m2(i) = sum(x(i, :)) / N
+        s2(i) = sqrt(sum((x(i, :) - m2(i)) ** 2) / (N-1))
+    end do
+
+    ! Compute using library routines
+    call mean (x, m, dim=2, status=status)
+    call tc%assert_true (all(abs(m-m2) < tol) .and. status == STATUS_OK, &
+        "Mean of 2d array along dim=2")
+
+    call std (x, s, m, dim=2, status=status)
+    call tc%assert_true (all(abs(m-m2) < tol) .and. all(abs(s-s2) < tol) .and. status == STATUS_OK, &
+        "Std of 2d array along dim=2")
 end subroutine
 
 end program

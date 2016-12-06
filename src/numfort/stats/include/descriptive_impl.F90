@@ -119,7 +119,7 @@ pure subroutine __APPEND_PREC(mean_2d) (x, m, dim, status)
     if (lstatus /= STATUS_OK) goto 100
 
     call mean_std_check_input (nvars, nobs, m, status=lstatus)
-    if (status /= STATUS_OK) goto 100
+    if (lstatus /= STATUS_OK) goto 100
 
     ! compute mean and std. dev. using Welford's method; see
     ! http://www.johndcook.com/blog/standard_deviation/
