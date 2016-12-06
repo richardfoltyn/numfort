@@ -22,10 +22,11 @@ end subroutine
 
 ! ------------------------------------------------------------------------------
 ! PDF method
-impure elemental subroutine __APPEND_PREC(pdf_params) (self, x, fx, low, high)
+
+impure elemental subroutine __APPEND_PREC(pdf_impl) (x, fx, low, high)
     integer, parameter :: PREC = __PREC
-    class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
-#include "cont/spec_func.F90"
+    real (PREC), intent(in) :: x
+    real (PREC), intent(out) :: fx
 #include "uniform/params.F90"
 
     fx = 1 / (high-low)
@@ -37,20 +38,31 @@ impure elemental subroutine __APPEND_PREC(pdf_params) (self, x, fx, low, high)
     end if
 end subroutine
 
-impure elemental subroutine __APPEND_PREC(pdf) (self, x, fx)
+impure elemental function __APPEND_PREC(pdf_params) (self, x, low, high) result(fx)
+    integer, parameter :: PREC = __PREC
+    class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
+#include "cont/spec_func.F90"
+#include "uniform/params.F90"
+
+    call pdf_impl (x, fx, low, high)
+end function
+
+impure elemental function __APPEND_PREC(pdf) (self, x) result(fx)
     integer, parameter :: PREC = __PREC
     class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
 #include "cont/spec_func.F90"
 
-    call self%pdf (x, fx, low=self%low, high=self%high)
-end subroutine
+    call pdf_impl (x, fx, low=self%low, high=self%high)
+end function
 
 ! ------------------------------------------------------------------------------
 ! CDF method
-impure elemental subroutine __APPEND_PREC(cdf_params) (self, x, fx, low, high)
+
+impure elemental subroutine __APPEND_PREC(cdf_impl) (x, fx, low, high)
     integer, parameter :: PREC = __PREC
-    class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
-#include "cont/spec_func.F90"
+    ! class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
+    real (PREC), intent(in) :: x
+    real (PREC), intent(out) :: fx
 #include "uniform/params.F90"
 
     fx = (x - low) / (high-low)
@@ -62,31 +74,49 @@ impure elemental subroutine __APPEND_PREC(cdf_params) (self, x, fx, low, high)
     end if
 end subroutine
 
-impure elemental subroutine __APPEND_PREC(cdf) (self, x, fx)
+impure elemental function __APPEND_PREC(cdf_params) (self, x, low, high) result(fx)
+    integer, parameter :: PREC = __PREC
+    class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
+#include "cont/spec_func.F90"
+#include "uniform/params.F90"
+
+    call cdf_impl (x, fx, low, high)
+end function
+
+impure elemental function __APPEND_PREC(cdf) (self, x) result(fx)
     integer, parameter :: PREC = __PREC
     class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
 #include "cont/spec_func.F90"
 
-    call self%cdf (x, fx, low=self%low, high=self%high)
-end subroutine
+    call cdf_impl (x, fx, low=self%low, high=self%high)
+end function
 
 ! ------------------------------------------------------------------------------
 ! RVS method
 
-impure elemental subroutine __APPEND_PREC(rvs_params) (self, x, low, high)
+impure elemental subroutine __APPEND_PREC(rvs_impl) (x, low, high)
     integer, parameter :: PREC = __PREC
-    class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
-#include "cont/spec.F90"
+    ! class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
+    real (PREC), intent(out) :: x
 #include "uniform/params.F90"
 
     call random_number (x)
     x = x * (high-low) + low
 end subroutine
 
-impure elemental subroutine __APPEND_PREC(rvs) (self, x)
+impure elemental function __APPEND_PREC(rvs_params) (self, low, high) result(x)
+    integer, parameter :: PREC = __PREC
+    class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
+#include "cont/spec.F90"
+#include "uniform/params.F90"
+
+    call rvs_impl (x, low, high)
+end function
+
+impure elemental function __APPEND_PREC(rvs) (self) result(x)
     integer, parameter :: PREC = __PREC
     class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
 #include "cont/spec.F90"
 
-    call self%rvs (x, low=self%low, high=self%high)
-end subroutine
+    call rvs_impl (x, low=self%low, high=self%high)
+end function

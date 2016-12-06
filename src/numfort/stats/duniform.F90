@@ -33,6 +33,18 @@ module nf_stats_duniform
         generic :: get_params => get_params_real64
     end type
 
+    interface pdf_impl
+        module procedure pdf_impl_real64
+    end interface
+
+    interface cdf_impl
+        module procedure cdf_impl_real64
+    end interface
+
+    interface rvs_impl
+        module procedure rvs_impl_real64
+    end interface
+
     public :: uniform, duniform
 
     !>  Instance of the standard uniform distribution on [0,1].

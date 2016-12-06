@@ -1,2 +1,2 @@
-real (PREC), intent(out) :: x
+real (PREC) :: x
     !!  Array to store results

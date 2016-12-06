@@ -40,6 +40,18 @@ module nf_stats_dnorm
         generic, private :: get_params => get_params_real64
     end type
 
+    interface pdf_impl
+        module procedure pdf_impl_real64
+    end interface
+
+    interface cdf_impl
+        module procedure cdf_impl_real64
+    end interface
+
+    interface rvs_impl
+        module procedure rvs_impl_real64
+    end interface
+
     public :: norm, dnorm
 
     !>  Instance of the standard normal distribution

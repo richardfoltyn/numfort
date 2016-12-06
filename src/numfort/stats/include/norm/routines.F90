@@ -22,11 +22,12 @@ end subroutine
 
 ! ------------------------------------------------------------------------------
 ! PDF method
-impure elemental subroutine __APPEND_PREC(pdf_params) (self, x, fx, mean, sd)
+impure elemental subroutine __APPEND_PREC(pdf_impl) (x, fx, mean, sd)
     integer, parameter :: PREC = __PREC
-    class (dnorm __PDT_PARAM_DECL(PREC)), intent(in) :: self
+    ! class (dnorm __PDT_PARAM_DECL(PREC)), intent(in) :: self
 #include "cont/spec_func.F90"
 #include "norm/params.F90"
+    intent (out) :: fx
 
     real (PREC) :: b
 
@@ -34,21 +35,31 @@ impure elemental subroutine __APPEND_PREC(pdf_params) (self, x, fx, mean, sd)
     fx = NORM_CONST/sd * exp(-((x-mean) ** 2) / b)
 end subroutine
 
-impure elemental subroutine __APPEND_PREC(pdf) (self, x, fx)
-    integer, parameter :: PREC = __PREC
-    class (dnorm __PDT_PARAM_DECL(PREC)), intent(in) :: self
-#include "cont/spec_func.F90"
-
-    call self%pdf (x, fx, mean=self%mean, sd=self%sd)
-end subroutine
-
-! ------------------------------------------------------------------------------
-! CDF method
-impure elemental subroutine __APPEND_PREC(cdf_params) (self, x, fx, mean, sd)
+impure elemental function __APPEND_PREC(pdf_params) (self, x, mean, sd) result(fx)
     integer, parameter :: PREC = __PREC
     class (dnorm __PDT_PARAM_DECL(PREC)), intent(in) :: self
 #include "cont/spec_func.F90"
 #include "norm/params.F90"
+
+    call pdf_impl (x, fx, mean, sd)
+end function
+
+impure elemental function __APPEND_PREC(pdf) (self, x) result(fx)
+    integer, parameter :: PREC = __PREC
+    class (dnorm __PDT_PARAM_DECL(PREC)), intent(in) :: self
+#include "cont/spec_func.F90"
+
+    call pdf_impl (x, fx, mean=self%mean, sd=self%sd)
+end function
+
+! ------------------------------------------------------------------------------
+! CDF method
+
+impure elemental subroutine __APPEND_PREC(cdf_impl) (x, fx, mean, sd)
+    integer, parameter :: PREC = __PREC
+#include "cont/spec_func.F90"
+#include "norm/params.F90"
+    intent (out) :: fx
 
     ! CDFLIB90 argument
     integer, parameter :: which = 1
@@ -63,28 +74,38 @@ impure elemental subroutine __APPEND_PREC(cdf_params) (self, x, fx, mean, sd)
         fx = 1.0_PREC
         return
     end if
-    
+
     ! call CDFLIB90 routine to actually do the work
     call cdf_normal (which, cum=fx, x=x, mean=mean, sd=sd)
 
 end subroutine
 
-impure elemental subroutine __APPEND_PREC(cdf) (self, x, fx)
+impure elemental function __APPEND_PREC(cdf_params) (self, x, mean, sd) result(fx)
+    integer, parameter :: PREC = __PREC
+    class (dnorm __PDT_PARAM_DECL(PREC)), intent(in) :: self
+#include "cont/spec_func.F90"
+#include "norm/params.F90"
+
+    call cdf_impl (x, fx, mean, sd)
+end function
+
+impure elemental function __APPEND_PREC(cdf) (self, x) result(fx)
     integer, parameter :: PREC = __PREC
     class (dnorm __PDT_PARAM_DECL(PREC)), intent(in) :: self
 #include "cont/spec_func.F90"
 
-    call self%cdf (x, fx, mean=self%mean, sd=self%sd)
-end subroutine
+    call cdf_impl (x, fx, mean=self%mean, sd=self%sd)
+end function
 
 ! ------------------------------------------------------------------------------
 ! RVS method
 
-impure elemental subroutine __APPEND_PREC(rvs_params) (self, x, mean, sd)
+impure elemental subroutine __APPEND_PREC(rvs_impl) (x, mean, sd)
     integer, parameter :: PREC = __PREC
-    class (dnorm __PDT_PARAM_DECL(PREC)), intent(in) :: self
+    ! class (dnorm __PDT_PARAM_DECL(PREC)), intent(in) :: self
 #include "cont/spec.F90"
 #include "norm/params.F90"
+    intent(out) :: x
 
     real (PREC) :: z
 
@@ -93,10 +114,19 @@ impure elemental subroutine __APPEND_PREC(rvs_params) (self, x, mean, sd)
     x = mean + z*sd
 end subroutine
 
-impure elemental subroutine __APPEND_PREC(rvs) (self, x)
+impure elemental function __APPEND_PREC(rvs_params) (self, mean, sd) result(x)
+    integer, parameter :: PREC = __PREC
+    class (dnorm __PDT_PARAM_DECL(PREC)), intent(in) :: self
+#include "cont/spec.F90"
+#include "norm/params.F90"
+
+    call rvs_impl (x, mean, sd)
+end function
+
+impure elemental function __APPEND_PREC(rvs) (self) result(x)
     integer, parameter :: PREC = __PREC
     class (dnorm __PDT_PARAM_DECL(PREC)), intent(in) :: self
 #include "cont/spec.F90"
 
-    call self%rvs (x, mean=self%mean, sd=self%sd)
-end subroutine
+    call rvs_impl (x, mean=self%mean, sd=self%sd)
+end function
