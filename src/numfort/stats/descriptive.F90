@@ -6,6 +6,7 @@ module nf_stats_desc
     use numfort_common
 
     implicit none
+    private
 
     interface mean
         module procedure mean_1d_real64, mean_2d_real64, &
@@ -17,6 +18,12 @@ module nf_stats_desc
             std_1d_real32, std_2d_real32
     end interface
 
+    interface mean_std_check_input
+        module procedure mean_std_check_input_real32, mean_std_check_input_real64
+    end interface
+
+
+    public :: mean, std
 contains
 
 ! MEAN_STD_INIT sets the number of variables and number of observations

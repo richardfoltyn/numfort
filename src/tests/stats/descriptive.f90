@@ -72,7 +72,7 @@ subroutine test_degenerate (tests)
         "mean: 2d input of shape [2, 1]")
 
     x12(1, :) = [789.213, -2.123]
-    call mean (x21, m1, dim=1, status=status)
+    call mean (x12, m1, dim=1, status=status)
     call tc%assert_true (all(x12(1, :) == m1) .and. status == STATUS_OK, &
         "mean: 2d input of shape [1, 2]")
 
@@ -84,7 +84,7 @@ subroutine test_degenerate (tests)
 
     s1 = -1.0
     x12(1, :) = [0.213, -234.123]
-    call std(x21, s1, m1, dim=1, status=status)
+    call std(x12, s1, m1, dim=1, status=status)
     call tc%assert_true (all(x12(1, :) == m1) .and. all(s1 == 0.0_PREC) .and. status == STATUS_OK, &
         "std: 2d input of shape [1, 2]")
 
@@ -97,7 +97,7 @@ subroutine test_1d (tests)
 
     integer, parameter :: N = 101
     real (PREC) :: x(N)
-    real (PREC) :: m, m2, s
+    real (PREC) :: m, m2, s, s2
     integer :: status, i
 
     tc => tests%add_test ("1d input arrays")
@@ -107,9 +107,11 @@ subroutine test_1d (tests)
     call tc%assert_true (abs(m - (N+1)/2) < 1d-15 .and. status == STATUS_OK, &
         "Mean of 1d sequence")
 
+    ! compute std. deviation manually (numerical instability should be 
+    ! negligible in this case)
+    s2 = sqrt(sum((x -m) ** 2) / (N-1))
     call std (x, s, m2, status=status)
-    print *, s
-    call tc%assert_true (m == m2 .and. abs(s-29.154759474226502) < 1d-15 .and. status == STATUS_OK, &
+    call tc%assert_true (m == m2 .and. abs(s-s2) < 1d-15 .and. status == STATUS_OK, &
         "Std of 1d sequence")
 
 end subroutine

@@ -1,7 +1,51 @@
+! ------------------------------------------------------------------------------
+! Input checker for mean and std routines
 
+pure subroutine __APPEND_PREC(mean_std_check_input) (nvars, nobs, out1, out2, dof, status)
+    !*  Check user-supplied input (other than dim) for errors
+
+    integer, parameter :: PREC = __PREC
+
+    integer, intent(in), optional :: nvars
+        !!  Number of variables in 2d array
+    integer, intent(in) :: nobs
+        !!  Number of observations
+    real (PREC), intent(in), dimension(:) :: out1
+        !!  Array to store mandatory output (mean or std)
+    real (PREC), intent(in), dimension(:), optional :: out2
+        !!  Optional array to store additional output (mean)
+    integer, intent(in), optional :: dof
+        !!  Optional degrees of freedom correction
+    integer, intent(out) :: status
+
+    status = STATUS_INVALID_INPUT
+
+    if (nobs < 1) return
+
+    if (present(nvars)) then
+        if (nvars < 1) return
+        if (size(out1) < nvars) return
+        if (present(out2)) then
+            if (size(out2) < nvars) return
+        end if
+    end if
+
+    if (present(dof)) then
+        if (dof < 0) return
+    end if
+
+    status = STATUS_OK
+end subroutine
+
+
+! ------------------------------------------------------------------------------
+! MEAN for 1d arrays
 
 pure subroutine __APPEND_PREC(mean_1d) (x, m, dim, status)
+    !*  Compute mean of values in 1d array.
+
     integer, parameter :: PREC = __PREC
+
     real (PREC), intent(in), dimension(:) :: x
         !!  Array containing numbers for which mean should be computed.
     real (PREC), intent(out) :: m
@@ -17,8 +61,10 @@ pure subroutine __APPEND_PREC(mean_1d) (x, m, dim, status)
     real (real64) :: m_old, m_new
     integer :: i, lstatus
 
-    ! nothing can go wrong with 1d mean computations :)
+    ! initialize to default values
     lstatus = STATUS_OK
+    m = 0.0_PREC
+
     if (size(x) == 0) then
         lstatus = STATUS_INVALID_INPUT
         goto 100
@@ -72,15 +118,8 @@ pure subroutine __APPEND_PREC(mean_2d) (x, m, dim, status)
     call mean_std_init (shape(x), dim, ldim, nvars, nobs, status=lstatus)
     if (lstatus /= STATUS_OK) goto 100
 
-    if (size(m) < nvars) then
-        lstatus = STATUS_INVALID_INPUT
-        goto 100
-    end if
-
-    if (nobs == 0 .or. nvars == 0) then
-        lstatus = STATUS_INVALID_INPUT
-        goto 100
-    end if
+    call mean_std_check_input (nvars, nobs, m, status=lstatus)
+    if (status /= STATUS_OK) goto 100
 
     ! compute mean and std. dev. using Welford's method; see
     ! http://www.johndcook.com/blog/standard_deviation/
@@ -112,7 +151,7 @@ end subroutine
 ! ------------------------------------------------------------------------------
 ! SD for 1d input arrays
 
-pure subroutine __APPEND_PREC(std_1d) (x, s, m, dim, status)
+pure subroutine __APPEND_PREC(std_1d) (x, s, m, dof, dim, status)
     !*  Compute standard deviation (and optionally mean) for data given in
     !   1d array.
 
@@ -125,6 +164,9 @@ pure subroutine __APPEND_PREC(std_1d) (x, s, m, dim, status)
         !   Contains computed standard deviation on exit.
     real (PREC), intent(out), optional :: m
         !   If present, contains computed mean on exit.
+    integer, intent(in), optional :: dof
+        !*  Degrees of freedom correction to use (default: 1). Computes
+        !   standard deviation as sum of squared deviations divided by (N-dof).
     integer, intent(in), optional :: dim
         !*  Ignored for 1d-arrays, present to support same API as for higher-rank
         !   arrays
@@ -133,18 +175,27 @@ pure subroutine __APPEND_PREC(std_1d) (x, s, m, dim, status)
         !   arrays
 
     real (PREC) :: m_old, m_new, s_old, s_new, lm, x_i
-    integer :: i, lstatus
+    integer :: i, lstatus, ldof
 
     ! initiliaze default values
     lstatus = STATUS_OK
+    ldof = 1
     s = 0.0_PREC
     if (present(m)) m = 0.0_PREC
 
+    if (present(dof)) then
+        if (dof < 0) then
+            lstatus = STATUS_INVALID_INPUT
+            goto 100
+        end if
+        ldof = dof
+    end if
+    
     if (size(x) == 0) then
         lstatus = STATUS_INVALID_INPUT
         goto 100
     end if
-
+    
     ! compute mean and std. dev. using Welford's method; see
     ! http://www.johndcook.com/blog/standard_deviation/
 
@@ -164,7 +215,7 @@ pure subroutine __APPEND_PREC(std_1d) (x, s, m, dim, status)
 
     lm = m_new
     if (size(x) > 1) then
-        s = sqrt(s_new / (size(x)-1))
+        s = sqrt(s_new / (size(x)-ldof))
     end if
 
     if (present(m)) m = lm
@@ -173,11 +224,10 @@ pure subroutine __APPEND_PREC(std_1d) (x, s, m, dim, status)
     if (present(status)) status = lstatus
 end subroutine
 
-
 ! ------------------------------------------------------------------------------
 ! SD for 2d input arrays
 
-pure subroutine __APPEND_PREC(std_2d) (x, m, s, dim, status)
+pure subroutine __APPEND_PREC(std_2d) (x, s, m, dof, dim, status)
     !*  Compute standard deviation (and optionally) mean of data in 2d-array
     !   along the desired dimension.
 
@@ -194,7 +244,9 @@ pure subroutine __APPEND_PREC(std_2d) (x, m, s, dim, status)
     real (PREC), intent(out), dimension(:), optional :: m
         !*  If present, contains vector of means computed along desired dimension.
         !   Array size must be sufficient to hold computed values.
-
+    integer, intent(in), optional :: dof
+        !*  Degrees of freedom correction to use (default: 1). Computes
+        !   standard deviation as sum of squared deviations divided by (N-dof).
     integer, intent(in), optional :: dim
         !*  If present, specifies dimension along which std/mean should be computed.
 
@@ -206,32 +258,21 @@ pure subroutine __APPEND_PREC(std_2d) (x, m, s, dim, status)
     real (PREC), dimension(:), allocatable :: m_old, s_old, s_new
     integer :: ldim, lstatus
     ! iv indexes variables, iobs individual observations
-    integer :: iv, iobs, nvars, nobs
+    integer :: iv, iobs, nvars, nobs, ldof
 
     ! set default values
     status = STATUS_OK
     s = 0.0_PREC
+    ldof = 1
     if (present(m)) m = 0.0_PREC
 
     call mean_std_init (shape(x), dim, ldim, nvars, nobs, status=lstatus)
     if (lstatus /= 0) goto 100
 
-    if (size(s) < nvars) then
-        lstatus = STATUS_INVALID_INPUT
-        goto 100
-    end if
+    call mean_std_check_input (nvars, nobs, m, s, dof, status=lstatus)
+    if (lstatus /= 0) goto 100
 
-    if (present(m)) then
-        if (size(m) < nvars) then
-            lstatus = STATUS_INVALID_INPUT
-            goto 100
-        end if
-    end if
-
-    if (nobs == 0 .or. nvars == 0) then
-        lstatus = STATUS_INVALID_INPUT
-        goto 100
-    end if
+    if (present(dof)) ldof = dof
 
     allocate (lm(nvars), source=0.0_PREC)
 
@@ -263,7 +304,7 @@ pure subroutine __APPEND_PREC(std_2d) (x, m, s, dim, status)
         end do
 
         if (nobs > 1) then
-            s = sqrt(s_new / (nobs - 1))
+            s = sqrt(s_new / (nobs - ldof))
         end if
     end if
 
