@@ -29,7 +29,7 @@ subroutine benchmark_cdf ()
     end do
 
     do i = 1, repeat
-        call norm%cdf (x, fx)
+        fx = norm%cdf (x)
     end do
 
 

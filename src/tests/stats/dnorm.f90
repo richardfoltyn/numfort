@@ -21,7 +21,7 @@ subroutine test_all ()
     call tests%set_label ("numfort_stats_dnorm unit tests")
 
     call test_cdf (tests)
-    ! call test_sub2ind (tests)
+    call test_cdf_rvs (tests)
 
     ! print test statistics
     call tests%print ()
@@ -51,18 +51,18 @@ subroutine test_cdf (tests)
             str(sd(i), 'g8.3e2') // ")"
 
         x1 = means(i)
-        call norm%cdf (x1, fx1, mean=means(i), sd=sd(i))
+        fx1 = norm%cdf (x1, mean=means(i), sd=sd(i))
         call tc%assert_true (abs(fx1 - 0.5d0) < tol, &
             "Check CDF(mean) == 0.5" // msg)
 
         ! Check boundary behavior
         x1 = huge(x1)
-        call norm%cdf (x1, fx1, mean=means(i), sd=sd(i))
+        fx1 = norm%cdf (x1, mean=means(i), sd=sd(i))
         call tc%assert_true (abs(fx1 - 1.0d0) < tol, &
             "Check CDF(inf) == 1.0" // msg)
 
         x1 = -huge(x1)
-        call norm%cdf (x1, fx1, mean=means(i), sd=sd(i))
+        fx1 = norm%cdf (x1, mean=means(i), sd=sd(i))
         call tc%assert_true (abs(fx1) < tol, &
             "Check CDF(-inf) = 0.0" // msg)
 
@@ -71,7 +71,7 @@ subroutine test_cdf (tests)
         allocate (x(n), fx(n))
 
         call linspace (x, -1d10, 1d10)
-        call norm%cdf (x, fx, mean=means(i), sd=sd(i))
+        fx = norm%cdf (x, mean=means(i), sd=sd(i))
         call tc%assert_true (all(fx(2:)-fx(1:n-1) >= 0.0d0), &
             "Check that CDF is non-decreasing" // msg)
 
@@ -80,5 +80,39 @@ subroutine test_cdf (tests)
 
 end subroutine
 
+subroutine test_cdf_rvs (tests)
+
+    class (test_suite) :: tests
+    class (test_case), pointer :: tc
+
+    type (str) :: msg
+    real (real64), dimension(:), allocatable :: x, fx
+    real (real64), parameter, dimension(4) :: &
+        means = [0.0d0, -21.0d0, 1d-5, 1.234d4], &
+        sd = [1.0d0, 1d-4, 1d1, 1.2345d4]
+
+    integer :: i, n
+
+    tc => tests%add_test ("dnorm CDF(random) test cases")
+
+    n = 100000
+    allocate (x(n), fx(n))
+    do i = 1, size(means)
+
+        msg = " (mean=" // str(means(i), 'g8.1e2') // ", sd=" // &
+            str(sd(i), 'g8.3e2') // ")"
+
+        ! draw random sample of normally distributed RV
+        x = norm%rvs (mean=means(i), sd=sd(i))
+        ! compute CDF(x): is standard uniformly distributed RV
+        fx = norm%cdf (x, mean=means(i), sd=sd(i))
+
+        ! compute mean and variance
+        
+    end do
+
+    deallocate (x, fx)
+
+end subroutine
 
 end program
