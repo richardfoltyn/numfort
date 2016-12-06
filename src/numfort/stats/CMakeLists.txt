@@ -3,6 +3,7 @@ get_filename_component(COMPONENT_NAME "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
 
 set(SOURCE_FILES
     combinatorics.F90
+    descriptive.F90
     dcont.F90
     disc_dist.F90
     dnorm.F90
