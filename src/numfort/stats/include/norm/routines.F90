@@ -100,12 +100,11 @@ end function
 ! ------------------------------------------------------------------------------
 ! RVS method
 
-impure elemental subroutine __APPEND_PREC(rvs_impl) (x, mean, sd)
+impure elemental subroutine __APPEND_PREC(rvs_params) (self, x, mean, sd)
     integer, parameter :: PREC = __PREC
-    ! class (dnorm __PDT_PARAM_DECL(PREC)), intent(in) :: self
+    class (dnorm __PDT_PARAM_DECL(PREC)), intent(in) :: self
 #include "cont/spec.F90"
 #include "norm/params.F90"
-    intent(out) :: x
 
     real (PREC) :: z
 
@@ -114,19 +113,10 @@ impure elemental subroutine __APPEND_PREC(rvs_impl) (x, mean, sd)
     x = mean + z*sd
 end subroutine
 
-impure elemental function __APPEND_PREC(rvs_params) (self, mean, sd) result(x)
-    integer, parameter :: PREC = __PREC
-    class (dnorm __PDT_PARAM_DECL(PREC)), intent(in) :: self
-#include "cont/spec.F90"
-#include "norm/params.F90"
-
-    call rvs_impl (x, mean, sd)
-end function
-
-impure elemental function __APPEND_PREC(rvs) (self) result(x)
+impure elemental subroutine __APPEND_PREC(rvs) (self, x)
     integer, parameter :: PREC = __PREC
     class (dnorm __PDT_PARAM_DECL(PREC)), intent(in) :: self
 #include "cont/spec.F90"
 
-    call rvs_impl (x, mean=self%mean, sd=self%sd)
-end function
+    call self%rvs (x, mean=self%mean, sd=self%sd)
+end subroutine

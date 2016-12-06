@@ -41,10 +41,6 @@ module nf_stats_duniform
         module procedure cdf_impl_real64
     end interface
 
-    interface rvs_impl
-        module procedure rvs_impl_real64
-    end interface
-
     public :: uniform, duniform
 
     !>  Instance of the standard uniform distribution on [0,1].

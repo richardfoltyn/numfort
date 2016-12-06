@@ -94,29 +94,20 @@ end function
 ! ------------------------------------------------------------------------------
 ! RVS method
 
-impure elemental subroutine __APPEND_PREC(rvs_impl) (x, low, high)
+impure elemental subroutine __APPEND_PREC(rvs_params) (self, x, low, high)
     integer, parameter :: PREC = __PREC
-    ! class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
-    real (PREC), intent(out) :: x
+    class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
+#include "cont/spec.F90"
 #include "uniform/params.F90"
 
     call random_number (x)
     x = x * (high-low) + low
 end subroutine
 
-impure elemental function __APPEND_PREC(rvs_params) (self, low, high) result(x)
-    integer, parameter :: PREC = __PREC
-    class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
-#include "cont/spec.F90"
-#include "uniform/params.F90"
-
-    call rvs_impl (x, low, high)
-end function
-
-impure elemental function __APPEND_PREC(rvs) (self) result(x)
+impure elemental subroutine __APPEND_PREC(rvs) (self, x)
     integer, parameter :: PREC = __PREC
     class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
 #include "cont/spec.F90"
 
-    call rvs_impl (x, low=self%low, high=self%high)
-end function
+    call self%rvs (x, low=self%low, high=self%high)
+end subroutine
