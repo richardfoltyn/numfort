@@ -149,6 +149,14 @@ if (USE_MKL)
 	message(STATUS "Building against Intel MKL")
 endif (USE_MKL)
 
+if (BUILD_TESTS)
+    message(STATUS "Building unit tests")
+endif ()
+
+if (BUILD_BENCHMARKS)
+    message(STATUS "Building benchmarks")
+endif ()
+
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Library install directory: ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
 message(STATUS "MOD file install directory: ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}")
