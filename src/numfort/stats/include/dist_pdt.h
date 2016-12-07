@@ -11,8 +11,16 @@
 
 /* Real KIND parameter to use for PDTs */
 #define __DEFAULT_REAL_KIND real64
+/*  use named constants for default int size instead of compiler-specific
+    integers, as these will also be used to create symbol names.
+*/
+#if __NUMFORT_DEFAULT_INT_SIZE__ == 64
+#define __DEFAULT_INT_KIND int64
+#else
+#define __DEFAULT_INT_KIND int32
+#endif
 /* Default INT paramter to use for PDTs -- use compiler default */
-#define __DEFAULT_INT_KIND __NUMFORT_DEFAULT_INT_KIND__
+ /* #define __DEFAULT_INT_KIND __NUMFORT_DEFAULT_INT_KIND__ */
 
 /* To be used when declaring attibutes of PDTs */
 #ifdef __NUMFORT_SUPPORTS_PDT_KIND__
