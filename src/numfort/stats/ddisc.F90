@@ -2,7 +2,7 @@
 #include <numfort.h>
 #include "dist_pdt.h"
 
-module nf_stats_ddisc
+module numfort_stats_ddisc
 
     use, intrinsic :: iso_fortran_env, only: real32, real64, int32, int64
     implicit none

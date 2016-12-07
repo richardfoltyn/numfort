@@ -1,4 +1,7 @@
-module numfort_stats_combinatorics
+
+!*  Module containing procedures for generating random numbers that do not
+!   are not implement in any distribution-specific module.
+module numfort_stats_random
 
     use, intrinsic :: iso_fortran_env
     use random, only: random_order_orig => random_order

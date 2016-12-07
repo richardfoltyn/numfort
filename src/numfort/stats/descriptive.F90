@@ -1,7 +1,7 @@
 
 #include "numfort.h"
 
-module nf_stats_desc
+module numfort_stats_desc
 
     use iso_fortran_env
     use numfort_common

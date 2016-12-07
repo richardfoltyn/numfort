@@ -1,7 +1,7 @@
 #include "numfort.h"
 #include "dist_pdt.h"
 
-module nf_stats_dnorm
+module numfort_stats_dnorm
 
     use, intrinsic :: iso_fortran_env
 
@@ -10,7 +10,7 @@ module nf_stats_dnorm
     use random, only: random_normal
 
     use numfort_core, only : PI
-    use nf_stats_dcont, only: dcont
+    use numfort_stats_dcont, only: dcont
 
     implicit none
     private

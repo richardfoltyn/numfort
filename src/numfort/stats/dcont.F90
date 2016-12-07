@@ -3,7 +3,7 @@
 #include "dist_pdt.h"
 
 
-module nf_stats_dcont
+module numfort_stats_dcont
 
     use, intrinsic :: iso_fortran_env, only: real32, real64
     implicit none

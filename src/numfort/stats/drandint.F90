@@ -2,10 +2,10 @@
 #include <numfort.h>
 #include "dist_pdt.h"
 
-module nf_stats_drandint
+module numfort_stats_drandint
 
     use iso_fortran_env
-    use nf_stats_ddisc
+    use numfort_stats_ddisc
 
     implicit none
     private

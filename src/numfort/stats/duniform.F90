@@ -1,10 +1,10 @@
 #include "numfort.h"
 #include "dist_pdt.h"
 
-module nf_stats_duniform
+module numfort_stats_duniform
 
     use, intrinsic :: iso_fortran_env
-    use nf_stats_dcont, only: dcont
+    use numfort_stats_dcont, only: dcont
 
     implicit none
     private

@@ -1,4 +1,4 @@
-program test_numfort_stats_combinatorics
+program test_numfort_stats_random_order
 
     use iso_fortran_env
 
