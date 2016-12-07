@@ -1,4 +1,5 @@
 
+#include "numfort.h"
 
 module nf_stats_desc
 
@@ -54,10 +55,10 @@ pure subroutine mean_std_init (shp, dim, ldim, nvars, nobs, status)
     nobs = shp(ldim)
 end subroutine
 
-#include "numfort_real64.h"
+#define __PREC real64
 #include "descriptive_impl.F90"
 
-#include "numfort_real32.h"
+#define __PREC real32
 #include "descriptive_impl.F90"
 
 end module

@@ -1,4 +1,5 @@
 
+#include "numfort.h"
 #include "dist_pdt.h"
 
 
@@ -28,10 +29,10 @@ module nf_stats_dcont
 
     interface
 
-#include "numfort_real64.h"
+#define __PREC real64
 #include "cont/interfaces.F90"
 
-#include "numfort_real32.h"
+#define __PREC real32
 #include "cont/interfaces.F90"
     end interface
 

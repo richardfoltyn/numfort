@@ -1,7 +1,7 @@
 
 ! ------------------------------------------------------------------------------
 ! GET_PARAMS method
-pure subroutine __APPEND_PREC(get_params) (self, low, high, low_out, high_out)
+pure subroutine __APPEND(get_params,__PREC) (self, low, high, low_out, high_out)
     integer, parameter :: PREC = __PREC
     class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
     real (PREC), intent(in), optional :: low, high
@@ -23,7 +23,7 @@ end subroutine
 ! ------------------------------------------------------------------------------
 ! PDF method
 
-impure elemental subroutine __APPEND_PREC(pdf_impl) (x, fx, low, high)
+impure elemental subroutine __APPEND(pdf_impl,__PREC) (x, fx, low, high)
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: x
     real (PREC), intent(out) :: fx
@@ -38,7 +38,7 @@ impure elemental subroutine __APPEND_PREC(pdf_impl) (x, fx, low, high)
     end if
 end subroutine
 
-impure elemental function __APPEND_PREC(pdf_params) (self, x, low, high) result(fx)
+impure elemental function __APPEND(pdf_params,__PREC) (self, x, low, high) result(fx)
     integer, parameter :: PREC = __PREC
     class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
 #include "cont/spec_func.F90"
@@ -47,7 +47,7 @@ impure elemental function __APPEND_PREC(pdf_params) (self, x, low, high) result(
     call pdf_impl (x, fx, low, high)
 end function
 
-impure elemental function __APPEND_PREC(pdf) (self, x) result(fx)
+impure elemental function __APPEND(pdf,__PREC) (self, x) result(fx)
     integer, parameter :: PREC = __PREC
     class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
 #include "cont/spec_func.F90"
@@ -58,7 +58,7 @@ end function
 ! ------------------------------------------------------------------------------
 ! CDF method
 
-impure elemental subroutine __APPEND_PREC(cdf_impl) (x, fx, low, high)
+impure elemental subroutine __APPEND(cdf_impl,__PREC) (x, fx, low, high)
     integer, parameter :: PREC = __PREC
     ! class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
     real (PREC), intent(in) :: x
@@ -74,7 +74,7 @@ impure elemental subroutine __APPEND_PREC(cdf_impl) (x, fx, low, high)
     end if
 end subroutine
 
-impure elemental function __APPEND_PREC(cdf_params) (self, x, low, high) result(fx)
+impure elemental function __APPEND(cdf_params,__PREC) (self, x, low, high) result(fx)
     integer, parameter :: PREC = __PREC
     class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
 #include "cont/spec_func.F90"
@@ -83,7 +83,7 @@ impure elemental function __APPEND_PREC(cdf_params) (self, x, low, high) result(
     call cdf_impl (x, fx, low, high)
 end function
 
-impure elemental function __APPEND_PREC(cdf) (self, x) result(fx)
+impure elemental function __APPEND(cdf,__PREC) (self, x) result(fx)
     integer, parameter :: PREC = __PREC
     class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
 #include "cont/spec_func.F90"
@@ -94,7 +94,7 @@ end function
 ! ------------------------------------------------------------------------------
 ! RVS method
 
-impure elemental subroutine __APPEND_PREC(rvs_params) (self, x, low, high)
+impure elemental subroutine __APPEND(rvs_params,__PREC) (self, x, low, high)
     integer, parameter :: PREC = __PREC
     class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
 #include "cont/spec.F90"
@@ -104,7 +104,7 @@ impure elemental subroutine __APPEND_PREC(rvs_params) (self, x, low, high)
     x = x * (high-low) + low
 end subroutine
 
-impure elemental subroutine __APPEND_PREC(rvs) (self, x)
+impure elemental subroutine __APPEND(rvs,__PREC) (self, x)
     integer, parameter :: PREC = __PREC
     class (duniform __PDT_PARAM_DECL(PREC)), intent(in) :: self
 #include "cont/spec.F90"

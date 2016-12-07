@@ -1,7 +1,7 @@
 ! ------------------------------------------------------------------------------
 ! Input checker for mean and std routines
 
-pure subroutine __APPEND_PREC(mean_std_check_input) (nvars, nobs, out1, out2, dof, status)
+pure subroutine __APPEND(mean_std_check_input,__PREC) (nvars, nobs, out1, out2, dof, status)
     !*  Check user-supplied input (other than dim) for errors
 
     integer, parameter :: PREC = __PREC
@@ -41,7 +41,7 @@ end subroutine
 ! ------------------------------------------------------------------------------
 ! MEAN for 1d arrays
 
-pure subroutine __APPEND_PREC(mean_1d) (x, m, dim, status)
+pure subroutine __APPEND(mean_1d,__PREC) (x, m, dim, status)
     !*  Compute mean of values in 1d array.
 
     integer, parameter :: PREC = __PREC
@@ -89,7 +89,7 @@ end subroutine
 ! ------------------------------------------------------------------------------
 ! MEAN routine for 2d input arrays
 
-pure subroutine __APPEND_PREC(mean_2d) (x, m, dim, status)
+pure subroutine __APPEND(mean_2d,__PREC) (x, m, dim, status)
     !*  MEAN computes the mean of array elements along a dimension.
 
     integer, parameter :: PREC = __PREC
@@ -151,7 +151,7 @@ end subroutine
 ! ------------------------------------------------------------------------------
 ! SD for 1d input arrays
 
-pure subroutine __APPEND_PREC(std_1d) (x, s, m, dof, dim, status)
+pure subroutine __APPEND(std_1d,__PREC) (x, s, m, dof, dim, status)
     !*  Compute standard deviation (and optionally mean) for data given in
     !   1d array.
 
@@ -190,12 +190,12 @@ pure subroutine __APPEND_PREC(std_1d) (x, s, m, dof, dim, status)
         end if
         ldof = dof
     end if
-    
+
     if (size(x) == 0) then
         lstatus = STATUS_INVALID_INPUT
         goto 100
     end if
-    
+
     ! compute mean and std. dev. using Welford's method; see
     ! http://www.johndcook.com/blog/standard_deviation/
 
@@ -227,7 +227,7 @@ end subroutine
 ! ------------------------------------------------------------------------------
 ! SD for 2d input arrays
 
-pure subroutine __APPEND_PREC(std_2d) (x, s, m, dof, dim, status)
+pure subroutine __APPEND(std_2d,__PREC) (x, s, m, dof, dim, status)
     !*  Compute standard deviation (and optionally) mean of data in 2d-array
     !   along the desired dimension.
 

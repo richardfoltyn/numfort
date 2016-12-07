@@ -1,14 +1,14 @@
 
 #include "dist_pdt.h"
 
-module numfort_stats_disc_dist
+module nf_stats_ddisc
 
     use, intrinsic :: iso_fortran_env, only: real32, real64, int32, int64
     implicit none
     private
 
 
-    type, abstract :: disc_dist __PDT_PARAM_DECL_BOTH (PREC, INTSIZE)
+    type, abstract :: ddisc __PDT_PARAM_DECL_BOTH (PREC, INTSIZE)
         __PDT_KIND_DECL(PREC, __DEFAULT_REAL_KIND)
         __PDT_KIND_DECL(INTSIZE, __DEFAULT_INT_KIND)
     contains

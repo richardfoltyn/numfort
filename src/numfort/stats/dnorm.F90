@@ -1,4 +1,4 @@
-
+#include "numfort.h"
 #include "dist_pdt.h"
 
 module nf_stats_dnorm
@@ -55,7 +55,7 @@ module nf_stats_dnorm
 
 contains
 
-#include "numfort_real64.h"
+#define __PREC real64
 #include "norm/routines.F90"
 
 
