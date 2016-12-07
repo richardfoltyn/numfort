@@ -5,8 +5,10 @@ set(SOURCE_FILES
     combinatorics.F90
     descriptive.F90
     dcont.F90
+    ddisc.F90
     dnorm.F90
     duniform.F90
+    drandint.F90
     stats.f90
 )
 

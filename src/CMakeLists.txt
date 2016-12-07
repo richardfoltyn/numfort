@@ -74,6 +74,7 @@ endif()
 add_definitions(
 	-D__NUMFORT_DEFAULT_INT_KIND__=${Fortran_DEFAULT_INT_KIND}
 	-D__NUMFORT_DEFAULT_REAL_KIND__=${Fortran_DEFAULT_REAL_KIND}
+	-D__NUMFORT_DEFAULT_INT_SIZE__=${Fortran_DEFAULT_INT_SIZE}
 )
 
 ################################################################################

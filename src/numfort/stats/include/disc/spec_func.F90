@@ -1,0 +1,4 @@
+integer (INTSIZE), intent(in) :: x
+    !!  Array x where function (PDF, CDF, etc.) should be evaluated.
+real (PREC) :: fx
+    !!  Array where function values are stored.
