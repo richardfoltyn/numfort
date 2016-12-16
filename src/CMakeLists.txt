@@ -58,18 +58,18 @@ list(APPEND CMAKE_MODULE_PATH
 # Detect features supported by Fortran compiler
 
 include(CheckFortranPDT)
+
+# check_Fortran_PDT()
+# if (Fortran_SUPPORTS_PDT_KIND)
+#   add_definitions(-D__NUMFORT_SUPPORTS_PDT_KIND__)
+# endif()
+#
+# if (Fortran_SUPPORTS_PDT_LEN)
+#   add_definitions(-D__NUMFORT_SUPPORTS_PDT_LEN__)
+# endif()
+
 include(CheckFortranKinds)
-
-check_Fortran_PDT()
 check_Fortran_kinds()
-
-if (Fortran_SUPPORTS_PDT_KIND)
-  add_definitions(-D__NUMFORT_SUPPORTS_PDT_KIND__)
-endif()
-
-if (Fortran_SUPPORTS_PDT_LEN)
-  add_definitions(-D__NUMFORT_SUPPORTS_PDT_LEN__)
-endif()
 
 add_definitions(
 	-D__NUMFORT_DEFAULT_INT_KIND__=${Fortran_DEFAULT_INT_KIND}
