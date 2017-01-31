@@ -23,8 +23,12 @@ module numfort_stats_desc
         module procedure mean_std_check_input_real32, mean_std_check_input_real64
     end interface
 
+    interface percentile
+        module procedure percentile_scalar_real32, percentile_array_real32, &
+            percentile_scalar_real64, percentile_array_real64
+    end interface
 
-    public :: mean, std
+    public :: mean, std, percentile
 contains
 
 ! MEAN_STD_INIT sets the number of variables and number of observations
@@ -57,8 +61,10 @@ end subroutine
 
 #define __PREC real64
 #include "descriptive_impl.F90"
+#undef __PREC
 
 #define __PREC real32
 #include "descriptive_impl.F90"
+#undef __PREC
 
 end module

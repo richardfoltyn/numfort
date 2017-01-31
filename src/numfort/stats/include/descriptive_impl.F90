@@ -313,3 +313,54 @@ pure subroutine __APPEND(std_2d,__PREC) (x, s, m, dof, dim, status)
     if (present(status)) status = lstatus
 
 end subroutine
+
+! ------------------------------------------------------------------------------
+pure subroutine __APPEND(percentile_array,__PREC) (x, q, xq, dim, interp)
+    integer, parameter :: PREC = __PREC
+
+    real (PREC), intent(in), dimension(:) :: x
+        !!  Data array
+    real (PREC), intent(in), dimension(:) :: q
+        !!  Percentiles to compute which must be between 0 and 100 inclusive.
+    real (PREC), intent(out), dimension(:) :: xq
+        !!  Output array storing (interpolated) values of x at q
+    integer, intent(in), optional :: dim
+        !!  Ignored for 1d input arrays, present for compatibility with higher dims.
+    character (*), intent(in), optional :: interp
+        !!  Interpolation method to use when desired percentile is between
+        !!  two data points with indices i and i+1. Valid values are
+        !!      1.  'linear': linearly interpolate between values at i, i+1
+        !!      2.  'lower': x(i)
+        !!      3.  'higher': x(i+1)
+        !!      4.  'nearest': value at index which is nearest
+        !!      5.  'midpoint': (x(i)+x(i+1))/2
+
+end subroutine
+
+pure subroutine __APPEND(percentile_scalar,__PREC) (x, q, xq, dim, interp)
+    integer, parameter :: PREC = __PREC
+
+    real (PREC), intent(in), dimension(:) :: x
+        !!  Data array
+    real (PREC), intent(in) :: q
+        !!  Percentile to compute which must be between 0 and 100 inclusive.
+    real (PREC), intent(out) :: xq
+        !!  (Interpolated) value of x at percentile q
+    integer, intent(in), optional :: dim
+        !!  Ignored for 1d input arrays, present for compatibility with higher dims.
+    character (*), intent(in), optional :: interp
+        !!  Interpolation method to use when desired percentile is between
+        !!  two data points with indices i and i+1. Valid values are
+        !!      1.  'linear': linearly interpolate between values at i, i+1
+        !!      2.  'lower': x(i)
+        !!      3.  'higher': x(i+1)
+        !!      4.  'nearest': value at index which is nearest
+        !!      5.  'midpoint': (x(i)+x(i+1))/2
+
+    real (PREC) :: xq1(1), q1(1)
+
+    q1(1) = q
+    call percentile (x, q1, xq1, dim, interp)
+    xq = xq1(1)
+
+end subroutine
