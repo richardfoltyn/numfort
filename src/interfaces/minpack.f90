@@ -18,6 +18,18 @@ module minpack_interfaces
             external fcn
         end subroutine
 
+        subroutine hybrj (fcn,n,x,fvec,fjac,ldfjac,xtol,maxfev,diag,mode, &
+                        factor,nprint,info,nfev,njev,r,lr,qtf,wa1,wa2, &
+                        wa3,wa4)
+            import PREC
+            integer, intent(in) :: n, ldfjac, maxfev, mode, nprint, lr
+            integer, intent(out) :: info, nfev, njev
+            real (PREC), intent(in) :: xtol
+            real (PREC), intent(in out) :: x(n), fvec(n), fjac(ldfjac,n), &
+                diag(n), r(lr), qtf(n),  wa1(n), wa2(n), wa3(n), wa4(n)
+            external fcn
+        end subroutine
+
         subroutine lmdif (fcn,m,n,x,fvec,ftol,xtol,gtol,maxfev,epsfcn, &
                         diag,mode,factor,nprint,info,nfev,fjac,ldfjac, &
                         ipvt,qtf,wa1,wa2,wa3,wa4)
