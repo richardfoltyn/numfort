@@ -21,15 +21,21 @@ module numfort_optimize_minpack
             real (PREC), dimension(:), intent(out) :: fx
         end subroutine
 
-        subroutine func_vec_mat_real64 (x, fx)
+        subroutine func_jac_real64 (x, fx, dfdx, task)
             import PREC
             real (PREC), dimension(:), intent(in) :: x
-            real (PREC), dimension(:,:), intent(out) :: fx
+            real (PREC), dimension(:), intent(out) :: fx
+            real (PREC), dimension(:,:), intent(out) :: dfdx
+            integer, intent(in) :: task
         end subroutine
     end interface
 
-    interface root_hybr
-        module procedure root_hybrd_real64, root_hybrj_real64
+    interface root_hybrd
+        module procedure root_hybrd_real64
+    end interface
+
+    interface root_hybrj
+        module procedure root_hybrj_real64
     end interface
 
     interface root_lstsq
@@ -41,7 +47,7 @@ module numfort_optimize_minpack
     procedure (hybrj_if) :: hybrj
     procedure (lmdif_if) :: lmdif
 
-    public :: root_hybr, root_lstsq
+    public :: root_hybrd, root_hybrj, root_lstsq
 
 contains
 
@@ -156,10 +162,12 @@ subroutine root_hybrd_real64 (func, x, fx, xtol, maxfev, ml, mu, eps, factor, di
     case (3)
         info = OPTIM_STATUS_NOT_CONVERGED
         ptr_work%cwrk = "xtol too small, no further improvement possible"
-    case default
-        ! convers info = 4 or info = 5
+    case (4)
         info = OPTIM_STATUS_NOT_CONVERGED
-        ptr_work%cwrk = "Iteration not making good progress"
+        ptr_work%cwrk = "Not making progress (as measured by last five Jacobians)"
+    case (5)
+        info = OPTIM_STATUS_NOT_CONVERGED
+        ptr_work%cwrk = "Not making progress (as measured by last ten iterations)"
     end select
 
     if (present(res)) then
@@ -184,10 +192,9 @@ contains
 end subroutine
 
 
-subroutine root_hybrj_real64 (func, fjac, x, fx, xtol, maxfev, factor, diag, work, res)
+subroutine root_hybrj_real64 (func, x, fx, xtol, maxfev, factor, diag, work, res)
     integer, parameter :: PREC = real64
-    procedure (func_vec_vec_real64) :: func
-    procedure (func_vec_mat_real64) :: fjac
+    procedure (func_jac_real64) :: func
     ! Note: will be passed using F77 implicit interface, ensure contiguous array.
     real (PREC), intent(in out), dimension(:), contiguous :: x
     real (PREC), intent(in out), dimension(:), contiguous :: fx
@@ -289,10 +296,12 @@ subroutine root_hybrj_real64 (func, fjac, x, fx, xtol, maxfev, factor, diag, wor
     case (3)
         info = OPTIM_STATUS_NOT_CONVERGED
         ptr_work%cwrk = "xtol too small, no further improvement possible"
-    case default
-        ! convers info = 4 or info = 5
+    case (4)
         info = OPTIM_STATUS_NOT_CONVERGED
-        ptr_work%cwrk = "Iteration not making good progress"
+        ptr_work%cwrk = "Not making progress (as measured by last five Jacobians)"
+    case (5)
+        info = OPTIM_STATUS_NOT_CONVERGED
+        ptr_work%cwrk = "Not making progress (as measured by last ten iterations)"
     end select
 
     if (present(res)) then
@@ -311,11 +320,7 @@ contains
         intent (in out) :: fx, iflag
 
         ! call user-provided function
-        if (iflag == 1) then
-            call func (x, fx)
-        else if (iflac == 2) then
-            call fjac (x, jac)
-        end if
+        call func (x, fx, jac, iflag)
     end subroutine
 
 end subroutine

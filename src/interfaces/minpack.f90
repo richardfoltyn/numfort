@@ -24,7 +24,7 @@ module minpack_interfaces
             import PREC
             integer, intent(in) :: n, ldfjac, maxfev, mode, nprint, lr
             integer, intent(out) :: info, nfev, njev
-            real (PREC), intent(in) :: xtol
+            real (PREC), intent(in) :: xtol, factor
             real (PREC), intent(in out) :: x(n), fvec(n), fjac(ldfjac,n), &
                 diag(n), r(lr), qtf(n),  wa1(n), wa2(n), wa3(n), wa4(n)
             external fcn
