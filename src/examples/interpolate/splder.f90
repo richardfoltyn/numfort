@@ -52,6 +52,9 @@ subroutine example1 ()
         knots(k+5) = 0.8_PREC
 
         ! generate b-spline coefficients
+        ! This is weird as it leaves parts of coefs
+        ! uninitialized, but that's how it's in the original
+        ! FITPACK code
         do i = 1, n-k-1
             ai = real(i, PREC)
             coefs(i) = 0.1d-1 * ai * (ai - 5_PREC)
@@ -60,10 +63,11 @@ subroutine example1 ()
         ! evaluate spline derivates
         do i = 1, k+1
             nu = i - 1
-            call splder (knots, coefs, k, nu, x, y(:, i), ext, ws, status)
+            call splder (knots, coefs, n, k, nu, x, y(:, i), &
+                ext=ext, work=ws, status=status)
         end do
 
-        call print_report (k, knots, coefs, x, y, status)
+        call print_report (n, k, knots, coefs, x, y, status)
 
         deallocate (knots, coefs)
 
@@ -71,17 +75,15 @@ subroutine example1 ()
 
 end subroutine
 
-subroutine print_report (k, knots, coefs, x, y, status)
-    integer :: k, status
+subroutine print_report (n, k, knots, coefs, x, y, status)
+    integer :: n, k, status
     real (PREC), dimension(:) :: knots, coefs, x
     real (PREC), dimension(:,:) :: y
 
     intent(in) :: k, status, knots, coefs, x, y
 
     integer, save :: ii = 1
-    integer :: n, i, j
-
-    n = size(knots)
+    integer :: i, j
 
     print "(/,'(', i0, ')', t6, 'spline degree: ', i1, '; error flag: ', i3)", &
         ii, k, status

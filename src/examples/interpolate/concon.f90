@@ -52,15 +52,15 @@ subroutine example1 ()
     allocate (knots(nest), coefs(nest), bind(nest))
 
     do is = 1, size(s)
-        call concon (iopt, x, y, w, v, s(is), maxtr, maxbin, n, knots, coefs, &
-            sx, bind, ssr, status=status)
+        call concon (x, y, v, n, knots, coefs, iopt, w, s(is), maxtr, maxbin, &
+            ssr=ssr, status=status)
 
         ! evaluate first- and second-order derivatives
-        call splder (knots(1:n), coefs(1:n), k, 1, x, s1, INTERP_EVAL_ERROR, &
-            status=status_eval)
+        call splder (knots(1:n), coefs(1:n), k=k, order=1, x=x, y=s1, &
+            ext=INTERP_EVAL_ERROR, status=status_eval)
 
-        call splder (knots(1:n), coefs(1:n), k, 2, x, s2, INTERP_EVAL_ERROR, &
-            status=status_eval)
+        call splder (knots, coefs, n, k, 2, x, s2, &
+            INTERP_EVAL_ERROR, status=status_eval)
 
         call print_report (iopt, s(is), ssr, status, n, knots, coefs, x, y, &
             sx, s1, s2, bind)

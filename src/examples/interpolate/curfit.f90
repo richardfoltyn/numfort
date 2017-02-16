@@ -51,10 +51,12 @@ subroutine example1 ()
             s = svec(i)
             iopt = ioptvec(i)
 
-            call curfit (iopt, x, y, k=k, s=s, work=ws, n=n, knots=knots, &
-                coefs=coefs, ssr=ssr, status=status)
+            call curfit (x, y, k, s, n, knots, coefs, iopt, ssr=ssr, work=ws, &
+                status=status)
 
-            call splev (knots, coefs, k, x, yhat, INTERP_EVAL_EXTRAPOLATE, status)
+            ! test different call syntax without specifying n directly
+            call splev (knots(1:n), coefs(1:n), k=k, x=x, y=yhat, &
+                ext=INTERP_EVAL_EXTRAPOLATE, status=status)
             call print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat)
         end do
 
@@ -63,10 +65,10 @@ subroutine example1 ()
         iopt = -1
         knots(k+2:k+8) = [(3.0_PREC * j, j = 1,7)]
         n = 9 + 2*k
-        call curfit (iopt, x, y, k=k, s=s, work=ws, n=n, knots=knots, &
-            coefs=coefs, ssr=ssr, status=status)
+        call curfit (x, y, k, s, n, knots, coefs, iopt, ssr=ssr, &
+            work=ws, status=status)
 
-        call splev (knots, coefs, k, x, yhat, INTERP_EVAL_EXTRAPOLATE, status)
+        call splev (knots, coefs, n, k, x, yhat, INTERP_EVAL_EXTRAPOLATE, status)
         call print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat)
     end do
 
@@ -105,12 +107,12 @@ subroutine example2 ()
     nest = curfit_get_nest (m=m, k=k)
     allocate (knots(nest), coefs(nest))
 
-    call curfit (iopt, x, y, w=w, k=k, s=s, work=ws, n=n, knots=knots, coefs=coefs, &
-        ssr=ssr, status=status)
+    call curfit (x, y, k, s, n, knots, coefs, iopt, w=w, work=ws, ssr=ssr, &
+        status=status)
 
     ! evaluate spline at original x points
     ext = INTERP_EVAL_BOUNDARY
-    call splev (knots, coefs, k, x, yhat, ext, status)
+    call splev (knots, coefs, n, k, x, yhat, ext, status)
 
     call print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat, &
         counter=1)
