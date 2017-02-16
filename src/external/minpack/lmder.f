@@ -6,6 +6,7 @@
       double precision ftol,xtol,gtol,factor
       double precision x(n),fvec(m),fjac(ldfjac,n),diag(n),qtf(n),
      *                 wa1(n),wa2(n),wa3(n),wa4(m)
+      procedure (lmder_fcn_real64) :: fcn
 c     **********
 c
 c     subroutine lmder
@@ -187,7 +188,6 @@ c     **********
       double precision actred,delta,dirder,epsmch,fnorm,fnorm1,gnorm,
      *                 one,par,pnorm,prered,p1,p5,p25,p75,p0001,ratio,
      *                 sum,temp,temp1,temp2,xnorm,zero
-      double precision dpmpar,enorm
       data one,p1,p5,p25,p75,p0001,zero
      *     /1.0d0,1.0d-1,5.0d-1,2.5d-1,7.5d-1,1.0d-4,0.0d0/
 c

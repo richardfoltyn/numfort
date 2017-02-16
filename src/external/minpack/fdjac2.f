@@ -2,6 +2,7 @@
       integer m,n,ldfjac,iflag
       double precision epsfcn
       double precision x(n),fvec(m),fjac(ldfjac,n),wa(m)
+      procedure (lmdif_fcn_real64) :: fcn
 c     **********
 c
 c     subroutine fdjac2
@@ -79,7 +80,6 @@ c
 c     **********
       integer i,j
       double precision eps,epsmch,h,temp,zero
-      double precision dpmpar
       data zero /0.0d0/
 c
 c     epsmch is the machine precision.

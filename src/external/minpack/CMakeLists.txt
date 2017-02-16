@@ -58,30 +58,34 @@ endif ()
 ################################################################################
 # Target definitions
 
+# set(SOURCE_FILES
+#     chkder.f
+#     dogleg.f
+#     dpmpar.f
+#     enorm.f
+#     fdjac1.f
+#     fdjac2.f
+#     hybrd.f
+#     hybrd1.f
+#     hybrj.f
+#     hybrj1.f
+#     lmder.f
+#     lmder1.f
+#     lmdif.f
+#     lmdif1.f
+#     lmpar.f
+#     lmstr.f
+#     lmstr1.f
+#     qform.f
+#     qrfac.f
+#     qrsolv.f
+#     r1mpyq.f
+#     r1updt.f
+#     rwupdt.f
+# )
+
 set(SOURCE_FILES
-    chkder.f
-    dogleg.f
-    dpmpar.f
-    enorm.f
-    fdjac1.f
-    fdjac2.f
-    hybrd.f
-    hybrd1.f
-    hybrj.f
-    hybrj1.f
-    lmder.f
-    lmder1.f
-    lmdif.f
-    lmdif1.f
-    lmpar.f
-    lmstr.f
-    lmstr1.f
-    qform.f
-    qrfac.f
-    qrsolv.f
-    r1mpyq.f
-    r1updt.f
-    rwupdt.f
+    minpack_real64.f
 )
 
 set(_name ${${PROJECT_NAME}_LIBRARY_NAME})

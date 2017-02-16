@@ -3,6 +3,7 @@
       integer n,ldfjac,iflag,ml,mu
       double precision epsfcn
       double precision x(n),fvec(n),fjac(ldfjac,n),wa1(n),wa2(n)
+      procedure (hybrd_fcn_real64) :: fcn
 c     **********
 c
 c     subroutine fdjac1
@@ -90,7 +91,6 @@ c
 c     **********
       integer i,j,k,msum
       double precision eps,epsmch,h,temp,zero
-      double precision dpmpar
       data zero /0.0d0/
 c
 c     epsmch is the machine precision.
@@ -148,4 +148,3 @@ c
 c     last card of subroutine fdjac1.
 c
       end
-

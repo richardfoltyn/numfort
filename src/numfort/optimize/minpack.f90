@@ -6,8 +6,9 @@ module numfort_optimize_minpack
     use numfort_optim_result_mod
     use numfort_optimize_common
 
-    use minpack_interfaces, only: hybrd_if => hybrd, lmdif_if => lmdif, &
-        hybrj_if => hybrj
+    use minpack_real64, only: minpack_hybrd_real64 => hybrd, &
+        minpack_lmdif_real64 => lmdif, &
+        minpack_hybrj_real64 => hybrj
 
     implicit none
     private
@@ -41,11 +42,6 @@ module numfort_optimize_minpack
     interface root_lstsq
         module procedure root_lmdif_real64
     end interface
-
-    ! define interfaces for MINPACK procedures
-    procedure (hybrd_if) :: hybrd
-    procedure (hybrj_if) :: hybrj
-    procedure (lmdif_if) :: lmdif
 
     public :: root_hybrd, root_hybrj, root_lstsq
 
@@ -145,7 +141,7 @@ subroutine root_hybrd_real64 (func, x, fx, xtol, maxfev, ml, mu, eps, factor, di
     i = i + n
     ptr_wa4 => ptr_work%rwrk(i+1:i+n)
 
-    call hybrd (fwrapper, n, x, fx, lxtol, lmaxfev, lml, lmu, leps, ptr_diag, &
+    call minpack_hybrd_real64 (fwrapper, n, x, fx, lxtol, lmaxfev, lml, lmu, leps, ptr_diag, &
         mode, lfactor, lnprint, info, nfev, ptr_fjac, n, ptr_r, lr, ptr_qtf, &
         ptr_wa1, ptr_wa2, ptr_wa3, ptr_wa4)
 
@@ -279,7 +275,7 @@ subroutine root_hybrj_real64 (func, x, fx, xtol, maxfev, factor, diag, work, res
     i = i + n
     ptr_wa4 => ptr_work%rwrk(i+1:i+n)
 
-    call hybrj (fwrapper, n, x, fx, ptr_fjac, n, lxtol, lmaxfev, ptr_diag, &
+    call minpack_hybrj_real64 (fwrapper, n, x, fx, ptr_fjac, n, lxtol, lmaxfev, ptr_diag, &
         mode, lfactor, lnprint, info, nfev, njev, ptr_r, lr, ptr_qtf, &
         ptr_wa1, ptr_wa2, ptr_wa3, ptr_wa4)
 
@@ -317,7 +313,7 @@ contains
         real (PREC) :: x(n), fx(n), jac(ldfjac, n)
 
         intent (in) :: n, x, ldfjac
-        intent (in out) :: fx, iflag
+        intent (in out) :: fx, jac, iflag
 
         ! call user-provided function
         call func (x, fx, jac, iflag)
@@ -424,7 +420,7 @@ subroutine root_lmdif_real64 (func, x, fx, ftol, xtol, gtol, maxfev, eps, &
 
     ptr_ipvt => ptr_work%iwrk(1:n)
 
-    call lmdif (fwrapper, m, n, x, fx, lftol, lxtol, lgtol, lmaxfev, &
+    call minpack_lmdif_real64 (fwrapper, m, n, x, fx, lftol, lxtol, lgtol, lmaxfev, &
         leps, ptr_diag, mode, lfactor, lnprint, info, nfev, ptr_fjac, m, &
         ptr_ipvt, ptr_qtf, ptr_wa1, ptr_wa2, ptr_wa3, ptr_wa4)
 

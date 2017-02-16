@@ -5,7 +5,7 @@
       double precision xtol,epsfcn,factor
       double precision x(n),fvec(n),diag(n),fjac(ldfjac,n),r(lr),
      *                 qtf(n),wa1(n),wa2(n),wa3(n),wa4(n)
-      external fcn
+      procedure (hybrd_fcn_real64) :: fcn
 c     **********
 c
 c     subroutine hybrd
@@ -168,7 +168,6 @@ c     **********
       double precision actred,delta,epsmch,fnorm,fnorm1,one,pnorm,
      *                 prered,p1,p5,p001,p0001,ratio,sum,temp,xnorm,
      *                 zero
-      double precision dpmpar,enorm
       data one,p1,p5,p001,p0001,zero
      *     /1.0d0,1.0d-1,5.0d-1,1.0d-3,1.0d-4,0.0d0/
 c
