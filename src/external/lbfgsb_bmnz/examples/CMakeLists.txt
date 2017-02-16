@@ -24,7 +24,9 @@ foreach (_file IN LISTS SOURCE_FILES)
 	endif ()
 
 	set(_target lbfgsb_bmnz_${exe_name})
-	add_executable(${_target} "${_file}")
+	add_executable(${_target} "${_file}"
+		$<TARGET_OBJECTS:${${PROJECT_NAME}_LIBRARY_NAME}>
+	)
 	target_link_libraries(${_target} ${${PROJECT_NAME}_LIBRARIES})
 	set_target_properties(${_target} PROPERTIES OUTPUT_NAME ${exe_name})
 

@@ -45,9 +45,6 @@ else ()
 	message(STATUS "Building ${PROJECT_NAME_PRETTY} as standalone project")
 endif ()
 
-# Link demo executables against these libraries
-set(${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_LIBRARY_NAME}_static)
-
 ################################################################################
 # BLAS libraries
 
@@ -91,7 +88,5 @@ if (${PROJECT_NAME}_STANDALONE)
 endif ()
 
 if (BUILD_EXAMPLES)
-    # create static library which examples can link against
-    add_library(${_name}_static $<TARGET_OBJECTS:${_name}>)
 	add_subdirectory(examples)
 endif ()

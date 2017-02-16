@@ -26,14 +26,14 @@ subroutine example1 ()
     ! solution for func1 is x1 = 22/23 and x2 = 18/23
     x = 0.0
 
-    call root_hybr (func1, x, fx, work=work, res=res)
+    call root_hybrd (func1, x, fx, work=work, res=res)
     call print_report (res)
 
     ! nonlinear equation system
     ! (one?) solution for func2 == 0 is x1 = 1.21741 and x2 = 2.69888
     x = 2.0
     ! test call without passing in workspace object
-    call root_hybr (func2, x, fx, res=res)
+    call root_hybrd (func2, x, fx, res=res)
     call print_report (res)
 
 end subroutine
