@@ -137,6 +137,8 @@ list(APPEND ${PROJECT_NAME}_INCLUDE_DIRS "${${PROJECT_NAME}_MODDIR}")
 set(${PROJECT_NAME}_TESTS_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")
 set(${PROJECT_NAME}_EXAMPLES_DIRECTORY "${CMAKE_BINARY_DIR}/bin/examples")
 set(${PROJECT_NAME}_BENCHMARKS_DIRECTORY "${CMAKE_BINARY_DIR}/bin/benchmarks")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 ###############################################################################
 # Report options and settings
@@ -173,28 +175,31 @@ unset(_FFLAGS_GLOBAL)
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     # explicitly add -cpp to run C preprocessor if required
-    set(GNU_WARN "-Wall -Wextra -Wimplicit-interface -Wimplicit-procedure \
+	set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} -Wall -Wextra ")
+    set(GNU_WARN "-Wimplicit-interface -Wimplicit-procedure \
       -Warray-temporaries -Wrealloc-lhs -pedantic")
     set(_FFLAGS "${GNU_WARN} -std=f2008")
     set(_FFLAGS_DEBUG "-fcheck=all -Og -S -save-temps")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
-        set (_FFLAGS "/warn:all /standard-semantics /stand:f08")
+		set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} /warn:all")
+        set(_FFLAGS "/standard-semantics /stand:f08")
 		set(_FFLAGS_DEBUG "/check:all /Qsave-temps")
 
 		if (NOT IFORT_STD_MOD_PROC_NAME)
-            set(_FFLAGS_GLOBAL "/assume:nostd_mod_proc_name")
+            set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} /assume:nostd_mod_proc_name")
         else ()
-            set(_FFLAGS_GLOBAL "/assume:std_mod_proc_name")
+            set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} /assume:std_mod_proc_name")
         endif ()
     else ()
-        set (_FFLAGS "-warn all -standard-semantics -std08")
+		set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} -warn all ")
+        set (_FFLAGS "-standard-semantics -std08")
         set(_FFLAGS_DEBUG "-check all -save-temps")
 
 		if (NOT IFORT_STD_MOD_PROC_NAME)
-            set(_FFLAGS_GLOBAL "-assume nostd_mod_proc_name")
+            set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} -assume nostd_mod_proc_name")
         else ()
-            set(_FFLAGS_GLOBAL "-assume std_mod_proc_name")
+            set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} -assume std_mod_proc_name")
         endif ()
     endif (WIN32)
 endif ()
