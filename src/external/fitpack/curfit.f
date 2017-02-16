@@ -1,4 +1,4 @@
-      subroutine curfit(iopt,m,x,y,w,xb,xe,k,s,nest,n,t,c,fp,
+      pure subroutine curfit(iopt,m,x,y,w,xb,xe,k,s,nest,n,t,c,fp,
      * wrk,lwrk,iwrk,ier)
 c  given the set of data points (x(i),y(i)) and the set of positive
 c  numbers w(i),i=1,2,...,m,subroutine curfit determines a smooth spline
@@ -207,11 +207,31 @@ c  latest update : march 1987
 c
 c  ..
 c  ..scalar arguments..
-      real*8 xb,xe,s,fp
-      integer iopt,m,k,nest,n,lwrk,ier
+      !real*8 xb,xe,s,fp
+      !integer iopt,m,k,nest,n,lwrk,ier
 c  ..array arguments..
-      real*8 x(m),y(m),w(m),t(nest),c(nest),wrk(lwrk)
-      integer iwrk(nest)
+      !real*8 x(m),y(m),w(m),t(nest),c(nest),wrk(lwrk)
+      !integer iwrk(nest)
+
+      integer, intent(in)       :: iopt
+      integer, intent(in)       :: m
+      integer, intent(in)       :: k
+      integer, intent(in)       :: nest
+      real*8, intent(in)        :: x(m)
+      real*8, intent(in)        :: y(m)
+      real*8, intent(in)        :: w(m)
+      real*8, intent(in)        :: xb
+      real*8, intent(in)        :: xe
+      real*8, intent(in)        :: s
+      integer, intent(in)       :: lwrk
+      integer, intent(out)      :: n
+      real*8, intent(out)       :: t(nest)
+      real*8, intent(out)       :: c(nest)
+      real*8, intent(out)       :: fp
+      real*8, intent(in out)    :: wrk(lwrk)
+      integer, intent(in out)   :: iwrk(nest)
+      integer, intent(out)      :: ier
+
 c  ..local scalars..
       real*8 tol
       integer i,ia,ib,ifp,ig,iq,iz,j,k1,k2,lwest,maxit,nmin

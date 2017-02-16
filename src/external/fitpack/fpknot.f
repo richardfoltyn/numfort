@@ -1,4 +1,4 @@
-      subroutine fpknot(x,m,t,n,fpint,nrdata,nrint,nest,istart)
+      pure subroutine fpknot(x,m,t,n,fpint,nrdata,nrint,nest,istart)
       implicit none
 c  subroutine fpknot locates an additional knot for a spline of degree
 c  k and adjusts the corresponding parameters,i.e.
@@ -16,6 +16,8 @@ c  ..scalar arguments..
 c  ..array arguments..
       real*8 x(m),t(nest),fpint(nest)
       integer nrdata(nest)
+      intent (in) :: x, m, nest, istart
+      intent (out) :: t, n, fpint, nrdata, nrint
 c  ..local scalars..
       real*8 an,am,fpmax
       integer ihalf,j,jbegin,jj,jk,jpoint,k,maxbeg,maxpt,

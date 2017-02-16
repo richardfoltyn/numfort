@@ -1,19 +1,44 @@
-      subroutine fpcoco(iopt,m,x,y,w,v,s,nest,maxtr,maxbin,n,t,c,sq,sx,
-     * bind,e,wrk,lwrk,iwrk,kwrk,ier)
+      pure subroutine fpcoco(iopt,m,x,y,w,v,s,nest,maxtr,maxbin,n,t,c,
+     &    sq,sx, bind,e,wrk,lwrk,iwrk,kwrk,ier)
+
+      integer, intent(in)   :: iopt
+      integer, intent(in)   :: m
+      integer, intent(in)   :: nest
+      integer, intent(in)   :: maxtr
+      integer, intent(in)   :: maxbin
+      real*8, intent(in)    :: x(m)
+      real*8, intent(in)    :: y(m)
+      real*8, intent(in)    :: w(m)
+      real*8, intent(in)    :: v(m)
+      real*8, intent(in)    :: s
+      integer, intent(in)   :: lwrk
+      integer, intent(in)   :: kwrk
+      integer, intent(out)  :: n
+      real*8, intent(inout) :: t(nest)
+      real*8, intent(out)   :: c(nest)
+      real*8, intent(out)   :: sq
+      real*8, intent(inout) :: sx(m)
+      logical, intent(inout):: bind(nest)
+      real*8, intent(inout) :: e(nest)
+      real*8, intent(inout) :: wrk(lwrk)
+      integer, intent(inout):: iwrk(kwrk)
+      integer, intent(out)  :: ier
+
 c  ..scalar arguments..
-      real*8 s,sq
-      integer iopt,m,nest,maxtr,maxbin,n,lwrk,kwrk,ier
+      !real*8 s,sq
+      !integer iopt,m,nest,maxtr,maxbin,n,lwrk,kwrk,ier
 c  ..array arguments..
-      integer iwrk(kwrk)
-      real*8 x(m),y(m),w(m),v(m),t(nest),c(nest),sx(m),e(nest),wrk(lwrk)
-     *
-      logical bind(nest)
+      !integer iwrk(kwrk)
+      !real*8 x(m),y(m),w(m),v(m),t(nest),c(nest),sx(m),e(nest),wrk(lwrk)
+      !logical bind(nest)
 c  ..local scalars..
       integer i,ia,ib,ic,iq,iu,iz,izz,i1,j,k,l,l1,m1,nmax,nr,n4,n6,n8,
      * ji,jib,jjb,jl,jr,ju,mb,nm
       real*8 sql,sqmax,term,tj,xi,half
+      type (constraints_tree) :: tree
+
 c  ..subroutine references..
-c    fpcosp,fpbspl,fpadno,fpdeno,fpseno,fpfrno
+c    fpcosp,fpbspl
 c  ..
 c  set constant
       half = 0.5e0
@@ -84,12 +109,14 @@ c  we partition the working space
       jr = jl+maxtr
       jjb = jr+maxtr
       jib = jjb+mb
+
+      call tree%init (iwrk(ju:ju+maxtr-1), iwrk(jl:jl+maxtr-1),
+     &  iwrk(jr:jr+maxtr-1), iwrk(ji:ji+maxtr-1))
 c  given the set of knots t(j),j=1,2,...n, find the least-squares cubic
 c  spline which satisfies the imposed concavity/convexity constraints.
-      call fpcosp(m,x,y,w,n,t,e,maxtr,maxbin,c,sq,sx,bind,nm,mb,wrk(ia),
-     *
-     * wrk(ib),wrk(ic),wrk(iz),wrk(izz),wrk(iu),wrk(iq),iwrk(ji),
-     * iwrk(ju),iwrk(jl),iwrk(jr),iwrk(jjb),iwrk(jib),ier)
+      call fpcosp(m,x,y,w,n,t,e,maxbin,c,sq,sx,bind,nm,mb,wrk(ia),
+     * wrk(ib),wrk(ic),wrk(iz),wrk(izz),wrk(iu),wrk(iq),tree,
+     * iwrk(jjb),iwrk(jib),ier)
 c  if sq <= s or in case of abnormal exit from fpcosp, control is
 c  repassed to the driver program.
       if(sq.le.s .or. ier.gt.0) go to 300

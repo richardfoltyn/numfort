@@ -1,4 +1,4 @@
-      subroutine splev(t,n,c,k,x,y,m,e,ier)
+      pure subroutine splev(t,n,c,k,x,y,m,e,ier)
 c  subroutine splev evaluates in a number of points x(i),i=1,2,...,m
 c  a spline s(x) of degree k, given in its b-spline representation.
 c
@@ -56,9 +56,18 @@ c++   - removed the restriction of the orderness of x values
 c++   - fixed initialization of sp to double precision value
 c
 c  ..scalar arguments..
-      integer n, k, m, e, ier
+      !integer n, k, m, e, ier
 c  ..array arguments..
-      real*8 t(n), c(n), x(m), y(m)
+      !real*8 t(n), c(n), x(m), y(m)
+      integer, intent(in)   :: n
+      integer, intent(in)   :: k
+      integer, intent(in)   :: m
+      integer, intent(in)   :: e
+      real*8, intent(in)    :: t(n)
+      real*8, intent(in)    :: c(n)
+      real*8, intent(in)    :: x(m)
+      real*8, intent(out)   :: y(m)
+      integer, intent(out)  :: ier
 c  ..local scalars..
       integer i, j, k1, l, ll, l1, nk1
 c++..

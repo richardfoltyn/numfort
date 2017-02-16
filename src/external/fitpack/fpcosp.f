@@ -1,28 +1,49 @@
-      subroutine fpcosp(m,x,y,w,n,t,e,maxtr,maxbin,c,sq,sx,bind,nm,mb,a,
-     *
-     * b,const,z,zz,u,q,info,up,left,right,jbind,ibind,ier)
+      pure subroutine fpcosp(m,x,y,w,n,t,e,maxbin,c,sq,sx,bind,nm,mb,a,
+     * b,const,z,zz,u,q,tree,jbind,ibind,ier)
 
-      use constraints_tree_mod
+      integer, intent(in)   :: m
+      integer, intent(in)   :: n
+      integer, intent(in)   :: maxbin
+      integer, intent(in)   :: nm
+      integer, intent(in)   :: mb
+      real*8, intent(in)    :: x(m)
+      real*8, intent(in)    :: y(m)
+      real*8, intent(in)    :: w(m)
+      real*8, intent(inout) :: t(n)
+      real*8, intent(inout) :: e(n)
+      real*8, intent(out)   :: c(n)
+      real*8, intent(out)   :: sq
+      real*8, intent(inout) :: sx(m)
+      logical, intent(inout):: bind(n)
+      real*8, intent(inout) :: a(n,4)
+      real*8, intent(inout) :: b(nm,maxbin)
+      real*8, intent(inout) :: const(n)
+      real*8, intent(inout) :: z(n)
+      real*8, intent(inout) :: zz(n)
+      real*8, intent(inout) :: u(maxbin)
+      real*8, intent(inout) :: q(m,4)
+      type (constraints_tree), intent(in out) :: tree
+      integer, intent(inout):: jbind(mb)
+      integer, intent(inout):: ibind(mb)
+      integer, intent(out)  :: ier
 c  ..
 c  ..scalar arguments..
-      real*8 sq
-      integer m,n,maxtr,maxbin,nm,mb,ier
+      ! real*8 sq
+      ! integer m,n,maxbin,nm,mb,ier
 c  ..array arguments..
-      real*8 x(m),y(m),w(m),t(n),e(n),c(n),sx(m),a(n,4),b(nm,maxbin),
-     * const(n),z(n),zz(n),u(maxbin),q(m,4)
-      integer info(maxtr),up(maxtr),left(maxtr),right(maxtr),jbind(mb),
-     * ibind(mb)
-      logical bind(n)
+      ! real*8 x(m),y(m),w(m),t(n),e(n),c(n),sx(m),a(n,4),b(nm,maxbin),
+      ! * const(n),z(n),zz(n),u(maxbin),q(m,4)
+      ! integer jbind(mb), ibind(mb)
+      ! logical bind(n)
 c  ..local scalars..
       integer i,i1,j,j1,j2,j3,k,kdim,k1,k2,k3,k4,k5,k6,
      * l,lp1,l1,l2,l3,nbind,number,n1,n4,n6
       real*8 f,wi,xi
 c  ..local array..
-      real*8 h(4)
-      target :: up, left, right, info
-      type (constraints_tree) :: tree
+      real*8 h(20)
+
 c  ..subroutine references..
-c    fpbspl,fpadno,fpdeno,fpfrno,fpseno
+c    fpbspl
 c  ..
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c  if we use the b-spline representation of s(x) our approximation     c
@@ -44,9 +65,6 @@ c  fix the parameters which determine these constraints.
       do 10 i=1,n6
         const(i) = e(i)*(t(i+4)-t(i+1))/(t(i+5)-t(i+2))
   10  continue
-c  initialize the triply linked tree which is used to find the subset
-c  of constraints ibind(1),...ibind(nbind).
-      call tree%init (up, left, right, info)
 c  set up the normal equations  n'nc=n'y  where n denotes the m x (n-4)
 c  observation matrix with elements ni,j = wi*nj(xi)  and y is the
 c  column vector with elements yi*wi.

@@ -1,10 +1,19 @@
-      real*8 function fprati(p1,f1,p2,f2,p3,f3)
+      pure function fprati(p1,f1,p2,f2,p3,f3)
 c  given three points (p1,f1),(p2,f2) and (p3,f3), function fprati
 c  gives the value of p such that the rational interpolating function
 c  of the form r(p) = (u*p+v)/(p+w) equals zero at p.
 c  ..
 c  ..scalar arguments..
-      real*8 p1,f1,p2,f2,p3,f3
+c      real*8 p1,f1,p2,f2,p3,f3
+      real*8, value  :: p1
+      real*8, value  :: f1
+      real*8, value  :: p2
+      real*8, value  :: f2
+      real*8, value  :: p3
+      real*8, value  :: f3
+
+      real*8 fprati
+c      intent (in) :: p1, p2, p3, f1, f2, f3
 c  ..local scalars..
       real*8 h1,h2,h3,p
 c  ..

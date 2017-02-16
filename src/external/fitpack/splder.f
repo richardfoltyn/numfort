@@ -1,5 +1,5 @@
-      subroutine splder(t,n,c,k,nu,x,y,m,e,wrk,ier)
-      implicit none  
+      pure subroutine splder(t,n,c,k,nu,x,y,m,e,wrk,ier)
+      implicit none
 c  subroutine splder evaluates in a number of points x(i),i=1,2,...,m
 c  the derivative of order nu of a spline s(x) of degree k,given in
 c  its b-spline representation.
@@ -60,9 +60,20 @@ c++   - removed the restriction of the orderness of x values
 c++   - fixed initialization of sp to double precision value
 c
 c  ..scalar arguments..
-      integer n,k,nu,m,e,ier
+      !integer n,k,nu,m,e,ier
 c  ..array arguments..
-      real*8 t(n),c(n),x(m),y(m),wrk(n)
+      !real*8 t(n),c(n),x(m),y(m),wrk(n)
+      integer, intent(in)   :: n
+      integer, intent(in)   :: k
+      integer, intent(in)   :: m
+      integer, intent(in)   :: nu
+      integer, intent(in)   :: e
+      real*8, intent(in)    :: x(m)
+      real*8, intent(in)    :: t(n)
+      real*8, intent(in)    :: c(n)
+      real*8, intent(out)   :: y(m)
+      real*8, intent(in out):: wrk(n)
+      integer, intent(out)  :: ier
 c  ..local scalars..
       integer i,j,kk,k1,k2,l,ll,l1,l2,nk1,nk2,nn
       real*8 ak,arg,fac,sp,tb,te
@@ -70,7 +81,7 @@ c++..
       integer k3
 c..++
 c  ..local arrays ..
-      real*8 h(6)
+      real*8 h(20)
 c  before starting computations a data check is made. if the input data
 c  are invalid control is immediately repassed to the calling program.
       ier = 10

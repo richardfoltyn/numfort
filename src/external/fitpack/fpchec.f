@@ -1,4 +1,4 @@
-      subroutine fpchec(x,m,t,n,k,ier)
+      pure subroutine fpchec(x,m,t,n,k,ier)
 c  subroutine fpchec verifies the number and the position of the knots
 c  t(j),j=1,2,...,n of a spline of degree k, in relation to the number
 c  and the position of the data points x(i),i=1,2,...,m. if all of the
@@ -18,6 +18,8 @@ c  ..scalar arguments..
       integer m,n,k,ier
 c  ..array arguments..
       real*8 x(m),t(n)
+      intent (in) :: m, n, k, x, t
+      intent (out) :: ier
 c  ..local scalars..
       integer i,j,k1,k2,l,nk1,nk2,nk3
       real*8 tj,tl

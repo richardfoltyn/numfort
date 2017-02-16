@@ -1,9 +1,11 @@
-      subroutine fpgivs(piv,ww,cos,sin)
+      pure subroutine fpgivs(piv,ww,cos,sin)
 c  subroutine fpgivs calculates the parameters of a givens
 c  transformation .
 c  ..
 c  ..scalar arguments..
       real*8 piv,ww,cos,sin
+      intent (in) :: piv
+      intent (out) :: ww, cos, sin
 c  ..local scalars..
       real*8 dd,one,store
 c  ..function references..

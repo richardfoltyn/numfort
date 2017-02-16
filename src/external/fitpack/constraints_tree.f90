@@ -25,11 +25,12 @@ module constraints_tree_mod
 
 contains
 
-subroutine tree_init (self, up, left, right, info)
+pure subroutine tree_init (self, up, left, right, info)
     class (constraints_tree), intent(in out) :: self
-    integer, dimension(:), target, contiguous :: up, left, right, info
-
-    intent (in) :: up, left, right, info
+    integer, intent(in out), dimension(:), target, contiguous :: up
+    integer, intent(in out), dimension(:), target, contiguous :: left
+    integer, intent(in out), dimension(:), target, contiguous :: right
+    integer, intent(in out), dimension(:), target, contiguous :: info
 
     integer :: status, idx
 
@@ -211,7 +212,7 @@ pure subroutine add_constraint (self, ibind, status)
     integer, dimension(:), intent(in) :: ibind
     integer, intent(out) :: status
 
-    integer :: nbind, inode, vnode, vinsert, inew, il, level
+    integer :: nbind, inode, vnode, vinsert, level
 
     status = TREE_STATUS_SUCCESS
     nbind = size(ibind)
@@ -244,7 +245,7 @@ pure subroutine add_constraint (self, ibind, status)
             ! Handle case vnode > vinsert
             call handle_left_sibling (self, inode, status)
         end if
-        
+
         if (status /= TREE_STATUS_SUCCESS) goto 100
     end do
 
@@ -253,12 +254,12 @@ pure subroutine add_constraint (self, ibind, status)
 100 continue
 
 contains
-    
+
     pure subroutine handle_child (self, level, inode, status)
         class (constraints_tree), intent(in out) :: self
         integer, intent(in out) :: inode, level, status
         integer :: inew
-        
+
         ! if child node exists, then pass processing of the remaining tail
         ! to child instance; otherwise create child node first
         if (self%left(inode) == 0) then
@@ -272,13 +273,13 @@ contains
         end if
 
         level = level + 1
-    end subroutine 
-    
+    end subroutine
+
     pure subroutine handle_right_sibling (self, inode, status)
         class (constraints_tree), intent(in out) :: self
         integer, intent(in out) :: inode, status
         integer :: inew
-        
+
         if (self%right(inode) == 0) then
             call insert_node (self, self%up(inode), vinsert, inew, status, rightof=inode)
             if (status /= TREE_STATUS_SUCCESS) return
@@ -287,12 +288,12 @@ contains
             inode = self%right(inode)
         end if
     end subroutine
-    
+
     pure subroutine handle_left_sibling (self, inode, status)
         class (constraints_tree), intent(in out) :: self
         integer, intent(in out) :: inode, status
         integer :: inew, il
-        
+
         ! need to insert a new node the current one
         ! first, so find the node with right pointing to current node
         il = self%left(self%up(inode))

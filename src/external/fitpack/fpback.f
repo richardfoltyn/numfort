@@ -1,4 +1,4 @@
-      subroutine fpback(a,z,n,k,c,nest)
+      pure subroutine fpback(a,z,n,k,c,nest)
 c  subroutine fpback calculates the solution of the system of
 c  equations a*c = z with a a n x n upper triangular matrix
 c  of bandwidth k.
@@ -8,6 +8,8 @@ c  ..scalar arguments..
 c  ..array arguments..
       real*8 a(nest,k),z(n),c(n)
 c  ..local scalars..
+      intent (in) :: a, z, n, k, nest
+      intent (out) :: c
       real*8 store
       integer i,i1,j,k1,l,m
 c  ..

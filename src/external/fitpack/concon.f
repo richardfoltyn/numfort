@@ -1,5 +1,5 @@
-      subroutine concon(iopt,m,x,y,w,v,s,nest,maxtr,maxbin,n,t,c,sq,
-     * sx,bind,wrk,lwrk,iwrk,kwrk,ier)
+      pure subroutine concon(iopt,m,x,y,w,v,s,nest,maxtr,maxbin,n,t,c,
+     * sq,sx,bind,wrk,lwrk,iwrk,kwrk,ier)
 c  given the set of data points (x(i),y(i)) and the set of positive
 c  numbers w(i), i=1,2,...,m,subroutine concon determines a cubic spline
 c  approximation s(x) which satisfies the following local convexity
@@ -191,12 +191,34 @@ c  latest update : march 1987.
 c
 c  ..
 c  ..scalar arguments..
-      real*8 s,sq
-      integer iopt,m,nest,maxtr,maxbin,n,lwrk,kwrk,ier
+      !real*8 s,sq
+      !integer iopt,m,nest,maxtr,maxbin,n,lwrk,kwrk,ier
 c  ..array arguments..
-      real*8 x(m),y(m),w(m),v(m),t(nest),c(nest),sx(m),wrk(lwrk)
-      integer iwrk(kwrk)
-      logical bind(nest)
+      !real*8 x(m),y(m),w(m),v(m),t(nest),c(nest),sx(m),wrk(lwrk)
+      !integer iwrk(kwrk)
+      !logical bind(nest)
+      integer, intent(in)   :: iopt
+      integer, intent(in)   :: m
+      integer, intent(in)   :: nest
+      integer, intent(in)   :: maxtr
+      integer, intent(in)   :: maxbin
+      real*8, intent(in)    :: x(m)
+      real*8, intent(in)    :: y(m)
+      real*8, intent(in)    :: w(m)
+      real*8, intent(inout) :: v(m)
+      real*8, intent(in)    :: s
+      integer, intent(in)   :: lwrk
+      integer, intent(in)   :: kwrk
+      integer, intent(out)  :: n
+      real*8, intent(inout) :: t(nest)
+      real*8, intent(out)   :: c(nest)
+      real*8, intent(out)   :: sq
+      real*8, intent(inout) :: sx(m)
+      logical, intent(inout):: bind(nest)
+      real*8, intent(inout) :: wrk(lwrk)
+      integer, intent(inout):: iwrk(kwrk)
+      integer, intent(out)  :: ier
+
 c  ..local scalars..
       integer i,lwest,kwest,ie,iw,lww
       real*8 one

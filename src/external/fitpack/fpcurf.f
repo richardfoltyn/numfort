@@ -1,22 +1,51 @@
-      subroutine fpcurf(iopt,x,y,w,m,xb,xe,k,s,nest,tol,maxit,k1,k2,
-     * n,t,c,fp,fpint,z,a,b,g,q,nrdata,ier)
+      pure subroutine fpcurf(iopt,x,y,w,m,xb,xe,k,s,nest,tol,maxit,
+     * k1,k2, n,t,c,fp,fpint,z,a,b,g,q,nrdata,ier)
 c  ..
 c  ..scalar arguments..
-      real*8 xb,xe,s,tol,fp
-      integer iopt,m,k,nest,maxit,k1,k2,n,ier
+      !real*8 xb,xe,s,tol,fp
+      !integer iopt,m,k,nest,maxit,k1,k2,n,ier
 c  ..array arguments..
-      real*8 x(m),y(m),w(m),t(nest),c(nest),fpint(nest),
-     * z(nest),a(nest,k1),b(nest,k2),g(nest,k2),q(m,k1)
-      integer nrdata(nest)
+      !real*8 x(m),y(m),w(m),t(nest),c(nest),fpint(nest),
+      !* z(nest),a(nest,k1),b(nest,k2),g(nest,k2),q(m,k1)
+      !integer nrdata(nest)
+
+      integer, intent(in)     :: iopt
+      integer, intent(in)     :: m
+      integer, intent(in)     :: k
+      integer, intent(in)     :: nest
+      integer, intent(in)     :: maxit
+      integer, intent(in)     :: k1
+      integer, intent(in)     :: k2
+      real*8, intent(in)      :: x(m)
+      real*8, intent(in)      :: y(m)
+      real*8, intent(in)      :: w(m)
+      real*8, intent(in)      :: xb
+      real*8, intent(in)      :: xe
+      real*8, intent(in)      :: s
+      real*8, intent(in)      :: tol
+      integer, intent(in out) :: n
+      real*8, intent(in out)  :: t(nest)
+      real*8, intent(out)     :: c(nest)
+      real*8, intent(out)     :: fp
+      real*8, intent(in out)  :: fpint(nest)
+      real*8, intent(in out)  :: z(nest)
+      real*8, intent(in out)  :: a(nest,k1)
+      real*8, intent(in out)  :: b(nest,k2)
+      real*8, intent(in out)  :: g(nest,k2)
+      real*8, intent(in out)  :: q(m, k1)
+      integer, intent(in out) :: nrdata(nest)
+      integer, intent(out)    :: ier
+
 c  ..local scalars..
       real*8 acc,con1,con4,con9,cos,half,fpart,fpms,fpold,fp0,f1,f2,f3,
      * one,p,pinv,piv,p1,p2,p3,rn,sin,store,term,wi,xi,yi
       integer i,ich1,ich3,it,iter,i1,i2,i3,j,k3,l,l0,
      * mk1,new,nk1,nmax,nmin,nplus,npl1,nrint,n8
 c  ..local arrays..
-      real*8 h(7)
+c     Change declared array size to 20 as fpbspl expects that size
+      real*8 h(20)
 c  ..function references
-      real*8 abs,fprati
+      real*8 abs
       integer max0,min0
 c  ..subroutine references..
 c    fpback,fpbspl,fpgivs,fpdisc,fpknot,fprota
