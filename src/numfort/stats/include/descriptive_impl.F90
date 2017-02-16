@@ -58,7 +58,7 @@ pure subroutine __APPEND(mean_1d,__PREC) (x, m, dim, status)
         !   arrays
 
     ! compute in double precision regardless of input/output kind
-    real (real64) :: m_old, m_new
+    real (PREC) :: m_old, m_new
     integer :: i, lstatus
 
     ! initialize to default values
@@ -106,7 +106,7 @@ pure subroutine __APPEND(mean_2d,__PREC) (x, m, dim, status)
     ! and status > 0 if an error was encountered
     integer, intent(out), optional :: status
 
-    real (real64), dimension(:), allocatable :: m_old, m_new
+    real (PREC), dimension(:), allocatable :: m_old, m_new
     integer :: ldim, lstatus
     ! iv indexes variables, iobs individual observations
     integer :: iv, iobs, nvars, nobs

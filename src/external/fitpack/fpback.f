@@ -8,8 +8,10 @@ c  ..scalar arguments..
 c  ..array arguments..
       real*8 a(nest,k),z(n),c(n)
 c  ..local scalars..
-      intent (in) :: a, z, n, k, nest
-      intent (out) :: c
+      intent (in) :: a, n, k, nest
+      ! RF: Sometimes this routine is called with dummy arguments c, z
+      ! corresponding to the same actual argument!
+      intent (in out) :: c, z
       real*8 store
       integer i,i1,j,k1,l,m
 c  ..

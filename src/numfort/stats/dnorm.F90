@@ -18,7 +18,7 @@ module numfort_stats_dnorm
     real (real64), parameter :: NORM_CONST = 1/sqrt(2 * PI)
 
     !>  Implementation of the univariate normal distribution
-    type, extends(dcont) :: dnorm
+    type, public, extends(dcont) :: dnorm
         real (__PDT_REAL_KIND) :: mean = 0.0
             !!  Mean of normal distribution
         real (__PDT_REAL_KIND) :: sd = 1.0
@@ -48,10 +48,8 @@ module numfort_stats_dnorm
         module procedure cdf_impl_real64
     end interface
 
-    public :: norm, dnorm
-
     !>  Instance of the standard normal distribution
-    type (dnorm), protected :: norm = dnorm(mean=0.0d0, sd=1.0d0)
+    type (dnorm), public, protected :: norm = dnorm(mean=0.0d0, sd=1.0d0)
 
 contains
 

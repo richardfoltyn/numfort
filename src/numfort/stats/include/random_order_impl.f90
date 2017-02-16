@@ -22,7 +22,7 @@ forall (i=1:n) x(i) = i + offset
 ! randomly chosen from those preceeding it.
 do i = n, 2, -1
     call random_number (wk)
-    j = 1 + i * wk
+    j = 1 + int(i * wk, INTSIZE)
     if (j < i) then
         k = x(i)
         x(i) = x(j)
