@@ -52,7 +52,7 @@ subroutine example1 ()
     allocate (knots(nest), coefs(nest), bind(nest))
 
     do is = 1, size(s)
-        call concon (x, y, v, s(is), n, knots, coefs, iopt, w, maxtr, maxbin, &
+        call concon (x, y, v, s(is), knots, coefs, n, iopt, w, maxtr, maxbin, &
             sx=sx, bind=bind, ssr=ssr, status=status)
 
         ! evaluate spline using splev to check values in sx

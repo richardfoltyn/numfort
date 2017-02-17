@@ -210,15 +210,15 @@ end subroutine
 ! ******************************************************************************
 ! CURFIT fitting procedures
 
-pure subroutine curfit_real64 (x, y, k, s, n, knots, coefs, &
+pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
         iopt, w, xb, xe, work, ssr, status, msg)
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: y
     integer, intent(in), optional :: k
     real (PREC), intent(in), optional :: s
-    integer, intent(out) :: n
     real (PREC), intent(in out), dimension(:), contiguous :: knots
     real (PREC), intent(out), dimension(:), contiguous :: coefs
+    integer, intent(out) :: n
     integer, intent(in), optional :: iopt
     real (PREC), intent(in), dimension(:), contiguous, optional :: w
     real (PREC), intent(in), optional :: xe
@@ -302,16 +302,16 @@ end subroutine
 !-------------------------------------------------------------------------------
 ! CONCON wrapper routine
 
-pure subroutine concon_real64 (x, y, v, s, n, &
-        knots, coefs, iopt, w, maxtr, maxbin, work, ssr, sx, bind, status, msg)
+pure subroutine concon_real64 (x, y, v, s, &
+        knots, coefs, n, iopt, w, maxtr, maxbin, work, ssr, sx, bind, status, msg)
 
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: y
     real (PREC), intent(in), dimension(:), contiguous :: v
     real (PREC), intent(in), optional :: s
-    integer, intent(out) :: n
     real (PREC), intent(in out), dimension(:), contiguous :: knots
     real (PREC), intent(out), dimension(:), contiguous :: coefs
+    integer, intent(out) :: n
     integer, intent(in), optional :: iopt
     real (PREC), intent(in), dimension(:), contiguous, optional :: w
     integer, intent(in), optional :: maxtr
