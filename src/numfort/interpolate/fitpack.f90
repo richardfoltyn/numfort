@@ -233,9 +233,10 @@ pure subroutine curfit_real64 (x, y, k, s, n, knots, coefs, &
     type (workspace), target :: lwork
     class (workspace), pointer :: ptr_work
 
-    ! check for conformable arrays
-    lstatus = INTERP_STATUS_INVALID_INPUT
     nullify(ptr_work)
+    
+    call check_input (x, y, w, k, knots, coefs, status=lstatus, msg=msg)
+    if (lstatus /= STATUS_INPUT_VALID) goto 100
 
     ! initialize default values
     lk = DEFAULT_SPLINE_DEGREE
@@ -254,9 +255,6 @@ pure subroutine curfit_real64 (x, y, k, s, n, knots, coefs, &
     if (present(xe)) lxe = xe
     if (present(k)) lk = k
     if (present(s)) ls = s
-
-    call check_input (x, y, w, lk, knots, coefs, status=lstatus, msg=msg)
-    if (lstatus /= STATUS_INPUT_VALID) goto 100
 
     call curfit_get_wrk_size (m, k, nwrk, nest)
 
@@ -335,9 +333,6 @@ pure subroutine concon_real64 (x, y, v, s, n, &
 
     call check_input (x, y, w, knots=knots, coefs=coefs, v=v, status=lstatus, msg=msg)
     if (lstatus /= STATUS_INPUT_VALID) goto 100
-
-    ! check for conformable arrays
-    lstatus = INTERP_STATUS_INVALID_INPUT
 
     ! default values
     liopt = 0
