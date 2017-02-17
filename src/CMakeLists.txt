@@ -175,11 +175,11 @@ unset(_FFLAGS_GLOBAL)
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     # explicitly add -cpp to run C preprocessor if required
-	set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} -Wall -Wextra ")
+	set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} -Wall -Wextra -Wno-compare-reals")
     set(GNU_WARN "-Wimplicit-interface -Wimplicit-procedure \
-        -Warray-temporaries -Wrealloc-lhs -pedantic -Wno-compare-reals")
+        -Warray-temporaries -Wrealloc-lhs -pedantic")
     set(_FFLAGS "${GNU_WARN} -std=f2008")
-    set(_FFLAGS_DEBUG "-fcheck=all -Og -S -save-temps")
+    set(_FFLAGS_DEBUG "-fcheck=all -Og -save-temps")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
 		set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} /warn:all")
