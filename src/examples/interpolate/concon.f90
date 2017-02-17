@@ -22,7 +22,7 @@ subroutine example1 ()
     ! number of points, degree of spline (cubic)
     integer, parameter :: m = 16, k = 3
 
-    real (PREC), dimension(m) :: x, y, w, v, sx, s1, s2
+    real (PREC), dimension(m) :: x, y, w, v, sx, sx2, s1, s2
     real (PREC), dimension(:), allocatable :: knots, coefs
     real (PREC) :: ssr
     logical, dimension(:), allocatable :: bind
@@ -53,7 +53,16 @@ subroutine example1 ()
 
     do is = 1, size(s)
         call concon (x, y, v, s(is), n, knots, coefs, iopt, w, maxtr, maxbin, &
-            ssr=ssr, status=status)
+            sx=sx, bind=bind, ssr=ssr, status=status)
+
+        ! evaluate spline using splev to check values in sx
+        call splev (knots, coefs, n, 3, x, sx2, status=status)
+        if (status /= INTERP_STATUS_SUCCESS) then
+            write (ERROR_UNIT, *) "Failed to evaluate spline"
+        end if
+        if (any(abs(sx-sx2) > 1d-10)) then
+            write (ERROR_UNIT, *) "s(x) returned from CONCON and SPLEV differ"
+        end if
 
         ! evaluate first- and second-order derivatives
         call splder (knots(1:n), coefs(1:n), k=k, order=1, x=x, y=s1, &

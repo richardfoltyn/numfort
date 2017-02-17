@@ -234,7 +234,7 @@ pure subroutine curfit_real64 (x, y, k, s, n, knots, coefs, &
     class (workspace), pointer :: ptr_work
 
     nullify(ptr_work)
-    
+
     call check_input (x, y, w, k, knots, coefs, status=lstatus, msg=msg)
     if (lstatus /= STATUS_INPUT_VALID) goto 100
 
@@ -303,7 +303,7 @@ end subroutine
 ! CONCON wrapper routine
 
 pure subroutine concon_real64 (x, y, v, s, n, &
-        knots, coefs, iopt, w, maxtr, maxbin, work, ssr, status, msg)
+        knots, coefs, iopt, w, maxtr, maxbin, work, ssr, sx, bind, status, msg)
 
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: y
@@ -318,20 +318,25 @@ pure subroutine concon_real64 (x, y, v, s, n, &
     integer, intent(in), optional :: maxbin
     class (workspace), intent(in out), optional, target :: work
     real (PREC), intent(out), optional :: ssr
+    real (PREC), intent(out), dimension(:), optional :: sx
+    logical, intent(out), dimension(:), optional :: bind
     integer (ENUM_KIND), intent(out), optional :: status
     character (*), intent(out), optional :: msg
+
+    target :: bind, sx
 
     integer :: m, liopt, nest, lstatus, lmaxtr, lmaxbin
     integer :: nrwrk, jrwrk, niwrk, nlwrk, nrwrk_tot
     real (PREC) :: ls, lssr
     type (workspace), target :: lwork
     class (workspace), pointer :: ptr_work
-    real (PREC), dimension(:), pointer, contiguous :: ptr_sx, ptr_w
+    real (PREC), dimension(:), pointer, contiguous :: ptr_sx, ptr_w, ptr_v
     logical, dimension(:), pointer, contiguous :: ptr_bind
 
-    nullify (ptr_work, ptr_sx, ptr_w, ptr_bind)
+    nullify (ptr_work, ptr_sx, ptr_w, ptr_bind, ptr_v)
 
-    call check_input (x, y, w, knots=knots, coefs=coefs, v=v, status=lstatus, msg=msg)
+    call check_input (x, y, w, knots=knots, coefs=coefs, v=v, bind=bind, sx=sx,&
+        status=lstatus, msg=msg)
     if (lstatus /= STATUS_INPUT_VALID) goto 100
 
     ! default values
@@ -364,10 +369,12 @@ pure subroutine concon_real64 (x, y, v, s, n, &
     ! including slices used for weights and sx
     nrwrk_tot = nrwrk
     ! elements containing bind array
-    nlwrk = nlwrk + nest
+    if (.not. present(bind)) nlwrk = nlwrk + nest
     ! need to allocate workspace for uniform weights
     if (.not. present(w)) nrwrk_tot = nrwrk_tot + m
     ! need to allocate workspace for sx
+    if (.not. present(sx)) nrwrk_tot = nrwrk_tot + m
+    ! need to allocate workspace for v as CONCON modifies v in-place
     nrwrk_tot = nrwrk_tot + m
 
     call ptr_work%assert_allocated (nrwrk=nrwrk_tot, niwrk=niwrk, nlwrk=nlwrk)
@@ -383,8 +390,22 @@ pure subroutine concon_real64 (x, y, v, s, n, &
         jrwrk = jrwrk + m
     end if
 
-    ptr_sx => ptr_work%rwrk(jrwrk:jrwrk + m - 1)
-    ptr_bind => ptr_work%lwrk(1:nest)
+    ! copy v into workspace as it might be modified by CONCON
+    ptr_v => ptr_work%rwrk(jrwrk:jrwrk+m-1)
+    ptr_v = v
+    jrwrk = jrwrk + m
+    if (present(sx)) then
+        ptr_sx => sx
+    else
+        ptr_sx => ptr_work%rwrk(jrwrk:jrwrk+m-1)
+        jrwrk = jrwrk + m
+    end if
+
+    if (present(bind)) then
+        ptr_bind => bind
+    else
+        ptr_bind => ptr_work%lwrk(1:nest)
+    end if
 
     ! initialize to zero as this is going to be used to store a tree where
     ! 0 denotes no node
@@ -392,11 +413,11 @@ pure subroutine concon_real64 (x, y, v, s, n, &
 
     ! call fitpack routine wrapper
     if (present(w)) then
-        call fitpack_concon_real64 (liopt, m, x, y, w, v, ls, nest, lmaxtr, &
+        call fitpack_concon_real64 (liopt, m, x, y, w, ptr_v, ls, nest, lmaxtr, &
             lmaxbin, n, knots, coefs, lssr, ptr_sx, ptr_bind, &
             ptr_work%rwrk(1:nrwrk), nrwrk, ptr_work%iwrk, niwrk, lstatus)
     else
-        call fitpack_concon_real64 (liopt, m, x, y, ptr_w, v, ls, nest, lmaxtr, &
+        call fitpack_concon_real64 (liopt, m, x, y, ptr_w, ptr_v, ls, nest, lmaxtr, &
             lmaxbin, n, knots, coefs, lssr, ptr_sx, ptr_bind, &
             ptr_work%rwrk(1:nrwrk), nrwrk, ptr_work%iwrk, niwrk, lstatus)
     end if
