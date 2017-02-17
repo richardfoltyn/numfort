@@ -52,7 +52,7 @@ subroutine example1 ()
     allocate (knots(nest), coefs(nest), bind(nest))
 
     do is = 1, size(s)
-        call concon (x, y, v, n, knots, coefs, iopt, w, s(is), maxtr, maxbin, &
+        call concon (x, y, v, s(is), n, knots, coefs, iopt, w, maxtr, maxbin, &
             ssr=ssr, status=status)
 
         ! evaluate first- and second-order derivatives
