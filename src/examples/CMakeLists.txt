@@ -4,7 +4,6 @@
 list(APPEND _MODULES interpolate optimize)
 
 include_directories("${${CMAKE_PROJECT_NAME}_INCLUDE_DIRS}")
-message("foo: ${${CMAKE_PROJECT_NAME}_LIBRARIES}")
 
 # Add all tests as separate executables
 foreach (_dir IN LISTS _MODULES)
