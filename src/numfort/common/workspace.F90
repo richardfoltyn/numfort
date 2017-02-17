@@ -49,11 +49,11 @@ module numfort_common_workspace
         end subroutine
     end interface
 
-    interface assert_allocated
-        module procedure assert_allocated_real64, assert_allocated_real32, &
-            assert_allocated_int, &
-            assert_allocated_char, assert_allocated_bool
-    end interface
+    ! interface assert_allocated
+    !     module procedure assert_allocated_real64, assert_allocated_real32, &
+    !         assert_allocated_int, &
+    !         assert_allocated_char, assert_allocated_bool
+    ! end interface
 
 contains
 
@@ -64,54 +64,114 @@ contains
 #endif
 
 pure subroutine workspace_assert_allocated (self, nrwrk, niwrk, ncwrk, nlwrk)
+    integer, parameter :: PREC = __DEFAULT_REAL_KIND
     class (__WORKSPACE_TYPE), intent(in out) :: self
     integer, intent(in), optional :: nrwrk, niwrk, ncwrk, nlwrk
 
-    call assert_allocated (self%rwrk, self%nrwrk, nrwrk)
-    call assert_allocated (self%iwrk, self%niwrk, niwrk)
-    call assert_allocated (self%cwrk, self%ncwrk, ncwrk)
-    call assert_allocated (self%lwrk, self%nlwrk, nlwrk)
+    real (PREC), dimension(:), allocatable :: rtmp
+    integer, dimension(:), allocatable :: itmp
+    logical, dimension(:), allocatable :: ltmp
+    character (:), allocatable :: ctmp
 
-end subroutine
-
-pure subroutine assert_allocated_real64 (arr, n_attr, n)
-    real (real64), dimension(:) :: arr, tmp
-    include "include/workspace_assert_allocated_impl.f90"
-end subroutine
-
-pure subroutine assert_allocated_real32 (arr, n_attr, n)
-    real (real32), dimension(:) :: arr, tmp
-    include "include/workspace_assert_allocated_impl.f90"
-end subroutine
-
-pure subroutine assert_allocated_int(arr, n_attr, n)
-    integer, dimension(:) :: arr, tmp
-    include "include/workspace_assert_allocated_impl.f90"
-end subroutine
-
-pure subroutine assert_allocated_char(arr, n_attr, n)
-    character (len=:), intent(in out), allocatable :: arr
-    integer, intent(in out) :: n_attr
-    integer, intent(in), optional :: n
-    character (len=:), allocatable :: tmp
-
-    if (present(n)) then
-        if (n > 0) then
-            if (.not. allocated(arr)) then
-                allocate (character (n) :: arr)
-                n_attr = n
-            else if (len(arr) < n) then
-                allocate (character (n) :: tmp)
-                call move_alloc (tmp, arr)
-                n_attr = n
+    ! Real working array
+    if (present(nrwrk)) then
+        if (nrwrk > 0) then
+            if (.not. allocated(self%rwrk)) then
+                allocate (self%rwrk(nrwrk))
+            else if (size(self%rwrk) < nrwrk) then
+                allocate (rtmp(nrwrk))
+                rtmp(1:size(self%rwrk)) = self%rwrk
+                call move_alloc (rtmp, self%rwrk)
             end if
+            self%nrwrk = nrwrk
         end if
     end if
-end subroutine
 
-pure subroutine assert_allocated_bool(arr, n_attr, n)
-    logical, dimension(:) :: arr, tmp
-    include "include/workspace_assert_allocated_impl.f90"
+    ! Integer working array
+    if (present(niwrk)) then
+        if (niwrk > 0) then
+            if (.not. allocated(self%iwrk)) then
+                allocate (self%iwrk(niwrk))
+            else if (size(self%iwrk) < niwrk) then
+                allocate (itmp(niwrk))
+                itmp(1:size(self%iwrk)) = self%iwrk
+                call move_alloc (itmp, self%iwrk)
+            end if
+            self%niwrk = niwrk
+        end if
+    end if
+
+    ! Logical working array
+    if (present(nlwrk)) then
+        if (nlwrk > 0) then
+            if (.not. allocated(self%lwrk)) then
+                allocate (self%lwrk(nlwrk))
+            else if (size(self%lwrk) < nlwrk) then
+                allocate (ltmp(nlwrk))
+                ltmp(1:size(self%lwrk)) = self%lwrk
+                call move_alloc (ltmp, self%lwrk)
+            end if
+            self%nlwrk = nlwrk
+        end if
+    end if
+
+    if (present(ncwrk)) then
+        if (ncwrk > 0) then
+            if (.not. allocated(self%cwrk)) then
+                allocate (character (ncwrk) :: self%cwrk)
+            else if (len(self%cwrk) < ncwrk) then
+                allocate (character (ncwrk) :: ctmp)
+                call move_alloc (ctmp, self%cwrk)
+            end if
+            self%ncwrk = ncwrk
+        end if
+    end if
+
+    ! call assert_allocated (self%rwrk, self%nrwrk, nrwrk)
+    ! call assert_allocated (self%iwrk, self%niwrk, niwrk)
+    ! call assert_allocated (self%cwrk, self%ncwrk, ncwrk)
+    ! call assert_allocated (self%lwrk, self%nlwrk, nlwrk)
+
 end subroutine
+!
+! pure subroutine assert_allocated_real64 (arr, n_attr, n)
+!     real (real64), dimension(:) :: arr, tmp
+!     include "include/workspace_assert_allocated_impl.f90"
+! end subroutine
+!
+! pure subroutine assert_allocated_real32 (arr, n_attr, n)
+!     real (real32), dimension(:) :: arr, tmp
+!     include "include/workspace_assert_allocated_impl.f90"
+! end subroutine
+!
+! pure subroutine assert_allocated_int(arr, n_attr, n)
+!     integer, dimension(:) :: arr, tmp
+!     include "include/workspace_assert_allocated_impl.f90"
+! end subroutine
+!
+! pure subroutine assert_allocated_char(arr, n_attr, n)
+!     character (len=:), intent(in out), allocatable :: arr
+!     integer, intent(in out) :: n_attr
+!     integer, intent(in), optional :: n
+!     character (len=:), allocatable :: tmp
+!
+!     if (present(n)) then
+!         if (n > 0) then
+!             if (.not. allocated(arr)) then
+!                 allocate (character (n) :: arr)
+!                 n_attr = n
+!             else if (len(arr) < n) then
+!                 allocate (character (n) :: tmp)
+!                 call move_alloc (tmp, arr)
+!                 n_attr = n
+!             end if
+!         end if
+!     end if
+! end subroutine
+!
+! pure subroutine assert_allocated_bool(arr, n_attr, n)
+!     logical, dimension(:) :: arr, tmp
+!     include "include/workspace_assert_allocated_impl.f90"
+! end subroutine
 
 end module
