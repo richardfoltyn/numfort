@@ -2,9 +2,9 @@
 
 module numfort_optimize
 
-
-    use numfort_optimize_common
     use numfort_optim_result_mod
+    use numfort_common_enums
+    use numfort_common_kinds
     use numfort_common, only : workspace
 
     use numfort_optimize_lbfgsb, only: minimize_lbfgsb

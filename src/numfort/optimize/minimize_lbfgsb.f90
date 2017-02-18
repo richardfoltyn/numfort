@@ -3,9 +3,8 @@ module numfort_optimize_lbfgsb
 
     use, intrinsic :: ieee_arithmetic
     use, intrinsic :: iso_fortran_env, only: real64
-    use numfort_common, only: workspace
+    use numfort_common
     use numfort_optim_result_mod
-    use numfort_optimize_common
 
     implicit none
     private
@@ -68,13 +67,14 @@ subroutine lbfgsb_grad_real64 (func, x, grad, lbounds, ubounds, maxiter, maxfun,
     real (PREC), intent(in out), dimension(:), contiguous :: x
     procedure (grad_real64) :: grad
     real (PREC), dimension(:) :: lbounds, ubounds
-    integer :: maxiter, maxfun, m, iprint
+    integer :: maxiter, maxfun, m
+    integer (NF_ENUM_KIND), intent(in), optional :: iprint
     real (PREC) :: factr, pgtol
     class (workspace), intent(in out), optional, target :: work
     class (optim_result), intent(in out), optional :: res
 
-    intent(in) :: lbounds, ubounds, maxiter, maxfun, m, iprint, factr, pgtol
-    optional :: lbounds, ubounds, maxiter, maxfun, m, iprint, factr, pgtol
+    intent(in) :: lbounds, ubounds, maxiter, maxfun, m, factr, pgtol
+    optional :: lbounds, ubounds, maxiter, maxfun, m, factr, pgtol
 
     call minimize_lbfgsb (fobj_grad, x, lbounds, ubounds, maxiter, maxfun, &
         m, factr, pgtol, iprint, work, res)
@@ -100,22 +100,27 @@ subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
     procedure (fobj_grad_real64) :: func
     real (PREC), intent(in out), dimension(:), contiguous :: x
     real (PREC), dimension(:) :: lbounds, ubounds
-    integer :: maxiter, maxfun, m, iprint
+    integer :: maxiter, maxfun, m
+    integer (NF_ENUM_KIND), intent(in), optional :: iprint
     real (PREC) :: factr, pgtol
     class (workspace), intent(in out), optional, target :: work
     class (optim_result), intent(in out), optional :: res
 
-    intent(in) :: lbounds, ubounds, maxiter, maxfun, m, iprint, factr, pgtol
-    optional :: lbounds, ubounds, maxiter, maxfun, m, iprint, factr, pgtol
+    intent(in) :: lbounds, ubounds, maxiter, maxfun, m, factr, pgtol
+    optional :: lbounds, ubounds, maxiter, maxfun, m, factr, pgtol
 
     real (PREC), dimension(size(x)) :: llbounds, lubounds
-    integer :: lmaxiter, lmaxfun, lm, liprint
+    integer :: lmaxiter, lmaxfun, lm
+    integer (NF_ENUM_KIND) :: liprint
+    integer :: iprint2
+        ! iprint argument passed to BFGS library
     real (PREC) :: lfactr, lpgtol
     type (workspace), allocatable, target :: lwork
     type (workspace), pointer :: ptr_work
     character (len=100) :: msg
 
-    integer :: nrwrk, niwrk, n, status
+    integer :: nrwrk, niwrk, n
+    integer (NF_ENUM_KIND) :: status
     ! lenghts of additional working arrays
     integer, parameter :: ndsave = 29, nisave = 44, nlsave = 4, ncsave = 60, ntask = 60
 
@@ -133,7 +138,7 @@ subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
     ! number of iterations and function evaluations
     integer :: iter, nfeval
 
-    status = OPTIM_STATUS_INVALID_INPUT
+    status = NF_STATUS_INVALID_ARG
     nullify (ptr_work)
 
     ! set defaults for optional parameters
@@ -162,7 +167,7 @@ subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
         lm = m
     end if
 
-    liprint = OPTIM_PRINT_NONE
+    liprint = NF_PRINT_NONE
     if (present(iprint)) liprint = iprint
 
     lfactr = 1d+7
@@ -197,7 +202,7 @@ subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
     ! transform boundaries to arguments accepted by routine
     call set_bounds_flags (llbounds, lubounds, nbd)
     ! overwrite local print level with value accepted by setulb
-    liprint = set_print_level (liprint)
+    iprint2 = set_print_level (liprint)
 
     ptr_task = 'START'
 
@@ -206,7 +211,7 @@ subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
 
     do while (.true.)
         call setulb (n, lm, x, llbounds, lubounds, nbd, fx, gradx, lfactr, lpgtol, &
-            ptr_wa, ptr_iwa, ptr_task, liprint, ptr_csave, ptr_lsave, ptr_isave, ptr_dsave)
+            ptr_wa, ptr_iwa, ptr_task, iprint2, ptr_csave, ptr_lsave, ptr_isave, ptr_dsave)
 
         if (ptr_task(1:2) == 'FG') then
             call func (x, fx, gradx)
@@ -228,19 +233,21 @@ subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
 
     if (ptr_task(1:4) == 'CONV') then
         msg = ptr_task
-        status = OPTIM_STATUS_CONVERGED
+        status = NF_STATUS_OK
     else if (ptr_task(1:5) == 'ERROR') then
         msg = ptr_task
-        status = OPTIM_STATUS_INVALID_INPUT
+        status = NF_STATUS_INVALID_ARG
     else if (ptr_task(1:4) == 'ABNO') then
         msg = ptr_task
-        status = OPTIM_STATUS_NOT_CONVERGED
+        status = NF_STATUS_NOT_CONVERGED
     else if (iter > lmaxiter) then
         msg = "Number of iterations exceeded limit"
-        status = OPTIM_STATUS_MAXITER
+        status = NF_STATUS_MAX_ITER
     else if (nfeval > lmaxfun) then
         msg = "Number of function evaluations exceeded limit"
-        status = OPTIM_STATUS_MAXFUN
+        status = NF_STATUS_MAX_EVAL
+    else
+        status = NF_STATUS_UNKNOWN
     end if
 
     if (present(res)) then
@@ -251,7 +258,7 @@ subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
 
     ! input error handling
 100 if (present(res)) then
-        call res%update (status=OPTIM_STATUS_INVALID_INPUT, msg=msg)
+        call res%update (status=NF_STATUS_INVALID_ARG, msg=msg)
     end if
 
 end subroutine
@@ -278,15 +285,15 @@ end subroutine
 ! SET_PRINT_LEVEL converts a verbosity level shared across optimizing
 ! routines into a value for iprint specific to setulb L-BFGS-B minimizer.
 pure function set_print_level (i) result(k)
-    integer, intent(in) :: i
+    integer (NF_ENUM_KIND), intent(in) :: i
     integer :: k
 
     select case (i)
-    case (OPTIM_PRINT_MINIMAL)
+    case (NF_PRINT_MINIMAL)
         k = 10
-    case (OPTIM_PRINT_VERBOSE)
+    case (NF_PRINT_VERBOSE)
         k = 99
-    case (OPTIM_PRINT_ALL)
+    case (NF_PRINT_ALL)
         k = 101
     case default
         ! do not print anything by default

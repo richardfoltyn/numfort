@@ -4,8 +4,8 @@
 module numfort_optimize_simplex
 
     use, intrinsic :: iso_fortran_env
+    use numfort_common
     use numfort_optim_result_mod
-    use numfort_optimize_common
 
     use simplex_csiro, only: minim, func_real32, func_real64
 
@@ -42,15 +42,17 @@ subroutine minimize_simplex_real64 (func, x, tol, maxfun, quad, iprint, res)
 
     real (PREC), intent(in out), dimension(:) :: x
     real (PREC) :: tol
-    integer :: maxfun, iprint
+    integer :: maxfun
+    integer (NF_ENUM_KIND) :: iprint
     logical :: quad
     class (optim_result), intent(in out), optional :: res
 
     intent(in) :: tol, maxfun, quad, iprint
     optional :: maxfun, quad, iprint
 
-    integer :: n, lmaxfun, nloop, iquad, liprint, status
+    integer :: n, lmaxfun, nloop, iquad, liprint, ifault
     logical :: lquad
+    integer (NF_ENUM_KIND) :: status
     real (PREC) :: delta_nonzero, delta_zero, simp, fopt
     real (PREC), dimension(size(x)) :: step, var
     character (100) :: msg
@@ -79,21 +81,20 @@ subroutine minimize_simplex_real64 (func, x, tol, maxfun, quad, iprint, res)
     end where
 
     nloop = 2 * n
-    status = 0
     simp = 1d-6
 
     call minim (x, step, n, fopt, lmaxfun, liprint, tol, nloop, iquad, &
-        simp, var, func, status)
+        simp, var, func, ifault)
 
     ! map mimum status into numfort_optimize status
-    call map_ifault (status, msg)
+    call map_ifault (ifault, status, msg)
 
-    if (status /= OPTIM_STATUS_CONVERGED .and. liprint > OPTIM_PRINT_NONE) then
+    if (status /= NF_STATUS_OK .and. liprint > NF_PRINT_NONE) then
         write (ERROR_UNIT, *) msg
     end if
 
     if (present(res)) then
-        call res%update (x, fopt, status, msg=msg)
+        call res%update (x, fopt, status=status, msg=msg)
     end if
 
 end subroutine
@@ -105,7 +106,8 @@ subroutine minimize_simplex_1d_real64 (func, x, tol, maxfun, quad, iprint, res)
 
     real (PREC), intent(in out) :: x
     real (PREC) :: tol
-    integer :: maxfun, iprint
+    integer :: maxfun
+    integer (NF_ENUM_KIND) :: iprint
     logical :: quad
     class (optim_result), intent(in out), optional :: res
 
@@ -133,15 +135,15 @@ end subroutine
 
 ! Convert numfort_optimize print values to values expected by wrapped routine
 pure function map_iprint (i) result(k)
-    integer, intent(in) :: i
+    integer (NF_ENUM_KIND), intent(in) :: i
     integer :: k
 
     select case (i)
-    case (OPTIM_PRINT_MINIMAL)
+    case (NF_PRINT_MINIMAL)
         k = 0
-    case (OPTIM_PRINT_VERBOSE)
+    case (NF_PRINT_VERBOSE)
         k = 1
-    case (OPTIM_PRINT_ALL)
+    case (NF_PRINT_ALL)
         k = 1
     case default
         ! do not print anything by default
@@ -149,18 +151,22 @@ pure function map_iprint (i) result(k)
     end select
 end function
 
-pure subroutine map_ifault (status, msg)
-    integer, intent(in out) :: status
+pure subroutine map_ifault (ifault, status, msg)
+    integer, intent(in) :: ifault
+        !!  Status code as returned by simplex routine
+    integer (NF_ENUM_KIND), intent(out) :: status
+        !!  On exit, contains the corresponding NF status code
     character (len=*), intent(out), optional :: msg
 
-    if (status == 0) then
-        status = OPTIM_STATUS_CONVERGED
+    status = NF_STATUS_UNKNOWN
+    if (ifault == 0) then
+        status = NF_STATUS_OK
         if (present(msg)) msg = "Simplex: successful termination"
-    else if (status == 1) then
-        status = OPTIM_STATUS_MAXFUN
+    else if (ifault == 1) then
+        status = NF_STATUS_MAX_EVAL
         if (present(msg)) msg = "Simplex: max. number of function evaluations exceeded"
-    else if (status == 3 .or. status == 4) then
-        status = OPTIM_STATUS_INVALID_INPUT
+    else if (ifault == 3 .or. ifault == 4) then
+        status = NF_STATUS_INVALID_ARG
         if (present(msg)) msg = "Simplex: invalid input argument(s)"
     end if
 end subroutine

@@ -1,6 +1,9 @@
 module numfort_interpolate
 
-    use numfort_common
+    use numfort_common_kinds
+    use numfort_common_enums
+    use numfort_common, only: workspace
+
     use numfort_interpolate_common
     use numfort_interpolate_result
     use numfort_interpolate_linear

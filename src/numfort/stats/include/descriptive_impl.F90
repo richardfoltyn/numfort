@@ -16,9 +16,9 @@ pure subroutine __APPEND(mean_std_check_input,__PREC) (nvars, nobs, out1, out2, 
         !!  Optional array to store additional output (mean)
     integer, intent(in), optional :: dof
         !!  Optional degrees of freedom correction
-    integer, intent(out) :: status
+    integer (NF_ENUM_KIND), intent(out) :: status
 
-    status = STATUS_INVALID_INPUT
+    status = NF_STATUS_INVALID_ARG
 
     if (nobs < 1) return
 
@@ -34,7 +34,7 @@ pure subroutine __APPEND(mean_std_check_input,__PREC) (nvars, nobs, out1, out2, 
         if (dof < 0) return
     end if
 
-    status = STATUS_OK
+    status = NF_STATUS_OK
 end subroutine
 
 
@@ -53,20 +53,21 @@ pure subroutine __APPEND(mean_1d,__PREC) (x, m, dim, status)
     integer, intent(in), optional :: dim
         !*  Ignored for 1d-arrays, present to support same API as for higher-rank
         !   arrays
-    integer, intent(out), optional :: status
+    integer (NF_ENUM_KIND), intent(out), optional :: status
         !*  Ignored for 1d-arrays, present to support same API as for higher-rank
         !   arrays
 
     ! compute in double precision regardless of input/output kind
     real (PREC) :: m_old, m_new
-    integer :: i, lstatus
+    integer (NF_ENUM_KIND) :: lstatus
+    integer :: i
 
     ! initialize to default values
-    lstatus = STATUS_OK
+    lstatus = NF_STATUS_OK
     m = 0.0_PREC
 
     if (size(x) == 0) then
-        lstatus = STATUS_INVALID_INPUT
+        lstatus = NF_STATUS_INVALID_ARG
         goto 100
     end if
 
@@ -104,22 +105,22 @@ pure subroutine __APPEND(mean_2d,__PREC) (x, m, dim, status)
     integer, intent(in), optional :: dim
     ! If present, returns 0 on exit if normalization was successful,
     ! and status > 0 if an error was encountered
-    integer, intent(out), optional :: status
+    integer (NF_ENUM_KIND), intent(out), optional :: status
 
     real (PREC), dimension(:), allocatable :: m_old, m_new
-    integer :: ldim, lstatus
+    integer (NF_ENUM_KIND) :: lstatus
     ! iv indexes variables, iobs individual observations
-    integer :: iv, iobs, nvars, nobs
+    integer :: iv, iobs, nvars, nobs, ldim
 
     ! default values
-    lstatus = STATUS_OK
+    lstatus = NF_STATUS_OK
     m = 0.0_PREC
 
     call mean_std_init (shape(x), dim, ldim, nvars, nobs, status=lstatus)
-    if (lstatus /= STATUS_OK) goto 100
+    if (lstatus /= NF_STATUS_OK) goto 100
 
     call mean_std_check_input (nvars, nobs, m, status=lstatus)
-    if (lstatus /= STATUS_OK) goto 100
+    if (lstatus /= NF_STATUS_OK) goto 100
 
     ! compute mean and std. dev. using Welford's method; see
     ! http://www.johndcook.com/blog/standard_deviation/
@@ -170,29 +171,30 @@ pure subroutine __APPEND(std_1d,__PREC) (x, s, m, dof, dim, status)
     integer, intent(in), optional :: dim
         !*  Ignored for 1d-arrays, present to support same API as for higher-rank
         !   arrays
-    integer, intent(out), optional :: status
+    integer (NF_ENUM_KIND), intent(out), optional :: status
         !*  Ignored for 1d-arrays, present to support same API as for higher-rank
         !   arrays
 
     real (PREC) :: m_old, m_new, s_old, s_new, lm, x_i
-    integer :: i, lstatus, ldof
+    integer :: i, ldof
+    integer (NF_ENUM_KIND) :: lstatus
 
     ! initiliaze default values
-    lstatus = STATUS_OK
+    lstatus = NF_STATUS_OK
     ldof = 1
     s = 0.0_PREC
     if (present(m)) m = 0.0_PREC
 
     if (present(dof)) then
         if (dof < 0) then
-            lstatus = STATUS_INVALID_INPUT
+            lstatus = NF_STATUS_INVALID_ARG
             goto 100
         end if
         ldof = dof
     end if
 
     if (size(x) == 0) then
-        lstatus = STATUS_INVALID_INPUT
+        lstatus = NF_STATUS_INVALID_ARG
         goto 100
     end if
 
@@ -250,18 +252,18 @@ pure subroutine __APPEND(std_2d,__PREC) (x, s, m, dof, dim, status)
     integer, intent(in), optional :: dim
         !*  If present, specifies dimension along which std/mean should be computed.
 
-    integer, intent(out), optional :: status
-        !*  If present, returns STATUS_OK on exit if operation was successful,
+    integer (NF_ENUM_KIND), intent(out), optional :: status
+        !*  If present, returns NF_STATUS_OK on exit if operation was successful,
         !   and status > 0 if an error was encountered
 
     real (PREC), dimension(:), allocatable :: lm
     real (PREC), dimension(:), allocatable :: m_old, s_old, s_new
-    integer :: ldim, lstatus
+    integer (NF_ENUM_KIND):: lstatus
     ! iv indexes variables, iobs individual observations
-    integer :: iv, iobs, nvars, nobs, ldof
+    integer :: iv, iobs, nvars, nobs, ldof, ldim
 
     ! set default values
-    status = STATUS_OK
+    status = NF_STATUS_OK
     s = 0.0_PREC
     ldof = 1
     if (present(m)) m = 0.0_PREC

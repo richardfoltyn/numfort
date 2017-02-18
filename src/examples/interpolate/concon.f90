@@ -57,7 +57,7 @@ subroutine example1 ()
 
         ! evaluate spline using splev to check values in sx
         call splev (knots, coefs, n, 3, x, sx2, status=status)
-        if (status /= INTERP_STATUS_SUCCESS) then
+        if (status /= NF_STATUS_OK) then
             write (ERROR_UNIT, *) "Failed to evaluate spline"
         end if
         if (any(abs(sx-sx2) > 1d-10)) then
@@ -66,10 +66,10 @@ subroutine example1 ()
 
         ! evaluate first- and second-order derivatives
         call splder (knots(1:n), coefs(1:n), k=k, order=1, x=x, y=s1, &
-            ext=INTERP_EVAL_ERROR, status=status_eval)
+            ext=NF_INTERP_EVAL_ERROR, status=status_eval)
 
         call splder (knots, coefs, n, k, 2, x, s2, &
-            INTERP_EVAL_ERROR, status=status_eval)
+            NF_INTERP_EVAL_ERROR, status=status_eval)
 
         call print_report (iopt, s(is), ssr, status, n, knots, coefs, x, y, &
             sx, s1, s2, bind)

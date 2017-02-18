@@ -3,7 +3,6 @@ set(COMPONENT_NAME optimize)
 
 set(SOURCE_FILES
     optimize.f90
-    common.f90
     optim_result.f90
     minimize_lbfgsb.f90
     minimize_simplex.f90

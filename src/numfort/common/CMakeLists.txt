@@ -4,7 +4,8 @@ set(COMPONENT_NAME common)
 
 set(SOURCE_FILES
 	common.f90
-	status.f90
+	enums.f90
+	kinds.f90
 	workspace.F90
 )
 

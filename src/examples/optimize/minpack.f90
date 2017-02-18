@@ -8,7 +8,6 @@ program minpack_examples
     integer, parameter :: PREC = real64
 
     character (len=10) :: msg
-    read (*, *) msg
 
     call example1 ()
     call example2 ()
@@ -92,7 +91,7 @@ subroutine print_report (res)
 
     print "('#', t3, 'Example ', i0)", ii
     print "(t3, 'Exit status: ', i0)", res%status
-    if (res%status /= OPTIM_STATUS_CONVERGED .and. len_trim(res%msg) > 0) then
+    if (res%status /= NF_STATUS_OK .and. len_trim(res%msg) > 0) then
         print "(t3, 'Message: ', a)", res%msg
     end if
     write (OUTPUT_UNIT, advance='no', &

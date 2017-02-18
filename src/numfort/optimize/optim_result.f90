@@ -5,34 +5,19 @@
 module numfort_optim_result_mod
 
     use iso_fortran_env, only: real32, real64, int32
-    use numfort_common, only: ENUM_KIND
+    use numfort_common
 
     implicit none
     private
 
     integer, parameter :: PREC = real64
 
-    integer (ENUM_KIND), parameter :: OPTIM_STATUS_CONVERGED = 0
-    integer (ENUM_KIND), parameter :: OPTIM_STATUS_MAXITER = 1
-    integer (ENUM_KIND), parameter :: OPTIM_STATUS_MAXFUN = 2
-    integer (ENUM_KIND), parameter :: OPTIM_STATUS_NOT_CONVERGED = 4
-    integer (ENUM_KIND), parameter :: OPTIM_STATUS_INVALID_INPUT = 2 ** 29
-    integer (ENUM_KIND), parameter :: OPTIM_STATUS_UNKNOWN = 2 ** 30
-
-    public :: &
-        OPTIM_STATUS_CONVERGED, &
-        OPTIM_STATUS_MAXITER, &
-        OPTIM_STATUS_MAXFUN, &
-        OPTIM_STATUS_NOT_CONVERGED, &
-        OPTIM_STATUS_INVALID_INPUT, &
-        OPTIM_STATUS_UNKNOWN
-
     integer, parameter :: UNINITIALIZED_COUNTER = -1
 
     type, public :: optim_result
         real (PREC), dimension(:), allocatable :: x, fx
         integer :: nfev = UNINITIALIZED_COUNTER, nit = UNINITIALIZED_COUNTER
-        integer :: status = OPTIM_STATUS_UNKNOWN
+        integer (NF_ENUM_KIND) :: status = NF_STATUS_UNKNOWN
         logical :: success = .false.
         character (100) :: msg
     contains
@@ -58,11 +43,12 @@ pure subroutine update_scalar_scalar_real64 (self, x, fx, status, nit, nfev, msg
     integer, parameter :: PREC = real64
     class (optim_result), intent(in out) :: self
     real (PREC) :: x, fx
-    integer :: nit, nfev, status
+    integer :: nit, nfev
+    integer (NF_ENUM_KIND), intent(in), optional :: status
     character (len=*) :: msg
 
-    intent (in) :: x, fx, nit, nfev, msg, status
-    optional :: nit, nfev, msg, status
+    intent (in) :: x, fx, nit, nfev, msg
+    optional :: nit, nfev, msg
 
     real (PREC), dimension(1) :: x1, fx1
 
@@ -76,11 +62,12 @@ pure subroutine update_vec_scalar_real64 (self, x, fx, status, nit, nfev, msg)
     integer, parameter :: PREC = real64
     class (optim_result), intent(in out) :: self
     real (PREC) :: x(:), fx
-    integer :: nit, nfev, status
+    integer (NF_ENUM_KIND), intent(in), optional :: status
+    integer :: nit, nfev
     character (len=*) :: msg
 
-    intent (in) :: x, fx, nit, nfev, msg, status
-    optional :: nit, nfev, msg, status
+    intent (in) :: x, fx, nit, nfev, msg
+    optional :: nit, nfev, msg
 
     real (PREC), dimension(1) :: fx1
 
@@ -92,11 +79,12 @@ end subroutine
 pure subroutine update_real64 (self, x, fx, status, nit, nfev, msg)
     class (optim_result), intent(in out) :: self
     real (real64), dimension(:) :: x, fx
-    integer :: nit, nfev, status
+    integer (NF_ENUM_KIND), intent(in), optional :: status
+    integer :: nit, nfev
     character (len=*) :: msg
 
-    intent (in) :: x, fx, nit, nfev, msg, status
-    optional :: x, fx, nit, nfev, msg, status
+    intent (in) :: x, fx, nit, nfev, msg
+    optional :: x, fx, nit, nfev, msg
 
     call self%reset ()
 
@@ -104,7 +92,7 @@ pure subroutine update_real64 (self, x, fx, status, nit, nfev, msg)
     call alloc_assign (fx, self%fx)
 
     if (present(status)) then
-        self%success = (status == OPTIM_STATUS_CONVERGED)
+        self%success = (status == NF_STATUS_OK)
         self%status = status
     end if
 
@@ -118,13 +106,14 @@ end subroutine
 pure subroutine update_real32 (self, x, fx, status, nit, nfev, msg)
     class (optim_result), intent(in out) :: self
     real (real32) :: x(:), fx
-    integer :: nit, nfev, status
+    integer (NF_ENUM_KIND), intent(in), optional :: status
+    integer :: nit, nfev
     character (len=*) :: msg
 
-    intent (in) :: x, fx, nit, nfev, msg, status
+    intent (in) :: x, fx, nit, nfev, msg
     ! Note: x cannot be optional in this routine, otherwise generic interface
     ! will not compile
-    optional :: fx, nit, nfev, msg, status
+    optional :: fx, nit, nfev, msg
 
     real (real64), dimension(size(x)) :: x64
 
@@ -141,7 +130,7 @@ pure subroutine reset (self)
     self%nfev = UNINITIALIZED_COUNTER
     self%msg = ""
     self%fx = 0.0_PREC
-    self%status = OPTIM_STATUS_UNKNOWN
+    self%status = NF_STATUS_UNKNOWN
     self%success = .false.
 end subroutine
 

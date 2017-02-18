@@ -1,7 +1,7 @@
 module numfort_interpolate_fitpack
 
     use iso_fortran_env
-    use numfort_common, only: workspace, ENUM_KIND
+    use numfort_common
     use numfort_interpolate_common
     use numfort_interpolate_result
     use fitpack_real64, only: fitpack_curfit_real64 => curfit, &
@@ -15,9 +15,6 @@ module numfort_interpolate_fitpack
 
     integer, parameter :: MIN_SPLINE_DEGREE = 1, MAX_SPLINE_DEGREE = 5, &
         DEFAULT_SPLINE_DEGREE = 3
-
-    ! used for internal input checking
-    integer, parameter :: STATUS_INPUT_VALID = 0
 
     interface splev
         module procedure splev_real64, splev_scalar_real64
@@ -48,12 +45,12 @@ contains
 pure function check_length (arr1, arr2) result(status)
     real (PREC), intent(in), dimension(:) :: arr1
     real (PREC), intent(in), dimension(:), optional :: arr2
-    integer (ENUM_KIND) :: status
+    integer (NF_ENUM_KIND) :: status
 
-    status = INTERP_STATUS_SUCCESS
+    status = NF_STATUS_OK
     if (present(arr2)) then
         if (size(arr1) /= size(arr2)) then
-            status = INTERP_STATUS_INVALID_INPUT
+            status = NF_STATUS_INVALID_ARG
         end if
     end if
 
@@ -71,17 +68,17 @@ pure subroutine check_input (x, y, w, k, knots, coefs, v, sx, bind, status, msg)
     logical, intent(in), dimension(:), optional :: bind
         !!  Array containing flag whether constraint is binding: used for concon
 
-    integer (ENUM_KIND), intent(out) :: status
+    integer (NF_ENUM_KIND), intent(out) :: status
     character (len=*), intent(out), optional :: msg
 
-    status = INTERP_STATUS_SUCCESS
+    status = NF_STATUS_OK
 
     if (size(x) /= size(y)) then
         if (present(msg)) msg = "Non-conformable arrays x, y"
         goto 100
     end if
 
-    if (check_length (x, w) /= INTERP_STATUS_SUCCESS) then
+    if (check_length (x, w) /= NF_STATUS_OK) then
         if (present(msg)) msg = "Non-conformable arrays x, w"
         goto 100
     end if
@@ -99,7 +96,7 @@ pure subroutine check_input (x, y, w, k, knots, coefs, v, sx, bind, status, msg)
         goto 100
     end if
 
-    if (check_length (x, sx) /= INTERP_STATUS_SUCCESS) then
+    if (check_length (x, sx) /= NF_STATUS_OK) then
         if (present(msg)) msg = "x and sx must be of equal size"
         goto 100
     end if
@@ -113,14 +110,14 @@ pure subroutine check_input (x, y, w, k, knots, coefs, v, sx, bind, status, msg)
         end if
     end if
 
-    if (check_length (x, v) /= INTERP_STATUS_SUCCESS) then
+    if (check_length (x, v) /= NF_STATUS_OK) then
         if (present(msg)) msg = "x and v must be of equal size"
         goto 100
     end if
 
     return
 
-100 status = INTERP_STATUS_INVALID_INPUT
+100 status = NF_STATUS_INVALID_ARG
 
 end subroutine
 
@@ -131,12 +128,12 @@ pure subroutine check_eval_input (knots, coefs, n, k, x, y, order, ext, status, 
     integer, intent(in), optional :: order
     integer, intent(in), optional :: ext
 
-    integer (ENUM_KIND), intent(out) :: status
+    integer (NF_ENUM_KIND), intent(out) :: status
     character (len=*), intent(out), optional :: msg
 
     integer :: lk
 
-    status = STATUS_INPUT_VALID
+    status = NF_STATUS_OK
 
     lk = DEFAULT_SPLINE_DEGREE
     if (present(k)) lk = k
@@ -173,25 +170,26 @@ pure subroutine check_eval_input (knots, coefs, n, k, x, y, order, ext, status, 
 
     if (present(ext)) then
         call check_input_ext (ext, status, msg)
-        if (status /= STATUS_INPUT_VALID) goto 100
+        if (status /= NF_STATUS_OK) goto 100
     end if
 
     return
 
 100 continue
-    status = INTERP_STATUS_INVALID_INPUT
+    status = NF_STATUS_INVALID_ARG
 
 end subroutine
 
 pure subroutine check_input_ext (ext, status, msg)
     integer, intent(in) :: ext
-    integer (ENUM_KIND), intent(out) :: status
+    integer (NF_ENUM_KIND), intent(out) :: status
     character (len=*), intent(out), optional :: msg
 
     integer :: i
     logical :: is_valid
-    integer, parameter :: valid(4) = [INTERP_EVAL_ZERO, INTERP_EVAL_EXTRAPOLATE, &
-        INTERP_EVAL_ERROR, INTERP_EVAL_BOUNDARY]
+    integer, parameter :: valid(4) = [ &
+        NF_INTERP_EVAL_ZERO, NF_INTERP_EVAL_EXTRAPOLATE, &
+        NF_INTERP_EVAL_ERROR, NF_INTERP_EVAL_BOUNDARY]
 
     is_valid = .false.
 
@@ -200,10 +198,10 @@ pure subroutine check_input_ext (ext, status, msg)
     end do
 
     if (.not. is_valid) then
-        status = INTERP_STATUS_INVALID_INPUT
+        status = NF_STATUS_INVALID_ARG
         if (present(msg)) msg = "Invalid value extrapolation mode"
     else
-        status = STATUS_INPUT_VALID
+        status = NF_STATUS_OK
     end if
 end subroutine
 
@@ -211,7 +209,7 @@ end subroutine
 ! CURFIT fitting procedures
 
 pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
-        iopt, w, xb, xe, work, ssr, status, msg)
+        iopt, w, xb, xe, work, ssr, status, ier, msg)
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: y
     integer, intent(in), optional :: k
@@ -225,10 +223,13 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
     real (PREC), intent(in), optional :: xb
     class (workspace), intent(in out), optional, target :: work
     real (PREC), intent(out), optional :: ssr
-    integer (ENUM_KIND), intent(out), optional :: status
+    integer (NF_ENUM_KIND), intent(out), optional :: status
+    integer, intent(out), optional :: ier
+        !!  If present, contains original FITPACK exit status
     character (*), intent(out), optional :: msg
 
-    integer :: m, liopt, lk, nwrk, nest, lstatus
+    integer :: m, liopt, lk, nwrk, nwrk_tot, nest, lier
+    integer (NF_ENUM_KIND) :: lstatus
     real (PREC) :: lxb, lxe, ls, lssr
     type (workspace), target :: lwork
     class (workspace), pointer :: ptr_work
@@ -236,7 +237,7 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
     nullify(ptr_work)
 
     call check_input (x, y, w, k, knots, coefs, status=lstatus, msg=msg)
-    if (lstatus /= STATUS_INPUT_VALID) goto 100
+    if (lstatus /= NF_STATUS_OK) goto 100
 
     ! initialize default values
     lk = DEFAULT_SPLINE_DEGREE
@@ -269,13 +270,16 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
         ptr_work => lwork
     end if
 
+    nwrk_tot = nwrk
+    ! Add enough space to allocate default weights on workspace array
+    if (.not. present(w)) nwrk_tot = nwrk_tot + m
+
     ! assert that working arrays are sufficiently large
-    if (present(w)) then
-        call ptr_work%assert_allocated (nrwrk=nwrk, niwrk=nest)
-    else
+    call ptr_work%assert_allocated (nrwrk=nwrk_tot, niwrk=nest)
+
+    if (.not. present(w)) then
         ! allocate real working array such that we can append
         ! weights at the end
-        call ptr_work%assert_allocated (nrwrk=nwrk+m, niwrk=nest)
         ptr_work%rwrk(nwrk+1:nwrk+m) = 1.0_PREC
     end if
 
@@ -283,19 +287,29 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
     if (present(w)) then
         call fitpack_curfit_real64 (liopt, m, x, y, w, lxb, lxe, lk, &
             ls, nest, n, knots, coefs, lssr, &
-            ptr_work%rwrk(1:nwrk), nwrk, ptr_work%iwrk, lstatus)
+            ptr_work%rwrk(1:nwrk), nwrk, ptr_work%iwrk, lier)
     else
         call fitpack_curfit_real64 (liopt, m, x, y, ptr_work%rwrk(nwrk+1:nwrk+m), &
             lxb, lxe, lk, ls, nest, n, knots, coefs, lssr, &
-            ptr_work%rwrk(1:nwrk), nwrk, ptr_work%iwrk, lstatus)
+            ptr_work%rwrk(1:nwrk), nwrk, ptr_work%iwrk, lier)
     end if
 
-    if (present(status)) status = lstatus
+    ! Map CURFIT ier code to NF status code
+    if (lier <= 0) then
+        lstatus = NF_STATUS_OK
+    else if (lier == 1) then
+        lstatus = NF_STATUS_STORAGE_ERROR
+    else if (lier == 2) then
+        lstatus = NF_STATUS_INVALID_STATE
+    else if (lier == 3) then
+        lstatus = NF_STATUS_MAX_ITER
+    else if (lier == 10) then
+        lstatus = NF_STATUS_INVALID_ARG
+    end if
     if (present(ssr)) ssr = lssr
+    if (present(ier)) ier = lier
 
-    return
-
-100 if(present(status)) status = INTERP_STATUS_INVALID_INPUT
+100 if(present(status)) status = lstatus
 
 end subroutine
 
@@ -303,7 +317,7 @@ end subroutine
 ! CONCON wrapper routine
 
 pure subroutine concon_real64 (x, y, v, s, &
-        knots, coefs, n, iopt, w, maxtr, maxbin, work, ssr, sx, bind, status, msg)
+        knots, coefs, n, iopt, w, maxtr, maxbin, work, ssr, sx, bind, status, ier, msg)
 
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: y
@@ -320,14 +334,17 @@ pure subroutine concon_real64 (x, y, v, s, &
     real (PREC), intent(out), optional :: ssr
     real (PREC), intent(out), dimension(:), optional :: sx
     logical, intent(out), dimension(:), optional :: bind
-    integer (ENUM_KIND), intent(out), optional :: status
+    integer (NF_ENUM_KIND), intent(out), optional :: status
+    integer, intent(out), optional :: ier
+        !!  Contains original FITPACK error flag on exit
     character (*), intent(out), optional :: msg
 
     target :: bind, sx
 
-    integer :: m, liopt, nest, lstatus, lmaxtr, lmaxbin
+    integer :: m, liopt, nest, lier, lmaxtr, lmaxbin
     integer :: nrwrk, jrwrk, niwrk, nlwrk, nrwrk_tot
     real (PREC) :: ls, lssr
+    integer (NF_ENUM_KIND) :: lstatus
     type (workspace), target :: lwork
     class (workspace), pointer :: ptr_work
     real (PREC), dimension(:), pointer, contiguous :: ptr_sx, ptr_w, ptr_v
@@ -337,7 +354,7 @@ pure subroutine concon_real64 (x, y, v, s, &
 
     call check_input (x, y, w, knots=knots, coefs=coefs, v=v, bind=bind, sx=sx,&
         status=lstatus, msg=msg)
-    if (lstatus /= STATUS_INPUT_VALID) goto 100
+    if (lstatus /= NF_STATUS_OK) goto 100
 
     ! default values
     liopt = 0
@@ -415,20 +432,32 @@ pure subroutine concon_real64 (x, y, v, s, &
     if (present(w)) then
         call fitpack_concon_real64 (liopt, m, x, y, w, ptr_v, ls, nest, lmaxtr, &
             lmaxbin, n, knots, coefs, lssr, ptr_sx, ptr_bind, &
-            ptr_work%rwrk(1:nrwrk), nrwrk, ptr_work%iwrk, niwrk, lstatus)
+            ptr_work%rwrk(1:nrwrk), nrwrk, ptr_work%iwrk, niwrk, lier)
     else
         call fitpack_concon_real64 (liopt, m, x, y, ptr_w, ptr_v, ls, nest, lmaxtr, &
             lmaxbin, n, knots, coefs, lssr, ptr_sx, ptr_bind, &
-            ptr_work%rwrk(1:nrwrk), nrwrk, ptr_work%iwrk, niwrk, lstatus)
+            ptr_work%rwrk(1:nrwrk), nrwrk, ptr_work%iwrk, niwrk, lier)
     end if
 
-    if (present(status)) status = lstatus
-    if (present(ssr)) ssr = lssr
+    if (lier == 0) then
+        lstatus = NF_STATUS_OK
+    else if (lier == -3) then
+        lstatus = NF_STATUS_STORAGE_ERROR
+    else if (lier == -2 .or. lier == -1) then
+        lstatus = NF_STATUS_OTHER
+    else if (lier == 1 .or. lier == 2) then
+        lstatus = NF_STATUS_STORAGE_ERROR
+    else if (lier == 3 .or. lier == 4 .or. lier == 5) then
+        lstatus = NF_STATUS_OTHER
+    else if (lier == 10) then
+        lstatus = NF_STATUS_INVALID_ARG
+    end if
 
-    return
+    if (present(ssr)) ssr = lssr
+    if (present(ier)) ier = lier
 
 100 continue
-    if(present(status)) status = INTERP_STATUS_INVALID_INPUT
+    if(present(status)) status = lstatus
 
 end subroutine
 
@@ -445,12 +474,13 @@ pure subroutine splev_real64 (knots, coefs, n, k, x, y, ext, status)
     integer, intent(in), optional :: ext
     integer, intent(out), optional :: status
 
-    integer :: m, ln, lstatus, lext, lk
+    integer :: m, ln, lier, lext, lk
+    integer (NF_ENUM_KIND) :: lstatus
 
-    lstatus = INTERP_STATUS_INVALID_INPUT
+    lstatus = NF_STATUS_INVALID_ARG
 
     call check_eval_input (knots, coefs, n, k, x, y, ext=ext, status=lstatus)
-    if (lstatus /= STATUS_INPUT_VALID) goto 100
+    if (lstatus /= NF_STATUS_OK) goto 100
 
     m = size(x)
     ! by default assume that all elements in knots/coefs array are valid
@@ -458,20 +488,28 @@ pure subroutine splev_real64 (knots, coefs, n, k, x, y, ext, status)
     ! assume cubic splines by default
     lk = DEFAULT_SPLINE_DEGREE
     ! by default set function values outside of domain to boundary values
-    lext = INTERP_EVAL_EXTRAPOLATE
+    lext = NF_INTERP_EVAL_EXTRAPOLATE
 
     ! If n is present, cap number of knots/coefs
     if (present(n)) ln = n
     if (present(k)) lk = k
 
-    call fitpack_splev_real64 (knots, ln, coefs, lk, x, y, m, lext, lstatus)
+    call fitpack_splev_real64 (knots, ln, coefs, lk, x, y, m, lext, lier)
 
-    if (present(status)) status = lstatus
-
-    return
+    ! remap SPLEV status codes to NUMFORT codes
+    select case (lier)
+    case (0)
+        lstatus = NF_STATUS_OK
+    case (1)
+        lstatus = NF_STATUS_BOUNDS_ERROR
+    case (10)
+        lstatus = NF_STATUS_INVALID_ARG
+    case default
+        lstatus = NF_STATUS_UNKNOWN
+    end select
 
 100 continue
-    if (present(status)) status = INTERP_STATUS_INVALID_INPUT
+    if (present(status)) status = lstatus
 
 end subroutine
 
@@ -513,14 +551,15 @@ pure subroutine splder_real64 (knots, coefs, n, k, order, x, y, ext, work, statu
     type (workspace), target :: lwork
     type (workspace), pointer :: ptr_work
 
-    integer :: lext, lorder, lstatus, lk, ln, m
+    integer :: lext, lorder, lier, lk, ln, m
+    integer (NF_ENUM_KIND) :: lstatus
 
     call check_eval_input (knots, coefs, n, k, x, y, order, ext, status=lstatus)
-    if (lstatus /= STATUS_INPUT_VALID) goto 100
+    if (lstatus /= NF_STATUS_OK) goto 100
 
     lk = DEFAULT_SPLINE_DEGREE
     lorder = 1
-    lext = INTERP_EVAL_EXTRAPOLATE
+    lext = NF_INTERP_EVAL_EXTRAPOLATE
     ln = size(knots)
     m = size(x)
 
@@ -536,14 +575,22 @@ pure subroutine splder_real64 (knots, coefs, n, k, order, x, y, ext, work, statu
     call ptr_work%assert_allocated (nrwrk=ln)
 
     call fitpack_splder_real64 (knots, ln, coefs, lk, lorder, x, y, m, &
-        lext, ptr_work%rwrk, lstatus)
+        lext, ptr_work%rwrk, lier)
 
-    if (present(status)) status = lstatus
-
-    return
+    ! remap SPLDER status codes to NUMFORT codes
+    select case (lier)
+    case (0)
+        lstatus = NF_STATUS_OK
+    case (1)
+        lstatus = NF_STATUS_BOUNDS_ERROR
+    case (10)
+        lstatus = NF_STATUS_INVALID_ARG
+    case default
+        lstatus = NF_STATUS_UNKNOWN
+    end select
 
 100 continue
-    if (present(status)) status = INTERP_STATUS_INVALID_INPUT
+    if (present(status)) status = lstatus
 end subroutine
 
 ! splder_scalar_real64 evaluates the derivate of a spline at a single scalar point

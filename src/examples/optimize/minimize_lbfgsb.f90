@@ -16,7 +16,8 @@ contains
 subroutine example1 ()
     type (workspace) :: ws
     type (optim_result) :: res
-    integer, parameter :: n = 25, m = 5, iprint = OPTIM_PRINT_MINIMAL
+    integer, parameter :: n = 25, m = 5
+    integer (NF_ENUM_KIND), parameter :: iprint = NF_PRINT_MINIMAL
     ! boundaries
     real (PREC), dimension(n) :: x, lbnd, ubnd
 
@@ -78,7 +79,8 @@ end subroutine
 subroutine example2 ()
     type (workspace) :: ws
     type (optim_result) :: res
-    integer, parameter :: n = 25, m = 5, iprint = OPTIM_PRINT_MINIMAL
+    integer, parameter :: n = 25, m = 5
+    integer (NF_ENUM_KIND), parameter :: iprint = NF_PRINT_MINIMAL
     ! boundaries
     real (PREC), dimension(n) :: x, lbnd, ubnd
 

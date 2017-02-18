@@ -2,6 +2,7 @@ module numfort_optimize_brent
 
     use, intrinsic :: iso_fortran_env
 
+    use numfort_common
     use numfort_optim_result_mod
 
     implicit none
@@ -47,7 +48,7 @@ subroutine brentq (f, a, b, xtol, rtol, maxiter, x0, res)
     call brentq_impl (f, a, b, lxtol, lrtol, lmaxiter, x0, fx0, iter, nfev, status)
 
     if (present(res)) then
-        if (status == OPTIM_STATUS_INVALID_INPUT) then
+        if (status == NF_STATUS_INVALID_ARG) then
             call res%update (status=status, msg="Not a bracketing interval")
         else
             lx0(1) = x0
@@ -85,13 +86,13 @@ subroutine brentq_impl (f, a, b, xtol, rtol, maxiter, x0, fx0, iter, nfev, statu
     iter = 0
 
     if (fpre * fcur > 0.0) then
-        status = OPTIM_STATUS_INVALID_INPUT
+        status = NF_STATUS_INVALID_ARG
         return
     else if (fpre == 0.0) then
-        status = OPTIM_STATUS_CONVERGED
+        status = NF_STATUS_OK
         return
     else if (fcur == 0.0) then
-        status = OPTIM_STATUS_CONVERGED
+        status = NF_STATUS_OK
         return
     end if
 
@@ -124,7 +125,7 @@ subroutine brentq_impl (f, a, b, xtol, rtol, maxiter, x0, fx0, iter, nfev, statu
         if (fcur == 0.0_PREC .or. abs(sbis) < delta) then
             x0 = xcur
             fx0 = fcur
-            status = OPTIM_STATUS_CONVERGED
+            status = NF_STATUS_OK
             return
         end if
 
@@ -173,7 +174,7 @@ subroutine brentq_impl (f, a, b, xtol, rtol, maxiter, x0, fx0, iter, nfev, statu
     end do
 
     ! algorithm did not converge
-    status = OPTIM_STATUS_NOT_CONVERGED
+    status = NF_STATUS_NOT_CONVERGED
     ! store best guesses so far
     x0 = xcur
     fx0 = fcur

@@ -20,11 +20,12 @@ subroutine example1 ()
     integer, parameter :: n = 3
     real (PREC) :: x(n), tol
 
-    integer :: maxfun, iprint
+    integer :: maxfun
+    integer (NF_ENUM_KIND) :: iprint
     logical :: quad
 
     x = [real (PREC) :: 0, 1, 2]
-    iprint = OPTIM_PRINT_ALL
+    iprint = NF_PRINT_ALL
     maxfun = 250
     quad = .true.
     tol = 1d-04

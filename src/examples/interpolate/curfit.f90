@@ -29,7 +29,7 @@ subroutine example1 ()
     real (PREC), dimension(m) :: x, y, yhat
     real (PREC) :: s, svec(6) = [ real(PREC) :: 1000, 60, 10, 30, 30, 0]
     integer :: iopt, ioptvec(6) = [0, 1, 1, 1, 0, 0]
-    integer :: i, k, nest_max, n, status, j
+    integer :: i, k, nest_max, n, status, j, ext
     real (PREC) :: ssr
     real (PREC), dimension(:), allocatable :: knots, coefs
     type (workspace) :: ws
@@ -39,6 +39,7 @@ subroutine example1 ()
     y = [ real(PREC) :: 1.0,1.0,1.4,1.1,1.0,1.0,4.0,9.0,13.0,13.4,12.8,13.1,13.0, &
         14.0,13.0,13.5,10.0,2.0,3.0,2.5,2.5,2.5,3.0,4.0,3.5]
 
+    ext = NF_INTERP_EVAL_EXTRAPOLATE
     ! max. number of elements needed for knots/coefs
     nest_max = curfit_get_nest(m=m, k=5)
     allocate (knots(nest_max), coefs(nest_max))
@@ -56,7 +57,7 @@ subroutine example1 ()
 
             ! test different call syntax without specifying n directly
             call splev (knots(1:n), coefs(1:n), k=k, x=x, y=yhat, &
-                ext=INTERP_EVAL_EXTRAPOLATE, status=status)
+                ext=ext, status=status)
             call print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat)
         end do
 
@@ -68,7 +69,7 @@ subroutine example1 ()
         call curfit (x, y, k, s, knots, coefs, n, iopt, ssr=ssr, &
             work=ws, status=status)
 
-        call splev (knots, coefs, n, k, x, yhat, INTERP_EVAL_EXTRAPOLATE, status)
+        call splev (knots, coefs, n, k, x, yhat, ext, status)
         call print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat)
     end do
 
@@ -111,7 +112,7 @@ subroutine example2 ()
         status=status)
 
     ! evaluate spline at original x points
-    ext = INTERP_EVAL_BOUNDARY
+    ext = NF_INTERP_EVAL_BOUNDARY
     call splev (knots, coefs, n, k, x, yhat, ext, status)
 
     call print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat, &
