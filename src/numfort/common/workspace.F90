@@ -83,7 +83,7 @@ pure subroutine workspace_assert_allocated (self, nrwrk, niwrk, ncwrk, nlwrk)
                 rtmp(1:size(self%rwrk)) = self%rwrk
                 call move_alloc (rtmp, self%rwrk)
             end if
-            self%nrwrk = nrwrk
+            self%nrwrk = size(self%rwrk)
         end if
     end if
 
@@ -97,7 +97,7 @@ pure subroutine workspace_assert_allocated (self, nrwrk, niwrk, ncwrk, nlwrk)
                 itmp(1:size(self%iwrk)) = self%iwrk
                 call move_alloc (itmp, self%iwrk)
             end if
-            self%niwrk = niwrk
+            self%niwrk = size(self%iwrk)
         end if
     end if
 
@@ -111,7 +111,7 @@ pure subroutine workspace_assert_allocated (self, nrwrk, niwrk, ncwrk, nlwrk)
                 ltmp(1:size(self%lwrk)) = self%lwrk
                 call move_alloc (ltmp, self%lwrk)
             end if
-            self%nlwrk = nlwrk
+            self%nlwrk = size(self%lwrk)
         end if
     end if
 
@@ -123,7 +123,7 @@ pure subroutine workspace_assert_allocated (self, nrwrk, niwrk, ncwrk, nlwrk)
                 allocate (character (ncwrk) :: ctmp)
                 call move_alloc (ctmp, self%cwrk)
             end if
-            self%ncwrk = ncwrk
+            self%ncwrk = len(self%cwrk)
         end if
     end if
 
