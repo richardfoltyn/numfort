@@ -6,3 +6,8 @@ set(${COMPONENT_NAME}_FILES
     splder.f90
     PARENT_SCOPE
 )
+
+set(${COMPONENT_NAME}_FILES_OMP
+    curfit_omp.f90
+    PARENT_SCOPE
+)
