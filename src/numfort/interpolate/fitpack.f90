@@ -117,7 +117,8 @@ pure subroutine check_input (x, y, w, k, knots, coefs, v, sx, bind, status, msg)
 
     return
 
-100 status = NF_STATUS_INVALID_ARG
+100 continue
+    status = NF_STATUS_INVALID_ARG
 
 end subroutine
 
@@ -231,10 +232,7 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
     integer :: m, liopt, lk, nwrk, nwrk_tot, nest, lier
     integer (NF_ENUM_KIND) :: lstatus
     real (PREC) :: lxb, lxe, ls, lssr
-    type (workspace), target :: lwork
     class (workspace), pointer :: ptr_work
-
-    nullify(ptr_work)
 
     call check_input (x, y, w, k, knots, coefs, status=lstatus, msg=msg)
     if (lstatus /= NF_STATUS_OK) goto 100
@@ -267,7 +265,7 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
     if (present(work)) then
         ptr_work => work
     else
-        ptr_work => lwork
+        allocate (workspace :: ptr_work)
     end if
 
     nwrk_tot = nwrk
@@ -310,6 +308,7 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
     if (present(ier)) ier = lier
 
 100 if(present(status)) status = lstatus
+    if ((.not. present(work)) .and. associated(ptr_work)) deallocate (ptr_work)
 
 end subroutine
 
@@ -477,8 +476,6 @@ pure subroutine splev_real64 (knots, coefs, n, k, x, y, ext, status)
     integer :: m, ln, lier, lext, lk
     integer (NF_ENUM_KIND) :: lstatus
 
-    lstatus = NF_STATUS_INVALID_ARG
-
     call check_eval_input (knots, coefs, n, k, x, y, ext=ext, status=lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
@@ -493,6 +490,7 @@ pure subroutine splev_real64 (knots, coefs, n, k, x, y, ext, status)
     ! If n is present, cap number of knots/coefs
     if (present(n)) ln = n
     if (present(k)) lk = k
+    if (present(ext)) lext = ext
 
     call fitpack_splev_real64 (knots, ln, coefs, lk, x, y, m, lext, lier)
 
@@ -565,6 +563,7 @@ pure subroutine splder_real64 (knots, coefs, n, k, order, x, y, ext, work, statu
 
     if (present(n)) ln = n
     if (present(k)) lk = k
+    if (present(ext)) lext = ext
 
     if (present(work)) then
         ptr_work => work
