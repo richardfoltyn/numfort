@@ -104,6 +104,8 @@ subroutine example1 ()
             ws, ssr2(j), status2(j), sx2(:, j), sxp2(:, j), sxpp2(:, j), &
             iopt, w, ext=ext)
     end do
+    
+    deallocate (ws)
 
     print *, "== Summary of OpenMP vs. sequential results =="
     do j = 1, ns

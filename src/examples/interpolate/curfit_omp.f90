@@ -93,11 +93,14 @@ subroutine example1 ()
     ! compute sequentially
     allocate (knots2(nest, ns), coefs2(nest, ns), yhat2(m, ns))
     allocate (ws)
+
     do j = 1, ns
         s = svec(j)
         call fit (x, y, k, s, knots2(:, j), coefs2(:, j), nknots2(j), &
             ws, ssr2(j), status2(j), yhat2(:, j), iopt, w, ext=ext)
     end do
+
+    deallocate (ws)
 
     print *, "Summary of OpenMP vs. sequential results"
     do j = 1, ns
