@@ -25,18 +25,20 @@ subroutine example1 ()
 
     real (PREC), dimension(m) :: x, y, eps, w
     real (PREC), dimension(m, ns) :: yhat
-    real (PREC), dimension(10) :: svec
+    real (PREC), dimension(ns) :: svec
     integer :: i, k, nest, iopt, nseed, ext
-    real (PREC), dimension(:, :), allocatable :: knots, coefs
     real (PREC), dimension(:), allocatable :: seed
-    integer, dimension(:), allocatable :: nknots
-    real (PREC), dimension(:), allocatable :: knots_i, coefs_i, yhat_i
-    integer :: nknots_i
-    integer (NF_ENUM_KIND), dimension(:), allocatable :: status
-    integer (NF_ENUM_KIND) :: status_i
-    logical :: stat_ok
-    real (PREC), dimension(:), allocatable :: ssr
-    real (PREC) :: ssr_i
+    real (PREC), dimension(:, :), allocatable :: knots, coefs
+    integer, dimension(ns) :: nknots
+    integer (NF_ENUM_KIND), dimension(ns) :: status
+    real (PREC), dimension(ns) :: ssr
+    
+    ! arrays to hold sequential results
+    real (PREC), dimension(:, :), allocatable :: knots2, coefs2
+    real (PREC), dimension(ns) :: ssr2
+    integer, dimension(ns) :: nknots2
+    integer (NF_ENUM_KIND), dimension(ns) :: status2
+    real (PREC), dimension(:,:), allocatable :: yhat2
 
     ! locals private to each thread
     integer :: tid, j
@@ -64,46 +66,20 @@ subroutine example1 ()
     ext = NF_INTERP_EVAL_BOUNDARY
 
     nest = curfit_get_nest (m=m, k=k)
-    allocate (knots(nest, ns), coefs(nest, ns), nknots(ns))
-    allocate (ssr(ns), status(ns))
+    allocate (knots(nest, ns), coefs(nest, ns))
 
-    !$omp parallel default(none) private(j, ws, s, stat_ok, tid) &
-    !$omp private(knots_i, coefs_i, nknots_i, ssr_i, status_i, yhat_i) &
+    !$omp parallel default(none) private(j, ws, s, tid) &
+    !$omp shared(knots2, coefs2, nknots2, ssr2, status2) &
     !$omp shared(svec, x, y, k, knots, coefs, nknots, iopt, w, ssr, status, nest) &
     !$omp shared(yhat, ext)
     tid = omp_get_thread_num ()
     allocate (ws)
-    allocate (knots_i(nest), coefs_i(nest), yhat_i(m))
+
     !$omp do
     do j = 1, ns
         s = svec(j)
-        call curfit (x, y, k, s, knots(:,j), coefs(:,j), nknots(j), &
-           iopt=iopt, work=ws, ssr=ssr(j), status=status(j))
-
-        stat_ok = (status(j) == NF_STATUS_OK) .or. &
-           (status(j) /= NF_STATUS_INVALID_ARG .and. ssr(j) < s)
-
-        if (status(j) /= NF_STATUS_INVALID_ARG) then
-           call splev (knots(:,j), coefs(:,j), nknots(j), k, x, yhat(:, j), ext)
-        end if
-
-        ! call curfit (x, y, k, s, knots_i, coefs_i, nknots_i, iopt=iopt, &
-        ! work=ws, ssr=ssr_i, status=status_i)
-        !
-        ! stat_ok = (status_i == NF_STATUS_OK) .or. &
-        !    (status_i /= NF_STATUS_INVALID_ARG .and. ssr_i < s)
-        !
-        ! if (status_i /= NF_STATUS_INVALID_ARG) then
-        !    call splev (knots_i, coefs_i, nknots_i, k, x, yhat_i, ext)
-        ! end if
-        !
-        ! !$omp critical
-        ! knots(:, j) = knots_i
-        ! coefs(:, j) = coefs_i
-        ! status(j) = status_i
-        ! nknots(j) = nknots_i
-        ! ssr(j) = ssr_i
-        !  $omp end critical
+        call fit (x, y, k, s, knots(:, j), coefs(:, j), nknots(j), &
+            ws, ssr(j), status(j), yhat(:, j), iopt, w, ext=ext)
     end do
     !$omp end do
     deallocate (ws)
@@ -113,7 +89,53 @@ subroutine example1 ()
        call print_report (iopt, svec(i), k, ssr(i), status(i), &
            nknots(i), knots(:, i), coefs(:, k), x, y, yhat(:, i), i)
     end do
+    
+    ! compute sequentially
+    allocate (knots2(nest, ns), coefs2(nest, ns), yhat2(m, ns))
+    allocate (ws)
+    do j = 1, ns
+        s = svec(j)
+        call fit (x, y, k, s, knots2(:, j), coefs2(:, j), nknots2(j), &
+            ws, ssr2(j), status2(j), yhat2(:, j), iopt, w, ext=ext)
+    end do
 
+    print *, "Summary of OpenMP vs. sequential results"
+    do j = 1, ns
+        print '(i3, " d(knots)=", es9.2e2, "; d(coefs)=", es9.2e2, "; nknots eq.: ", l1, "; d(ssr)=", es9.2e2, "; status eq.: ", l1)', j, &
+            maxval(abs(knots(:,j)-knots2(:,j))), &
+            maxval(abs(coefs(:,j)-coefs2(:,j))), &
+            nknots(j) == nknots2(j), &
+            abs(ssr(j)-ssr2(j)), &
+            status(j) == status2(j)
+    end do
+
+end subroutine
+
+pure subroutine fit (x, y, k, s, knots, coefs, nknots, ws, ssr, status, yhat, &
+        iopt, w, ext)
+    real (PREC), intent(in), dimension(:) :: x, y
+    integer, intent(in) :: k
+    real (PREC), intent(in) :: s
+    real (PREC), intent(out), dimension(:) :: knots, coefs
+    integer, intent(out) :: nknots
+    class (workspace), intent(in out) :: ws
+    real (PREC), intent(out) :: ssr
+    integer (NF_ENUM_KIND), intent(out) :: status
+    real (PREC), intent(out), dimension(:) :: yhat
+    integer, intent(in), optional :: iopt
+    real (PREC), intent(in), dimension(:), optional :: w
+    integer (NF_ENUM_KIND), intent(in), optional :: ext
+
+    logical :: stat_ok
+
+    call curfit (x, y, k, s, knots, coefs, nknots, &
+       iopt=iopt, work=ws, w=w, ssr=ssr, status=status)
+
+    stat_ok = (iand(status, NF_STATUS_INVALID_ARG) /= NF_STATUS_INVALID_ARG)
+
+    if (stat_ok) then
+       call splev (knots, coefs, nknots, k, x, yhat, ext=ext)
+    end if
 end subroutine
 
 subroutine print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat, counter)
@@ -127,16 +149,16 @@ subroutine print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat, c
 
     call decode_status (status, istatus, nstatus)
 
-    print "(/,'(', i0, ')', t6, 'iopt: ', i2, '; smoothing factor: ', f6.1, '; spline degree: ', i1)", &
+    print "(/,'(', i0, ')', t6, 'iopt: ', i2, '; smoothing factor: ', es12.5e2, '; spline degree: ', i1)", &
         counter, iopt, s, k
-    print "(t6, 'status code: ', (i0, :, ','))", istatus(1:nstatus)
+    print "(t6, 'status code: ', *(i0, :, ', '))", istatus(1:nstatus)
     ! Approximation is returned even if status /= NF_STATUS_OK as long as
     ! input arguments were valid.
     if (status /= NF_STATUS_INVALID_ARG) then
         print "(t6, 'SSR: ', es12.5e2)", ssr
         print "(t6, 'Number of knots: ', i0)", n
-        print "(t6, 'Knots: ', *(t14, 10(f10.1, :, ', '), :, /))", knots(1:n)
-        print "(t6, 'Coefs: ', *(t14, 10(g10.2e3, :, ', '), :, /))", coefs(1:n)
+        print "(t6, 'Knots: ', *(t14, 8(f8.3, :, ', '), :, /))", knots(1:n)
+        print "(t6, 'Coefs: ', *(t14, 8(f8.3, :, ', '), :, /))", coefs(1:n)
         print "(t6, a)", 'Evaluated points:'
         print "(t6, 5(3(a5, tr1), tr2))", ('x(i)', 'y(i)', 'sp(i)', i=1,5)
         print "(*(t6, 5(3(f5.1, :, tr1), tr2), :, /))", (x(i), y(i), yhat(i), i=1,size(x))

@@ -5,6 +5,7 @@
 program curfit_demo
 
     use iso_fortran_env
+    use numfort_common
     use numfort_interpolate
 
     implicit none
@@ -79,15 +80,21 @@ subroutine example2 ()
 
     ! number of points
     integer, parameter :: m = 25
+    integer, parameter :: ns = 10
 
     real (PREC), dimension(m) :: x, y, yhat, eps, w
-    real (PREC) :: s
-    integer :: i, k, nest, n, status, iopt, nseed, ext
-    real (PREC) :: ssr
+    real (PREC), dimension(10) :: svec
+    integer :: i, k, nest, n, iopt, nseed, ext
+    integer (NF_ENUM_KIND) :: status
+    real (PREC) :: ssr, s
     real (PREC), dimension(:), allocatable :: knots, coefs, seed
-    type (workspace) :: ws
+    type (workspace), pointer :: ws
+    logical :: stat_ok
 
     print "(/, '### Example ', i0)", 2
+
+    ! create vector of smoothness parameters
+    svec = 1.0d1 ** [(i, i=3, 3-ns+1, -1)]
 
     x = [real (PREC) :: (i, i = 0, m-1)]
     ! create some reproducible random numbers
@@ -102,45 +109,69 @@ subroutine example2 ()
     ! spline degree
     k = 3
     iopt = 0
-    s = 100.0_PREC
     w = 1/eps
+    ! evaluate spline at original x points
+    ext = NF_INTERP_EVAL_BOUNDARY
 
     nest = curfit_get_nest (m=m, k=k)
     allocate (knots(nest), coefs(nest))
 
-    call curfit (x, y, k, s, knots, coefs, n, iopt=iopt, w=w, work=ws, ssr=ssr, &
-        status=status)
+    do i = 1, ns
+        s = svec(i)
+        allocate (ws)
 
-    ! evaluate spline at original x points
-    ext = NF_INTERP_EVAL_BOUNDARY
-    call splev (knots, coefs, n, k, x, yhat, ext, status)
+        call curfit (x, y, k, s, knots, coefs, n, iopt=iopt, &
+            work=ws, ssr=ssr, status=status)
 
-    call print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat, &
-        counter=1)
+        stat_ok = iand(status, NF_STATUS_INVALID_ARG) /= NF_STATUS_INVALID_ARG
+        if (stat_ok) then
+            call splev (knots, coefs, n, k, x, yhat, ext)
+        end if
+
+        if (i == 1) then
+            call print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, &
+                yhat, counter=1)
+        else
+            call print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, &
+                yhat)
+        end if
+
+        deallocate (ws)
+    end do
+
 
 end subroutine
 
 subroutine print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat, &
         counter)
-    integer, intent(in) :: iopt, k, status, n, counter
+    integer, intent(in) :: iopt, k, n, counter
+    integer (NF_ENUM_KIND), intent(in) :: status
     real (PREC), intent(in) :: s, ssr, knots(:), coefs(:)
     real (PREC), intent(in), dimension(:) :: x, y, yhat
 
     optional :: counter
     integer, save :: ii = 1
-    integer :: i
+    integer :: i, nstatus
+    integer, dimension(bit_size(status)) :: istatus
+    logical :: stat_ok
 
     if (present(counter)) ii = counter
 
-    print "(/,'(', i0, ')', t6, 'iopt: ', i2, '; smoothing factor: ', f6.1, '; spline degree: ', i1)", &
+    call decode_status (status, istatus, nstatus)
+    stat_ok = iand(status, NF_STATUS_INVALID_ARG) /= NF_STATUS_INVALID_ARG
+
+    print "(/,'(', i0, ')', t6, 'iopt: ', i2, '; smoothing factor: ', es12.5e2, '; spline degree: ', i1)", &
         ii, iopt, s, k
-    print "(t6, 'SSR: ', es12.5e2, '; error flag: ', i3)", ssr, status
-    print "(t6, 'Number of knots: ', i0)", n
-    print "(t6, 'Knots: ', *(t14, 10(f8.1, :, ', '), :, /))", knots(1:n)
-    print "(t6, 'Coefs: ', *(t14, 10(f8.4, :, ', '), :, /))", coefs(1:n)
-    print "(t6, a)", 'Evaluated points:'
-    print "(t6, 5(3(a5, tr1), tr2))", ('x(i)', 'y(i)', 'sp(i)', i=1,5)
-    print "(*(t6, 5(3(f5.1, :, tr1), tr2), :, /))", (x(i), y(i), yhat(i), i=1,size(x))
+    print "(t6, 'status code: ', *(i0, :, ', '))", istatus(1:nstatus)
+    if (stat_ok ) then
+        print "(t6, 'SSR: ', es12.5e2)", ssr
+        print "(t6, 'Number of knots: ', i0)", n
+        print "(t6, 'Knots: ', *(t14, 8(f8.3, :, ', '), :, /))", knots(1:n)
+        print "(t6, 'Coefs: ', *(t14, 8(f8.3, :, ', '), :, /))", coefs(1:n)
+        print "(t6, a)", 'Evaluated points:'
+        print "(t6, 5(3(a5, tr1), tr2))", ('x(i)', 'y(i)', 'sp(i)', i=1,5)
+        print "(*(t6, 5(3(f5.1, :, tr1), tr2), :, /))", (x(i), y(i), yhat(i), i=1,size(x))
+    end if
 
     ii = ii + 1
 end subroutine
