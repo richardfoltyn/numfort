@@ -17,7 +17,7 @@ module numfort_optim_result_mod
     type, public :: optim_result
         real (PREC), dimension(:), allocatable :: x, fx
         integer :: nfev = UNINITIALIZED_COUNTER, nit = UNINITIALIZED_COUNTER
-        integer (NF_ENUM_KIND) :: status = NF_STATUS_MISSING
+        integer (NF_ENUM_KIND) :: status = NF_STATUS_UNDEFINED
         logical :: success = .false.
         character (100) :: msg
     contains
@@ -130,7 +130,7 @@ pure subroutine reset (self)
     self%nfev = UNINITIALIZED_COUNTER
     self%msg = ""
     self%fx = 0.0_PREC
-    self%status = NF_STATUS_MISSING
+    self%status = NF_STATUS_UNDEFINED
     self%success = .false.
 end subroutine
 

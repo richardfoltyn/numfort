@@ -35,7 +35,8 @@ subroutine brentq (f, a, b, xtol, rtol, maxiter, x0, res)
 
     real (PREC) :: lxtol, lrtol, fx0, lx0(1)
     ! maximum iterations, number of function evaluations
-    integer :: lmaxiter, nfev, iter, status
+    integer :: lmaxiter, nfev, iter
+    integer (NF_ENUM_KIND) :: status
 
     lmaxiter = 100
     lrtol = 6.0 * epsilon(1.0_PREC)
@@ -48,7 +49,7 @@ subroutine brentq (f, a, b, xtol, rtol, maxiter, x0, res)
     call brentq_impl (f, a, b, lxtol, lrtol, lmaxiter, x0, fx0, iter, nfev, status)
 
     if (present(res)) then
-        if (status == NF_STATUS_INVALID_ARG) then
+        if (iand(status, NF_STATUS_INVALID_ARG) == NF_STATUS_INVALID_ARG) then
             call res%update (status=status, msg="Not a bracketing interval")
         else
             lx0(1) = x0

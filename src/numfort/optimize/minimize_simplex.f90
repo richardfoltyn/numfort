@@ -89,7 +89,7 @@ subroutine minimize_simplex_real64 (func, x, tol, maxfun, quad, iprint, res)
     ! map mimum status into numfort_optimize status
     call map_ifault (ifault, status, msg)
 
-    if (status /= NF_STATUS_OK .and. liprint > NF_PRINT_NONE) then
+    if ((.not. status_success (status)) .and. liprint > NF_PRINT_NONE) then
         write (ERROR_UNIT, *) msg
     end if
 

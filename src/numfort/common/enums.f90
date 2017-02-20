@@ -3,7 +3,7 @@ module numfort_common_enums
     use numfort_common_kinds, only: NF_ENUM_KIND
     implicit none
 
-    integer (NF_ENUM_KIND), parameter :: NF_STATUS_MISSING = 0
+    integer (NF_ENUM_KIND), parameter :: NF_STATUS_UNDEFINED = 0
 
     integer (NF_ENUM_KIND), parameter :: NF_STATUS_OK = 1
     integer (NF_ENUM_KIND), parameter :: NF_STATUS_INVALID_ARG = ishft(1, 10)

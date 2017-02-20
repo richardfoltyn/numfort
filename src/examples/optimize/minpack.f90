@@ -1,5 +1,6 @@
 program minpack_examples
 
+    use numfort_common
     use numfort_optimize
     use iso_fortran_env
 
@@ -91,7 +92,7 @@ subroutine print_report (res)
 
     print "('#', t3, 'Example ', i0)", ii
     print "(t3, 'Exit status: ', i0)", res%status
-    if (res%status /= NF_STATUS_OK .and. len_trim(res%msg) > 0) then
+    if ((.not. status_success (res%status)) .and. len_trim(res%msg) > 0) then
         print "(t3, 'Message: ', a)", res%msg
     end if
     write (OUTPUT_UNIT, advance='no', &

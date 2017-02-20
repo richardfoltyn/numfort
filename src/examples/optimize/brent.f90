@@ -59,10 +59,10 @@ subroutine print_report (res)
 
     print "('#', t3, 'Example ', i0)", ii
     print "(t3, 'Exit status: ', i0)", res%status
-    if (res%status /= NF_STATUS_OK .and. len_trim(res%msg) > 0) then
+    if ((.not. res%success) .and. len_trim(res%msg) > 0) then
         print "(t3, 'Message: ', a)", res%msg
     end if
-    if (res%status == NF_STATUS_OK) then
+    if (res%success) then
         print "(t3, 'Root located at: ', g23.15e2)", res%x
         print "(t3, 'Function value at root: ', g23.15e2)", res%fx
         print "(t3, 'Number of iterations: ', i0)", res%nit

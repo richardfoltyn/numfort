@@ -1,5 +1,6 @@
 program lbfgsb
 
+    use numfort_common
     use numfort_optimize
     use iso_fortran_env
 

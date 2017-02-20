@@ -4,6 +4,7 @@
 program demo_concon
 
     use iso_fortran_env
+    use numfort_common
     use numfort_interpolate
 
     implicit none
@@ -27,6 +28,7 @@ subroutine example1 ()
     real (PREC) :: ssr
     logical, dimension(:), allocatable :: bind
     integer :: status, iopt, maxtr, maxbin, is, nest, n, status_eval
+    logical :: stat_ok
     ! different smoothness parameters
     real (PREC) :: s(3) = [real(PREC) :: 0.2, 0.04, 0.0002]
 
@@ -54,22 +56,28 @@ subroutine example1 ()
     do is = 1, size(s)
         call concon (x, y, v, s(is), knots, coefs, n, iopt, w, maxtr, maxbin, &
             sx=sx, bind=bind, ssr=ssr, status=status)
-
-        ! evaluate spline using splev to check values in sx
-        call splev (knots, coefs, n, 3, x, sx2, status=status)
-        if (status /= NF_STATUS_OK) then
-            write (ERROR_UNIT, *) "Failed to evaluate spline"
-        end if
-        if (any(abs(sx-sx2) > 1d-10)) then
-            write (ERROR_UNIT, *) "s(x) returned from CONCON and SPLEV differ"
+        if (.not. status_success (status)) then
+            write (ERROR_UNIT, *) "Failed to find spline approximation"
         end if
 
-        ! evaluate first- and second-order derivatives
-        call splder (knots(1:n), coefs(1:n), k=k, order=1, x=x, y=s1, &
-            ext=NF_INTERP_EVAL_ERROR, status=status_eval)
+        stat_ok = (iand(status, NF_STATUS_OK) == NF_STATUS_OK) .or. &
+            (iand(status, NF_STATUS_APPROX) == NF_STATUS_APPROX)
 
-        call splder (knots, coefs, n, k, 2, x, s2, &
-            NF_INTERP_EVAL_ERROR, status=status_eval)
+        ! Evaluate spline and derivatives only if at least approximate spline
+        ! representation was found.
+        if (stat_ok) then
+            call splev (knots, coefs, n, 3, x, sx2)
+            if (any(abs(sx-sx2) > 1d-10)) then
+                write (ERROR_UNIT, *) "s(x) returned from CONCON and SPLEV differ"
+            end if
+
+            ! evaluate first- and second-order derivatives
+            call splder (knots(1:n), coefs(1:n), k=k, order=1, x=x, y=s1, &
+                ext=NF_INTERP_EVAL_ERROR, status=status_eval)
+
+            call splder (knots, coefs, n, k, 2, x, s2, &
+                NF_INTERP_EVAL_ERROR, status=status_eval)
+        end if
 
         call print_report (iopt, s(is), ssr, status, n, knots, coefs, x, y, &
             sx, s1, s2, bind)
@@ -79,15 +87,24 @@ end subroutine
 
 subroutine print_report (iopt, s, ssr, status, n, knots, coefs, x, y, yhat, &
         s1, s2, bind, counter)
-    integer, intent(in) :: iopt, status, n, counter
+    integer, intent(in) :: iopt, n, counter
+    integer (NF_ENUM_KIND) :: status
     real (PREC), intent(in) :: s, ssr, knots(:), coefs(:)
     real (PREC), intent(in), dimension(:) :: x, y, yhat, s1, s2
     logical, dimension(:), intent(in) :: bind
 
     optional :: counter
     integer, save :: ii = 1
-    integer :: i
+    integer :: i, nstatus
     character (len=size(bind)) :: str_bind
+    logical :: stat_ok
+
+    integer, dimension(bit_size(status)) :: istatus
+
+    call decode_status (status, istatus, nstatus)
+
+    stat_ok = (iand(status, NF_STATUS_OK) == NF_STATUS_OK) .or. &
+        (iand(status, NF_STATUS_APPROX) == NF_STATUS_APPROX)
 
     if (present(counter)) ii = counter
 
@@ -99,17 +116,20 @@ subroutine print_report (iopt, s, ssr, status, n, knots, coefs, x, y, yhat, &
 
     print "(/,'(', i0, ')', t6, 'iopt: ', i2, '; smoothing factor: ', es10.1e2)", &
         ii, iopt, s
-    print "(t6, 'SSR: ', es15.5e3, '; error flag: ', i3)", ssr, status
-    print "(t6, 'Number of knots: ', i0)", n
-    ! print knots where convexitiy restriction is binding with an adjacent *
-    print "(t6, 'Knots: ', *(t14, 10(f8.1, :, a1, tr1), :, /))", &
-        (knots(i), str_bind(i:i), i=1,size(knots))
-    print "(t6, 'Coefs: ', *(t14, 10(f8.4, :, tr2), :, /))", coefs(1:n)
-    print "(t6, a)", 'Evaluated points:'
-    print "(t6, 2(3(a5, tr1), 2(a10, tr1), :, tr2))", &
-        ('x(i)', 'y(i)', 's(i)', 's1(i)', 's2(i)', i=1,2)
-    print "(*(t6, 2(3(f5.1, tr1), 2(es10.2e3, tr1), :, tr2), :, /))", &
-        (x(i), y(i), yhat(i), s1(i), s2(i), i=1,size(x))
+    print "(t6, 'status code: ', *(i0, :, ', '))", istatus(1:nstatus)
+    if (stat_ok) then
+        print "(t6, 'SSR: ', es12.5e2)", ssr
+        print "(t6, 'Number of knots: ', i0)", n
+        ! print knots where convexitiy restriction is binding with an adjacent *
+        print "(t6, 'Knots: ', *(t14, 10(f8.1, :, a1, tr1), :, /))", &
+            (knots(i), str_bind(i:i), i=1,size(knots))
+        print "(t6, 'Coefs: ', *(t14, 10(f8.4, :, tr2), :, /))", coefs(1:n)
+        print "(t6, a)", 'Evaluated points:'
+        print "(t6, 2(3(a5, tr1), 2(a10, tr1), :, tr2))", &
+            ('x(i)', 'y(i)', 's(i)', 's1(i)', 's2(i)', i=1,2)
+        print "(*(t6, 2(3(f5.1, tr1), 2(es10.2e3, tr1), :, tr2), :, /))", &
+            (x(i), y(i), yhat(i), s1(i), s2(i), i=1,size(x))
+    end if
 
     ii = ii + 1
 end subroutine

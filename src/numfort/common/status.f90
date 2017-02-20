@@ -29,12 +29,12 @@ pure subroutine decode_status (status, x, n)
     integer :: i
     integer (NF_ENUM_KIND) :: pattern
 
-    if (size(x) >= 1 .and. status == 0) then
+    if ((size(x) >= 1) .and. (status == NF_STATUS_UNDEFINED)) then
         n = 1
         x(1) = 0
     else
         n = 0
-        do i = 1, size(x)
+        do i = 1, min(size(x), bit_size(status))
             pattern = ishft(1, i-1)
             if (iand(status, pattern) == pattern) then
                 n = n + 1
