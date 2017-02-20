@@ -1,5 +1,5 @@
-! Sample code demonstrating the use of curfit and splev from
-! the numfort_interpolate module, using OpenMP
+! Sample code demonstrating the use of concon, splev and splder from
+! the numfort_interpolate module, using OpenMP.
 ! Author: Richard Foltyn
 
 program curfit_demo_omp
@@ -23,10 +23,10 @@ subroutine example1 ()
     integer, parameter :: m = 25
     integer, parameter :: ns = 10
 
-    real (PREC), dimension(m) :: x, y, eps, w
-    real (PREC), dimension(m, ns) :: yhat
+    real (PREC), dimension(m) :: x, y, eps, w, v
+    real (PREC), dimension(:,:), allocatable :: sx, spx, sppx
     real (PREC), dimension(ns) :: svec
-    integer :: i, k, nest, iopt, nseed, ext
+    integer :: i, nest, iopt, nseed, ext
     real (PREC), dimension(:), allocatable :: seed
     real (PREC), dimension(:, :), allocatable :: knots, coefs
     integer, dimension(ns) :: nknots
@@ -38,7 +38,7 @@ subroutine example1 ()
     real (PREC), dimension(ns) :: ssr2
     integer, dimension(ns) :: nknots2
     integer (NF_ENUM_KIND), dimension(ns) :: status2
-    real (PREC), dimension(:,:), allocatable :: yhat2
+    real (PREC), dimension(:,:), allocatable :: sx2, sxp2, sxpp2
 
     ! locals private to each thread
     integer :: tid, j
@@ -58,110 +58,126 @@ subroutine example1 ()
     ! create something that looks similar to a utility function, plus add
     ! some noise
     y = log(x + 0.1) + eps
-    ! spline degree
-    k = 3
     iopt = 0
     w = 1/abs(eps)
     ! evaluate spline at original x points
     ext = NF_INTERP_EVAL_BOUNDARY
+    ! fit concave spline
+    v = 1.0_PREC
 
-    nest = curfit_get_nest (m=m, k=k)
+    nest = concon_get_nest (m)
     allocate (knots(nest, ns), coefs(nest, ns))
+    allocate (sx(m, ns), spx(m, ns), sppx(m, ns))
 
     !$omp parallel default(none) private(j, ws, s, tid) &
     !$omp shared(knots2, coefs2, nknots2, ssr2, status2) &
-    !$omp shared(svec, x, y, k, knots, coefs, nknots, iopt, w, ssr, status, nest) &
-    !$omp shared(yhat, ext)
+    !$omp shared(svec, x, y, v, knots, coefs, nknots, iopt, w, ssr, status, nest) &
+    !$omp shared(sx, spx, sppx, ext)
     tid = omp_get_thread_num ()
     allocate (ws)
 
     !$omp do
     do j = 1, ns
         s = svec(j)
-        call fit (x, y, k, s, knots(:, j), coefs(:, j), nknots(j), &
-            ws, ssr(j), status(j), yhat(:, j), iopt, w, ext=ext)
+        call fit (x, y, v, s, knots(:, j), coefs(:, j), nknots(j), &
+            ws, ssr(j), status(j), sx(:, j), spx(:, j), sppx(:, j), &
+            iopt, w, ext=ext)
     end do
     !$omp end do
     deallocate (ws)
     !$omp end parallel
 
     do i = 1, ns
-       call print_report (iopt, svec(i), k, ssr(i), status(i), &
-           nknots(i), knots(:, i), coefs(:, i), x, y, yhat(:, i), i)
+       call print_report (iopt, svec(i), ssr(i), status(i), &
+           nknots(i), knots(:, i), coefs(:, i), x, y, sx(:, i), spx(:, i), &
+           sppx(:, i), i)
     end do
 
     ! compute sequentially
-    allocate (knots2(nest, ns), coefs2(nest, ns), yhat2(m, ns))
+    allocate (knots2(nest, ns), coefs2(nest, ns))
+    allocate (sx2(m, ns), sxp2(m, ns), sxpp2(m, ns))
     allocate (ws)
+
     do j = 1, ns
         s = svec(j)
-        call fit (x, y, k, s, knots2(:, j), coefs2(:, j), nknots2(j), &
-            ws, ssr2(j), status2(j), yhat2(:, j), iopt, w, ext=ext)
+        call fit (x, y, v, s, knots2(:, j), coefs2(:, j), nknots2(j), &
+            ws, ssr2(j), status2(j), sx2(:, j), sxp2(:, j), sxpp2(:, j), &
+            iopt, w, ext=ext)
     end do
 
-    print *, "Summary of OpenMP vs. sequential results"
+    print *, "== Summary of OpenMP vs. sequential results =="
     do j = 1, ns
-        print '(i3, " d(knots)=", es9.2e2, "; d(coefs)=", es9.2e2, "; nknots eq.: ", l1, "; d(ssr)=", es9.2e2, "; status eq.: ", l1)', j, &
-            maxval(abs(knots(:,j)-knots2(:,j))), &
-            maxval(abs(coefs(:,j)-coefs2(:,j))), &
-            nknots(j) == nknots2(j), &
-            abs(ssr(j)-ssr2(j)), &
-            status(j) == status2(j)
+        print '(i3, a, es9.2e2, "; ", a, es9.2e2, "; ", a, l1, "; ", a, es9.2e2, "; ", a, l1)', &
+            j, &
+            "d(knots)=", maxval(abs(knots(:,j)-knots2(:,j))), &
+            "d(coefs)=", maxval(abs(coefs(:,j)-coefs2(:,j))), &
+            "knots. eq= ", nknots(j) == nknots2(j), &
+            "d(ssr)=", abs(ssr(j)-ssr2(j)), &
+            "status eq.=", status(j) == status2(j)
     end do
 
 end subroutine
 
-pure subroutine fit (x, y, k, s, knots, coefs, nknots, ws, ssr, status, yhat, &
-        iopt, w, ext)
-    real (PREC), intent(in), dimension(:) :: x, y
-    integer, intent(in) :: k
+pure subroutine fit (x, y, v, s, knots, coefs, nknots, ws, ssr, status, &
+        sx, spx, sppx, iopt, w, ext)
+    real (PREC), intent(in), dimension(:) :: x, y, v
     real (PREC), intent(in) :: s
     real (PREC), intent(out), dimension(:) :: knots, coefs
     integer, intent(out) :: nknots
     class (workspace), intent(in out) :: ws
     real (PREC), intent(out) :: ssr
     integer (NF_ENUM_KIND), intent(out) :: status
-    real (PREC), intent(out), dimension(:) :: yhat
+    real (PREC), intent(out), dimension(:) :: sx, spx, sppx
     integer, intent(in), optional :: iopt
     real (PREC), intent(in), dimension(:), optional :: w
     integer (NF_ENUM_KIND), intent(in), optional :: ext
 
     logical :: stat_ok
 
-    call curfit (x, y, k, s, knots, coefs, nknots, &
-       iopt=iopt, work=ws, w=w, ssr=ssr, status=status)
+    call concon (x, y, v, s, knots, coefs, nknots, &
+       iopt=iopt, work=ws, w=w, ssr=ssr, sx=sx, status=status)
 
-    stat_ok = (iand(status, NF_STATUS_INVALID_ARG) /= NF_STATUS_INVALID_ARG)
+    stat_ok = (iand(status, NF_STATUS_OK) == NF_STATUS_OK) .or. &
+        (iand(status, NF_STATUS_APPROX) == NF_STATUS_APPROX)
 
     if (stat_ok) then
-       call splev (knots, coefs, nknots, k, x, yhat, ext=ext)
+       call splder (knots, coefs, nknots, 3, 1, x, spx, work=ws, ext=ext)
+       call splder (knots, coefs, nknots, 3, 2, x, sppx, work=ws, ext=ext)
     end if
 end subroutine
 
-subroutine print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat, counter)
-    integer, intent(in) :: iopt, k, n, counter
+subroutine print_report (iopt, s, ssr, status, n, knots, coefs, x, y, &
+        sx, spx, sppx, counter)
+    integer, intent(in) :: iopt, n, counter
     integer (NF_ENUM_KIND), intent(in) :: status
     real (PREC), intent(in) :: s, ssr, knots(:), coefs(:)
-    real (PREC), intent(in), dimension(:) :: x, y, yhat
+    real (PREC), intent(in), dimension(:) :: x, y, sx, spx, sppx
+    logical :: stat_ok
 
     integer :: i, nstatus
     integer, dimension(bit_size(status)) :: istatus
 
     call decode_status (status, istatus, nstatus)
 
-    print "(/,'(', i0, ')', t6, 'iopt: ', i2, '; smoothing factor: ', es12.5e2, '; spline degree: ', i1)", &
-        counter, iopt, s, k
+    stat_ok = (iand(status, NF_STATUS_OK) == NF_STATUS_OK) .or. &
+        (iand(status, NF_STATUS_APPROX) == NF_STATUS_APPROX)
+
+    print "(/,'(', i0, ')', t6, 'iopt: ', i2, '; smoothing factor: ', es12.5e2)", &
+        counter, iopt, s
     print "(t6, 'status code: ', *(i0, :, ', '))", istatus(1:nstatus)
     ! Approximation is returned even if status /= NF_STATUS_OK as long as
     ! input arguments were valid.
-    if (status /= NF_STATUS_INVALID_ARG) then
+    if (stat_ok) then
         print "(t6, 'SSR: ', es12.5e2)", ssr
         print "(t6, 'Number of knots: ', i0)", n
         print "(t6, 'Knots: ', *(t14, 8(f8.3, :, ', '), :, /))", knots(1:n)
         print "(t6, 'Coefs: ', *(t14, 8(f8.3, :, ', '), :, /))", coefs(1:n)
         print "(t6, a)", 'Evaluated points:'
-        print "(t6, 5(3(a5, tr1), tr2))", ('x(i)', 'y(i)', 'sp(i)', i=1,5)
-        print "(*(t6, 5(3(f5.1, :, tr1), tr2), :, /))", (x(i), y(i), yhat(i), i=1,size(x))
+        print "(t6, 2(5(a7, tr1), tr5))", ('x(i)', 'y(i)', 's(i)', 's1(i)', 's2(i)', i=1,2)
+        print "(*(t6, 2(5(f7.2, :, tr1), tr5), :, /))", &
+            (x(i), y(i), sx(i), spx(i), sppx(i), i=1,size(x))
+    else
+        print '(t6, a)', "No spline approximation returned"
     end if
 end subroutine
 

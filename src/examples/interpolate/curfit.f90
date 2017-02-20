@@ -102,14 +102,14 @@ subroutine example2 ()
     allocate (seed(nseed))
     seed = 1.0_PREC
     call random_number (eps)
-    eps = eps * 2
+    eps = (eps - 0.5d0) * 2
     ! create something that looks similar to a utility function, plus add
     ! some noise
     y = log(x + 0.1) + eps
     ! spline degree
     k = 3
     iopt = 0
-    w = 1/eps
+    w = 1/abs(eps + 1.0d-5)
     ! evaluate spline at original x points
     ext = NF_INTERP_EVAL_BOUNDARY
 
@@ -120,7 +120,7 @@ subroutine example2 ()
         s = svec(i)
         allocate (ws)
 
-        call curfit (x, y, k, s, knots, coefs, n, iopt=iopt, &
+        call curfit (x, y, k, s, knots, coefs, n, w=w, iopt=iopt, &
             work=ws, ssr=ssr, status=status)
 
         stat_ok = iand(status, NF_STATUS_INVALID_ARG) /= NF_STATUS_INVALID_ARG

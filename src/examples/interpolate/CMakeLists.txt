@@ -9,5 +9,6 @@ set(${COMPONENT_NAME}_FILES
 
 set(${COMPONENT_NAME}_FILES_OMP
     curfit_omp.f90
+    concon_omp.f90
     PARENT_SCOPE
 )
