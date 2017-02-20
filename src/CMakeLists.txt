@@ -182,7 +182,7 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     set(_FFLAGS_DEBUG "-fcheck=all -Og -save-temps")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
-		set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} /warn:all")
+		set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} /warn:all /auto /Qopenmp")
         set(_FFLAGS "/standard-semantics /stand:f08")
 		set(_FFLAGS_DEBUG "/check:all /Qsave-temps")
 
@@ -192,7 +192,7 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
             set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} /assume:std_mod_proc_name")
         endif ()
     else ()
-		set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} -warn all")
+		set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} -warn all -auto -qopenmp")
         set (_FFLAGS "-standard-semantics -std08")
         set(_FFLAGS_DEBUG "-check all -save-temps")
 
@@ -206,7 +206,7 @@ endif ()
 
 # add standard semantics to compiler flags even for F77 files, in case
 # these reference any submodules
-set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS_GLOBAL} ${_FFLAGS}")
+set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS_GLOBAL}")
 
 message(STATUS "Default compiler flags: ${CMAKE_Fortran_FLAGS}")
 # Make sure build type is upper case, otherwise the wrong flags will be shown
@@ -236,7 +236,7 @@ add_subdirectory(interfaces)
 ################################################################################
 # FFLAGS for numfort, benchmark and testing subdirectories
 
-# set(CMAKE_Fortran_FLAGS "${_FFLAGS} ${CMAKE_Fortran_FLAGS}")
+set(CMAKE_Fortran_FLAGS "${_FFLAGS} ${CMAKE_Fortran_FLAGS}")
 set(CMAKE_Fortran_FLAGS_DEBUG
     "${_FFLAGS_DEBUG} ${CMAKE_Fortran_FLAGS_DEBUG}"
 )
