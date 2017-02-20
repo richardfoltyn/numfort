@@ -3,7 +3,9 @@ module numfort_common_enums
     use numfort_common_kinds, only: NF_ENUM_KIND
     implicit none
 
-    integer (NF_ENUM_KIND), parameter :: NF_STATUS_OK = 0
+    integer (NF_ENUM_KIND), parameter :: NF_STATUS_MISSING = 0
+
+    integer (NF_ENUM_KIND), parameter :: NF_STATUS_OK = 1
     integer (NF_ENUM_KIND), parameter :: NF_STATUS_INVALID_ARG = ishft(1, 10)
     integer (NF_ENUM_KIND), parameter :: NF_STATUS_UNKNOWN = ishft(1, 11)
     integer (NF_ENUM_KIND), parameter :: NF_STATUS_UNSUPPORTED_OP = ishft(1, 12)
@@ -14,6 +16,7 @@ module numfort_common_enums
     integer (NF_ENUM_KIND), parameter :: NF_STATUS_NOT_CONVERGED = ishft(1, 17)
     integer (NF_ENUM_KIND), parameter :: NF_STATUS_STORAGE_ERROR = ishft(1, 18)
     integer (NF_ENUM_KIND), parameter :: NF_STATUS_OTHER = ishft(1, 19)
+    integer (NF_ENUM_KIND), parameter :: NF_STATUS_APPROX = ishft(1, 20)
 
     integer (NF_ENUM_KIND), parameter :: NF_PRINT_NONE = 0
     integer (NF_ENUM_KIND), parameter :: NF_PRINT_MINIMAL = 10

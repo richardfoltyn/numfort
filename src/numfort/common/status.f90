@@ -5,7 +5,14 @@ module numfort_common_status
     private
 
     public :: decode_status
+    public :: status_success
 contains
+
+pure function status_success (status) result(res)
+    integer (NF_ENUM_KIND), intent(in) :: status
+    logical :: res
+    res = (iand(status, NF_STATUS_OK) == NF_STATUS_OK)
+end function
 
 pure subroutine decode_status (status, x, n)
     !*  DECODE_STATUS disaggregates a composize status code into its
@@ -22,7 +29,7 @@ pure subroutine decode_status (status, x, n)
     integer :: i
     integer (NF_ENUM_KIND) :: pattern
 
-    if (size(x) >= 1 .and. ior(status, 0) == 0) then
+    if (size(x) >= 1 .and. status == 0) then
         n = 1
         x(1) = 0
     else

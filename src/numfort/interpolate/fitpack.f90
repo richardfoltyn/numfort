@@ -11,7 +11,13 @@ module numfort_interpolate_fitpack
     implicit none
     private
 
+    public :: NF_STATUS_CURFIT_INTERP
+    public :: NF_STATUS_CURFIT_WLS
+
     integer, parameter :: PREC = real64
+
+    integer (NF_ENUM_KIND), parameter :: NF_STATUS_CURFIT_INTERP = ishft(1, 0)
+    integer (NF_ENUM_KIND), parameter :: NF_STATUS_CURFIT_WLS = ishft(1, 1)
 
     integer, parameter :: MIN_SPLINE_DEGREE = 1, MAX_SPLINE_DEGREE = 5, &
         DEFAULT_SPLINE_DEGREE = 3
@@ -56,9 +62,10 @@ pure function check_length (arr1, arr2) result(status)
 
 end function
 
-pure subroutine check_input (x, y, w, k, knots, coefs, v, sx, bind, status, msg)
+pure subroutine check_input (x, y, w, k, knots, coefs, maxiter, v, sx, bind, status, msg)
     real (PREC), intent(in), dimension(:) :: x, y, knots, coefs
     integer, intent(in), optional :: k
+    integer, intent(in), optional :: maxiter
     real (PREC), intent(in), dimension(:), optional :: w
         !!  Vector of weights, defaults to 1.0
     real (PREC), intent(in), dimension(:), optional :: v
@@ -87,6 +94,13 @@ pure subroutine check_input (x, y, w, k, knots, coefs, v, sx, bind, status, msg)
     if (present(k)) then
         if (k < MIN_SPLINE_DEGREE .or. k > MAX_SPLINE_DEGREE) then
             if (present(msg)) msg = "Unsupported spline degree k"
+            goto 100
+        end if
+    end if
+
+    if (present(maxiter)) then
+        if (maxiter <= 0) then
+            if (present(msg)) msg = "Max. number of iterations must be positive integer"
             goto 100
         end if
     end if
@@ -210,7 +224,7 @@ end subroutine
 ! CURFIT fitting procedures
 
 pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
-        iopt, w, xb, xe, work, ssr, status, ier, msg)
+        iopt, w, xb, xe, work, maxiter, ssr, status, info, msg)
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: y
     integer, intent(in), optional :: k
@@ -223,19 +237,21 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
     real (PREC), intent(in), optional :: xe
     real (PREC), intent(in), optional :: xb
     class (workspace), intent(in out), optional, target :: work
+    integer, intent(in), optional :: maxiter
     real (PREC), intent(out), optional :: ssr
     integer (NF_ENUM_KIND), intent(out), optional :: status
-    integer, intent(out), optional :: ier
-        !!  If present, contains original FITPACK exit status
+    integer, intent(out), optional :: info
     character (*), intent(out), optional :: msg
 
-    integer :: m, liopt, lk, nwrk, nwrk_tot, nest, lier
+    integer :: m, liopt, lk, nwrk, nwrk_tot, nest, ier, lmaxiter
     integer (NF_ENUM_KIND) :: lstatus
     real (PREC) :: lxb, lxe, ls, lssr
     class (workspace), pointer :: ptr_work
 
-    call check_input (x, y, w, k, knots, coefs, status=lstatus, msg=msg)
-    if (lstatus /= NF_STATUS_OK) goto 100
+    nullify(ptr_work)
+
+    call check_input (x, y, w, k, knots, coefs, maxiter=maxiter, status=lstatus, msg=msg)
+    if (.not. status_success (lstatus)) goto 100
 
     ! initialize default values
     lk = DEFAULT_SPLINE_DEGREE
@@ -245,6 +261,7 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
     lxb = x(1)
     lxe = x(m)
     ls = 0.0_PREC
+    lmaxiter = 20
     ! lower bound of recommended interval for s
     if (present(w)) ls = m - sqrt(2*real(m, PREC))
 
@@ -254,6 +271,7 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
     if (present(xe)) lxe = xe
     if (present(k)) lk = k
     if (present(s)) ls = s
+    if (present(maxiter)) lmaxiter = maxiter
 
     call curfit_get_wrk_size (m, k, nwrk, nest)
 
@@ -281,34 +299,57 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
         ptr_work%rwrk(nwrk+1:nwrk+m) = 1.0_PREC
     end if
 
+    ! Erase values in knots / coefs arrays to eliminate any junk that might
+    ! be at those locations.
+    if (liopt /= 1) then
+        knots = 0.0_PREC
+        coefs = 0.0_PREC
+    end if
+
     ! call fitpack routine
     if (present(w)) then
         call fitpack_curfit_real64 (liopt, m, x, y, w, lxb, lxe, lk, &
             ls, nest, n, knots, coefs, lssr, &
-            ptr_work%rwrk(1:nwrk), nwrk, ptr_work%iwrk, lier)
+            ptr_work%rwrk(1:nwrk), nwrk, ptr_work%iwrk, lmaxiter, ier)
     else
         call fitpack_curfit_real64 (liopt, m, x, y, ptr_work%rwrk(nwrk+1:nwrk+m), &
             lxb, lxe, lk, ls, nest, n, knots, coefs, lssr, &
-            ptr_work%rwrk(1:nwrk), nwrk, ptr_work%iwrk, lier)
+            ptr_work%rwrk(1:nwrk), nwrk, ptr_work%iwrk, lmaxiter, ier)
     end if
 
     ! Map CURFIT ier code to NF status code
-    if (lier <= 0) then
+    select case (ier)
+    case (0)
         lstatus = NF_STATUS_OK
-    else if (lier == 1) then
-        lstatus = NF_STATUS_STORAGE_ERROR
-    else if (lier == 2) then
-        lstatus = NF_STATUS_INVALID_STATE
-    else if (lier == 3) then
-        lstatus = NF_STATUS_MAX_ITER
-    else if (lier == 10) then
+    case (-1)
+        ! retuned spline is an interpolating spline, ie ssr=0
+        lstatus = ior(NF_STATUS_OK, NF_STATUS_CURFIT_INTERP)
+    case (-2)
+        ! returned spline is an WLS polynomial of degree k
+        lstatus = ior(NF_STATUS_OK, NF_STATUS_CURFIT_WLS)
+    case (1)
+        ! nest is too small, probably because s is too small.
+        ! CURFIT returns an approximation in this case
+        lstatus = ior(NF_STATUS_STORAGE_ERROR, NF_STATUS_APPROX)
+    case (2)
+        ! Theoretically impossible result encountered, probably because s
+        ! is too small
+        lstatus = ior(NF_STATUS_INVALID_STATE, NF_STATUS_APPROX)
+    case (3)
+        ! Max. number of iterations exceeded, probably because s is too small.
+        lstatus = ior(NF_STATUS_MAX_ITER, NF_STATUS_APPROX)
+    case (10)
         lstatus = NF_STATUS_INVALID_ARG
-    end if
+    case default
+        lstatus = NF_STATUS_UNKNOWN
+    end select
+
     if (present(ssr)) ssr = lssr
-    if (present(ier)) ier = lier
+    if (present(info)) info = ier
 
 100 if(present(status)) status = lstatus
     if ((.not. present(work)) .and. associated(ptr_work)) deallocate (ptr_work)
+    nullify(ptr_work)
 
 end subroutine
 
@@ -316,7 +357,8 @@ end subroutine
 ! CONCON wrapper routine
 
 pure subroutine concon_real64 (x, y, v, s, &
-        knots, coefs, n, iopt, w, maxtr, maxbin, work, ssr, sx, bind, status, ier, msg)
+        knots, coefs, n, iopt, w, maxtr, maxbin, work, ssr, sx, bind, &
+        status, info, msg)
 
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: y
@@ -334,17 +376,15 @@ pure subroutine concon_real64 (x, y, v, s, &
     real (PREC), intent(out), dimension(:), optional :: sx
     logical, intent(out), dimension(:), optional :: bind
     integer (NF_ENUM_KIND), intent(out), optional :: status
-    integer, intent(out), optional :: ier
-        !!  Contains original FITPACK error flag on exit
+    integer, intent(out), optional :: info
     character (*), intent(out), optional :: msg
 
     target :: bind, sx
 
-    integer :: m, liopt, nest, lier, lmaxtr, lmaxbin
+    integer :: m, liopt, nest, ier, lmaxtr, lmaxbin
     integer :: nrwrk, jrwrk, niwrk, nlwrk, nrwrk_tot
     real (PREC) :: ls, lssr
     integer (NF_ENUM_KIND) :: lstatus
-    type (workspace), target :: lwork
     class (workspace), pointer :: ptr_work
     real (PREC), dimension(:), pointer, contiguous :: ptr_sx, ptr_w, ptr_v
     logical, dimension(:), pointer, contiguous :: ptr_bind
@@ -353,7 +393,7 @@ pure subroutine concon_real64 (x, y, v, s, &
 
     call check_input (x, y, w, knots=knots, coefs=coefs, v=v, bind=bind, sx=sx,&
         status=lstatus, msg=msg)
-    if (lstatus /= NF_STATUS_OK) goto 100
+    if (.not. status_success (lstatus)) goto 100
 
     ! default values
     liopt = 0
@@ -376,7 +416,7 @@ pure subroutine concon_real64 (x, y, v, s, &
     if (present(work)) then
         ptr_work => work
     else
-        ptr_work => lwork
+        allocate (workspace :: ptr_work)
     end if
 
     ! work size for logical array
@@ -425,38 +465,49 @@ pure subroutine concon_real64 (x, y, v, s, &
 
     ! initialize to zero as this is going to be used to store a tree where
     ! 0 denotes no node
-    if (liopt == 0) ptr_work%iwrk = 0
+    if (liopt /= 1) then
+        ptr_work%iwrk = 0
+        ! prevent knots / coefs that are not needed to achieve desired smoothness
+        ! from containing garbage.
+        knots = 1.0_PREC
+        coefs = 1.0_PREC
+    end if
 
     ! call fitpack routine wrapper
     if (present(w)) then
         call fitpack_concon_real64 (liopt, m, x, y, w, ptr_v, ls, nest, lmaxtr, &
             lmaxbin, n, knots, coefs, lssr, ptr_sx, ptr_bind, &
-            ptr_work%rwrk(1:nrwrk), nrwrk, ptr_work%iwrk, niwrk, lier)
+            ptr_work%rwrk(1:nrwrk), nrwrk, ptr_work%iwrk, niwrk, ier)
     else
         call fitpack_concon_real64 (liopt, m, x, y, ptr_w, ptr_v, ls, nest, lmaxtr, &
             lmaxbin, n, knots, coefs, lssr, ptr_sx, ptr_bind, &
-            ptr_work%rwrk(1:nrwrk), nrwrk, ptr_work%iwrk, niwrk, lier)
+            ptr_work%rwrk(1:nrwrk), nrwrk, ptr_work%iwrk, niwrk, ier)
     end if
 
-    if (lier == 0) then
+    if (ier == 0) then
         lstatus = NF_STATUS_OK
-    else if (lier == -3) then
+    else if (ier == -3) then
+        ! this should not happen if nest=m+4, as returned by concon_get_nest()
+        lstatus = ior(NF_STATUS_STORAGE_ERROR, NF_STATUS_APPROX)
+    else if (ier == -2 .or. ier == -1) then
+        lstatus = ior(NF_STATUS_OTHER, NF_STATUS_APPROX)
+    else if (ier == 1 .or. ier == 2) then
         lstatus = NF_STATUS_STORAGE_ERROR
-    else if (lier == -2 .or. lier == -1) then
+    else if (ier == 3 .or. ier == 4 .or. ier == 5) then
         lstatus = NF_STATUS_OTHER
-    else if (lier == 1 .or. lier == 2) then
-        lstatus = NF_STATUS_STORAGE_ERROR
-    else if (lier == 3 .or. lier == 4 .or. lier == 5) then
-        lstatus = NF_STATUS_OTHER
-    else if (lier == 10) then
+    else if (ier == 10) then
         lstatus = NF_STATUS_INVALID_ARG
+    else
+        lstatus = NF_STATUS_UNKNOWN
     end if
 
     if (present(ssr)) ssr = lssr
-    if (present(ier)) ier = lier
+    if (present(info)) info = ier
 
 100 continue
     if(present(status)) status = lstatus
+    if ((.not. present(work)) .and. associated(ptr_work)) deallocate (ptr_work)
+    nullify(ptr_work)
 
 end subroutine
 

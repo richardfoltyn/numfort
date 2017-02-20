@@ -1,5 +1,5 @@
       pure subroutine curfit(iopt,m,x,y,w,xb,xe,k,s,nest,n,t,c,fp,
-     * wrk,lwrk,iwrk,ier)
+     * wrk,lwrk,iwrk,maxit,ier)
 c  given the set of data points (x(i),y(i)) and the set of positive
 c  numbers w(i),i=1,2,...,m,subroutine curfit determines a smooth spline
 c  approximation of degree k on the interval xb <= x <= xe.
@@ -230,14 +230,15 @@ c  ..array arguments..
       real*8, intent(out)       :: fp
       real*8, intent(in out)    :: wrk(lwrk)
       integer, intent(in out)   :: iwrk(nest)
+      integer, intent(in)       :: maxit
       integer, intent(out)      :: ier
 
 c  ..local scalars..
       real*8 tol
-      integer i,ia,ib,ifp,ig,iq,iz,j,k1,k2,lwest,maxit,nmin
+      integer i,ia,ib,ifp,ig,iq,iz,j,k1,k2,lwest,nmin
 c  ..
 c  we set up the parameters tol and maxit
-      maxit = 20
+      ! maxit = 20
       tol = 0.1d-02
 c  before starting computations a data check is made. if the input data
 c  are invalid, control is immediately repassed to the calling program.
