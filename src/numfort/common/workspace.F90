@@ -49,12 +49,6 @@ module numfort_common_workspace
         end subroutine
     end interface
 
-    ! interface assert_allocated
-    !     module procedure assert_allocated_real64, assert_allocated_real32, &
-    !         assert_allocated_int, &
-    !         assert_allocated_char, assert_allocated_bool
-    ! end interface
-
 contains
 
 #ifdef __SUPPORTS_PDT
@@ -126,52 +120,6 @@ pure subroutine workspace_assert_allocated (self, nrwrk, niwrk, ncwrk, nlwrk)
             self%ncwrk = len(self%cwrk)
         end if
     end if
-
-    ! call assert_allocated (self%rwrk, self%nrwrk, nrwrk)
-    ! call assert_allocated (self%iwrk, self%niwrk, niwrk)
-    ! call assert_allocated (self%cwrk, self%ncwrk, ncwrk)
-    ! call assert_allocated (self%lwrk, self%nlwrk, nlwrk)
-
 end subroutine
-!
-! pure subroutine assert_allocated_real64 (arr, n_attr, n)
-!     real (real64), dimension(:) :: arr, tmp
-!     include "include/workspace_assert_allocated_impl.f90"
-! end subroutine
-!
-! pure subroutine assert_allocated_real32 (arr, n_attr, n)
-!     real (real32), dimension(:) :: arr, tmp
-!     include "include/workspace_assert_allocated_impl.f90"
-! end subroutine
-!
-! pure subroutine assert_allocated_int(arr, n_attr, n)
-!     integer, dimension(:) :: arr, tmp
-!     include "include/workspace_assert_allocated_impl.f90"
-! end subroutine
-!
-! pure subroutine assert_allocated_char(arr, n_attr, n)
-!     character (len=:), intent(in out), allocatable :: arr
-!     integer, intent(in out) :: n_attr
-!     integer, intent(in), optional :: n
-!     character (len=:), allocatable :: tmp
-!
-!     if (present(n)) then
-!         if (n > 0) then
-!             if (.not. allocated(arr)) then
-!                 allocate (character (n) :: arr)
-!                 n_attr = n
-!             else if (len(arr) < n) then
-!                 allocate (character (n) :: tmp)
-!                 call move_alloc (tmp, arr)
-!                 n_attr = n
-!             end if
-!         end if
-!     end if
-! end subroutine
-!
-! pure subroutine assert_allocated_bool(arr, n_attr, n)
-!     logical, dimension(:) :: arr, tmp
-!     include "include/workspace_assert_allocated_impl.f90"
-! end subroutine
 
 end module
