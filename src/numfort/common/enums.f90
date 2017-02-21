@@ -5,7 +5,7 @@ module numfort_common_enums
 
     integer (NF_ENUM_KIND), parameter :: NF_STATUS_UNDEFINED = 0
 
-    integer (NF_ENUM_KIND), parameter :: NF_STATUS_OK = 1
+    integer (NF_ENUM_KIND), parameter :: NF_STATUS_OK = ishft(1, 0)
     integer (NF_ENUM_KIND), parameter :: NF_STATUS_INVALID_ARG = ishft(1, 10)
     integer (NF_ENUM_KIND), parameter :: NF_STATUS_UNKNOWN = ishft(1, 11)
     integer (NF_ENUM_KIND), parameter :: NF_STATUS_UNSUPPORTED_OP = ishft(1, 12)
