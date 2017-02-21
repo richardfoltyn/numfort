@@ -52,7 +52,7 @@ subroutine minimize_simplex_real64 (func, x, tol, maxfun, quad, iprint, res)
 
     integer :: n, lmaxfun, nloop, iquad, liprint, ifault
     logical :: lquad
-    integer (NF_ENUM_KIND) :: status
+    type (status_t) :: status
     real (PREC) :: delta_nonzero, delta_zero, simp, fopt
     real (PREC), dimension(size(x)) :: step, var
     character (100) :: msg
@@ -89,7 +89,7 @@ subroutine minimize_simplex_real64 (func, x, tol, maxfun, quad, iprint, res)
     ! map mimum status into numfort_optimize status
     call map_ifault (ifault, status, msg)
 
-    if ((.not. status_success (status)) .and. liprint > NF_PRINT_NONE) then
+    if ((NF_STATUS_OK .notin. status) .and. liprint > NF_PRINT_NONE) then
         write (ERROR_UNIT, *) msg
     end if
 
@@ -154,7 +154,7 @@ end function
 pure subroutine map_ifault (ifault, status, msg)
     integer, intent(in) :: ifault
         !!  Status code as returned by simplex routine
-    integer (NF_ENUM_KIND), intent(out) :: status
+    type (status_t), intent(out) :: status
         !!  On exit, contains the corresponding NF status code
     character (len=*), intent(out), optional :: msg
 

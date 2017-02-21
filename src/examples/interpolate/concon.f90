@@ -27,7 +27,8 @@ subroutine example1 ()
     real (PREC), dimension(:), allocatable :: knots, coefs
     real (PREC) :: ssr
     logical, dimension(:), allocatable :: bind
-    integer :: status, iopt, maxtr, maxbin, is, nest, n, status_eval
+    integer :: iopt, maxtr, maxbin, is, nest, n, ext
+    type (status_t) :: status
     logical :: stat_ok
     ! different smoothness parameters
     real (PREC) :: s(3) = [real(PREC) :: 0.2, 0.04, 0.0002]
@@ -49,6 +50,7 @@ subroutine example1 ()
     iopt = 0
     maxtr = 100
     maxbin = 10
+    ext = NF_INTERP_EVAL_ERROR
 
     nest = concon_get_nest (m)
     allocate (knots(nest), coefs(nest), bind(nest))
@@ -56,12 +58,11 @@ subroutine example1 ()
     do is = 1, size(s)
         call concon (x, y, v, s(is), knots, coefs, n, iopt, w, maxtr, maxbin, &
             sx=sx, bind=bind, ssr=ssr, status=status)
-        if (.not. status_success (status)) then
+        if (NF_STATUS_OK .notin. status) then
             write (ERROR_UNIT, *) "Failed to find spline approximation"
         end if
 
-        stat_ok = (iand(status, NF_STATUS_OK) == NF_STATUS_OK) .or. &
-            (iand(status, NF_STATUS_APPROX) == NF_STATUS_APPROX)
+        stat_ok = any([NF_STATUS_OK, NF_STATUS_APPROX] .in. status)
 
         ! Evaluate spline and derivatives only if at least approximate spline
         ! representation was found.
@@ -72,11 +73,8 @@ subroutine example1 ()
             end if
 
             ! evaluate first- and second-order derivatives
-            call splder (knots(1:n), coefs(1:n), k=k, order=1, x=x, y=s1, &
-                ext=NF_INTERP_EVAL_ERROR, status=status_eval)
-
-            call splder (knots, coefs, n, k, 2, x, s2, &
-                NF_INTERP_EVAL_ERROR, status=status_eval)
+            call splder (knots(1:n), coefs(1:n), k=k, order=1, x=x, y=s1, ext=ext)
+            call splder (knots, coefs, n, k, 2, x, s2, ext=ext)
         end if
 
         call print_report (iopt, s(is), ssr, status, n, knots, coefs, x, y, &
@@ -88,7 +86,7 @@ end subroutine
 subroutine print_report (iopt, s, ssr, status, n, knots, coefs, x, y, yhat, &
         s1, s2, bind, counter)
     integer, intent(in) :: iopt, n, counter
-    integer (NF_ENUM_KIND) :: status
+    type (status_t) :: status
     real (PREC), intent(in) :: s, ssr, knots(:), coefs(:)
     real (PREC), intent(in), dimension(:) :: x, y, yhat, s1, s2
     logical, dimension(:), intent(in) :: bind
@@ -99,14 +97,12 @@ subroutine print_report (iopt, s, ssr, status, n, knots, coefs, x, y, yhat, &
     character (len=size(bind)) :: str_bind
     logical :: stat_ok
 
-    integer, dimension(bit_size(status)) :: istatus
-
-    call status_decode (status, istatus, nstatus)
-
-    stat_ok = (iand(status, NF_STATUS_OK) == NF_STATUS_OK) .or. &
-        (iand(status, NF_STATUS_APPROX) == NF_STATUS_APPROX)
+    integer, dimension(NF_MAX_STATUS_CODES) :: istatus
 
     if (present(counter)) ii = counter
+
+    call status%decode (istatus, nstatus)
+    stat_ok = any([NF_STATUS_OK, NF_STATUS_APPROX] .in. status)
 
     ! determine knots where convexity restriction is binding
     str_bind = ''

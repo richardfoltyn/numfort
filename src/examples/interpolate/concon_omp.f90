@@ -5,7 +5,6 @@
 program curfit_demo_omp
 
     use iso_fortran_env
-    use numfort_common, only: status_decode
     use numfort_interpolate
     use omp_lib
 
@@ -30,14 +29,14 @@ subroutine example1 ()
     real (PREC), dimension(:), allocatable :: seed
     real (PREC), dimension(:, :), allocatable :: knots, coefs
     integer, dimension(ns) :: nknots
-    integer (NF_ENUM_KIND), dimension(ns) :: status
+    type (status_t), dimension(ns) :: status
     real (PREC), dimension(ns) :: ssr
 
     ! arrays to hold sequential results
     real (PREC), dimension(:, :), allocatable :: knots2, coefs2
     real (PREC), dimension(ns) :: ssr2
     integer, dimension(ns) :: nknots2
-    integer (NF_ENUM_KIND), dimension(ns) :: status2
+    type (status_t), dimension(ns) :: status2
     real (PREC), dimension(:,:), allocatable :: sp_2, sp1_2, sp2_2
 
     ! locals private to each thread
@@ -113,7 +112,7 @@ subroutine example1 ()
             j, &
             "d(knots)=", maxval(abs(knots(:,j)-knots2(:,j))), &
             "d(coefs)=", maxval(abs(coefs(:,j)-coefs2(:,j))), &
-            "knots. eq= ", nknots(j) == nknots2(j), &
+            "knots. eq=", nknots(j) == nknots2(j), &
             "d(ssr)=", abs(ssr(j)-ssr2(j)), &
             "status eq.=", status(j) == status2(j)
     end do
@@ -128,7 +127,7 @@ pure subroutine fit (x, y, v, s, knots, coefs, nknots, ws, ssr, status, &
     integer, intent(out) :: nknots
     class (workspace), intent(in out) :: ws
     real (PREC), intent(out) :: ssr
-    integer (NF_ENUM_KIND), intent(out) :: status
+    type (status_t), intent(out) :: status
     real (PREC), intent(out), dimension(:) :: sp, sp1, sp2
     integer, intent(in), optional :: iopt
     real (PREC), intent(in), dimension(:), optional :: w
@@ -139,8 +138,7 @@ pure subroutine fit (x, y, v, s, knots, coefs, nknots, ws, ssr, status, &
     call concon (x, y, v, s, knots, coefs, nknots, &
        iopt=iopt, work=ws, w=w, ssr=ssr, sx=sp, status=status)
 
-    stat_ok = (iand(status, NF_STATUS_OK) == NF_STATUS_OK) .or. &
-        (iand(status, NF_STATUS_APPROX) == NF_STATUS_APPROX)
+    stat_ok = any ([NF_STATUS_OK, NF_STATUS_APPROX] .in. status)
 
     if (stat_ok) then
        call splder (knots, coefs, nknots, 3, 1, x, sp1, work=ws, ext=ext)
@@ -151,19 +149,18 @@ end subroutine
 subroutine print_report (iopt, s, ssr, status, n, knots, coefs, x, y, &
         sp, sp1, sp2, counter)
     integer, intent(in) :: iopt, n, counter
-    integer (NF_ENUM_KIND), intent(in) :: status
+    type (status_t), intent(in) :: status
     real (PREC), intent(in) :: s, ssr, knots(:), coefs(:)
     real (PREC), intent(in), dimension(:) :: x, y, sp, sp1, sp2
     logical :: stat_ok
 
     integer :: i, nstatus
-    integer, dimension(bit_size(status)) :: istatus
+    integer, dimension(NF_MAX_STATUS_CODES) :: istatus
 
-    call status_decode (status, istatus, nstatus)
+    call status%decode (istatus, nstatus)
 
-    stat_ok = (iand(status, NF_STATUS_OK) == NF_STATUS_OK) .or. &
-        (iand(status, NF_STATUS_APPROX) == NF_STATUS_APPROX)
-
+    stat_ok = any ([NF_STATUS_OK, NF_STATUS_APPROX] .in. status)
+    
     print "(/,'(', i0, ')', t6, 'iopt: ', i2, '; smoothing factor: ', es12.5e2)", &
         counter, iopt, s
     print "(t6, 'status code: ', *(i0, :, ', '))", istatus(1:nstatus)

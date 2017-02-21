@@ -30,7 +30,8 @@ subroutine example1 ()
     real (PREC), dimension(m) :: x, y, yhat
     real (PREC) :: s, svec(6) = [ real(PREC) :: 1000, 60, 10, 30, 30, 0]
     integer :: iopt, ioptvec(6) = [0, 1, 1, 1, 0, 0]
-    integer :: i, k, nest_max, n, status, j, ext
+    integer :: i, k, nest_max, n, j, ext
+    type (status_t) :: status
     real (PREC) :: ssr
     real (PREC), dimension(:), allocatable :: knots, coefs
     type (workspace) :: ws
@@ -85,7 +86,7 @@ subroutine example2 ()
     real (PREC), dimension(m) :: x, y, yhat, eps, w
     real (PREC), dimension(10) :: svec
     integer :: i, k, nest, n, iopt, nseed, ext
-    integer (NF_ENUM_KIND) :: status
+    type (status_t) :: status
     real (PREC) :: ssr, s
     real (PREC), dimension(:), allocatable :: knots, coefs, seed
     type (workspace), pointer :: ws
@@ -123,7 +124,8 @@ subroutine example2 ()
         call curfit (x, y, k, s, knots, coefs, n, w=w, iopt=iopt, &
             work=ws, ssr=ssr, status=status)
 
-        stat_ok = iand(status, NF_STATUS_INVALID_ARG) /= NF_STATUS_INVALID_ARG
+        stat_ok = .not. (NF_STATUS_INVALID_ARG .in. status)
+
         if (stat_ok) then
             call splev (knots, coefs, n, k, x, yhat, ext)
         end if
@@ -145,24 +147,24 @@ end subroutine
 subroutine print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat, &
         counter)
     integer, intent(in) :: iopt, k, n, counter
-    integer (NF_ENUM_KIND), intent(in) :: status
+    type (status_t), intent(in) :: status
     real (PREC), intent(in) :: s, ssr, knots(:), coefs(:)
     real (PREC), intent(in), dimension(:) :: x, y, yhat
 
     optional :: counter
     integer, save :: ii = 1
     integer :: i, nstatus
-    integer, dimension(bit_size(status)) :: istatus
+    integer, dimension(NF_MAX_STATUS_CODES) :: istatus
     logical :: stat_ok
 
     if (present(counter)) ii = counter
 
-    call status_decode (status, istatus, nstatus)
-    stat_ok = iand(status, NF_STATUS_INVALID_ARG) /= NF_STATUS_INVALID_ARG
+    call status%decode (istatus, nstatus)
+    stat_ok = .not. (NF_STATUS_INVALID_ARG .in. status)
 
     print "(/,'(', i0, ')', t6, 'iopt: ', i2, '; smoothing factor: ', es12.5e2, '; spline degree: ', i1)", &
         ii, iopt, s, k
-    print "(t6, 'status code: ', *(i0, :, ', '))", istatus(1:nstatus)
+    print "(t6, 'status codes: ', *(i0, :, ', '))", istatus(1:nstatus)
     if (stat_ok ) then
         print "(t6, 'SSR: ', es12.5e2)", ssr
         print "(t6, 'Number of knots: ', i0)", n

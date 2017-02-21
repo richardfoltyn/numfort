@@ -64,7 +64,7 @@ subroutine root_hybrd_real64 (func, x, fx, xtol, maxfev, ml, mu, eps, factor, di
     ! local default values for optional arguments
     real (PREC) :: lxtol, leps, lfactor
     integer :: lmaxfev, lml, lmu, lr, lnprint
-    integer (NF_ENUM_KIND) :: status
+    type (status_t) :: status
     ! Remaining local variables
     integer, parameter :: MSG_LENGTH = 100
     integer :: n, nrwrk, mode, info, i, nfev
@@ -206,7 +206,7 @@ subroutine root_hybrj_real64 (func, x, fx, xtol, maxfev, factor, diag, work, res
     ! local default values for optional arguments
     real (PREC) :: lxtol, lfactor
     integer :: lmaxfev, lr, lnprint
-    integer (NF_ENUM_KIND) :: status
+    type (status_t) :: status
     ! Remaining local variables
     integer, parameter :: MSG_LENGTH = 100
     integer :: n, nrwrk, mode, info, i, nfev, njev
@@ -346,6 +346,7 @@ subroutine root_lmdif_real64 (func, x, fx, ftol, xtol, gtol, maxfev, eps, &
     ! local default values for optional arguments
     real (PREC) :: lxtol, lftol, lgtol, leps, lfactor
     integer :: lmaxfev, lnprint
+    type (status_t) :: status
     ! Remaining local variables
     integer, parameter :: MSG_LENGTH = 100
     integer :: m, n, nrwrk, niwrk, mode, info, i, nfev
@@ -431,35 +432,36 @@ subroutine root_lmdif_real64 (func, x, fx, ftol, xtol, gtol, maxfev, eps, &
 
     select case (info)
     case (0)
-        info = NF_STATUS_INVALID_ARG
+        status = NF_STATUS_INVALID_ARG
         ptr_work%cwrk = "Invalid input parameters"
     case (1)
-        info = NF_STATUS_OK
+        status = NF_STATUS_OK
         ptr_work%cwrk = "Convergence in terms of ftol"
     case (2)
-        info = NF_STATUS_OK
+        status = NF_STATUS_OK
         ptr_work%cwrk = "Convergence in terms of xtol"
     case (3)
-        info = NF_STATUS_OK
+        status = NF_STATUS_OK
         ptr_work%cwrk = "Convegence in terms of ftol and xtol"
     case (4)
-        info = NF_STATUS_OK
+        status = NF_STATUS_OK
         ptr_work%cwrk = "Convergence in terms of gtol"
     case (5)
-        info = NF_STATUS_MAX_EVAL
+        status = NF_STATUS_MAX_EVAL
         ptr_work%cwrk = "Exceeded max. number of function evaluations"
     case (6)
-        info = NF_STATUS_NOT_CONVERGED
+        status = NF_STATUS_NOT_CONVERGED
         ptr_work%cwrk = "ftol too small. No further reduction possible"
     case (7)
-        info = NF_STATUS_NOT_CONVERGED
+        status = NF_STATUS_NOT_CONVERGED
         ptr_work%cwrk = "xtol is too small. No further improvement in solution possible"
     case (8)
+        status = NF_STATUS_NOT_CONVERGED
         ptr_work%cwrk = "gtol is too small. fvec is orthogonal to columns of Jacobian"
     end select
 
     if (present(res)) then
-        call res%update (x=x, fx=fx, nfev=nfev, status=info, msg=ptr_work%cwrk)
+        call res%update (x=x, fx=fx, nfev=nfev, status=status, msg=ptr_work%cwrk)
     end if
 
 

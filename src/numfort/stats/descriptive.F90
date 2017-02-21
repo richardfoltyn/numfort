@@ -43,13 +43,15 @@ pure subroutine mean_std_init (shp, dim, ldim, nvars, nobs, status)
     ! On exit, contains dimension along which reduction should be applied
     ! (ldim), and number of variables (nvars), the number of observations (nobs)
     ! as well as an error code (status).
-    integer, intent(out) :: ldim, status, nvars, nobs
+    integer, intent(out) :: ldim, nvars, nobs
+    type (status_t), intent(out) :: status
+        !!  Status flag (either NF_STATUS_OK or NF_STATUS_INVALID_ARG)
 
     ldim = 1
-    status = 0
+    status = NF_STATUS_OK
     if (present(dim)) then
         if (dim /= 1 .and. dim /= 2) then
-            status = 1
+            status = NF_STATUS_INVALID_ARG
             return
         end if
         ldim = dim

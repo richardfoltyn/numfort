@@ -58,7 +58,7 @@ subroutine print_report (res)
     integer, save :: ii = 1
 
     print "('#', t3, 'Example ', i0)", ii
-    print "(t3, 'Exit status: ', i0)", res%status
+    print "(t3, 'Exit status: ', a)", char(res%status)
     if ((.not. res%success) .and. len_trim(res%msg) > 0) then
         print "(t3, 'Message: ', a)", res%msg
     end if

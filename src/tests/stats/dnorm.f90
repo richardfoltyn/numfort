@@ -5,6 +5,7 @@ program test_numfort_stats_dnorm
     use corelib_strings
     use corelib_testing
     use numfort_arrays
+    use numfort_common
     use numfort_stats, only: dnorm, norm, mean, std
 
     implicit none
@@ -93,7 +94,8 @@ subroutine test_cdf_rvs (tests)
         means = [real (PREC) :: 0.0d0, -21.0d0, 1d-5, 1.234d4], &
         sd = [real (PREC) :: 1.0d0, 1d-4, 1d1, 1.2345d4]
     real (PREC) :: m, s, s2
-    integer :: i, n, status
+    integer :: i, n
+    type (status_t) :: status
     logical :: in_range
 
     tc => tests%add_test ("dnorm CDF(random) test cases")

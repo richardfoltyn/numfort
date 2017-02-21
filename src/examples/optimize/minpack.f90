@@ -91,8 +91,8 @@ subroutine print_report (res)
     integer, save :: ii = 1
 
     print "('#', t3, 'Example ', i0)", ii
-    print "(t3, 'Exit status: ', i0)", res%status
-    if ((.not. status_success (res%status)) .and. len_trim(res%msg) > 0) then
+    print "(t3, 'Status code(s): ', a)", char(res%status)
+    if (.not. res%success .and. len_trim(res%msg) > 0) then
         print "(t3, 'Message: ', a)", res%msg
     end if
     write (OUTPUT_UNIT, advance='no', &

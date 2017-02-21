@@ -17,7 +17,7 @@ module numfort_optim_result_mod
     type, public :: optim_result
         real (PREC), dimension(:), allocatable :: x, fx
         integer :: nfev = UNINITIALIZED_COUNTER, nit = UNINITIALIZED_COUNTER
-        integer (NF_ENUM_KIND) :: status = NF_STATUS_UNDEFINED
+        type (status_t) :: status
         logical :: success = .false.
         character (100) :: msg
     contains
@@ -44,7 +44,7 @@ pure subroutine update_scalar_scalar_real64 (self, x, fx, status, nit, nfev, msg
     class (optim_result), intent(in out) :: self
     real (PREC) :: x, fx
     integer :: nit, nfev
-    integer (NF_ENUM_KIND), intent(in), optional :: status
+    type (status_t), intent(in), optional :: status
     character (len=*) :: msg
 
     intent (in) :: x, fx, nit, nfev, msg
@@ -62,7 +62,7 @@ pure subroutine update_vec_scalar_real64 (self, x, fx, status, nit, nfev, msg)
     integer, parameter :: PREC = real64
     class (optim_result), intent(in out) :: self
     real (PREC) :: x(:), fx
-    integer (NF_ENUM_KIND), intent(in), optional :: status
+    type (status_t), intent(in), optional :: status
     integer :: nit, nfev
     character (len=*) :: msg
 
@@ -79,7 +79,7 @@ end subroutine
 pure subroutine update_real64 (self, x, fx, status, nit, nfev, msg)
     class (optim_result), intent(in out) :: self
     real (real64), dimension(:) :: x, fx
-    integer (NF_ENUM_KIND), intent(in), optional :: status
+    type (status_t), intent(in), optional :: status
     integer :: nit, nfev
     character (len=*) :: msg
 
@@ -92,7 +92,7 @@ pure subroutine update_real64 (self, x, fx, status, nit, nfev, msg)
     call alloc_assign (fx, self%fx)
 
     if (present(status)) then
-        self%success = status_success (status)
+        self%success = (NF_STATUS_OK .in. status)
         self%status = status
     end if
 
@@ -106,7 +106,7 @@ end subroutine
 pure subroutine update_real32 (self, x, fx, status, nit, nfev, msg)
     class (optim_result), intent(in out) :: self
     real (real32) :: x(:), fx
-    integer (NF_ENUM_KIND), intent(in), optional :: status
+    type (status_t), intent(in), optional :: status
     integer :: nit, nfev
     character (len=*) :: msg
 

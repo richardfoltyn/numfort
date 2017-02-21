@@ -18,7 +18,8 @@ contains
 subroutine example1 ()
 
     integer, parameter :: m = 7, k_max = 5
-    integer :: ext, status, k, i, n, nu
+    integer :: ext, k, i, n, nu
+    type (status_t) :: status
 
     real (PREC), dimension(m) :: x
     real (PREC), dimension(m, k_max + 1) :: y
@@ -76,26 +77,36 @@ subroutine example1 ()
 end subroutine
 
 subroutine print_report (n, k, knots, coefs, x, y, status)
-    integer :: n, k, status
+    integer :: n, k
     real (PREC), dimension(:) :: knots, coefs, x
     real (PREC), dimension(:,:) :: y
+    type (status_t), intent(in) :: status
 
-    intent(in) :: k, status, knots, coefs, x, y
+    intent(in) :: k, knots, coefs, x, y
 
     integer, save :: ii = 1
     integer :: i, j
 
-    print "(/,'(', i0, ')', t6, 'spline degree: ', i1, '; error flag: ', i3)", &
-        ii, k, status
-    print "(t6, 'Number of knots: ', i0)", n
-    print "(t6, 'Knots: ', *(t14, 10(f8.1, :, ', '), :, /))", knots
-    print "(t6, 'Coefs: ', *(t14, 10(f8.4, :, ', '), :, /))", coefs
-    print "(t6, a)", 'Evaluated derivatives:'
-    print "(t8, a4, tr2, *(tr4, 'sp_', i1, '(i)', :, tr2))", 'x(i)', (i, i=0,k)
+    integer, dimension(NF_MAX_STATUS_CODES) :: istatus
+    integer :: nstatus
 
-    do i = 1, size(x)
-        print "(t8, f4.2, tr2, *(e11.4e2, :, tr2))", x(i), (y(i, j), j=1,k+1)
-    end do
+    call status%decode (istatus, nstatus)
+
+    print "(/,'(', i0, ')', t6, 'spline degree: ', i1, '; error flag: ', i3)", &
+        ii, k
+    print "(t6, 'status code: ', *(i0, :, ', '))", istatus(1:nstatus)
+
+    if (NF_STATUS_OK .in. status) then
+        print "(t6, 'Number of knots: ', i0)", n
+        print "(t6, 'Knots: ', *(t14, 10(f8.1, :, ', '), :, /))", knots
+        print "(t6, 'Coefs: ', *(t14, 10(f8.4, :, ', '), :, /))", coefs
+        print "(t6, a)", 'Evaluated derivatives:'
+        print "(t8, a4, tr2, *(tr4, 'sp_', i1, '(i)', :, tr2))", 'x(i)', (i, i=0,k)
+
+        do i = 1, size(x)
+            print "(t8, f4.2, tr2, *(e11.4e2, :, tr2))", x(i), (y(i, j), j=1,k+1)
+        end do
+    end if
 
     ii = ii + 1
 end subroutine

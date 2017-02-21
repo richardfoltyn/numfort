@@ -51,7 +51,7 @@ contains
 pure function check_length (arr1, arr2) result(status)
     real (PREC), intent(in), dimension(:) :: arr1
     real (PREC), intent(in), dimension(:), optional :: arr2
-    integer (NF_ENUM_KIND) :: status
+    type (status_t) :: status
 
     status = NF_STATUS_OK
     if (present(arr2)) then
@@ -75,7 +75,7 @@ pure subroutine check_input (x, y, w, k, knots, coefs, maxiter, v, sx, bind, sta
     logical, intent(in), dimension(:), optional :: bind
         !!  Array containing flag whether constraint is binding: used for concon
 
-    integer (NF_ENUM_KIND), intent(out) :: status
+    type (status_t), intent(out) :: status
     character (len=*), intent(out), optional :: msg
 
     status = NF_STATUS_OK
@@ -143,7 +143,7 @@ pure subroutine check_eval_input (knots, coefs, n, k, x, y, order, ext, status, 
     integer, intent(in), optional :: order
     integer, intent(in), optional :: ext
 
-    integer (NF_ENUM_KIND), intent(out) :: status
+    type (status_t), intent(out) :: status
     character (len=*), intent(out), optional :: msg
 
     integer :: lk
@@ -197,7 +197,7 @@ end subroutine
 
 pure subroutine check_input_ext (ext, status, msg)
     integer, intent(in) :: ext
-    integer (NF_ENUM_KIND), intent(out) :: status
+    type (status_t), intent(out) :: status
     character (len=*), intent(out), optional :: msg
 
     integer :: i
@@ -239,19 +239,19 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
     class (workspace), intent(in out), optional, target :: work
     integer, intent(in), optional :: maxiter
     real (PREC), intent(out), optional :: ssr
-    integer (NF_ENUM_KIND), intent(out), optional :: status
+    type (status_t), intent(out), optional :: status
     integer, intent(out), optional :: info
     character (*), intent(out), optional :: msg
 
     integer :: m, liopt, lk, nwrk, nwrk_tot, nest, ier, lmaxiter
-    integer (NF_ENUM_KIND) :: lstatus
+    type (status_t) :: lstatus
     real (PREC) :: lxb, lxe, ls, lssr
     class (workspace), pointer :: ptr_work
 
     nullify(ptr_work)
 
     call check_input (x, y, w, k, knots, coefs, maxiter=maxiter, status=lstatus, msg=msg)
-    if (.not. status_success (lstatus)) goto 100
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
     ! initialize default values
     lk = DEFAULT_SPLINE_DEGREE
@@ -323,21 +323,26 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
         lstatus = NF_STATUS_OK
     case (-1)
         ! retuned spline is an interpolating spline, ie ssr=0
-        lstatus = ior(NF_STATUS_OK, NF_STATUS_CURFIT_INTERP)
+        lstatus = NF_STATUS_OK
+        lstatus = lstatus + NF_STATUS_CURFIT_INTERP
     case (-2)
         ! returned spline is an WLS polynomial of degree k
-        lstatus = ior(NF_STATUS_OK, NF_STATUS_CURFIT_WLS)
+        lstatus = NF_STATUS_OK
+        lstatus = lstatus + NF_STATUS_CURFIT_WLS
     case (1)
         ! nest is too small, probably because s is too small.
         ! CURFIT returns an approximation in this case
-        lstatus = ior(NF_STATUS_STORAGE_ERROR, NF_STATUS_APPROX)
+        lstatus = NF_STATUS_STORAGE_ERROR
+        lstatus = lstatus + NF_STATUS_APPROX
     case (2)
         ! Theoretically impossible result encountered, probably because s
         ! is too small
-        lstatus = ior(NF_STATUS_INVALID_STATE, NF_STATUS_APPROX)
+        lstatus = NF_STATUS_INVALID_STATE
+        lstatus = lstatus + NF_STATUS_APPROX
     case (3)
         ! Max. number of iterations exceeded, probably because s is too small.
-        lstatus = ior(NF_STATUS_MAX_ITER, NF_STATUS_APPROX)
+        lstatus = NF_STATUS_MAX_ITER
+        lstatus = lstatus + NF_STATUS_APPROX
     case (10)
         lstatus = NF_STATUS_INVALID_ARG
     case default
@@ -375,7 +380,7 @@ pure subroutine concon_real64 (x, y, v, s, &
     real (PREC), intent(out), optional :: ssr
     real (PREC), intent(out), dimension(:), optional :: sx
     logical, intent(out), dimension(:), optional :: bind
-    integer (NF_ENUM_KIND), intent(out), optional :: status
+    type (status_t), intent(out), optional :: status
     integer, intent(out), optional :: info
     character (*), intent(out), optional :: msg
 
@@ -384,7 +389,7 @@ pure subroutine concon_real64 (x, y, v, s, &
     integer :: m, liopt, nest, ier, lmaxtr, lmaxbin
     integer :: nrwrk, jrwrk, niwrk, nlwrk, nrwrk_tot
     real (PREC) :: ls, lssr
-    integer (NF_ENUM_KIND) :: lstatus
+    type (status_t) :: lstatus
     class (workspace), pointer :: ptr_work
     real (PREC), dimension(:), pointer, contiguous :: ptr_sx, ptr_w, ptr_v
     logical, dimension(:), pointer, contiguous :: ptr_bind
@@ -393,7 +398,7 @@ pure subroutine concon_real64 (x, y, v, s, &
 
     call check_input (x, y, w, knots=knots, coefs=coefs, v=v, bind=bind, sx=sx,&
         status=lstatus, msg=msg)
-    if (.not. status_success (lstatus)) goto 100
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
     ! default values
     liopt = 0
@@ -522,13 +527,13 @@ pure subroutine splev_real64 (knots, coefs, n, k, x, y, ext, status)
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(out), dimension(:), contiguous :: y
     integer, intent(in), optional :: ext
-    integer, intent(out), optional :: status
+    type (status_t), intent(out), optional :: status
 
     integer :: m, ln, lier, lext, lk
-    integer (NF_ENUM_KIND) :: lstatus
+    type (status_t) :: lstatus
 
     call check_eval_input (knots, coefs, n, k, x, y, ext=ext, status=lstatus)
-    if (lstatus /= NF_STATUS_OK) goto 100
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
     m = size(x)
     ! by default assume that all elements in knots/coefs array are valid
@@ -570,7 +575,7 @@ pure subroutine splev_scalar_real64 (knots, coefs, n, k, x, y, ext, status)
     real (PREC), intent(in) :: x
     real (PREC), intent(out) :: y
     integer, intent(in), optional :: ext
-    integer, intent(out), optional :: status
+    type (status_t), intent(out), optional :: status
 
     real (PREC) :: lx(1), ly(1)
 
@@ -595,16 +600,16 @@ pure subroutine splder_real64 (knots, coefs, n, k, order, x, y, ext, work, statu
     real (PREC), intent(out), dimension(:), contiguous :: y
     integer, intent(in), optional :: ext
     class (workspace), intent(in out), optional, target :: work
-    integer, intent(out), optional :: status
+    type (status_t), intent(out), optional :: status
 
     type (workspace), target :: lwork
     type (workspace), pointer :: ptr_work
 
     integer :: lext, lorder, lier, lk, ln, m
-    integer (NF_ENUM_KIND) :: lstatus
+    type (status_t) :: lstatus
 
     call check_eval_input (knots, coefs, n, k, x, y, order, ext, status=lstatus)
-    if (lstatus /= NF_STATUS_OK) goto 100
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
     lk = DEFAULT_SPLINE_DEGREE
     lorder = 1
@@ -657,7 +662,7 @@ pure subroutine splder_scalar_real64 (knots, coefs, n, k, order, x, y, ext, work
     real (PREC), intent(out) :: y
     integer, intent(in), optional :: ext
     class (workspace), intent(in out), optional, target :: work
-    integer, intent(out), optional :: status
+    type (status_t), intent(out), optional :: status
 
     real (PREC), dimension(1) :: lx, ly
 

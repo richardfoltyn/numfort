@@ -120,7 +120,7 @@ subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
     character (len=100) :: msg
 
     integer :: nrwrk, niwrk, n
-    integer (NF_ENUM_KIND) :: status
+    type (status_t) :: status
     ! lenghts of additional working arrays
     integer, parameter :: ndsave = 29, nisave = 44, nlsave = 4, ncsave = 60, ntask = 60
 
@@ -162,6 +162,7 @@ subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
     if (present(m)) then
         if (m < 3) then
             msg = 'Number of corrections in limited memory matrix set < 3'
+            status = NF_STATUS_INVALID_ARG
             goto 100
         end if
         lm = m
@@ -258,7 +259,7 @@ subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
 
     ! input error handling
 100 if (present(res)) then
-        call res%update (status=NF_STATUS_INVALID_ARG, msg=msg)
+        call res%update (status=status, msg=msg)
     end if
 
 end subroutine

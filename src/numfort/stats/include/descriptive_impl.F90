@@ -16,7 +16,7 @@ pure subroutine __APPEND(mean_std_check_input,__PREC) (nvars, nobs, out1, out2, 
         !!  Optional array to store additional output (mean)
     integer, intent(in), optional :: dof
         !!  Optional degrees of freedom correction
-    integer (NF_ENUM_KIND), intent(out) :: status
+    type (status_t), intent(out) :: status
 
     status = NF_STATUS_INVALID_ARG
 
@@ -53,13 +53,13 @@ pure subroutine __APPEND(mean_1d,__PREC) (x, m, dim, status)
     integer, intent(in), optional :: dim
         !*  Ignored for 1d-arrays, present to support same API as for higher-rank
         !   arrays
-    integer (NF_ENUM_KIND), intent(out), optional :: status
+    type (status_t), intent(out), optional :: status
         !*  Ignored for 1d-arrays, present to support same API as for higher-rank
         !   arrays
 
     ! compute in double precision regardless of input/output kind
     real (PREC) :: m_old, m_new
-    integer (NF_ENUM_KIND) :: lstatus
+    type (status_t) :: lstatus
     integer :: i
 
     ! initialize to default values
@@ -105,10 +105,10 @@ pure subroutine __APPEND(mean_2d,__PREC) (x, m, dim, status)
     integer, intent(in), optional :: dim
     ! If present, returns 0 on exit if normalization was successful,
     ! and status > 0 if an error was encountered
-    integer (NF_ENUM_KIND), intent(out), optional :: status
+    type (status_t), intent(out), optional :: status
 
     real (PREC), dimension(:), allocatable :: m_old, m_new
-    integer (NF_ENUM_KIND) :: lstatus
+    type (status_t) :: lstatus
     ! iv indexes variables, iobs individual observations
     integer :: iv, iobs, nvars, nobs, ldim
 
@@ -117,10 +117,10 @@ pure subroutine __APPEND(mean_2d,__PREC) (x, m, dim, status)
     m = 0.0_PREC
 
     call mean_std_init (shape(x), dim, ldim, nvars, nobs, status=lstatus)
-    if (lstatus /= NF_STATUS_OK) goto 100
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
     call mean_std_check_input (nvars, nobs, m, status=lstatus)
-    if (lstatus /= NF_STATUS_OK) goto 100
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
     ! compute mean and std. dev. using Welford's method; see
     ! http://www.johndcook.com/blog/standard_deviation/
@@ -171,13 +171,13 @@ pure subroutine __APPEND(std_1d,__PREC) (x, s, m, dof, dim, status)
     integer, intent(in), optional :: dim
         !*  Ignored for 1d-arrays, present to support same API as for higher-rank
         !   arrays
-    integer (NF_ENUM_KIND), intent(out), optional :: status
+    type (status_t), intent(out), optional :: status
         !*  Ignored for 1d-arrays, present to support same API as for higher-rank
         !   arrays
 
     real (PREC) :: m_old, m_new, s_old, s_new, lm, x_i
     integer :: i, ldof
-    integer (NF_ENUM_KIND) :: lstatus
+    type (status_t) :: lstatus
 
     ! initiliaze default values
     lstatus = NF_STATUS_OK
@@ -252,13 +252,13 @@ pure subroutine __APPEND(std_2d,__PREC) (x, s, m, dof, dim, status)
     integer, intent(in), optional :: dim
         !*  If present, specifies dimension along which std/mean should be computed.
 
-    integer (NF_ENUM_KIND), intent(out), optional :: status
+    type (status_t), intent(out), optional :: status
         !*  If present, returns NF_STATUS_OK on exit if operation was successful,
         !   and status > 0 if an error was encountered
 
     real (PREC), dimension(:), allocatable :: lm
     real (PREC), dimension(:), allocatable :: m_old, s_old, s_new
-    integer (NF_ENUM_KIND):: lstatus
+    type (status_t) :: lstatus
     ! iv indexes variables, iobs individual observations
     integer :: iv, iobs, nvars, nobs, ldof, ldim
 
@@ -269,10 +269,10 @@ pure subroutine __APPEND(std_2d,__PREC) (x, s, m, dof, dim, status)
     if (present(m)) m = 0.0_PREC
 
     call mean_std_init (shape(x), dim, ldim, nvars, nobs, status=lstatus)
-    if (lstatus /= 0) goto 100
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
     call mean_std_check_input (nvars, nobs, m, s, dof, status=lstatus)
-    if (lstatus /= 0) goto 100
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
     if (present(dof)) ldof = dof
 
