@@ -24,7 +24,7 @@ subroutine example1 ()
     integer, parameter :: ns = 10
 
     real (PREC), dimension(m) :: x, y, eps, w, v
-    real (PREC), dimension(:,:), allocatable :: sx, spx, sppx
+    real (PREC), dimension(:,:), allocatable :: sp, sp1, sp2
     real (PREC), dimension(ns) :: svec
     integer :: i, nest, iopt, nseed, ext
     real (PREC), dimension(:), allocatable :: seed
@@ -38,7 +38,7 @@ subroutine example1 ()
     real (PREC), dimension(ns) :: ssr2
     integer, dimension(ns) :: nknots2
     integer (NF_ENUM_KIND), dimension(ns) :: status2
-    real (PREC), dimension(:,:), allocatable :: sx2, sxp2, sxpp2
+    real (PREC), dimension(:,:), allocatable :: sp_2, sp1_2, sp2_2
 
     ! locals private to each thread
     integer :: tid, j
@@ -67,12 +67,12 @@ subroutine example1 ()
 
     nest = concon_get_nest (m)
     allocate (knots(nest, ns), coefs(nest, ns))
-    allocate (sx(m, ns), spx(m, ns), sppx(m, ns))
+    allocate (sp(m, ns), sp1(m, ns), sp2(m, ns))
 
     !$omp parallel default(none) private(j, ws, s, tid) &
     !$omp shared(knots2, coefs2, nknots2, ssr2, status2) &
     !$omp shared(svec, x, y, v, knots, coefs, nknots, iopt, w, ssr, status, nest) &
-    !$omp shared(sx, spx, sppx, ext)
+    !$omp shared(sp, sp1, sp2, ext)
     tid = omp_get_thread_num ()
     allocate (ws)
 
@@ -80,7 +80,7 @@ subroutine example1 ()
     do j = 1, ns
         s = svec(j)
         call fit (x, y, v, s, knots(:, j), coefs(:, j), nknots(j), &
-            ws, ssr(j), status(j), sx(:, j), spx(:, j), sppx(:, j), &
+            ws, ssr(j), status(j), sp(:, j), sp1(:, j), sp2(:, j), &
             iopt, w, ext=ext)
     end do
     !$omp end do
@@ -89,22 +89,22 @@ subroutine example1 ()
 
     do i = 1, ns
        call print_report (iopt, svec(i), ssr(i), status(i), &
-           nknots(i), knots(:, i), coefs(:, i), x, y, sx(:, i), spx(:, i), &
-           sppx(:, i), i)
+           nknots(i), knots(:, i), coefs(:, i), x, y, sp(:, i), sp1(:, i), &
+           sp2(:, i), i)
     end do
 
     ! compute sequentially
     allocate (knots2(nest, ns), coefs2(nest, ns))
-    allocate (sx2(m, ns), sxp2(m, ns), sxpp2(m, ns))
+    allocate (sp_2(m, ns), sp1_2(m, ns), sp2_2(m, ns))
     allocate (ws)
 
     do j = 1, ns
         s = svec(j)
         call fit (x, y, v, s, knots2(:, j), coefs2(:, j), nknots2(j), &
-            ws, ssr2(j), status2(j), sx2(:, j), sxp2(:, j), sxpp2(:, j), &
+            ws, ssr2(j), status2(j), sp_2(:, j), sp1_2(:, j), sp2_2(:, j), &
             iopt, w, ext=ext)
     end do
-    
+
     deallocate (ws)
 
     print *, "== Summary of OpenMP vs. sequential results =="
@@ -121,7 +121,7 @@ subroutine example1 ()
 end subroutine
 
 pure subroutine fit (x, y, v, s, knots, coefs, nknots, ws, ssr, status, &
-        sx, spx, sppx, iopt, w, ext)
+        sp, sp1, sp2, iopt, w, ext)
     real (PREC), intent(in), dimension(:) :: x, y, v
     real (PREC), intent(in) :: s
     real (PREC), intent(out), dimension(:) :: knots, coefs
@@ -129,7 +129,7 @@ pure subroutine fit (x, y, v, s, knots, coefs, nknots, ws, ssr, status, &
     class (workspace), intent(in out) :: ws
     real (PREC), intent(out) :: ssr
     integer (NF_ENUM_KIND), intent(out) :: status
-    real (PREC), intent(out), dimension(:) :: sx, spx, sppx
+    real (PREC), intent(out), dimension(:) :: sp, sp1, sp2
     integer, intent(in), optional :: iopt
     real (PREC), intent(in), dimension(:), optional :: w
     integer (NF_ENUM_KIND), intent(in), optional :: ext
@@ -137,23 +137,23 @@ pure subroutine fit (x, y, v, s, knots, coefs, nknots, ws, ssr, status, &
     logical :: stat_ok
 
     call concon (x, y, v, s, knots, coefs, nknots, &
-       iopt=iopt, work=ws, w=w, ssr=ssr, sx=sx, status=status)
+       iopt=iopt, work=ws, w=w, ssr=ssr, sx=sp, status=status)
 
     stat_ok = (iand(status, NF_STATUS_OK) == NF_STATUS_OK) .or. &
         (iand(status, NF_STATUS_APPROX) == NF_STATUS_APPROX)
 
     if (stat_ok) then
-       call splder (knots, coefs, nknots, 3, 1, x, spx, work=ws, ext=ext)
-       call splder (knots, coefs, nknots, 3, 2, x, sppx, work=ws, ext=ext)
+       call splder (knots, coefs, nknots, 3, 1, x, sp1, work=ws, ext=ext)
+       call splder (knots, coefs, nknots, 3, 2, x, sp2, work=ws, ext=ext)
     end if
 end subroutine
 
 subroutine print_report (iopt, s, ssr, status, n, knots, coefs, x, y, &
-        sx, spx, sppx, counter)
+        sp, sp1, sp2, counter)
     integer, intent(in) :: iopt, n, counter
     integer (NF_ENUM_KIND), intent(in) :: status
     real (PREC), intent(in) :: s, ssr, knots(:), coefs(:)
-    real (PREC), intent(in), dimension(:) :: x, y, sx, spx, sppx
+    real (PREC), intent(in), dimension(:) :: x, y, sp, sp1, sp2
     logical :: stat_ok
 
     integer :: i, nstatus
@@ -175,9 +175,9 @@ subroutine print_report (iopt, s, ssr, status, n, knots, coefs, x, y, &
         print "(t6, 'Knots: ', *(t14, 8(f8.3, :, ', '), :, /))", knots(1:n)
         print "(t6, 'Coefs: ', *(t14, 8(f8.3, :, ', '), :, /))", coefs(1:n)
         print "(t6, a)", 'Evaluated points:'
-        print "(t6, 2(5(a7, tr1), tr5))", ('x(i)', 'y(i)', 's(i)', 's1(i)', 's2(i)', i=1,2)
+        print "(t6, 2(5(a7, tr1), tr5))", ('x(i)', 'y(i)', 'sp(i)', 'sp1(i)', 'sp2(i)', i=1,2)
         print "(*(t6, 2(5(f7.2, :, tr1), tr5), :, /))", &
-            (x(i), y(i), sx(i), spx(i), sppx(i), i=1,size(x))
+            (x(i), y(i), sp(i), sp1(i), sp2(i), i=1,size(x))
     else
         print '(t6, a)', "No spline approximation returned"
     end if
