@@ -157,7 +157,7 @@ subroutine print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat, &
 
     if (present(counter)) ii = counter
 
-    call decode_status (status, istatus, nstatus)
+    call status_decode (status, istatus, nstatus)
     stat_ok = iand(status, NF_STATUS_INVALID_ARG) /= NF_STATUS_INVALID_ARG
 
     print "(/,'(', i0, ')', t6, 'iopt: ', i2, '; smoothing factor: ', es12.5e2, '; spline degree: ', i1)", &

@@ -101,7 +101,7 @@ subroutine print_report (iopt, s, ssr, status, n, knots, coefs, x, y, yhat, &
 
     integer, dimension(bit_size(status)) :: istatus
 
-    call decode_status (status, istatus, nstatus)
+    call status_decode (status, istatus, nstatus)
 
     stat_ok = (iand(status, NF_STATUS_OK) == NF_STATUS_OK) .or. &
         (iand(status, NF_STATUS_APPROX) == NF_STATUS_APPROX)

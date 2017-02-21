@@ -5,7 +5,7 @@
 program curfit_demo_omp
 
     use iso_fortran_env
-    use numfort_common, only: decode_status
+    use numfort_common, only: status_decode
     use numfort_interpolate
     use omp_lib
 
@@ -159,7 +159,7 @@ subroutine print_report (iopt, s, ssr, status, n, knots, coefs, x, y, &
     integer :: i, nstatus
     integer, dimension(bit_size(status)) :: istatus
 
-    call decode_status (status, istatus, nstatus)
+    call status_decode (status, istatus, nstatus)
 
     stat_ok = (iand(status, NF_STATUS_OK) == NF_STATUS_OK) .or. &
         (iand(status, NF_STATUS_APPROX) == NF_STATUS_APPROX)

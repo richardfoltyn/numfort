@@ -4,7 +4,7 @@ module numfort_common_status
     implicit none
     private
 
-    public :: decode_status
+    public :: status_decode
     public :: status_success
 contains
 
@@ -14,7 +14,7 @@ pure function status_success (status) result(res)
     res = (iand(status, NF_STATUS_OK) == NF_STATUS_OK)
 end function
 
-pure subroutine decode_status (status, x, n)
+pure subroutine status_decode (status, x, n)
     !*  DECODE_STATUS disaggregates a composize status code into its
     !   components and turns their base-2 exponents.
     integer (NF_ENUM_KIND), intent(in) :: status
