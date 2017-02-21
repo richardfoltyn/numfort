@@ -490,7 +490,7 @@ pure subroutine concon_real64 (x, y, v, s, &
         ! this should not happen if nest=m+4, as returned by concon_get_nest()
         lstatus = ior(NF_STATUS_STORAGE_ERROR, NF_STATUS_APPROX)
     else if (ier == -2 .or. ier == -1) then
-        lstatus = ior(NF_STATUS_OTHER, NF_STATUS_APPROX)
+        lstatus = NF_STATUS_APPROX
     else if (ier == 1 .or. ier == 2) then
         lstatus = NF_STATUS_STORAGE_ERROR
     else if (ier == 3 .or. ier == 4 .or. ier == 5) then
@@ -615,6 +615,7 @@ pure subroutine splder_real64 (knots, coefs, n, k, order, x, y, ext, work, statu
     if (present(n)) ln = n
     if (present(k)) lk = k
     if (present(ext)) lext = ext
+    if (present(order)) lorder = order
 
     if (present(work)) then
         ptr_work => work
