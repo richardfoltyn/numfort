@@ -7,3 +7,8 @@ set(${COMPONENT_NAME}_FILES
     minpack.f90
     PARENT_SCOPE
 )
+
+set(${COMPONENT_NAME}_FILES_OMP
+    minimize_lbfgsb_omp.f90
+    PARENT_SCOPE
+)
