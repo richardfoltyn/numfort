@@ -5,19 +5,21 @@ module numfort_optimize_lbfgsb
     use, intrinsic :: iso_fortran_env, only: real64
     use numfort_common
     use numfort_optim_result_mod
+    use lbfgsb_bmnz_real64, only: setulb
 
     implicit none
     private
 
     integer, parameter :: PREC = real64
 
-    enum, bind(c)
-        enumerator :: BOUNDS_NONE = 0, BOUNDS_LOWER = 1, &
-            BOUNDS_BOTH = 2, BOUNDS_UPPER = 3
-    end enum
+    integer (NF_ENUM_KIND), parameter :: BOUNDS_NONE = 0
+    integer (NF_ENUM_KIND), parameter :: BOUNDS_LOWER = 1
+    integer (NF_ENUM_KIND), parameter :: BOUNDS_BOTH = 2
+    integer (NF_ENUM_KIND), parameter :: BOUNDS_UPPER = 3
 
     interface minimize_lbfgsb
-        module procedure lbfgsb_real64, lbfgsb_grad_real64
+        module procedure lbfgsb_real64, lbfgsb_args_real64, lbfgsb_grad_real64, &
+            lbfgsb_grad_args_real64
     end interface
 
     interface
@@ -39,26 +41,76 @@ module numfort_optimize_lbfgsb
             real (real64), intent(out) :: fx
             real (real64), intent(out), dimension(:), contiguous :: fpx
         end subroutine
-    end interface
 
-    ! interface for F77 setulb, should be useful in eliminating errors at
-    ! compile time
-    interface
-        subroutine if_setulb (n, m, x, l, u, nbd, f, g, factr, pgtol, wa, iwa, &
-            task, iprint, csave, lsave, isave, dsave)
+        subroutine fobj_args_real64 (x, fx, args)
+            import real64
+            real (real64), intent(in), dimension(:), contiguous :: x
+            real (real64), intent(out) :: fx
+            real (real64), intent(in), dimension(:) :: args
+        end subroutine
 
-            character (60) :: task, csave
-            logical :: lsave(4)
-            integer ::n, m, iprint, nbd(n), iwa(3*n), isave(44)
-            double precision :: f, factr, pgtol, x(n), l(n), u(n), g(n), &
-                wa(2*m*n + 5*n + 11*m*m + 8*m), dsave(29)
+        subroutine grad_args_real64 (x, fpx, args)
+            import real64
+            real (real64), intent(in), dimension(:), contiguous :: x
+            real (real64), intent(out), dimension(:), contiguous :: fpx
+            real (real64), intent(in), dimension(:) :: args
+        end subroutine
+
+        subroutine fobj_grad_args_real64 (x, fx, fpx, args)
+            import real64
+            real (real64), intent(in), dimension(:), contiguous :: x
+            real (real64), intent(out) :: fx
+            real (real64), intent(out), dimension(:), contiguous :: fpx
+            real (real64), intent(in), dimension(:) :: args
         end subroutine
     end interface
 
-    procedure (if_setulb) :: setulb
-
     public :: minimize_lbfgsb
 contains
+
+! ------------------------------------------------------------------------------
+! Wrappers for various ways to invoke the minimizer
+
+subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
+    m, factr, pgtol, iprint, work, res)
+
+    procedure (fobj_grad_real64) :: func
+    real (PREC), intent(in out), dimension(:), contiguous :: x
+    real (PREC), intent(in), dimension(:), optional :: lbounds
+    real (PREC), intent(in), dimension(:), optional :: ubounds
+    integer, intent(in), optional :: maxiter
+    integer, intent(in), optional :: maxfun
+    integer, intent(in), optional :: m
+    integer (NF_ENUM_KIND), intent(in), optional :: iprint
+    real (PREC), intent(in), optional :: factr
+    real (PREC), intent(in), optional :: pgtol
+    class (workspace), intent(in out), optional :: work
+    class (optim_result), intent(in out), optional :: res
+
+    call lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
+        m, factr, pgtol, iprint, work, res=res, func_grad=func)
+end subroutine
+
+subroutine lbfgsb_args_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
+    m, factr, pgtol, iprint, work, args, res)
+
+    procedure (fobj_grad_args_real64) :: func
+    real (PREC), intent(in out), dimension(:), contiguous :: x
+    real (PREC), intent(in), dimension(:), optional :: lbounds
+    real (PREC), intent(in), dimension(:), optional :: ubounds
+    integer, intent(in), optional :: maxiter
+    integer, intent(in), optional :: maxfun
+    integer, intent(in), optional :: m
+    integer (NF_ENUM_KIND), intent(in), optional :: iprint
+    real (PREC), intent(in), optional :: factr
+    real (PREC), intent(in), optional :: pgtol
+    class (workspace), intent(in out), optional :: work
+    real (PREC), intent(in), dimension(:) :: args
+    class (optim_result), intent(in out), optional :: res
+
+    call lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
+        m, factr, pgtol, iprint, work, args=args, res=res, func_grad_args=func)
+end subroutine
 
 subroutine lbfgsb_grad_real64 (func, x, grad, lbounds, ubounds, maxiter, maxfun, &
     m, factr, pgtol, iprint, work, res)
@@ -66,48 +118,75 @@ subroutine lbfgsb_grad_real64 (func, x, grad, lbounds, ubounds, maxiter, maxfun,
     procedure (fobj_real64) :: func
     real (PREC), intent(in out), dimension(:), contiguous :: x
     procedure (grad_real64) :: grad
-    real (PREC), dimension(:) :: lbounds, ubounds
-    integer :: maxiter, maxfun, m
+    real (PREC), intent(in), dimension(:), optional :: lbounds
+    real (PREC), intent(in), dimension(:), optional :: ubounds
+    integer, intent(in), optional :: maxiter
+    integer, intent(in), optional :: maxfun
+    integer, intent(in), optional :: m
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
-    real (PREC) :: factr, pgtol
-    class (workspace), intent(in out), optional, target :: work
+    real (PREC), intent(in), optional :: factr
+    real (PREC), intent(in), optional :: pgtol
+    class (workspace), intent(in out), optional :: work
     class (optim_result), intent(in out), optional :: res
 
-    intent(in) :: lbounds, ubounds, maxiter, maxfun, m, factr, pgtol
-    optional :: lbounds, ubounds, maxiter, maxfun, m, factr, pgtol
-
-    call minimize_lbfgsb (fobj_grad, x, lbounds, ubounds, maxiter, maxfun, &
-        m, factr, pgtol, iprint, work, res)
-
-contains
-
-    ! 'unified' objective function used as wrapper to recover both the
-    ! function valud and the gradient simultaneosly.
-    subroutine fobj_grad (x, fx, fpx)
-        real (real64), intent(in), dimension(:) :: x
-        real (real64), intent(out) :: fx, fpx(:)
-        contiguous :: x, fpx
-
-        call func(x, fx)
-        call grad(x, fpx)
-    end subroutine
-
+    call lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
+        m, factr, pgtol, iprint, work, res=res, func=func, grad=grad)
 end subroutine
 
-subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
-    m, factr, pgtol, iprint, work, res)
+subroutine lbfgsb_grad_args_real64 (func, x, grad, lbounds, ubounds, maxiter, &
+    maxfun, m, factr, pgtol, iprint, work, args, res)
 
-    procedure (fobj_grad_real64) :: func
+    procedure (fobj_args_real64) :: func
     real (PREC), intent(in out), dimension(:), contiguous :: x
-    real (PREC), dimension(:) :: lbounds, ubounds
-    integer :: maxiter, maxfun, m
+    procedure (grad_args_real64) :: grad
+    real (PREC), intent(in), dimension(:), optional :: lbounds
+    real (PREC), intent(in), dimension(:), optional :: ubounds
+    integer, intent(in), optional :: maxiter
+    integer, intent(in), optional :: maxfun
+    integer, intent(in), optional :: m
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
-    real (PREC) :: factr, pgtol
-    class (workspace), intent(in out), optional, target :: work
+    real (PREC), intent(in), optional :: factr
+    real (PREC), intent(in), optional :: pgtol
+    class (workspace), intent(in out), optional :: work
+    real (PREC), intent(in), dimension(:) :: args
     class (optim_result), intent(in out), optional :: res
 
-    intent(in) :: lbounds, ubounds, maxiter, maxfun, m, factr, pgtol
-    optional :: lbounds, ubounds, maxiter, maxfun, m, factr, pgtol
+    call lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
+        m, factr, pgtol, iprint, work, args=args, res=res, func_args=func, &
+        grad_args=grad)
+end subroutine
+
+! ------------------------------------------------------------------------------
+! WRAPPER IMPLEMENTATION
+
+subroutine lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
+        m, factr, pgtol, iprint, work, args, res, &
+        func, func_args, grad, grad_args, func_grad, func_grad_args)
+
+    procedure (fobj_real64), optional :: func
+    procedure (grad_real64), optional :: grad
+
+    procedure (fobj_args_real64), optional :: func_args
+    procedure (grad_args_real64), optional :: grad_args
+
+    procedure (fobj_grad_real64), optional :: func_grad
+
+    procedure (fobj_grad_args_real64), optional :: func_grad_args
+
+    real (PREC), intent(in out), dimension(:), contiguous :: x
+    real (PREC), intent(in), dimension(:), optional :: lbounds
+    real (PREC), intent(in), dimension(:), optional :: ubounds
+    integer, intent(in), optional :: maxiter
+    integer, intent(in), optional :: maxfun
+    integer, intent(in), optional :: m
+    integer (NF_ENUM_KIND), intent(in), optional :: iprint
+    real (PREC), intent(in), optional :: factr
+    real (PREC), intent(in), optional :: pgtol
+    class (workspace), intent(in out), optional :: work
+    real (PREC), intent(in), dimension(:), optional :: args
+    class (optim_result), intent(in out), optional :: res
+
+    target :: work
 
     real (PREC), dimension(size(x)) :: llbounds, lubounds
     integer :: lmaxiter, lmaxfun, lm
@@ -115,8 +194,7 @@ subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
     integer :: iprint2
         ! iprint argument passed to BFGS library
     real (PREC) :: lfactr, lpgtol
-    type (workspace), allocatable, target :: lwork
-    type (workspace), pointer :: ptr_work
+    class (workspace), pointer :: ptr_work
     character (len=100) :: msg
 
     integer :: nrwrk, niwrk, n
@@ -124,11 +202,13 @@ subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
     ! lenghts of additional working arrays
     integer, parameter :: ndsave = 29, nisave = 44, nlsave = 4, ncsave = 60, ntask = 60
 
-    ! working arrays passed to setulb
-    real (PREC), dimension(:), pointer, contiguous :: ptr_wa, ptr_dsave
-    integer, dimension(:), pointer, contiguous :: ptr_iwa, ptr_isave
-    logical, dimension(:), pointer, contiguous :: ptr_lsave
-    character (len=:), pointer :: ptr_csave, ptr_task
+    ! Allocate all these arrays on the stack since they are small and their
+    ! size is independent of the problem.
+    character (ncsave) :: csave
+    character (ntask) :: task
+    logical, dimension(nlsave) :: lsave
+    integer, dimension(nisave) :: isave
+    real (PREC), dimension(ndsave) :: dsave
 
     ! lower/upper bound flags passed to setulb
     integer, dimension(size(x)) :: nbd
@@ -184,62 +264,69 @@ subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
     if (present(work)) then
         ptr_work => work
     else
-        allocate (lwork)
-        ptr_work => lwork
+        allocate (workspace :: ptr_work)
     end if
 
     ! lump together real work array and dsave, and integer work
     ! array and isave, task and csave
-    call ptr_work%assert_allocated (nrwrk + ndsave, niwrk + nisave, ncsave + ntask, nlsave)
-
-    ptr_wa => ptr_work%rwrk(1:nrwrk)
-    ptr_iwa => ptr_work%iwrk(1:niwrk)
-    ptr_dsave => ptr_work%rwrk(nrwrk+1:)
-    ptr_isave => ptr_work%iwrk(niwrk+1:)
-    ptr_lsave => ptr_work%lwrk(1:nlsave)
-    ptr_csave => ptr_work%cwrk(1:ncsave)
-    ptr_task => ptr_work%cwrk(ncsave+1:ncsave+ntask)
+    call ptr_work%assert_allocated (nrwrk, niwrk)
 
     ! transform boundaries to arguments accepted by routine
     call set_bounds_flags (llbounds, lubounds, nbd)
     ! overwrite local print level with value accepted by setulb
     iprint2 = set_print_level (liprint)
 
-    ptr_task = 'START'
+    task = 'START'
 
     iter = 0
     nfeval = 0
+    fx = 0.0
 
     do while (.true.)
         call setulb (n, lm, x, llbounds, lubounds, nbd, fx, gradx, lfactr, lpgtol, &
-            ptr_wa, ptr_iwa, ptr_task, iprint2, ptr_csave, ptr_lsave, ptr_isave, ptr_dsave)
+            ptr_work%rwrk(1:nrwrk), ptr_work%iwrk(1:niwrk), task, iprint2, &
+            csave, lsave, isave, dsave)
 
-        if (ptr_task(1:2) == 'FG') then
-            call func (x, fx, gradx)
-        else if (ptr_task(1:5) == 'NEW_X') then
-            ! retrieve statistics stored in working array
-            iter = ptr_isave(30)
-            nfeval = ptr_isave(34)
+        if (task(1:2) == 'FG') then
+            if (present(func) .and. present(grad)) then
+                call func (x, fx)
+                call grad (x, gradx)
+            else if (present(func_args) .and. present(grad_args) .and. present(args)) then
+                call func_args (x, fx, args)
+                call grad_args (x, gradx, args)
+            else if (present(func_grad)) then
+                call func_grad (x, fx, gradx)
+            else if (present(func_grad_args) .and. present(args)) then
+                call func_grad_args (x, fx, gradx, args)
+            else
+                msg = "Invalid objective function/gradient specified"
+                status = NF_STATUS_INVALID_ARG
+                goto 100
+            end if
+        else if (task(1:5) == 'NEW_X') then
+            ! retrieve solver statistics
+            iter = isave(30)
+            nfeval = isave(34)
 
             ! check whether limits have been exceeded
             if (iter > lmaxiter) then
-                ptr_task = 'STOP: Number of iterations exceeds limit'
+                task = 'STOP: Number of iterations exceeds limit'
             else if (nfeval > lmaxfun) then
-                ptr_task = 'STOP: Total number of function evaluations exceeds limit'
+                task = 'STOP: Total number of function evaluations exceeds limit'
             end if
         else
             exit
         end if
     end do
 
-    if (ptr_task(1:4) == 'CONV') then
-        msg = ptr_task
+    if (task(1:4) == 'CONV') then
+        msg = task
         status = NF_STATUS_OK
-    else if (ptr_task(1:5) == 'ERROR') then
-        msg = ptr_task
+    else if (task(1:5) == 'ERROR') then
+        msg = task
         status = NF_STATUS_INVALID_ARG
-    else if (ptr_task(1:4) == 'ABNO') then
-        msg = ptr_task
+    else if (task(1:4) == 'ABNO') then
+        msg = task
         status = NF_STATUS_NOT_CONVERGED
     else if (iter > lmaxiter) then
         msg = "Number of iterations exceeded limit"
@@ -251,16 +338,13 @@ subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
         status = NF_STATUS_UNKNOWN
     end if
 
-    if (present(res)) then
+100 if (present(res)) then
+        ! Note that all variables should have had some value set at this point.
         call res%update (x, fx, status, iter, nfeval, msg)
     end if
 
-    return
-
-    ! input error handling
-100 if (present(res)) then
-        call res%update (status=status, msg=msg)
-    end if
+    if (.not. present(work) .and. associated(ptr_work)) deallocate(ptr_work)
+    nullify (ptr_work)
 
 end subroutine
 

@@ -70,9 +70,10 @@ endif ()
 # Target definitions
 
 set(SOURCE_FILES
-    lbfgsb.f
-    linpack.f
-    timer.f
+    lbfgsb_real64.f
+    # lbfgsb.f
+    # linpack.f
+    # timer.f
 )
 
 set(_name ${${PROJECT_NAME}_LIBRARY_NAME})
@@ -87,6 +88,6 @@ if (${PROJECT_NAME}_STANDALONE)
     add_library(${_name} $<TARGET_OBJECTS:${_name}>)
 endif ()
 
-if (BUILD_EXAMPLES)
-	add_subdirectory(examples)
-endif ()
+# if (BUILD_EXAMPLES)
+# 	add_subdirectory(examples)
+# endif ()
