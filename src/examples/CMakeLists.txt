@@ -31,7 +31,6 @@ foreach (_dir IN LISTS _MODULES)
 
     # Process example files that require OpenMP
     if (OPENMP_FOUND)
-        set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
         foreach (_file IN LISTS ${_dir}_FILES_OMP)
     		get_filename_component(exe_name "${_file}" NAME_WE)
     		# set target name that does not possibly conflict with other stuff
@@ -41,6 +40,7 @@ foreach (_dir IN LISTS _MODULES)
     		set_target_properties(${_target} PROPERTIES
     			OUTPUT_NAME ${exe_name}
     		)
+            target_compile_options(${_target} PRIVATE ${OpenMP_Fortran_FLAGS})
     	endforeach ()
     endif()
 endforeach ()

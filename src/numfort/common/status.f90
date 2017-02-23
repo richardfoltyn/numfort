@@ -186,7 +186,7 @@ elemental subroutine assign_int_status (lhs, rhs)
 end subroutine
 
 elemental subroutine assign_status_int (lhs, rhs)
-    class (status_t), intent(out) :: lhs
+    type (status_t), intent(out) :: lhs
     integer (NF_ENUM_KIND), intent(in) :: rhs
     lhs%code = rhs
 end subroutine

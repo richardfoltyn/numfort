@@ -182,11 +182,9 @@ subroutine lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
     real (PREC), intent(in), optional :: factr
     real (PREC), intent(in), optional :: pgtol
-    class (workspace), intent(in out), optional :: work
+    class (workspace), intent(in out), optional, target :: work
     real (PREC), intent(in), dimension(:), optional :: args
     class (optim_result), intent(in out), optional :: res
-
-    target :: work
 
     real (PREC), dimension(size(x)) :: llbounds, lubounds
     integer :: lmaxiter, lmaxfun, lm

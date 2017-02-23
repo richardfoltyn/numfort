@@ -283,7 +283,7 @@ set_target_properties(${LIBRARY_NAME} PROPERTIES
 
 # for benchmarks, examples, etc
 add_library(${LIBRARY_NAME}_static STATIC ${SOURCE_FILES} ${COMPONENT_OBJECTS})
-add_dependencies(${LIBRARY_NAME}_static ${_TARGETS})
+#add_dependencies(${LIBRARY_NAME}_static ${_TARGETS})
 
 install(TARGETS ${LIBRARY_NAME}
     RUNTIME DESTINATION "${CMAKE_INSTALL_LIBDIR}"
