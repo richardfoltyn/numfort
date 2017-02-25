@@ -52,7 +52,7 @@ set(${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_LIBRARY_NAME}_static)
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     # enable optimization that does not break debugging
-    set(CMAKE_Fortran_FFLAGS_DEBUG "-Og")
+    set(CMAKE_Fortran_FLAGS_DEBUG "-Og")
 endif ()
 
 ################################################################################
