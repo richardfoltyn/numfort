@@ -12,7 +12,11 @@ module numfort_optimize_minpack
     implicit none
     private
 
+    public :: root_hybrd, root_hybrj, root_lstsq
+
     integer, parameter :: PREC = real64
+    ! size of character variable for diagnostic messages
+    integer, parameter :: MSG_LENGTH = 100
 
     interface
         subroutine func_vec_vec_real64 (x, fx)
@@ -21,12 +25,12 @@ module numfort_optimize_minpack
             real (PREC), dimension(:), intent(out) :: fx
         end subroutine
 
-        subroutine func_jac_real64 (x, fx, dfdx, task)
+        subroutine func_jac_real64 (x, fx, jac, task)
             import PREC
             real (PREC), dimension(:), intent(in) :: x
             real (PREC), dimension(:), intent(out) :: fx
-            real (PREC), dimension(:,:), intent(out) :: dfdx
-            integer, intent(in) :: task
+            real (PREC), dimension(:,:), intent(out) :: jac
+            integer, intent(in out) :: task
         end subroutine
     end interface
 
@@ -41,8 +45,6 @@ module numfort_optimize_minpack
     interface root_lstsq
         module procedure root_lmdif_real64
     end interface
-
-    public :: root_hybrd, root_hybrj, root_lstsq
 
 contains
 
@@ -64,16 +66,18 @@ subroutine root_hybrd_real64 (func, x, fx, xtol, maxfev, ml, mu, eps, factor, di
     ! local default values for optional arguments
     real (PREC) :: lxtol, leps, lfactor
     integer :: lmaxfev, lml, lmu, lr, lnprint
-    type (status_t) :: status
+
     ! Remaining local variables
-    integer, parameter :: MSG_LENGTH = 100
+    type (status_t) :: status
+    character (MSG_LENGTH) :: msg
     integer :: n, nrwrk, mode, info, i, nfev
-    type (workspace), target :: lwork
     class (workspace), pointer :: ptr_work
     ! pointers to various arrays that need to be passed to hybrd() that are
     ! segments of memory allocated in workspace
     real (PREC), dimension(:), pointer, contiguous :: ptr_fjac, ptr_r, ptr_qtf, &
         ptr_wa1, ptr_wa2, ptr_wa3, ptr_wa4, ptr_diag
+
+    nullify (ptr_work)
 
     n = size(x)
     ! workspace size obtained from hybrd1()
@@ -82,10 +86,10 @@ subroutine root_hybrd_real64 (func, x, fx, xtol, maxfev, ml, mu, eps, factor, di
     if (present(work)) then
         ptr_work => work
     else
-        ptr_work => lwork
+        allocate (ptr_work)
     end if
 
-    call ptr_work%assert_allocated (nrwrk, ncwrk=MSG_LENGTH)
+    call ptr_work%assert_allocated (nrwrk)
 
     ! set default values
     lmaxfev = 200 * (n + 1)
@@ -148,29 +152,32 @@ subroutine root_hybrd_real64 (func, x, fx, xtol, maxfev, ml, mu, eps, factor, di
     select case (info)
     case (0)
         status = NF_STATUS_INVALID_ARG
-        ptr_work%cwrk = "Invalid input parameters"
+        msg = "Invalid input parameters"
     case (1)
         status = NF_STATUS_OK
-        ptr_work%cwrk = "Convergence achieved, relative error is at most xtol"
+        msg = "Convergence achieved, relative error is at most xtol"
     case (2)
         status = NF_STATUS_MAX_EVAL
-        ptr_work%cwrk = "Exceeded max. number of function evaluations"
+        msg = "Exceeded max. number of function evaluations"
     case (3)
         status = NF_STATUS_NOT_CONVERGED
-        ptr_work%cwrk = "xtol too small, no further improvement possible"
+        msg = "xtol too small, no further improvement possible"
     case (4)
         status = NF_STATUS_NOT_CONVERGED
-        ptr_work%cwrk = "Not making progress (as measured by last five Jacobians)"
+        msg = "Not making progress (as measured by last five Jacobians)"
     case (5)
         status = NF_STATUS_NOT_CONVERGED
-        ptr_work%cwrk = "Not making progress (as measured by last ten iterations)"
+        msg = "Not making progress (as measured by last ten iterations)"
     case default
         status = NF_STATUS_UNKNOWN
     end select
 
     if (present(res)) then
-        call res%update (x=x, fx=fx, nfev=nfev, status=status, msg=ptr_work%cwrk)
+        call res%update (x=x, fx=fx, nfev=nfev, status=status, msg=msg)
     end if
+
+    if (.not. present(work) .and. associated(ptr_work)) deallocate (ptr_work)
+    nullify (ptr_work)
 
 contains
 
@@ -206,16 +213,17 @@ subroutine root_hybrj_real64 (func, x, fx, xtol, maxfev, factor, diag, work, res
     ! local default values for optional arguments
     real (PREC) :: lxtol, lfactor
     integer :: lmaxfev, lr, lnprint
-    type (status_t) :: status
     ! Remaining local variables
-    integer, parameter :: MSG_LENGTH = 100
+    type (status_t) :: status
+    character (MSG_LENGTH) :: msg
     integer :: n, nrwrk, mode, info, i, nfev, njev
-    type (workspace), target :: lwork
     class (workspace), pointer :: ptr_work
     ! pointers to various arrays that need to be passed to hybrd() that are
     ! segments of memory allocated in workspace
     real (PREC), dimension(:), pointer, contiguous :: ptr_fjac, ptr_r, ptr_qtf, &
         ptr_wa1, ptr_wa2, ptr_wa3, ptr_wa4, ptr_diag
+
+    nullify (ptr_work)
 
     n = size(x)
     ! workspace size obtained from hybrj1()
@@ -224,10 +232,10 @@ subroutine root_hybrj_real64 (func, x, fx, xtol, maxfev, factor, diag, work, res
     if (present(work)) then
         ptr_work => work
     else
-        ptr_work => lwork
+        allocate (ptr_work)
     end if
 
-    call ptr_work%assert_allocated (nrwrk, ncwrk=MSG_LENGTH)
+    call ptr_work%assert_allocated (nrwrk)
 
     ! set default values, taken from hybrj1
     lmaxfev = 100 * (n + 1)
@@ -285,29 +293,32 @@ subroutine root_hybrj_real64 (func, x, fx, xtol, maxfev, factor, diag, work, res
     select case (info)
     case (0)
         status = NF_STATUS_INVALID_ARG
-        ptr_work%cwrk = "Invalid input parameters"
+        msg = "Invalid input parameters"
     case (1)
         status = NF_STATUS_OK
-        ptr_work%cwrk = "Convergence achieved, relative error is at most xtol"
+        msg = "Convergence achieved, relative error is at most xtol"
     case (2)
         status = NF_STATUS_MAX_EVAL
-        ptr_work%cwrk = "Exceeded max. number of function evaluations"
+        msg = "Exceeded max. number of function evaluations"
     case (3)
         status = NF_STATUS_NOT_CONVERGED
-        ptr_work%cwrk = "xtol too small, no further improvement possible"
+        msg = "xtol too small, no further improvement possible"
     case (4)
         status = NF_STATUS_NOT_CONVERGED
-        ptr_work%cwrk = "Not making progress (as measured by last five Jacobians)"
+        msg = "Not making progress (as measured by last five Jacobians)"
     case (5)
         status = NF_STATUS_NOT_CONVERGED
-        ptr_work%cwrk = "Not making progress (as measured by last ten iterations)"
+        msg = "Not making progress (as measured by last ten iterations)"
     case default
         status = NF_STATUS_UNKNOWN
     end select
 
     if (present(res)) then
-        call res%update (x=x, fx=fx, nfev=nfev, status=status, msg=ptr_work%cwrk)
+        call res%update (x=x, fx=fx, nfev=nfev, status=status, msg=msg)
     end if
+
+    if (.not. present(work) .and. associated(ptr_work)) deallocate (ptr_work)
+    nullify (ptr_work)
 
 contains
 
@@ -346,17 +357,18 @@ subroutine root_lmdif_real64 (func, x, fx, ftol, xtol, gtol, maxfev, eps, &
     ! local default values for optional arguments
     real (PREC) :: lxtol, lftol, lgtol, leps, lfactor
     integer :: lmaxfev, lnprint
-    type (status_t) :: status
     ! Remaining local variables
-    integer, parameter :: MSG_LENGTH = 100
+    type (status_t) :: status
+    character (MSG_LENGTH) :: msg
     integer :: m, n, nrwrk, niwrk, mode, info, i, nfev
-    type (workspace), target :: lwork
     class (workspace), pointer :: ptr_work
     ! pointers to various arrays that need to be passed to lmdif() that are
     ! segments of memory allocated in workspace
     real (PREC), dimension(:), pointer, contiguous :: ptr_fjac, ptr_qtf, &
         ptr_wa1, ptr_wa2, ptr_wa3, ptr_wa4, ptr_diag
     integer, dimension(:), pointer, contiguous :: ptr_ipvt
+
+    nullify (ptr_work)
 
     n = size(x)
     m = size(fx)
@@ -368,10 +380,10 @@ subroutine root_lmdif_real64 (func, x, fx, ftol, xtol, gtol, maxfev, eps, &
     if (present(work)) then
         ptr_work => work
     else
-        ptr_work => lwork
+        allocate (ptr_work)
     end if
 
-    call ptr_work%assert_allocated (nrwrk, niwrk=niwrk, ncwrk=MSG_LENGTH)
+    call ptr_work%assert_allocated (nrwrk, niwrk=niwrk)
 
     ! set default values
     lmaxfev = 200 * (n + 1)
@@ -433,37 +445,39 @@ subroutine root_lmdif_real64 (func, x, fx, ftol, xtol, gtol, maxfev, eps, &
     select case (info)
     case (0)
         status = NF_STATUS_INVALID_ARG
-        ptr_work%cwrk = "Invalid input parameters"
+        msg = "Invalid input parameters"
     case (1)
         status = NF_STATUS_OK
-        ptr_work%cwrk = "Convergence in terms of ftol"
+        msg = "Convergence in terms of ftol"
     case (2)
         status = NF_STATUS_OK
-        ptr_work%cwrk = "Convergence in terms of xtol"
+        msg = "Convergence in terms of xtol"
     case (3)
         status = NF_STATUS_OK
-        ptr_work%cwrk = "Convegence in terms of ftol and xtol"
+        msg = "Convegence in terms of ftol and xtol"
     case (4)
         status = NF_STATUS_OK
-        ptr_work%cwrk = "Convergence in terms of gtol"
+        msg = "Convergence in terms of gtol"
     case (5)
         status = NF_STATUS_MAX_EVAL
-        ptr_work%cwrk = "Exceeded max. number of function evaluations"
+        msg = "Exceeded max. number of function evaluations"
     case (6)
         status = NF_STATUS_NOT_CONVERGED
-        ptr_work%cwrk = "ftol too small. No further reduction possible"
+        msg = "ftol too small. No further reduction possible"
     case (7)
         status = NF_STATUS_NOT_CONVERGED
-        ptr_work%cwrk = "xtol is too small. No further improvement in solution possible"
+        msg = "xtol is too small. No further improvement in solution possible"
     case (8)
         status = NF_STATUS_NOT_CONVERGED
-        ptr_work%cwrk = "gtol is too small. fvec is orthogonal to columns of Jacobian"
+        msg = "gtol is too small. fvec is orthogonal to columns of Jacobian"
     end select
 
     if (present(res)) then
-        call res%update (x=x, fx=fx, nfev=nfev, status=status, msg=ptr_work%cwrk)
+        call res%update (x=x, fx=fx, nfev=nfev, status=status, msg=msg)
     end if
 
+    if (.not. present(work) .and. associated(ptr_work)) deallocate (ptr_work)
+    nullify (ptr_work)
 
 contains
 
