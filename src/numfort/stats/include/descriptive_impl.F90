@@ -263,7 +263,7 @@ pure subroutine __APPEND(std_2d,__PREC) (x, s, m, dof, dim, status)
     integer :: iv, iobs, nvars, nobs, ldof, ldim
 
     ! set default values
-    status = NF_STATUS_OK
+    lstatus = NF_STATUS_OK
     s = 0.0_PREC
     ldof = 1
     if (present(m)) m = 0.0_PREC
