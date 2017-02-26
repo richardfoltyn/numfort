@@ -20,9 +20,16 @@ subroutine example1 ()
     type (optim_result) :: res
     type (workspace) :: work
 
-    x = 1.0
+    real (PREC), parameter :: x0 = 5.0
+
+    x = x0
     ! (one) root of func1 is located at x = [2,3,4]
     call root_hybrj (func1, x, fx, work=work, res=res)
+    call print_report (res)
+
+    ! Compare to results obtained from hybrd using numerical differentiation
+    x = x0
+    call root_hybrd (func2, x, fx, work=work, res=res)
     call print_report (res)
 
 end subroutine
@@ -44,6 +51,18 @@ pure subroutine func1 (x, fx, jac, task)
     end if
 end subroutine
 
+pure subroutine func2 (x, fx)
+    real (PREC), dimension(:), intent(in) :: x
+    real (PREC), dimension(:), intent(out) :: fx
+
+    real (PREC), dimension(size(x), size(x)) :: jac
+    integer :: task
+
+    task = 1
+
+    call func1 (x, fx, jac, task)
+end subroutine
+
 
 subroutine print_report (res)
     class (optim_result), intent(in) :: res
@@ -56,10 +75,10 @@ subroutine print_report (res)
         print "(t3, 'Message: ', a)", res%msg
     end if
     write (OUTPUT_UNIT, advance='no', &
-        fmt="(t3, 'Solution:', t23, '[', t25, *(t25, 5(f6.4, :, ', '), :, /))") res%x
+        fmt="(t3, 'Solution:', t23, '[', t25, *(t25, 5(f12.8, :, ', '), :, /))") res%x
     print *, ']'
     write (OUTPUT_UNIT, advance='no', &
-        fmt="(t3, 'Function value:', t23, '[', t25, *(t25, 5(f6.4, :, ', '), :, /))") res%fx
+        fmt="(t3, 'Function value:', t23, '[', t25, *(t25, 5(f12.8, :, ', '), :, /))") res%fx
     print *, ']'
     print "(t3, 'Number of function evaluations: ', i0)", res%nfev
 

@@ -5,5 +5,6 @@ set(${COMPONENT_NAME}_FILES
     minimize_lbfgsb.f90
     minimize_simplex.f90
     minpack.f90
+    minpack_hybrj.f90
     PARENT_SCOPE
 )
