@@ -1,10 +1,17 @@
 # L-BFGS-B #
+
 ## Software for Large-scale Bound-constrained Optimization ##
-L-BFGS-B is a limited-memory quasi-Newton code for bound-constrained optimization, i.e. for problems where the only constraints are of the form l<= x <= u. The current release is version 3.0. The distribution file was last changed on 02/08/11.
+L-BFGS-B is a limited-memory quasi-Newton code for bound-constrained optimization,
+i.e. for problems where the only constraints are of the form l<= x <= u.
+The current release is version 3.0.
+The distribution file was last changed on 02/08/11.
 
 ## License ##
 
-This software is freely available, but we expect that all publications describing  work using this software , or all commercial products using it, quote at least one of the references given below. This software is released under the "New BSD License" (aka "Modified BSD License" or "3-clause license").
+This software is freely available, but we expect that all publications
+describing  work using this software, or all commercial products using it,
+quote at least one of the references given below. This software is released
+under the "New BSD License" (aka "Modified BSD License" or "3-clause license").
 
 ## Authors ##
 
