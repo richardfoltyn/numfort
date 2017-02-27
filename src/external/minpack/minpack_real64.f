@@ -47,6 +47,7 @@
         public :: lmdif_fcn_real64
         public :: hybrd_fcn_real64
         public :: hybrj_fcn_real64
+        public :: chkder
 
 
       contains
@@ -58,6 +59,7 @@
       include "lmdif.f"
 
       ! helper routines
+      include "chkder.f"
       include "dogleg.f"
       include "dpmpar.f"
       include "enorm.f"

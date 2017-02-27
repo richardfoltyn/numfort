@@ -7,12 +7,13 @@ module numfort_optimize_minpack
 
     use minpack_real64, only: minpack_hybrd_real64 => hybrd, &
         minpack_lmdif_real64 => lmdif, &
-        minpack_hybrj_real64 => hybrj
+        minpack_hybrj_real64 => hybrj, minpack_chkder => chkder
 
     implicit none
     private
 
     public :: root_hybrd, root_hybrj, root_lstsq
+    public :: chkder
 
     integer, parameter :: PREC = real64
     ! size of character variable for diagnostic messages
@@ -44,6 +45,10 @@ module numfort_optimize_minpack
 
     interface root_lstsq
         module procedure root_lmdif_real64
+    end interface
+
+    interface chkder
+        module procedure chkder_real64
     end interface
 
 contains
@@ -493,6 +498,20 @@ contains
         ! call user-provided function
         call func (x, fx)
     end subroutine
+end subroutine
+
+subroutine chkder_real64 (fcn, m, x, err)
+    procedure (func_jac_real64) :: fcn
+    integer, intent(in) :: m
+    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(out), dimension(:) :: err
+
+    integer :: n
+    
+    n = size(x)
+
+
+
 end subroutine
 
 end module
