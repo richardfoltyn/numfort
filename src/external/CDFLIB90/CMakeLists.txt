@@ -26,7 +26,7 @@ endif ()
 # Numfort subproject setup
 
 if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
-	set(BUILD_OBJECT_LIBS ON)
+	set(${PROJECT_NAME}_STANDALONE FALSE)
 	set(${PROJECT_NAME}_EXAMPLES_DIRECTORY
 		"${${CMAKE_PROJECT_NAME}_EXAMPLES_DIRECTORY}/external/${PROJECT_NAME}"
 	)
@@ -38,7 +38,7 @@ if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
     )
     message(STATUS "Building ${PROJECT_NAME_PRETTY} as sub-project")
 else ()
-	set(BUILD_OBJECT_LIBS OFF)
+	set(${PROJECT_NAME}_STANDALONE TRUE)
 	set(${PROJECT_NAME}_EXAMPLES_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 	message(STATUS "Building ${PROJECT_NAME_PRETTY} as standalone project")
 endif ()

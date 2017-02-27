@@ -28,7 +28,7 @@ option(USE_MKL "Build against Intel MKL" ON)
 # Numfort subproject setup
 
 if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
-	set(BUILD_OBJECT_LIBS ON)
+    set(${PROJECT_NAME}_STANDALONE FALSE)
 	set(${PROJECT_NAME}_EXAMPLES_DIRECTORY
 		"${${CMAKE_PROJECT_NAME}_EXAMPLES_DIRECTORY}/external/${PROJECT_NAME}"
 	)
@@ -40,7 +40,7 @@ if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
     )
 	message(STATUS "Building ${PROJECT_NAME_PRETTY} as sub-project")
 else ()
-	set(BUILD_OBJECT_LIBS OFF)
+	set(${PROJECT_NAME}_STANDALONE TRUE)
 	set(${PROJECT_NAME}_EXAMPLES_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 	message(STATUS "Building ${PROJECT_NAME_PRETTY} as standalone project")
 endif ()
@@ -48,14 +48,16 @@ endif ()
 ################################################################################
 # BLAS libraries
 
-if (USE_MKL)
-    find_package(MKL REQUIRED)
-    list(APPEND ${PROJECT_NAME}_LIBRARIES ${MKL_LIBRARIES})
-else ()
-    find_package(BLAS REQUIRED)
-    list(APPEND ${PROJECT_NAME}_LIBRARIES ${LAPACK_LIBRARIES})
-    set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${LAPACK_LINKER_FLAGS})
-    set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${LAPACK_LINKER_FLAGS})
+if (${PROJECT_NAME}_STANDALONE)
+    if (USE_MKL)
+        find_package(MKL REQUIRED)
+        list(APPEND ${PROJECT_NAME}_LIBRARIES ${MKL_LIBRARIES})
+    else ()
+        find_package(BLAS REQUIRED)
+        list(APPEND ${PROJECT_NAME}_LIBRARIES ${LAPACK_LIBRARIES})
+        set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${LAPACK_LINKER_FLAGS})
+        set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${LAPACK_LINKER_FLAGS})
+    endif ()
 endif ()
 
 ################################################################################
