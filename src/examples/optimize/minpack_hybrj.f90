@@ -19,6 +19,8 @@ subroutine example1 ()
     real (PREC), dimension(n) :: x, fx
     type (optim_result) :: res
     type (workspace) :: work
+    ! error flag for Jacobian diagnostics
+    real (PREC), dimension(n) :: err
 
     real (PREC), parameter :: x0 = 5.0
 
@@ -26,6 +28,11 @@ subroutine example1 ()
     ! (one) root of func1 is located at x = [2,3,4]
     call root_hybrj (func1, x, fx, work=work, res=res)
     call print_report (res)
+
+    ! Compare analytical and numerical derivative using chkder
+    x = x0
+    call chkder (func1, n, x, err)
+    print '("Gradient diagnostics: ", *(f10.7, :, ","))', err
 
     ! Compare to results obtained from hybrd using numerical differentiation
     x = x0
