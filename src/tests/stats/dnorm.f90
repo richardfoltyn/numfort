@@ -2,7 +2,8 @@ program test_numfort_stats_dnorm
 
     use iso_fortran_env
 
-    use corelib_strings
+    ! avoid nameclashes with CORELIB status_t type
+    use corelib_common, cl_status_t => status_t
     use corelib_testing
     use numfort_arrays
     use numfort_common
