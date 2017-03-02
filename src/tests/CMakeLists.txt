@@ -32,3 +32,5 @@ foreach (_dir IN LISTS COMPONENTS)
     endforeach()
 
 endforeach()
+
+add_subdirectory(openmp)
