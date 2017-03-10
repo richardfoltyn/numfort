@@ -22,7 +22,7 @@ module numfort_optimize_lbfgsb
             lbfgsb_grad_args_real64
     end interface
 
-    interface
+    abstract interface
         subroutine fobj_real64 (x, fx)
             import real64
             real (real64), intent(in), dimension(:), contiguous :: x

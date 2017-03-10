@@ -310,8 +310,10 @@ pure subroutine __APPEND(std_2d,__PREC) (x, s, m, dof, dim, status)
         end if
     end if
 
-100 continue
     if (present(m)) m = lm
+    
+100 continue
+    ! Error handling
     if (present(status)) status = lstatus
 
 end subroutine
