@@ -173,18 +173,24 @@ unset(_FFLAGS_DEBUG)
 # compilation of F77 external code
 unset(_FFLAGS_GLOBAL)
 
+# Notes on the floating point model used by ifort:
+# https://software.intel.com/en-us/articles/consistency-of-floating-point-results-using-the-intel-compiler/
+
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     # explicitly add -cpp to run C preprocessor if required
 	set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} -Wall -Wextra -Wno-compare-reals")
     set(GNU_WARN "-Wimplicit-interface -Wimplicit-procedure \
         -Warray-temporaries -Wrealloc-lhs -pedantic")
     set(_FFLAGS "${GNU_WARN} -std=f2008")
-    set(_FFLAGS_DEBUG "-fcheck=all -Og -save-temps")
+	set(_FFLAGS_GLOBAL_DEBUG "-fcheck=all -Og")
+    set(_FFLAGS_DEBUG "-save-temps")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
-		set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} /warn:all /auto")
+		set(_FFLAGS_FP "/fp:precise /fp:source")
+		set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} /warn:all /auto ")
         set(_FFLAGS "/standard-semantics /stand:f08")
-		set(_FFLAGS_DEBUG "/check:all /Qsave-temps")
+		set(_FFLAGS_GLOBAL_DEBUG "/check:all")
+		set(_FFLAGS_DEBUG "/Qsave-temps")
 
 		if (NOT IFORT_STD_MOD_PROC_NAME)
             set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} /assume:nostd_mod_proc_name")
@@ -192,9 +198,11 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
             set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} /assume:std_mod_proc_name")
         endif ()
     else ()
+		set(_FFLAGS_FP "-fp-model precise -fp-model source")
 		set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} -warn all -auto")
         set (_FFLAGS "-standard-semantics -std08")
-        set(_FFLAGS_DEBUG "-check all -save-temps")
+		set(_FFLAGS_GLOBAL_DEBUG "-check all")
+        set(_FFLAGS_DEBUG "-save-temps")
 
 		if (NOT IFORT_STD_MOD_PROC_NAME)
             set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} -assume nostd_mod_proc_name")
@@ -206,7 +214,8 @@ endif ()
 
 # add standard semantics to compiler flags even for F77 files, in case
 # these reference any submodules
-set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS_GLOBAL}")
+set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS_GLOBAL} ${_FFLAGS_FP}")
+set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${_FFLAGS_GLOBAL_DEBUG}")
 
 message(STATUS "Default compiler flags: ${CMAKE_Fortran_FLAGS}")
 # Make sure build type is upper case, otherwise the wrong flags will be shown
@@ -218,7 +227,7 @@ if (_FFLAGS)
     message(STATUS "Add. compiler flags: ${_FFLAGS}")
 endif ()
 if (_FFLAGS_${_CONFIG})
-    message(STATUS "Add. compiler flags for ${CMAKE_BUILD_TYPE}: ${_FFLAGS_${_CONFIG}}")
+    message(STATUS "Add. compiler flags for ${CMAKE_BUILD_TYPE}: ${_FFLAGS_GLOBAL_${_CONFIG}} ${_FFLAGS_${_CONFIG}}")
 endif ()
 
 set(${CMAKE_PROJECT_NAME}_FFLAGS "${_FFLAGS}")
@@ -272,7 +281,9 @@ endforeach ()
 
 set(LIBRARY_NAME ${${PROJECT_NAME}_LIBRARY_NAME})
 add_library(${LIBRARY_NAME} ${SOURCE_FILES} ${COMPONENT_OBJECTS})
-target_link_libraries(${LIBRARY_NAME} ${${PROJECT_NAME}_BLA_LIBRARIES})
+if (BUILD_SHARED_LIBS)
+	target_link_libraries(${LIBRARY_NAME} ${${PROJECT_NAME}_BLA_LIBRARIES})
+endif ()
 
 set_target_properties(${LIBRARY_NAME} PROPERTIES
 	Fortran_MODULE_DIRECTORY "${${PROJECT_NAME}_MODDIR}"
