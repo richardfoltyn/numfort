@@ -8,6 +8,7 @@ set(SOURCE_FILES
     minimize_simplex.f90
     brent.f90
     minpack.f90
+    root_newton.f90
 )
 
 include_directories(${${CMAKE_PROJECT_NAME}_INCLUDE_DIRS})
