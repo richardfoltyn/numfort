@@ -8,6 +8,7 @@ set(SOURCE_FILES
 	kinds.f90
 	status.f90
 	workspace.F90
+    input_checks.f90
 )
 
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
