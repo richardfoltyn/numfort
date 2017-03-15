@@ -3,23 +3,24 @@ module numfort_optimize_minpack
     use, intrinsic :: iso_fortran_env, only: real64
 
     use numfort_common
+    use numfort_common_input_checks
     use numfort_optim_result_mod
 
     use minpack_real64, only: minpack_hybrd_real64 => hybrd, &
-        minpack_lmdif_real64 => lmdif, &
+        minpack_lmdif_real64 => lmdif, minpack_lmder_real64 => lmder, &
         minpack_hybrj_real64 => hybrj, minpack_chkder => chkder
 
     implicit none
     private
 
-    public :: root_hybrd, root_hybrj, root_lstsq
+    public :: root_hybrd, root_hybrj, root_lmdif, root_lmder
     public :: chkder
 
     integer, parameter :: PREC = real64
     ! size of character variable for diagnostic messages
     integer, parameter :: MSG_LENGTH = 100
 
-    interface
+    abstract interface
         subroutine func_vec_vec_real64 (x, fx)
             import PREC
             real (PREC), dimension(:), intent(in) :: x
@@ -43,8 +44,12 @@ module numfort_optimize_minpack
         module procedure root_hybrj_real64
     end interface
 
-    interface root_lstsq
+    interface root_lmdif
         module procedure root_lmdif_real64
+    end interface
+
+    interface root_lmder
+        module procedure root_lmder_real64
     end interface
 
     interface chkder
@@ -499,6 +504,214 @@ contains
         call func (x, fx)
     end subroutine
 end subroutine
+
+subroutine root_lmder_real64 (func, x, fx, ftol, xtol, gtol, maxfev, &
+        factor, diag, work, res)
+
+    procedure (func_jac_real64) :: func
+    ! Note: will be passed using F77 implicit interface, ensure contiguous array.
+    real (PREC), intent(in out), dimension(:), contiguous :: x
+    real (PREC), intent(out), dimension(:), contiguous :: fx
+    real (PREC), intent(in), optional :: ftol
+    real (PREC), intent(in), optional :: xtol
+    real (PREC), intent(in), optional :: gtol
+    integer, intent(in), optional :: maxfev
+    real (PREC), intent(in), optional :: factor
+    real (PREC), intent(in), dimension(:), optional, target :: diag
+    class (workspace), intent(in out), target, optional :: work
+    class (optim_result), intent(in out), optional :: res
+
+    ! local default values for optional arguments
+    real (PREC) :: lxtol, lftol, lgtol, lfactor
+    integer :: lmaxfev, lnprint
+    ! Remaining local variables
+    type (status_t) :: status
+    character (MSG_LENGTH) :: msg
+    integer :: m, n, nrwrk, niwrk, mode, info, i, nfev, njev
+    class (workspace), pointer :: ptr_work
+    ! pointers to various arrays that need to be passed to lmder() that are
+    ! segments of memory allocated in workspace
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_fjac
+    real (PREC), dimension(:), pointer, contiguous :: ptr_qtf, &
+        ptr_wa1, ptr_wa2, ptr_wa3, ptr_wa4, ptr_diag
+    integer, dimension(:), pointer, contiguous :: ptr_ipvt
+
+    nullify (ptr_work)
+
+    nfev = 0
+    n = size(x)
+    m = size(fx)
+
+    call lm_check_input (m, n, ftol, xtol, gtol, maxfev, factor, &
+        status=status, msg=msg)
+    if (NF_STATUS_INVALID_ARG .in. status) goto 100
+
+    ! set default values
+    lmaxfev = 200 * (n + 1)
+    lfactor = 100.0_PREC
+    ! use default from scipy
+    lxtol = 1.49012d-08
+    lftol = 1.49012e-8
+    lgtol = 0.0_PREC
+    lnprint = 0
+
+    mode = 1
+    info = 0
+
+    ! override defaults if arguments specified by user
+    if (present(xtol)) lxtol = xtol
+    if (present(ftol)) lftol = ftol
+    if (present(gtol)) lgtol = gtol
+    if (present(factor)) lfactor = factor
+    if (present(maxfev)) lmaxfev = maxfev
+
+    nrwrk = 4*n + m + n*m
+    ! Add space to store diag
+    if (.not. present(diag)) nrwrk = nrwrk + n
+    ! used to store ipvt
+    niwrk = n
+
+    if (present(work)) then
+        ptr_work => work
+    else
+        allocate (ptr_work)
+    end if
+
+    call ptr_work%assert_allocated (nrwrk, niwrk=niwrk)
+
+    ! map array arguments to lmder() onto workspace
+    ! First n elements reserved for diag
+    i = 1
+    ptr_fjac(1:m,1:n) => ptr_work%rwrk(i+1:i+n*m)
+    i = i + n*m
+    ptr_qtf => ptr_work%rwrk(i+1:i+n)
+    i = i + n
+    ptr_wa1 => ptr_work%rwrk(i+1:i+n)
+    i = i + n
+    ptr_wa2 => ptr_work%rwrk(i+1:i+n)
+    i = i + n
+    ptr_wa3 => ptr_work%rwrk(i+1:i+n)
+    i = i + n
+    ptr_wa4 => ptr_work%rwrk(i+1:i+m)
+    i = i + m
+
+    if (present(diag)) then
+        ptr_diag => diag
+        ! set mode such that use-provided diag is used
+        mode = 2
+    else
+        ! no scaling of diagonal elements; initialize diag to 1.0 even though
+        ! this is not needed
+        ptr_diag => ptr_work%rwrk(i+1:i+n)
+        ptr_diag = 1.0_PREC
+    end if
+
+    ptr_ipvt => ptr_work%iwrk(1:n)
+
+    call minpack_lmder_real64 (fwrapper, m, n, x, fx, ptr_fjac, m, &
+        lftol, lxtol, lgtol, lmaxfev, &
+        ptr_diag, mode, lfactor, lnprint, info, nfev, njev, &
+        ptr_ipvt, ptr_qtf, ptr_wa1, ptr_wa2, ptr_wa3, ptr_wa4)
+
+    select case (info)
+    case (0)
+        status = NF_STATUS_INVALID_ARG
+        msg = "Invalid input parameters"
+    case (1)
+        status = NF_STATUS_OK
+        msg = "Convergence in terms of ftol"
+    case (2)
+        status = NF_STATUS_OK
+        msg = "Convergence in terms of xtol"
+    case (3)
+        status = NF_STATUS_OK
+        msg = "Convegence in terms of ftol and xtol"
+    case (4)
+        status = NF_STATUS_OK
+        msg = "Convergence in terms of gtol"
+    case (5)
+        status = NF_STATUS_MAX_EVAL
+        msg = "Exceeded max. number of function evaluations"
+    case (6)
+        status = NF_STATUS_NOT_CONVERGED
+        msg = "ftol too small. No further reduction possible"
+    case (7)
+        status = NF_STATUS_NOT_CONVERGED
+        msg = "xtol is too small. No further improvement in solution possible"
+    case (8)
+        status = NF_STATUS_NOT_CONVERGED
+        msg = "gtol is too small. fvec is orthogonal to columns of Jacobian"
+    end select
+
+
+100 continue
+
+    if (present(res)) then
+        call res%update (x=x, fx=fx, nfev=nfev, status=status, msg=msg)
+    end if
+
+    if (.not. present(work) .and. associated(ptr_work)) deallocate (ptr_work)
+    nullify (ptr_work)
+
+contains
+
+    ! wrapper function: MINPACK's lmder requires a somewhat inconvenient
+    ! function signature, so provide a wrapper around user-supplied function
+    subroutine fwrapper (m, n, x, fx, fjac, ldfjac, iflag)
+        integer :: m, n, iflag, ldfjac
+        real (PREC) :: x(n), fx(m), fjac(ldfjac, n)
+
+        intent (in) :: m, n, x, ldfjac
+        intent (in out) :: fx, fjac, iflag
+
+        ! call user-provided function
+        call func (x, fx, fjac, iflag)
+    end subroutine
+end subroutine
+
+subroutine lm_check_input (m, n, ftol, xtol, gtol, maxfev, factor, eps, &
+        status, msg)
+    !*  LM_CHECK_INPUT performs input validation for LMDER and LMDIF
+    !   routines.
+
+    integer, intent(in) :: m, n
+    real (PREC), intent(in), optional :: ftol, xtol, gtol
+    integer, intent(in) :: maxfev
+    real (PREC), intent(in), optional :: factor
+    real (PREC), intent(in), optional :: eps
+    type (status_t), intent(out) :: status
+    character (*), intent(out) :: msg
+
+    status = NF_STATUS_OK
+
+    if (m < n) then
+        msg = "Least-squares minimization requires m >= n"
+        status = NF_STATUS_INVALID_ARG
+        return
+    end if
+
+    call check_nonneg (1.0_PREC, ftol, 'ftol', status, msg)
+    if (NF_STATUS_INVALID_ARG .in. status) return
+
+    call check_nonneg (1.0_PREC, xtol, 'xtol', status, msg)
+    if (NF_STATUS_INVALID_ARG .in. status) return
+
+    call check_nonneg (1.0_PREC, gtol, 'gtol', status, msg)
+    if (NF_STATUS_INVALID_ARG .in. status) return
+
+    call check_nonneg (1, maxfev, 'maxfev', status, msg)
+    if (NF_STATUS_INVALID_ARG .in. status) return
+
+    call check_positive (1.0_PREC, factor, 'factor', status, msg)
+    if (NF_STATUS_INVALID_ARG .in. status) return
+
+    call check_positive (1.0_PREC, eps, 'eps', status, msg)
+    if (NF_STATUS_INVALID_ARG .in. status) return
+
+
+end subroutine
+
+
 
 subroutine chkder_real64 (fcn, m, x, err, status)
     !*  CHKDER verifies that the Jacobian of a function f: R^n -> R^m

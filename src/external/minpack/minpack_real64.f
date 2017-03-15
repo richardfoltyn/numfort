@@ -3,7 +3,7 @@
         implicit none
         private
 
-        interface
+        abstract interface
           subroutine lmder_fcn_real64 (m,n,x,fvec,fjac,ldfjac,iflag)
               integer, intent(in) :: m
               integer, intent(in) :: n
