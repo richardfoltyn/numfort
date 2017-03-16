@@ -1,6 +1,7 @@
-! Example for root_hybrj, a wrapper around MINPACK's hybrj routine to
-! solve nonlinear equations system with a user-provided Jacobian.
-program minpack_examples
+program minpack_hybr_examples
+    !*  Example for root_hybrd and root_hybrj, wrappers around MINPACK's HYBRD
+    !   and HYBRJ routines to solve nonlinear equations system with or without
+    !   a user-provided Jacobian.
 
     use numfort_common
     use numfort_optimize
@@ -14,6 +15,7 @@ program minpack_examples
 contains
 
 subroutine example1 ()
+    !*  Find root of function F: R^3->R^3
 
     integer, parameter :: n = 3
     real (PREC), dimension(n) :: x, fx
@@ -25,23 +27,23 @@ subroutine example1 ()
     real (PREC), parameter :: x0 = 5.0
 
     x = x0
-    ! (one) root of func1 is located at x = [2,3,4]
-    call root_hybrj (func1, x, fx, work=work, res=res)
+    ! (one) root of fcn1_jac is located at x = [2,3,4]
+    call root_hybrj (fcn1_jac, x, fx, work=work, res=res)
     call print_report (res)
 
     ! Compare analytical and numerical derivative using chkder
     x = x0
-    call chkder (func1, n, x, err)
+    call chkder (fcn1_jac, n, x, err)
     print '("Gradient diagnostics: ", *(f10.7, :, ","))', err
 
     ! Compare to results obtained from hybrd using numerical differentiation
     x = x0
-    call root_hybrd (func2, x, fx, work=work, res=res)
+    call root_hybrd (fcn1, x, fx, work=work, res=res)
     call print_report (res)
 
 end subroutine
 
-pure subroutine func1 (x, fx, jac, task)
+pure subroutine fcn1_jac (x, fx, jac, task)
     real (PREC), dimension(:), intent(in) :: x
     real (PREC), dimension(:), intent(out) :: fx
     real (PREC), dimension(:,:), intent(out) :: jac
@@ -58,7 +60,7 @@ pure subroutine func1 (x, fx, jac, task)
     end if
 end subroutine
 
-pure subroutine func2 (x, fx)
+pure subroutine fcn1 (x, fx)
     real (PREC), dimension(:), intent(in) :: x
     real (PREC), dimension(:), intent(out) :: fx
 
@@ -67,7 +69,7 @@ pure subroutine func2 (x, fx)
 
     task = 1
 
-    call func1 (x, fx, jac, task)
+    call fcn1_jac (x, fx, jac, task)
 end subroutine
 
 
