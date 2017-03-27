@@ -1,9 +1,9 @@
 
 #include "numfort.h"
 
-module numfort_stats_desc
+module numfort_stats_core
 
-    use iso_fortran_env
+    use, intrinsic :: iso_fortran_env
     use numfort_common
 
     implicit none
@@ -23,12 +23,16 @@ module numfort_stats_desc
         module procedure mean_std_check_input_real32, mean_std_check_input_real64
     end interface
 
+    interface normalize
+        module procedure normalize_2d_real32, normalize_2d_real64
+    end interface
+
     interface percentile
         module procedure percentile_scalar_real32, percentile_array_real32, &
             percentile_scalar_real64, percentile_array_real64
     end interface
 
-    public :: mean, std, percentile
+    public :: mean, std, percentile, normalize
 contains
 
 ! MEAN_STD_INIT sets the number of variables and number of observations
@@ -62,11 +66,11 @@ pure subroutine mean_std_init (shp, dim, ldim, nvars, nobs, status)
 end subroutine
 
 #define __PREC real64
-#include "descriptive_impl.F90"
+#include "stats_core_impl.F90"
 #undef __PREC
 
 #define __PREC real32
-#include "descriptive_impl.F90"
+#include "stats_core_impl.F90"
 #undef __PREC
 
 end module

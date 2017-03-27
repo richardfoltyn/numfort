@@ -319,6 +319,100 @@ pure subroutine __APPEND(std_2d,__PREC) (x, s, m, dof, dim, status)
 end subroutine
 
 ! ------------------------------------------------------------------------------
+! NORMALIZE implementation
+
+pure subroutine __APPEND(normalize_2d,__PREC) (x, m, s, dim, center, scale, &
+        dof, status)
+    !*  NORMALIZE centers and optionally scales input data
+    !   such that the resulting array has zero mean and unity standard deviation
+    !   along the specified dimension.
+
+    integer, parameter :: PREC = __PREC
+
+    real (PREC), intent(in out), dimension(:,:) :: x
+        !*  Data that should be normalized. Multiple 'variables' are supported
+        !   and can be organized either in rows or columns (goverened by
+        !   the dim argument)
+    real (PREC), intent(out), dimension(:), optional :: m, s
+        !*  If present, contain the per-variable means and standard deviations
+        !   on exit. Arrays need to be at least as large as the number of variables.
+    integer, intent(in), optional :: dim
+        !!  If present, specifies the dimension along which to normalize (default: dim=1)
+    logical, intent(in), optional :: center
+        !!  If present and true, center input data around its mean.
+    logical, intent(in), optional :: scale
+        !!  If present and true, divide each variable by its standard deviation
+    integer, intent(in), optional :: dof
+        !*  If present, specifies the degrees-of-freedom correction applied
+        !   when computing the standard deviation. Default: 1
+    type (status_t), intent(out), optional :: status
+        !*  If present, returns 0 on exit if normalization was successful,
+        !   and status > 0 if an error was encountered
+
+    real (PREC), dimension(:), allocatable :: lmean, lstd
+    integer :: ldim, ldof
+    type (status_t) :: lstatus
+    ! iv indexes variables, iobs individual observations
+    integer :: iv, iobs, nvars, nobs
+    logical :: lscale, lcenter
+
+    lcenter = .true.
+    lscale = .true.
+    ldof = 1
+    if (present(center)) lcenter = center
+    if (present(scale)) lscale = scale
+    if (present(dof)) ldof = dof
+
+    ! initialize dim, nvars and nobs from input data
+    call mean_std_init (shape(x), dim, ldim, nvars, nobs, status=lstatus)
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+
+    call mean_std_check_input (nvars, nobs, m, s, dof, status=lstatus)
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+
+    allocate (lmean(nvars), source=0.0_PREC)
+    allocate (lstd(nvars), source=1.0_PREC)
+
+    ! Compute mean (and std) as required.
+    ! If only centering is requested (no scaling), compute only
+    ! mean and set std = 1.0
+    if (lscale) then
+        call std (x, s=lstd, m=lmean, dim=ldim, dof=ldof, status=lstatus)
+        if (.not. (NF_STATUS_OK .in. lstatus)) goto 100
+    else if (lcenter) then
+        call mean (x, m=lmean, dim=ldim, status=lstatus)
+        if (.not. (NF_STATUS_OK .in. lstatus)) goto 100
+    end if
+
+    ! Reset to zero mean correction if case lscale = .true. but lcenter = .false.
+    if (.not. lcenter) then
+        lmean = 0.0_PREC
+    end if
+
+    ! Apply normalization in-place
+    if (ldim == 1) then
+        ! Compute running mean and std if variables are stored in columns
+        do iv = 1, nvars
+            ! Apply normalization in-place
+            forall (iobs=1:nobs) x(iobs, iv) = (x(iobs, iv) - lmean(iv)) / lstd(iv)
+        end do
+    else if (ldim == 2) then
+        do iobs = 1, nobs
+            forall (iv = 1:nvars) x(iv, iobs) = (x(iv, iobs) - lmean(iv)) / lstd(iv)
+        end do
+    end if
+
+    ! Return mean and std. only if 1) output arrays are present; and 2)
+    ! centering / scaling was actually performed.
+    if (present(m) .and. lcenter) m = lmean
+    if (present(s) .and. lscale) s = lstd
+
+100 continue
+    if (present(status)) status = lstatus
+
+end subroutine
+
+! ------------------------------------------------------------------------------
 pure subroutine __APPEND(percentile_array,__PREC) (x, q, xq, dim, interp)
     integer, parameter :: PREC = __PREC
 
