@@ -285,7 +285,7 @@ pure subroutine __APPEND(std_2d,__PREC) (x, s, m, dof, dim, status)
         ! If data is organized in columns we can use 1d routine without
         ! hurting cache locality
         do iv = 1, nvars
-            call std (x(:, iv), s(iv), lm(iv))
+            call std (x(:, iv), s(iv), lm(iv), dof=ldof)
         end do
     else if (ldim == 2) then
         ! Compute running mean and std if variables are stored in rows
@@ -311,7 +311,7 @@ pure subroutine __APPEND(std_2d,__PREC) (x, s, m, dof, dim, status)
     end if
 
     if (present(m)) m = lm
-    
+
 100 continue
     ! Error handling
     if (present(status)) status = lstatus
