@@ -1,7 +1,7 @@
 # CMake configuration for numfort examples
 
 # List of subdirectories to search for example files
-list(APPEND _MODULES interpolate optimize)
+list(APPEND _MODULES interpolate optimize stats)
 
 include_directories("${${CMAKE_PROJECT_NAME}_INCLUDE_DIRS}")
 

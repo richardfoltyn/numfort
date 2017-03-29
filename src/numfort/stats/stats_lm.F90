@@ -19,12 +19,20 @@ module numfort_stats_lm
         module procedure ols_check_input_real32, ols_check_input_real64
     end interface
 
+    interface ols_get_dims
+        module procedure ols_get_dims_real32, ols_get_dims_real64
+    end interface
+
     interface pca
         module procedure pca_real32, pca_real64
     end interface
 
     interface pca_check_input
         module procedure pca_check_input_real32, pca_check_input_real64
+    end interface
+
+    interface pca_get_dims
+        module procedure pca_get_dims_real32, pca_get_dims_real64
     end interface
 
     interface pcr
@@ -36,9 +44,13 @@ module numfort_stats_lm
         module procedure pcr_check_input_real32, pcr_check_input_real64
     end interface
 
-    public :: ols, pca, pcr
-contains
+    interface pcr_get_dims
+        module procedure pcr_get_dims_real32, pcr_get_dims_real64
+    end interface
 
+    public :: ols, pca, pcr
+
+contains
 
 #define __PREC real64
 #include "stats_lm_impl.F90"

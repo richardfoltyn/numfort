@@ -28,9 +28,34 @@ pure subroutine __APPEND(ols_check_input,__PREC) (x, y, beta, add_const, trans_x
     real (PREC), intent(in) :: rcond
     type (status_t), intent(out) :: status
 
-    integer :: nvars, nobs, nconst, nlhs
+    integer :: nvars, nobs, nconst, nlhs, ncoefs
 
     status = NF_STATUS_INVALID_ARG
+
+    call ols_get_dims (x, y, add_const, trans_x, nobs, nvars, nlhs, ncoefs, nconst)
+
+    if (nobs < ncoefs) return
+    if (size(y, 1) /= nobs) return
+    if (size(beta, 2) /= nlhs) return
+    if (size(beta, 1) /= ncoefs) return
+    if (rcond < 0) return
+
+    status = NF_STATUS_OK
+
+end subroutine
+
+pure subroutine __APPEND(ols_get_dims,__PREC) (x, y, add_const, trans_x, &
+        nobs, nvars, nlhs, ncoefs, nconst)
+    !*  OLS_GET_DIMS returns the number of various dimensions of the least-squares
+    !   problem, depending on input data arrays and whether these should be
+    !   transposed, an intercept added, etc.
+
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in), dimension(:,:) :: x
+    real (PREC), intent(in), dimension(:,:) :: y
+    logical, intent(in) :: add_const
+    logical, intent(in) :: trans_x
+    integer, intent(out) :: nobs, nvars, nlhs, ncoefs, nconst
 
     nconst = 0
     if (add_const) nconst = 1
@@ -44,17 +69,9 @@ pure subroutine __APPEND(ols_check_input,__PREC) (x, y, beta, add_const, trans_x
     end if
 
     nlhs = size(y, 2)
-
-    if (nobs < nvars + nconst) return
-    if (size(y, 1) /= nobs) return
-    if (size(beta, 2) /= nlhs) return
-    if (size(beta, 1) /= (nvars + nconst)) return
-    if (rcond < 0) return
-
-    status = NF_STATUS_OK
+    ncoefs = nvars + nconst
 
 end subroutine
-
 
 subroutine __APPEND(ols_2d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
         rank, status)
@@ -82,6 +99,8 @@ subroutine __APPEND(ols_2d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
     integer :: lrank
     integer :: lwork, info, m, n, nrhs, lda, ldb, mn, liwork
 
+    lstatus = NF_STATUS_OK
+
     ladd_const = .true.
     if (present(add_const)) ladd_const = add_const
 
@@ -93,14 +112,9 @@ subroutine __APPEND(ols_2d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
     if (present(rcond)) lrcond = rcond
 
     call ols_check_input (x, y, beta, ladd_const, ltrans_x, lrcond, lstatus)
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
-    nvars = size(x, 2)
-    if (ltrans_x) nvars = size(x, 1)
-    nobs = size(y, 1)
-    nlhs = size(y, 2)
-    nconst = 0
-    if (ladd_const) nconst = 1
-    ncoefs = nvars + nconst
+    call ols_get_dims (x, y, ladd_const, ltrans_x, nobs, nvars, nlhs, ncoefs, nconst)
 
     ! Allocate (possibly transposed) array to store X variables; will be
     ! overwritten by GELSD, so we have to allocate in any case.
@@ -141,13 +155,21 @@ subroutine __APPEND(ols_2d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
     ! 2. Allocate optimal / minimal work arrays
     lwork = int(work(1))
     liwork = iwork(1)
-    
+
     deallocate (work, iwork)
     allocate (work(lwork), iwork(liwork))
 
     ! 3. Actual call to perform LS
     call __GELSD (m, n, nrhs, lx, lda, lhs, ldb, sval, lrcond, lrank, work, &
         lwork, iwork, info)
+
+    ! Check whether algorithm for computing SVD failed to converge
+    ! Note: Does GESDD return some approximate solution in this case, and
+    ! should we return it to the user?
+    if (info > 0) then
+        lstatus = NF_STATUS_NOT_CONVERGED
+        goto 100
+    end if
 
     ! Copy coefficients
     forall (i=1:nlhs) beta(1:ncoefs,i) = lhs(1:ncoefs,i)
@@ -189,13 +211,14 @@ end subroutine
 !-------------------------------------------------------------------------------
 ! PCA (Principal component analysis)
 
-pure subroutine __APPEND(pca_check_input,__PREC) (x, scores, ncomp, s, &
+pure subroutine __APPEND(pca_check_input,__PREC) (x, scores, ncomp, trans_x, s, &
         loadings, mean_x, std_x, propvar, status)
     integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in), dimension(:,:) :: x
     real (PREC), intent(in), dimension(:,:) :: scores
     integer, intent(in) :: ncomp
+    logical, intent(in) :: trans_x
     real (PREC), intent(in), dimension(:), optional :: s
     real (PREC), intent(in), dimension(:,:), optional :: loadings
     real (PREC), intent(in), dimension(:), optional :: mean_x, std_x
@@ -204,10 +227,9 @@ pure subroutine __APPEND(pca_check_input,__PREC) (x, scores, ncomp, s, &
 
     integer :: nobs, nvars
 
-    nobs = size(x, 1)
-    nvars = size(x, 2)
-
     status = NF_STATUS_INVALID_ARG
+
+    call pca_get_dims (x, trans_x, nobs, nvars)
 
     if (nobs < 1 .or. nobs < nvars) return
     if (ncomp < 1 .or. ncomp > nvars) return
@@ -239,7 +261,28 @@ pure subroutine __APPEND(pca_check_input,__PREC) (x, scores, ncomp, s, &
 end subroutine
 
 
-subroutine __APPEND(pca,__PREC) (x, scores, ncomp, center, scale, &
+pure subroutine __APPEND(pca_get_dims,__PREC) (x, trans_x, nobs, nvars)
+    !*  PCA_GET_DIMS returns the number of various dimensions of the PCA
+    !   problem derived from input data and options (e.g. whether data should
+    !   be transposed).
+
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in), dimension(:,:) :: x
+    logical, intent(in) :: trans_x
+    integer, intent(out) :: nobs, nvars
+
+    if (trans_x) then
+        nobs = size(x, 2)
+        nvars = size(x, 1)
+    else
+        nobs = size(x, 1)
+        nvars = size(x, 2)
+    end if
+
+end subroutine
+
+
+subroutine __APPEND(pca,__PREC) (x, scores, ncomp, center, scale, trans_x, &
         sval, loadings, mean_x, std_x, propvar, status)
 
     integer, parameter :: PREC = __PREC
@@ -249,6 +292,7 @@ subroutine __APPEND(pca,__PREC) (x, scores, ncomp, center, scale, &
     integer, intent(in) :: ncomp
     logical, intent(in), optional :: center
     logical, intent(in), optional :: scale
+    logical, intent(in), optional :: trans_x
     real (PREC), intent(out), dimension(:), optional :: sval
     real (PREC), intent(out), dimension(:,:), optional :: loadings
     real (PREC), intent(out), dimension(:), optional :: mean_x
@@ -256,7 +300,7 @@ subroutine __APPEND(pca,__PREC) (x, scores, ncomp, center, scale, &
     real (PREC), intent(out), dimension(:), optional :: propvar
     type (status_t), intent(out), optional :: status
 
-    logical :: lscale, lcenter
+    logical :: lscale, lcenter, ltrans_x
     type (status_t) :: lstatus
     real (PREC), dimension(:,:), allocatable :: x_n, x_tmp
     real (PREC), dimension(:), allocatable :: work
@@ -277,22 +321,33 @@ subroutine __APPEND(pca,__PREC) (x, scores, ncomp, center, scale, &
     real (PREC), parameter :: alpha = 1.0_PREC, beta = 0.0_PREC
     integer :: ldb, ldc, k
 
-    call pca_check_input (x, scores, ncomp, sval, loadings, mean_x, std_x, propvar, lstatus)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    lstatus = NF_STATUS_OK
 
     lcenter = .true.
     lscale = .true.
+    ltrans_x = .false.
     if (present(center)) lcenter = center
     if (present(scale)) lscale = scale
+    if (present(trans_x)) ltrans_x = trans_x
 
-    nobs = size(x, 1)
-    nvars = size(x, 2)
+    call pca_check_input (x, scores, ncomp, ltrans_x, sval, loadings, &
+        mean_x, std_x, propvar, lstatus)
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
-    allocate (x_n, source=x)
+    call pca_get_dims (x, ltrans_x, nobs, nvars)
+
+    ! 1. Normalize data in place; hence we first need to create a copy,
+    ! accounting for the possibility that x needs to be transformed.
+    ! All code below assumed that x_n has shape (noabs, nvars).
+    if (ltrans_x) then
+        allocate (x_n(nobs, nvars))
+        forall (i=1:nvars) x_n(:,i) = x(i,1:nobs)
+    else
+        allocate (x_n(nobs, nvars), source=x)
+    end if
 
     allocate (lmean_x(nvars), lstd_x(nvars))
 
-    ! Normalize data in place
     if (lcenter .or. lscale) then
         call normalize (x_n, m=lmean_x, s=lstd_x, scale=lscale, center=lcenter, dof=0, dim=1)
     end if
@@ -391,23 +446,21 @@ pure subroutine __APPEND(pcr_check_input,__PREC) (lhs, scores, sval, loadings, &
     logical, intent(in) :: add_const
     type (status_t), intent(out) :: status
 
-    integer :: nobs, nvars, ncomp, nlhs, nconst
-
-    nconst = 0
-    if (add_const) nconst = 1
-
-    nobs = size(lhs, 1)
-    nlhs = size(lhs, 2)
-    ncomp = size(scores, 2)
-    nvars = size(coefs, 1) - nconst
+    integer :: nobs, nvars, ncomp, nlhs, nconst, ncoefs
 
     status = NF_STATUS_INVALID_ARG
 
+    call pcr_get_dims (lhs, scores, coefs, add_const, &
+        nobs, nvars, ncomp, nlhs, ncoefs, nconst)
+
     if (nobs < 1 .or. nobs < ncomp) return
-    if (size(scores, 1) /= nobs) return
+    ! Check shapes for all arrays, even though some of these were used to
+    ! obtain the dimensions in the first place and are thus by definition true.
+    if (any(shape(lhs) /= [nobs, nlhs])) return
+    if (any(shape(scores) /= [nobs, ncomp])) return
     if (size(sval) < ncomp) return
     if (any(shape(loadings) /= [nvars, ncomp])) return
-    if (any(shape(coefs) /= [nvars + nconst, nlhs])) return
+    if (any(shape(coefs) /= [ncoefs, nlhs])) return
     if (present(mean_x)) then
         if (size(mean_x) < nvars) return
     end if
@@ -416,6 +469,27 @@ pure subroutine __APPEND(pcr_check_input,__PREC) (lhs, scores, sval, loadings, &
     end if
 
     status = NF_STATUS_OK
+
+end subroutine
+
+pure subroutine __APPEND(pcr_get_dims,__PREC) (lhs, scores, coefs, add_const, &
+        nobs, nvars, ncomp, nlhs, ncoefs, nconst)
+    !*  PCR_GET_DIMS returns the number of various dimensions of the PCR
+    !   problem, depending on input data arrays and whether an intercept
+    !   shoud be added, etc.
+
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in), dimension(:,:) :: lhs, scores, coefs
+    logical, intent(in) :: add_const
+    integer, intent(out) :: nobs, nvars, nlhs, ncoefs, nconst, ncomp
+
+    nconst = 0
+    if (add_const) nconst = 1
+    ncoefs = size(coefs, 1)
+    nvars = ncoefs - nconst
+    ncomp = size(scores, 2)
+    nobs = size(lhs, 1)
+    nlhs = size(lhs, 2)
 
 end subroutine
 
@@ -435,18 +509,20 @@ subroutine __APPEND(pcr_2d,__PREC) (lhs, scores, sval, loadings, coefs, mean_x, 
     type (status_t), intent(out), optional :: status
 
     logical :: ladd_const, lcenter
-    integer :: nvars, nobs, ncomp, nlhs
+    integer :: nvars, nobs, ncomp, nlhs, ncoefs
     real (PREC), dimension(:), pointer :: ptr_mean_x, ptr_std_x
 
     type (status_t) :: lstatus
     integer :: i, nconst
 
-    real (PREC), dimension(:,:), allocatable :: y_n, PCy, lcoefs
+    real (PREC), dimension(:,:), allocatable :: y_n, PCy, lcoefs, work
     real (PREC), dimension(:), allocatable :: mean_y
     ! Arguments to GEMM
     character (1) :: transa, transb
     integer :: m, n, k, lda, ldb, ldc
     real (PREC), parameter :: alpha = 1.0_PREC, beta = 0.0_PREC
+
+    lstatus = NF_STATUS_OK
 
     ladd_const = .true.
     lcenter = .true.
@@ -457,12 +533,8 @@ subroutine __APPEND(pcr_2d,__PREC) (lhs, scores, sval, loadings, coefs, mean_x, 
         ladd_const, lstatus)
     if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
-    nconst = 0
-    if (ladd_const) nconst = 1
-    nvars = size(coefs, 1) - nconst
-    ncomp = size(loadings, 2)
-    nobs = size(lhs, 1)
-    nlhs = size(lhs, 2)
+    call pcr_get_dims (lhs, scores, coefs, ladd_const, &
+        nobs, nvars, ncomp, nlhs, ncoefs, nconst)
 
     ! sample mean and standard deviation of original x variables
     call assert_alloc_ptr (mean_x, nvars, ptr_mean_x)
@@ -517,19 +589,34 @@ subroutine __APPEND(pcr_2d,__PREC) (lhs, scores, sval, loadings, coefs, mean_x, 
 
     ! Add intercept if requested
     if (ladd_const) then
-        do i = 1, nlhs
-            ! set intercept such that sample means lie on regression line
-            coefs(1, i) = mean_y(i) - dot_product(mean_x, lcoefs(:, i))
-            coefs(2:nvars+1,i) = lcoefs(:, i)
-        end do
-    else
-        forall (i=1:nlhs) coefs(1:nvars,i) = lcoefs(:,i)
+        m = 1
+        n = nlhs
+        k = nvars
+        lda = nvars
+        ldb = nvars
+        ldc = 1
+        transa = 'T'
+        transb = 'N'
+
+        ! Compute intercept as a = mean(y) - mean(x)'b
+        ! where mean(x)'b is stored in temporary array work.
+        ! Manually create temporary array as coefs(1:1,:) is not contiguous
+        ! in memory and ifort issues runtime warning in debug mode every time.
+        allocate (work(1, nlhs))
+
+        call __GEMM (transa, transb, m, n, k, alpha, mean_x, lda, &
+            lcoefs, ldb, beta, work, ldc)
+
+        coefs(1,1:nlhs) = mean_y - work(1,1:nlhs)
     end if
+
+    ! copy over remaining coefficients
+    forall (i=1:nlhs) coefs(1+nconst:ncoefs,i) = lcoefs(:,i)
 
 100 continue
     call assert_dealloc_ptr (mean_x, ptr_mean_x)
     call assert_dealloc_ptr (std_x, ptr_std_x)
-    if (present(status)) lstatus = status
+    if (present(status)) status = lstatus
 
 end subroutine
 
@@ -562,32 +649,3 @@ subroutine __APPEND(pcr_1d,__PREC) (lhs, scores, sval, loadings, coefs, &
         mean_x, std_x, add_const, center, status)
 
 end subroutine
-
-! pure subroutine get_pcr_work_size (m, n, nrwork, niwork)
-!     integer, intent(in) :: m, n
-!     integer, intent(out) :: nrwork, niwork
-!
-!     integer :: smlsiz, nlvl, mn
-!
-!     mn = min(m, n)
-!
-!     ! Copied from Netlib's LAPACK95 wrappers
-!     smlsiz = ilaenv (9, 'DGELSD', ' ', 0, 0, 0, 0)
-!     nlvl = int(log(max(1, mn) / (smlsiz + 1.0d0)) / log(2.0d0)) + 1
-!
-!     nrwork = 12*mn + 2*mn*smlsiz + 8*mn*nlvl + mn*rhs + (smlsiz+1) ** 2
-!
-! end subroutine
-
-
-#ifdef __GESVD
-#undef __GESVD
-#endif
-
-#ifdef __GEMM
-#undef __GEMM
-#endif
-
-#ifdef __GELSD
-#undef __GELSD
-#endif
