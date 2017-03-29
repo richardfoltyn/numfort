@@ -10,6 +10,7 @@ set(SOURCE_FILES
     duniform.F90
     drandint.F90
     stats.f90
+    stats_lm.F90
 )
 
 include_directories(

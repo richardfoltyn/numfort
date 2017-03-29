@@ -11,6 +11,8 @@ module numfort_stats
     use numfort_stats_drandint
     use numfort_stats_duniform
 
+    use numfort_stats_lm
+
     implicit none
 
 end module
