@@ -3,6 +3,7 @@
 set(COMPONENT_NAME common)
 
 set(SOURCE_FILES
+	alloc.f90
 	common.f90
 	enums.f90
 	kinds.f90
