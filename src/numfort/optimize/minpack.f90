@@ -719,9 +719,9 @@ subroutine chkder_real64 (fcn, m, x, err, status)
     procedure (func_jac_real64) :: fcn
     integer, intent(in) :: m
         !!  Dimension of function's range
-    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: x
         !!  Point in function domain where derivative should be evaluated
-    real (PREC), intent(out), dimension(:) :: err
+    real (PREC), intent(out), dimension(:), contiguous :: err
         !!  Array of size m. On exit, indicates which of the 1...m gradients
         !!  of f_i are correct (err(i) = 1.0) or incorrect (err(i) = 0.0).
     type (status_t), intent(out), optional :: status

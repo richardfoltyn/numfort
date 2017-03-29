@@ -137,7 +137,7 @@ subroutine __APPEND(ols_2d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
     nrhs = nlhs
     allocate (sval(mn))
     ! Dummy argument b will be overwritten, create copy
-    allocate (lhs, source=y)
+    allocate (lhs(nobs,nlhs), source=y)
 
     ! 1. Workspace query
     lwork = -1
@@ -364,7 +364,7 @@ subroutine __APPEND(pca,__PREC) (x, scores, ncomp, center, scale, trans_x, &
     allocate (ls(mn))
     allocate (u(m,m))
     ! Contents of x_n would be overwritten by GESDD, make copy
-    allocate (x_tmp, source=x_n)
+    allocate (x_tmp(nobs,nvars), source=x_n)
 
     ! workspace query
     lwork = -1
@@ -498,12 +498,12 @@ subroutine __APPEND(pcr_2d,__PREC) (lhs, scores, sval, loadings, coefs, mean_x, 
     integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in), dimension(:,:) :: lhs
-    real (PREC), intent(in), dimension(:,:) :: scores
+    real (PREC), intent(in), dimension(:,:), contiguous :: scores
     real (PREC), intent(in), dimension(:) :: sval
-    real (PREC), intent(in), dimension(:,:) :: loadings
+    real (PREC), intent(in), dimension(:,:), contiguous :: loadings
     real (PREC), intent(out), dimension(:,:) :: coefs
-    real (PREC), intent(in), dimension(:), optional :: mean_x
-    real (PREC), intent(in), dimension(:), optional :: std_x
+    real (PREC), intent(in), dimension(:), contiguous, optional :: mean_x
+    real (PREC), intent(in), dimension(:), contiguous, optional :: std_x
     logical, intent(in), optional :: add_const
     logical, intent(in), optional :: center
     type (status_t), intent(out), optional :: status
@@ -625,12 +625,12 @@ subroutine __APPEND(pcr_1d,__PREC) (lhs, scores, sval, loadings, coefs, &
     integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in), dimension(:), target :: lhs
-    real (PREC), intent(in), dimension(:,:) :: scores
+    real (PREC), intent(in), dimension(:,:), contiguous :: scores
     real (PREC), intent(in), dimensioN(:) :: sval
-    real (PREC), intent(in), dimension(:,:) :: loadings
+    real (PREC), intent(in), dimension(:,:), contiguous :: loadings
     real (PREC), intent(out), dimension(:), target :: coefs
-    real (PREC), intent(in), dimension(:), optional :: mean_x
-    real (PREC), intent(in), dimension(:), optional :: std_x
+    real (PREC), intent(in), dimension(:), contiguous, optional :: mean_x
+    real (PREC), intent(in), dimension(:), contiguous, optional :: std_x
     logical, intent(in), optional :: add_const
     logical, intent(in), optional :: center
     type (status_t), intent(out), optional :: status
