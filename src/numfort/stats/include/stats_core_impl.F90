@@ -367,8 +367,7 @@ pure subroutine __APPEND(normalize_2d,__PREC) (x, m, s, dim, center, scale, &
     call mean_std_init (shape(x), dim, ldim, nvars, nobs, status=lstatus)
     if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
-    call mean_std_check_input (nvars, nobs, m, s, dof, status=lstatus)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    ! Delegate all remaining input checking to STD or MEAN routines
 
     allocate (lmean(nvars), source=0.0_PREC)
     allocate (lstd(nvars), source=1.0_PREC)
