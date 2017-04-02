@@ -131,7 +131,7 @@ pure subroutine fit (x, y, k, s, knots, coefs, nknots, ws, ssr, status, yhat, &
     call curfit (x, y, k, s, knots, coefs, nknots, &
        iopt=iopt, work=ws, w=w, ssr=ssr, status=status)
 
-    if (status_contains (status, NF_STATUS_INVALID_ARG)) then
+    if (.not. status_contains (status, NF_STATUS_INVALID_ARG)) then
        call splev (knots, coefs, nknots, k, x, yhat, ext=ext)
     end if
 end subroutine
