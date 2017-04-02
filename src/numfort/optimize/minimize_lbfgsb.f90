@@ -5,7 +5,7 @@ module numfort_optimize_lbfgsb
     use, intrinsic :: iso_fortran_env, only: real64
     use numfort_common
     use numfort_common_workspace
-    use numfort_optim_result_mod
+    use numfort_optim_result
     use lbfgsb_bmnz_real64, only: setulb
 
     implicit none
@@ -86,7 +86,7 @@ subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
     real (PREC), intent(in), optional :: factr
     real (PREC), intent(in), optional :: pgtol
     type (workspace_real64), intent(in out), optional :: work
-    class (optim_result), intent(in out), optional :: res
+    type (optim_result_real64), intent(in out), optional :: res
 
     call lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
         m, factr, pgtol, iprint, work, res=res, func_grad=func)
@@ -107,7 +107,7 @@ subroutine lbfgsb_args_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
     real (PREC), intent(in), optional :: pgtol
     type (workspace_real64), intent(in out), optional :: work
     real (PREC), intent(in), dimension(:) :: args
-    class (optim_result), intent(in out), optional :: res
+    type (optim_result_real64), intent(in out), optional :: res
 
     call lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
         m, factr, pgtol, iprint, work, args=args, res=res, func_grad_args=func)
@@ -128,7 +128,7 @@ subroutine lbfgsb_grad_real64 (func, x, grad, lbounds, ubounds, maxiter, maxfun,
     real (PREC), intent(in), optional :: factr
     real (PREC), intent(in), optional :: pgtol
     type (workspace_real64), intent(in out), optional :: work
-    class (optim_result), intent(in out), optional :: res
+    type (optim_result_real64), intent(in out), optional :: res
 
     call lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
         m, factr, pgtol, iprint, work, res=res, func=func, grad=grad)
@@ -150,7 +150,7 @@ subroutine lbfgsb_grad_args_real64 (func, x, grad, lbounds, ubounds, maxiter, &
     real (PREC), intent(in), optional :: pgtol
     type (workspace_real64), intent(in out), optional :: work
     real (PREC), intent(in), dimension(:) :: args
-    class (optim_result), intent(in out), optional :: res
+    type (optim_result_real64), intent(in out), optional :: res
 
     call lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
         m, factr, pgtol, iprint, work, args=args, res=res, func_args=func, &
@@ -185,7 +185,7 @@ subroutine lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
     real (PREC), intent(in), optional :: pgtol
     type (workspace_real64), intent(in out), optional, target :: work
     real (PREC), intent(in), dimension(:), optional :: args
-    class (optim_result), intent(in out), optional :: res
+    type (optim_result_real64), intent(in out), optional :: res
 
     real (PREC), dimension(size(x)) :: llbounds, lubounds
     integer :: lmaxiter, lmaxfun, lm
@@ -334,7 +334,7 @@ subroutine lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
 
 100 if (present(res)) then
         ! Note that all variables should have had some value set at this point.
-        call res%update (x, fx, status, iter, nfeval, msg)
+        call result_update (res,x, fx, status, iter, nfeval, msg)
     end if
 
     call assert_dealloc_ptr (work, ptr_work)

@@ -3,7 +3,7 @@ program newton_demo
     !   Halley's methods
 
     use, intrinsic :: iso_fortran_env
-    use numfort_optimize
+    use numfort_optimize, optim_result => optim_result_real64
 
     implicit none
 
@@ -60,7 +60,7 @@ subroutine func2 (x, fx, fpx, fppx, args)
 end subroutine
 
 subroutine print_report (res, exact_root)
-    class (optim_result), intent(in) :: res
+    type (optim_result), intent(in) :: res
     real (PREC), intent(in) :: exact_root
     integer, save :: ii = 1
 

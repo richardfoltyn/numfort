@@ -5,7 +5,7 @@ module numfort_optimize_simplex
 
     use, intrinsic :: iso_fortran_env
     use numfort_common
-    use numfort_optim_result_mod
+    use numfort_optim_result
 
     use simplex_csiro, only: minim, func_real32, func_real64
 
@@ -45,7 +45,7 @@ subroutine minimize_simplex_real64 (func, x, tol, maxfun, quad, iprint, res)
     integer :: maxfun
     integer (NF_ENUM_KIND) :: iprint
     logical :: quad
-    class (optim_result), intent(in out), optional :: res
+    type (optim_result_real64), intent(in out), optional :: res
 
     intent(in) :: tol, maxfun, quad, iprint
     optional :: maxfun, quad, iprint
@@ -94,7 +94,7 @@ subroutine minimize_simplex_real64 (func, x, tol, maxfun, quad, iprint, res)
     end if
 
     if (present(res)) then
-        call res%update (x, fopt, status=status, msg=msg)
+        call result_update(res, x, fopt, status=status, msg=msg)
     end if
 
 end subroutine
@@ -109,7 +109,7 @@ subroutine minimize_simplex_1d_real64 (func, x, tol, maxfun, quad, iprint, res)
     integer :: maxfun
     integer (NF_ENUM_KIND) :: iprint
     logical :: quad
-    class (optim_result), intent(in out), optional :: res
+    type (optim_result_real64), intent(in out), optional :: res
 
     intent(in) :: tol, maxfun, quad, iprint
     optional :: maxfun, quad, iprint

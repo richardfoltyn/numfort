@@ -3,7 +3,8 @@ program minpack_hybr_examples
     !   and HYBRJ routines to solve nonlinear equations system with or without
     !   a user-provided Jacobian.
 
-    use numfort_optimize, workspace => workspace_real64
+    use numfort_optimize, workspace => workspace_real64, &
+        optim_result => optim_result_real64
     use iso_fortran_env
 
     implicit none
@@ -33,7 +34,7 @@ subroutine example1 ()
     ! Compare analytical and numerical derivative using chkder
     x = x0
     call chkder (fcn1_jac, n, x, err)
-    print '("Gradient diagnostics: ", *(f10.7, :, ","))', err
+    print '(t3, "Gradient diagnostics: ", *(f10.7, :, ","))', err
 
     ! Compare to results obtained from hybrd using numerical differentiation
     x = x0
@@ -73,7 +74,7 @@ end subroutine
 
 
 subroutine print_report (res)
-    class (optim_result), intent(in) :: res
+    type (optim_result), intent(in) :: res
 
     integer, save :: ii = 1
 

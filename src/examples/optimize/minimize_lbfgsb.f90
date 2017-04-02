@@ -1,6 +1,7 @@
 program lbfgsb
 
-    use numfort_optimize, workspace => workspace_real64
+    use numfort_optimize, workspace => workspace_real64, &
+        optim_result => optim_result_real64
     use iso_fortran_env
 
     implicit none
@@ -109,7 +110,7 @@ end subroutine
 
 subroutine print_report(res)
 
-    class (optim_result), intent(in) :: res
+    type (optim_result), intent(in) :: res
     integer, save :: ii = 1
 
     print "('#', t3, 'Example ', i0)", ii

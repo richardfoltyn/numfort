@@ -1,68 +1,49 @@
-module numfort_optimize_brent
 
-    use, intrinsic :: iso_fortran_env
+subroutine __APPEND(root_brentq,__PREC) (f, a, b, xtol, rtol, maxiter, x0, res)
 
-    use numfort_common
-    use numfort_optim_result_mod
+    integer, parameter :: PREC = __PREC
 
-    implicit none
-    private
-
-    integer, parameter :: PREC = real64
-
-    interface
-        function func (x) result(fx)
-            import PREC
-            real (PREC), intent(in) :: x
-            real (PREC) :: fx
-        end function
-    end interface
-
-    public :: brentq
-
-
-contains
-
-subroutine brentq (f, a, b, xtol, rtol, maxiter, x0, res)
-
-    procedure (func) :: f
-    real (PREC), intent(in) :: a, b, xtol, rtol
+    procedure (__APPEND(fcn,__PREC)) :: f
+    real (PREC), intent(in) :: a, b
+    real (PREC), intent(in), optional :: xtol
+    real (PREC), intent(in), optional :: rtol
     real (PREC), intent(out) :: x0
-    integer, intent(in) :: maxiter
-    class (optim_result), intent(in out), optional :: res
+    integer, intent(in), optional :: maxiter
+    type (__APPEND(optim_result,__PREC)), intent(in out), optional :: res
 
-    optional :: maxiter, xtol, rtol
-
-    real (PREC) :: lxtol, lrtol, fx0, lx0(1)
+    real (PREC) :: lxtol, lrtol, fx0
     ! maximum iterations, number of function evaluations
     integer :: lmaxiter, nfev, iter
     type (status_t) :: status
 
     lmaxiter = 100
     lrtol = 6.0 * epsilon(1.0_PREC)
-    lxtol = 2d-12
+    lxtol = min(1.0e4 * epsilon(1.0_PREC), 1.0e-5_PREC)
 
     if (present(maxiter)) lmaxiter = maxiter
     if (present(xtol)) lxtol = xtol
     if (present(rtol)) lrtol = rtol
 
-    call brentq_impl (f, a, b, lxtol, lrtol, lmaxiter, x0, fx0, iter, nfev, status)
+    call root_brentq_impl (f, a, b, lxtol, lrtol, lmaxiter, x0, fx0, iter, nfev, status)
 
     if (present(res)) then
         if (NF_STATUS_INVALID_ARG .in. status) then
-            call res%update (status=status, msg="Not a bracketing interval")
+            call result_update (res, status=status, msg="Not a bracketing interval")
         else
-            lx0(1) = x0
-            call res%update (x=lx0, fx=fx0, status=status, nit=iter, nfev=nfev)
+            call result_update (res, x=x0, fx=fx0, status=status, nit=iter, nfev=nfev)
         end if
     end if
 
-
 end subroutine
 
-! BRENTQ is a F90 port of Brent's method as implemented in Scipy's brentq()
-subroutine brentq_impl (f, a, b, xtol, rtol, maxiter, x0, fx0, iter, nfev, status)
-    procedure (func) :: f
+subroutine __APPEND(root_brentq_impl,__PREC) (f, a, b, xtol, rtol, maxiter, &
+        x0, fx0, iter, nfev, status)
+    !*  ROOT_BRENTQ_IMPL is a F90 port of Brent's method as implemented
+    !   in Scipy's brentq()
+
+    integer, parameter :: PREC = __PREC
+
+    procedure (__APPEND(fcn,__PREC)) :: f
     real (PREC) :: a, b, xtol, rtol, x0, fx0
     integer :: maxiter, nfev, iter
     type (status_t), intent(out) :: status
@@ -77,23 +58,23 @@ subroutine brentq_impl (f, a, b, xtol, rtol, maxiter, x0, fx0, iter, nfev, statu
 
     xpre = a
     xcur = b
-    xblk = 0.0d0
-    fblk = 0.0d0
-    spre = 0.0d0
-    scur = 0.0d0
+    xblk = 0.0_PREC
+    fblk = 0.0_PREC
+    spre = 0.0_PREC
+    scur = 0.0_PREC
 
-    fpre = f (xpre)
-    fcur = f (xcur)
+    call f (xpre, fpre)
+    call f (xcur, fcur)
     nfev = 2
     iter = 0
 
-    if (fpre * fcur > 0.0) then
+    if (fpre * fcur > 0.0_PREC) then
         status = NF_STATUS_INVALID_ARG
         return
-    else if (fpre == 0.0) then
+    else if (fpre == 0.0_PREC) then
         status = NF_STATUS_OK
         return
-    else if (fcur == 0.0) then
+    else if (fcur == 0.0_PREC) then
         status = NF_STATUS_OK
         return
     end if
@@ -171,7 +152,7 @@ subroutine brentq_impl (f, a, b, xtol, rtol, maxiter, x0, fx0, iter, nfev, statu
             end if
         end if
 
-        fcur = f (xcur)
+        call f (xcur, fcur)
         nfev = nfev + 1
     end do
 
@@ -182,5 +163,3 @@ subroutine brentq_impl (f, a, b, xtol, rtol, maxiter, x0, fx0, iter, nfev, statu
     fx0 = fcur
 
 end subroutine
-
-end module

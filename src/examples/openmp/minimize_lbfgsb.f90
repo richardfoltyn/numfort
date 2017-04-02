@@ -8,7 +8,8 @@
 module problem_mod
 
     use, intrinsic :: iso_fortran_env
-    use numfort_optimize, workspace => workspace_real64
+    use numfort_optimize, workspace => workspace_real64, &
+        optim_result => optim_result_real64
     implicit none
     private
 

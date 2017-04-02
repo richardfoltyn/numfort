@@ -1,3 +1,4 @@
+
 module numfort_common_alloc
     !*  Module with helper routines to help management of dynamically allocated
     !   objects.
@@ -7,7 +8,7 @@ module numfort_common_alloc
 
     private
 
-    public :: assert_alloc_ptr, assert_dealloc_ptr
+    public :: assert_alloc_ptr, assert_dealloc_ptr, alloc_assign
 
     interface assert_alloc_ptr
         module procedure assert_alloc_ptr_1d_real32, assert_alloc_ptr_1d_real64
@@ -17,8 +18,11 @@ module numfort_common_alloc
         module procedure assert_dealloc_ptr_1d_real32, assert_dealloc_ptr_1d_real64
     end interface
 
-contains
+    interface alloc_assign
+        module procedure alloc_assign_1d_real32, alloc_assign_1d_real64
+    end interface
 
+contains
 
 ! ------------------------------------------------------------------------------
 ! ASSERT_ALLOC_PTR routines
@@ -101,6 +105,23 @@ pure subroutine assert_dealloc_ptr_1d_real64 (x, ptr_x)
             deallocate (ptr_x)
         end if
     end if
+end subroutine
+
+! ------------------------------------------------------------------------------
+! ALLOC_ASSIGN routines
+
+pure subroutine alloc_assign_1d_real64 (src, dst)
+    integer, parameter :: PREC = real64
+    real (PREC), intent(in), dimension(:), optional :: src
+    real (PREC), intent(out), dimension(:), allocatable :: dst
+    include "include/alloc_assign_impl.f90"
+end subroutine
+
+pure subroutine alloc_assign_1d_real32 (src, dst)
+    integer, parameter :: PREC = real32
+    real (PREC), intent(in), dimension(:), optional :: src
+    real (PREC), intent(out), dimension(:), allocatable :: dst
+    include "include/alloc_assign_impl.f90"
 end subroutine
 
 end module

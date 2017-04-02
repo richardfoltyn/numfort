@@ -1,6 +1,3 @@
-! copy src to dst, (re)allocating dst if required
-real (PREC), intent(in), dimension(:), optional :: src
-real (PREC), intent(out), dimension(:), allocatable :: dst
 
 integer :: n
 

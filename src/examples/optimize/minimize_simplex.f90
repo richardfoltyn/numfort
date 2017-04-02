@@ -1,8 +1,7 @@
 program simplex_demo
 
     use numfort, only: pi
-    use numfort_common
-    use numfort_optimize
+    use numfort_optimize, optim_result => optim_result_real64
     use iso_fortran_env
 
     implicit none

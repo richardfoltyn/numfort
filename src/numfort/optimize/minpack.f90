@@ -5,7 +5,7 @@ module numfort_optimize_minpack
     use numfort_common
     use numfort_common_workspace
     use numfort_common_input_checks
-    use numfort_optim_result_mod
+    use numfort_optim_result
 
     use minpack_real64, only: minpack_hybrd_real64 => hybrd, &
         minpack_lmdif_real64 => lmdif, minpack_lmder_real64 => lmder, &
@@ -68,7 +68,7 @@ subroutine root_hybrd_real64 (func, x, fx, xtol, maxfev, ml, mu, eps, factor, di
     real (PREC) :: xtol, eps, factor
     integer :: maxfev, ml, mu
     type (workspace_real64), intent(in out), target, optional :: work
-    class (optim_result), intent(in out), optional :: res
+    type (optim_result_real64), intent(in out), optional :: res
 
     intent (in) :: xtol, maxfev, eps, factor, diag, ml, mu
     intent (in out) :: x, fx
@@ -179,7 +179,7 @@ subroutine root_hybrd_real64 (func, x, fx, xtol, maxfev, ml, mu, eps, factor, di
     end select
 
     if (present(res)) then
-        call res%update (x=x, fx=fx, nfev=nfev, status=status, msg=msg)
+        call result_update (res, x=x, fx=fx, nfev=nfev, status=status, msg=msg)
     end if
 
     call assert_dealloc_ptr (work, ptr_work)
@@ -213,7 +213,7 @@ subroutine root_hybrj_real64 (func, x, fx, xtol, maxfev, factor, diag, work, res
     real (PREC), intent(in), optional :: factor
     real (PREC), intent(in), dimension(:), target, optional :: diag
     type (workspace_real64), intent(in out), target, optional :: work
-    class (optim_result), intent(in out), optional :: res
+    type (optim_result_real64), intent(in out), optional :: res
 
     ! local default values for optional arguments
     real (PREC) :: lxtol, lfactor
@@ -314,7 +314,7 @@ subroutine root_hybrj_real64 (func, x, fx, xtol, maxfev, factor, diag, work, res
     end select
 
     if (present(res)) then
-        call res%update (x=x, fx=fx, nfev=nfev, status=status, msg=msg)
+        call result_update (res, x=x, fx=fx, nfev=nfev, status=status, msg=msg)
     end if
 
     call assert_dealloc_ptr (work, ptr_work)
@@ -347,7 +347,7 @@ subroutine root_lmdif_real64 (func, x, fx, ftol, xtol, gtol, maxfev, eps, &
     real (PREC) :: xtol, ftol, gtol, eps, factor
     integer :: maxfev
     type (workspace_real64), intent(in out), target, optional :: work
-    class (optim_result), intent(in out), optional :: res
+    type (optim_result_real64), intent(in out), optional :: res
 
     intent (in) :: xtol, ftol, gtol, maxfev, eps, factor, diag
     intent (in out) :: x
@@ -467,7 +467,7 @@ subroutine root_lmdif_real64 (func, x, fx, ftol, xtol, gtol, maxfev, eps, &
     end select
 
     if (present(res)) then
-        call res%update (x=x, fx=fx, nfev=nfev, status=status, msg=msg)
+        call result_update (res, x=x, fx=fx, nfev=nfev, status=status, msg=msg)
     end if
 
     call assert_dealloc_ptr (work, ptr_work)
@@ -502,7 +502,7 @@ subroutine root_lmder_real64 (func, x, fx, ftol, xtol, gtol, maxfev, &
     real (PREC), intent(in), optional :: factor
     real (PREC), intent(in), dimension(:), optional, target :: diag
     type (workspace_real64), intent(in out), target, optional :: work
-    class (optim_result), intent(in out), optional :: res
+    type (optim_result_real64), intent(in out), optional :: res
 
     ! local default values for optional arguments
     real (PREC) :: lxtol, lftol, lgtol, lfactor
@@ -625,7 +625,7 @@ subroutine root_lmder_real64 (func, x, fx, ftol, xtol, gtol, maxfev, &
 100 continue
 
     if (present(res)) then
-        call res%update (x=x, fx=fx, nfev=nfev, status=status, msg=msg)
+        call result_update (res, x=x, fx=fx, nfev=nfev, status=status, msg=msg)
     end if
 
     call assert_dealloc_ptr (work, ptr_work)
