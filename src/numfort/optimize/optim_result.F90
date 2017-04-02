@@ -18,18 +18,19 @@ module numfort_optim_result
 
     integer, parameter :: UNINITIALIZED_COUNTER = -1
 
-    type, abstract :: optim_result_base
+    type :: optim_result_real32
         integer :: nfev = UNINITIALIZED_COUNTER, nit = UNINITIALIZED_COUNTER
         type (status_t) :: status
         logical :: success = .false.
         character (100) :: msg
-    end type
-
-    type, extends(optim_result_base) :: optim_result_real32
         real (real32), dimension(:), allocatable :: x, fx
     end type
 
-    type, extends(optim_result_base) :: optim_result_real64
+    type :: optim_result_real64
+        integer :: nfev = UNINITIALIZED_COUNTER, nit = UNINITIALIZED_COUNTER
+        type (status_t) :: status
+        logical :: success = .false.
+        character (100) :: msg
         real (real64), dimension(:), allocatable :: x, fx
     end type
 
