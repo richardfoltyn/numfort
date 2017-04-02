@@ -2,8 +2,7 @@ program minpack_lm_demo
     !*  Example code using wrappers for MINPACKS LMDER and LMDIF
     !   routines for least-quares root finding.
 
-    use numfort_common
-    use numfort_optimize
+    use numfort_optimize, workspace => workspace_real64
     use iso_fortran_env
 
     implicit none

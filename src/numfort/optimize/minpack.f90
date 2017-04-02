@@ -3,6 +3,7 @@ module numfort_optimize_minpack
     use, intrinsic :: iso_fortran_env, only: real64
 
     use numfort_common
+    use numfort_common_workspace
     use numfort_common_input_checks
     use numfort_optim_result_mod
 
@@ -66,7 +67,7 @@ subroutine root_hybrd_real64 (func, x, fx, xtol, maxfev, ml, mu, eps, factor, di
     real (PREC), dimension(:), target :: diag
     real (PREC) :: xtol, eps, factor
     integer :: maxfev, ml, mu
-    class (workspace), intent(in out), target, optional :: work
+    type (workspace_real64), intent(in out), target, optional :: work
     class (optim_result), intent(in out), optional :: res
 
     intent (in) :: xtol, maxfev, eps, factor, diag, ml, mu
@@ -81,7 +82,7 @@ subroutine root_hybrd_real64 (func, x, fx, xtol, maxfev, ml, mu, eps, factor, di
     type (status_t) :: status
     character (MSG_LENGTH) :: msg
     integer :: n, nrwrk, mode, info, i, nfev
-    class (workspace), pointer :: ptr_work
+    type (workspace_real64), pointer :: ptr_work
     ! pointers to various arrays that need to be passed to hybrd() that are
     ! segments of memory allocated in workspace
     real (PREC), dimension(:), pointer, contiguous :: ptr_fjac, ptr_r, ptr_qtf, &
@@ -93,13 +94,8 @@ subroutine root_hybrd_real64 (func, x, fx, xtol, maxfev, ml, mu, eps, factor, di
     ! workspace size obtained from hybrd1()
     nrwrk = (n * (3*n + 13)) / 2
 
-    if (present(work)) then
-        ptr_work => work
-    else
-        allocate (ptr_work)
-    end if
-
-    call ptr_work%assert_allocated (nrwrk)
+    call assert_alloc_ptr (work, ptr_work)
+    call assert_alloc (ptr_work, nrwrk=nrwrk)
 
     ! set default values
     lmaxfev = 200 * (n + 1)
@@ -186,8 +182,7 @@ subroutine root_hybrd_real64 (func, x, fx, xtol, maxfev, ml, mu, eps, factor, di
         call res%update (x=x, fx=fx, nfev=nfev, status=status, msg=msg)
     end if
 
-    if (.not. present(work) .and. associated(ptr_work)) deallocate (ptr_work)
-    nullify (ptr_work)
+    call assert_dealloc_ptr (work, ptr_work)
 
 contains
 
@@ -217,7 +212,7 @@ subroutine root_hybrj_real64 (func, x, fx, xtol, maxfev, factor, diag, work, res
     integer, intent(in), optional :: maxfev
     real (PREC), intent(in), optional :: factor
     real (PREC), intent(in), dimension(:), target, optional :: diag
-    class (workspace), intent(in out), target, optional :: work
+    type (workspace_real64), intent(in out), target, optional :: work
     class (optim_result), intent(in out), optional :: res
 
     ! local default values for optional arguments
@@ -227,7 +222,7 @@ subroutine root_hybrj_real64 (func, x, fx, xtol, maxfev, factor, diag, work, res
     type (status_t) :: status
     character (MSG_LENGTH) :: msg
     integer :: n, nrwrk, mode, info, i, nfev, njev
-    class (workspace), pointer :: ptr_work
+    type (workspace_real64), pointer :: ptr_work
     ! pointers to various arrays that need to be passed to hybrd() that are
     ! segments of memory allocated in workspace
     real (PREC), dimension(:), pointer, contiguous :: ptr_fjac, ptr_r, ptr_qtf, &
@@ -239,13 +234,8 @@ subroutine root_hybrj_real64 (func, x, fx, xtol, maxfev, factor, diag, work, res
     ! workspace size obtained from hybrj1()
     nrwrk = (n * (3*n + 13)) / 2
 
-    if (present(work)) then
-        ptr_work => work
-    else
-        allocate (ptr_work)
-    end if
-
-    call ptr_work%assert_allocated (nrwrk)
+    call assert_alloc_ptr (work, ptr_work)
+    call assert_alloc (ptr_work, nrwrk=nrwrk)
 
     ! set default values, taken from hybrj1
     lmaxfev = 100 * (n + 1)
@@ -327,8 +317,7 @@ subroutine root_hybrj_real64 (func, x, fx, xtol, maxfev, factor, diag, work, res
         call res%update (x=x, fx=fx, nfev=nfev, status=status, msg=msg)
     end if
 
-    if (.not. present(work) .and. associated(ptr_work)) deallocate (ptr_work)
-    nullify (ptr_work)
+    call assert_dealloc_ptr (work, ptr_work)
 
 contains
 
@@ -357,7 +346,7 @@ subroutine root_lmdif_real64 (func, x, fx, ftol, xtol, gtol, maxfev, eps, &
     real (PREC), dimension(:), target :: diag
     real (PREC) :: xtol, ftol, gtol, eps, factor
     integer :: maxfev
-    class (workspace), intent(in out), target, optional :: work
+    type (workspace_real64), intent(in out), target, optional :: work
     class (optim_result), intent(in out), optional :: res
 
     intent (in) :: xtol, ftol, gtol, maxfev, eps, factor, diag
@@ -371,7 +360,7 @@ subroutine root_lmdif_real64 (func, x, fx, ftol, xtol, gtol, maxfev, eps, &
     type (status_t) :: status
     character (MSG_LENGTH) :: msg
     integer :: m, n, nrwrk, niwrk, mode, info, i, nfev
-    class (workspace), pointer :: ptr_work
+    type (workspace_real64), pointer :: ptr_work
     ! pointers to various arrays that need to be passed to lmdif() that are
     ! segments of memory allocated in workspace
     real (PREC), dimension(:), pointer, contiguous :: ptr_fjac, ptr_qtf, &
@@ -387,13 +376,8 @@ subroutine root_lmdif_real64 (func, x, fx, ftol, xtol, gtol, maxfev, eps, &
     ! used to store ipvt
     niwrk = n
 
-    if (present(work)) then
-        ptr_work => work
-    else
-        allocate (ptr_work)
-    end if
-
-    call ptr_work%assert_allocated (nrwrk, niwrk=niwrk)
+    call assert_alloc_ptr (work, ptr_work)
+    call assert_alloc (ptr_work, nrwrk=nrwrk, niwrk=niwrk)
 
     ! set default values
     lmaxfev = 200 * (n + 1)
@@ -486,8 +470,7 @@ subroutine root_lmdif_real64 (func, x, fx, ftol, xtol, gtol, maxfev, eps, &
         call res%update (x=x, fx=fx, nfev=nfev, status=status, msg=msg)
     end if
 
-    if (.not. present(work) .and. associated(ptr_work)) deallocate (ptr_work)
-    nullify (ptr_work)
+    call assert_dealloc_ptr (work, ptr_work)
 
 contains
 
@@ -518,7 +501,7 @@ subroutine root_lmder_real64 (func, x, fx, ftol, xtol, gtol, maxfev, &
     integer, intent(in), optional :: maxfev
     real (PREC), intent(in), optional :: factor
     real (PREC), intent(in), dimension(:), optional, target :: diag
-    class (workspace), intent(in out), target, optional :: work
+    type (workspace_real64), intent(in out), target, optional :: work
     class (optim_result), intent(in out), optional :: res
 
     ! local default values for optional arguments
@@ -528,7 +511,7 @@ subroutine root_lmder_real64 (func, x, fx, ftol, xtol, gtol, maxfev, &
     type (status_t) :: status
     character (MSG_LENGTH) :: msg
     integer :: m, n, nrwrk, niwrk, mode, info, i, nfev, njev
-    class (workspace), pointer :: ptr_work
+    type (workspace_real64), pointer :: ptr_work
     ! pointers to various arrays that need to be passed to lmder() that are
     ! segments of memory allocated in workspace
     real (PREC), dimension(:,:), pointer, contiguous :: ptr_fjac
@@ -571,13 +554,8 @@ subroutine root_lmder_real64 (func, x, fx, ftol, xtol, gtol, maxfev, &
     ! used to store ipvt
     niwrk = n
 
-    if (present(work)) then
-        ptr_work => work
-    else
-        allocate (ptr_work)
-    end if
-
-    call ptr_work%assert_allocated (nrwrk, niwrk=niwrk)
+    call assert_alloc_ptr (work, ptr_work)
+    call assert_alloc (ptr_work, nrwrk=nrwrk, niwrk=niwrk)
 
     ! map array arguments to lmder() onto workspace
     ! First n elements reserved for diag
@@ -650,8 +628,7 @@ subroutine root_lmder_real64 (func, x, fx, ftol, xtol, gtol, maxfev, &
         call res%update (x=x, fx=fx, nfev=nfev, status=status, msg=msg)
     end if
 
-    if (.not. present(work) .and. associated(ptr_work)) deallocate (ptr_work)
-    nullify (ptr_work)
+    call assert_dealloc_ptr (work, ptr_work)
 
 contains
 

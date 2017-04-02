@@ -12,4 +12,6 @@ set(SOURCE_FILES
     input_checks.f90
 )
 
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
+
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})

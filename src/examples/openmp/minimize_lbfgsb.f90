@@ -8,7 +8,7 @@
 module problem_mod
 
     use, intrinsic :: iso_fortran_env
-    use numfort_optimize
+    use numfort_optimize, workspace => workspace_real64
     implicit none
     private
 
@@ -21,7 +21,7 @@ contains
 
 subroutine solve_savings (a_at, beta, work, sav)
     real (PREC), intent(in) :: a_at, beta
-    class (workspace), intent(in out) :: work
+    type (workspace), intent(in out) :: work
     real (PREC), intent(out) :: sav
 
     real (PREC) :: x(1), lbnd(1), ubnd(1), args(2)
@@ -95,8 +95,7 @@ end module
 
 program lbfgsb_omp
 
-    use numfort_common
-    use numfort_optimize
+    use numfort_optimize, workspace => workspace_real64
     use iso_fortran_env
     use omp_lib
     use problem_mod

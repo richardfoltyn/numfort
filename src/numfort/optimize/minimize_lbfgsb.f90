@@ -4,6 +4,7 @@ module numfort_optimize_lbfgsb
     use, intrinsic :: ieee_arithmetic
     use, intrinsic :: iso_fortran_env, only: real64
     use numfort_common
+    use numfort_common_workspace
     use numfort_optim_result_mod
     use lbfgsb_bmnz_real64, only: setulb
 
@@ -84,7 +85,7 @@ subroutine lbfgsb_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
     real (PREC), intent(in), optional :: factr
     real (PREC), intent(in), optional :: pgtol
-    class (workspace), intent(in out), optional :: work
+    type (workspace_real64), intent(in out), optional :: work
     class (optim_result), intent(in out), optional :: res
 
     call lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
@@ -104,7 +105,7 @@ subroutine lbfgsb_args_real64 (func, x, lbounds, ubounds, maxiter, maxfun, &
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
     real (PREC), intent(in), optional :: factr
     real (PREC), intent(in), optional :: pgtol
-    class (workspace), intent(in out), optional :: work
+    type (workspace_real64), intent(in out), optional :: work
     real (PREC), intent(in), dimension(:) :: args
     class (optim_result), intent(in out), optional :: res
 
@@ -126,7 +127,7 @@ subroutine lbfgsb_grad_real64 (func, x, grad, lbounds, ubounds, maxiter, maxfun,
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
     real (PREC), intent(in), optional :: factr
     real (PREC), intent(in), optional :: pgtol
-    class (workspace), intent(in out), optional :: work
+    type (workspace_real64), intent(in out), optional :: work
     class (optim_result), intent(in out), optional :: res
 
     call lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
@@ -147,7 +148,7 @@ subroutine lbfgsb_grad_args_real64 (func, x, grad, lbounds, ubounds, maxiter, &
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
     real (PREC), intent(in), optional :: factr
     real (PREC), intent(in), optional :: pgtol
-    class (workspace), intent(in out), optional :: work
+    type (workspace_real64), intent(in out), optional :: work
     real (PREC), intent(in), dimension(:) :: args
     class (optim_result), intent(in out), optional :: res
 
@@ -182,7 +183,7 @@ subroutine lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
     real (PREC), intent(in), optional :: factr
     real (PREC), intent(in), optional :: pgtol
-    class (workspace), intent(in out), optional, target :: work
+    type (workspace_real64), intent(in out), optional, target :: work
     real (PREC), intent(in), dimension(:), optional :: args
     class (optim_result), intent(in out), optional :: res
 
@@ -192,7 +193,7 @@ subroutine lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
     integer :: iprint2
         ! iprint argument passed to BFGS library
     real (PREC) :: lfactr, lpgtol
-    class (workspace), pointer :: ptr_work
+    type (workspace_real64), pointer :: ptr_work
     character (len=100) :: msg
 
     integer :: nrwrk, niwrk, n
@@ -259,15 +260,10 @@ subroutine lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
     niwrk = 3 * n
     nrwrk = 2*lm*n + 5*n + 11*lm*lm + 8*lm
 
-    if (present(work)) then
-        ptr_work => work
-    else
-        allocate (workspace :: ptr_work)
-    end if
-
     ! lump together real work array and dsave, and integer work
     ! array and isave, task and csave
-    call ptr_work%assert_allocated (nrwrk, niwrk)
+    call assert_alloc_ptr (work, ptr_work)
+    call assert_alloc (ptr_work, nrwrk=nrwrk, niwrk=niwrk)
 
     ! transform boundaries to arguments accepted by routine
     call set_bounds_flags (llbounds, lubounds, nbd)
@@ -341,8 +337,7 @@ subroutine lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
         call res%update (x, fx, status, iter, nfeval, msg)
     end if
 
-    if (.not. present(work) .and. associated(ptr_work)) deallocate(ptr_work)
-    nullify (ptr_work)
+    call assert_dealloc_ptr (work, ptr_work)
 
 end subroutine
 

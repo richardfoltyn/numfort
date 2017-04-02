@@ -5,7 +5,7 @@
 program splder_demo
 
     use iso_fortran_env
-    use numfort_interpolate
+    use numfort_interpolate, workspace => workspace_real64
 
     implicit none
 

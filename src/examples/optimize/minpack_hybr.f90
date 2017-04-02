@@ -3,8 +3,7 @@ program minpack_hybr_examples
     !   and HYBRJ routines to solve nonlinear equations system with or without
     !   a user-provided Jacobian.
 
-    use numfort_common
-    use numfort_optimize
+    use numfort_optimize, workspace => workspace_real64
     use iso_fortran_env
 
     implicit none

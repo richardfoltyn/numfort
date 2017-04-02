@@ -2,8 +2,8 @@ module numfort_interpolate_fitpack
 
     use iso_fortran_env
     use numfort_common
+    use numfort_common_workspace
     use numfort_interpolate_common
-    use numfort_interpolate_result
     use fitpack_real64, only: fitpack_curfit_real64 => curfit, &
         fitpack_concon_real64 => concon, fitpack_splev_real64 => splev, &
         fitpack_splder_real64 => splder
@@ -236,7 +236,7 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
     real (PREC), intent(in), dimension(:), contiguous, optional :: w
     real (PREC), intent(in), optional :: xe
     real (PREC), intent(in), optional :: xb
-    class (workspace), intent(in out), optional, target :: work
+    type (workspace_real64), intent(in out), optional, target :: work
     integer, intent(in), optional :: maxiter
     real (PREC), intent(out), optional :: ssr
     type (status_t), intent(out), optional :: status
@@ -246,7 +246,7 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
     integer :: m, liopt, lk, nwrk, nwrk_tot, nest, ier, lmaxiter
     type (status_t) :: lstatus
     real (PREC) :: lxb, lxe, ls, lssr
-    class (workspace), pointer :: ptr_work
+    type (workspace_real64), pointer :: ptr_work
 
     nullify(ptr_work)
 
@@ -280,18 +280,13 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
         goto 100
     end if
 
-    if (present(work)) then
-        ptr_work => work
-    else
-        allocate (workspace :: ptr_work)
-    end if
-
     nwrk_tot = nwrk
     ! Add enough space to allocate default weights on workspace array
     if (.not. present(w)) nwrk_tot = nwrk_tot + m
 
     ! assert that working arrays are sufficiently large
-    call ptr_work%assert_allocated (nrwrk=nwrk_tot, niwrk=nest)
+    call assert_alloc_ptr (work, ptr_work)
+    call assert_alloc (ptr_work, nrwrk=nwrk_tot, niwrk=nest)
 
     if (.not. present(w)) then
         ! allocate real working array such that we can append
@@ -353,8 +348,7 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
     if (present(info)) info = ier
 
 100 if(present(status)) status = lstatus
-    if ((.not. present(work)) .and. associated(ptr_work)) deallocate (ptr_work)
-    nullify(ptr_work)
+    call assert_dealloc_ptr (work, ptr_work)
 
 end subroutine
 
@@ -376,7 +370,7 @@ pure subroutine concon_real64 (x, y, v, s, &
     real (PREC), intent(in), dimension(:), contiguous, optional :: w
     integer, intent(in), optional :: maxtr
     integer, intent(in), optional :: maxbin
-    class (workspace), intent(in out), optional, target :: work
+    type (workspace_real64), intent(in out), optional, target :: work
     real (PREC), intent(out), optional :: ssr
     real (PREC), intent(out), dimension(:), optional :: sx
     logical, intent(out), dimension(:), optional :: bind
@@ -390,7 +384,7 @@ pure subroutine concon_real64 (x, y, v, s, &
     integer :: nrwrk, jrwrk, niwrk, nlwrk, nrwrk_tot
     real (PREC) :: ls, lssr
     type (status_t) :: lstatus
-    class (workspace), pointer :: ptr_work
+    type (workspace_real64), pointer :: ptr_work
     real (PREC), dimension(:), pointer, contiguous :: ptr_sx, ptr_w, ptr_v
     logical, dimension(:), pointer, contiguous :: ptr_bind
 
@@ -418,12 +412,6 @@ pure subroutine concon_real64 (x, y, v, s, &
 
     call concon_get_wrk_size (m, lmaxtr, lmaxbin, nest, nrwrk, niwrk)
 
-    if (present(work)) then
-        ptr_work => work
-    else
-        allocate (workspace :: ptr_work)
-    end if
-
     ! work size for logical array
     nlwrk = 0
     ! offset for real work array; initially set to end of work array not
@@ -438,7 +426,8 @@ pure subroutine concon_real64 (x, y, v, s, &
     ! need to allocate workspace for v as CONCON modifies v in-place
     nrwrk_tot = nrwrk_tot + m
 
-    call ptr_work%assert_allocated (nrwrk=nrwrk_tot, niwrk=niwrk, nlwrk=nlwrk)
+    call assert_alloc_ptr (work, ptr_work)
+    call assert_alloc (ptr_work, nrwrk=nrwrk_tot, niwrk=niwrk, nlwrk=nlwrk)
 
     ! allocate default weights and sx after the actual real working array
     jrwrk = nrwrk + 1
@@ -511,8 +500,7 @@ pure subroutine concon_real64 (x, y, v, s, &
 
 100 continue
     if(present(status)) status = lstatus
-    if ((.not. present(work)) .and. associated(ptr_work)) deallocate (ptr_work)
-    nullify(ptr_work)
+    call assert_dealloc_ptr (work, ptr_work)
 
 end subroutine
 
@@ -599,11 +587,10 @@ pure subroutine splder_real64 (knots, coefs, n, k, order, x, y, ext, work, statu
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(out), dimension(:), contiguous :: y
     integer, intent(in), optional :: ext
-    class (workspace), intent(in out), optional, target :: work
+    type (workspace_real64), intent(in out), optional, target :: work
     type (status_t), intent(out), optional :: status
 
-    type (workspace), target :: lwork
-    type (workspace), pointer :: ptr_work
+    type (workspace_real64), pointer :: ptr_work
 
     integer :: lext, lorder, lier, lk, ln, m
     type (status_t) :: lstatus
@@ -622,13 +609,8 @@ pure subroutine splder_real64 (knots, coefs, n, k, order, x, y, ext, work, statu
     if (present(ext)) lext = ext
     if (present(order)) lorder = order
 
-    if (present(work)) then
-        ptr_work => work
-    else
-        ptr_work => lwork
-    end if
-
-    call ptr_work%assert_allocated (nrwrk=ln)
+    call assert_alloc_ptr (work, ptr_work)
+    call assert_alloc (ptr_work, nrwrk=ln)
 
     call fitpack_splder_real64 (knots, ln, coefs, lk, lorder, x, y, m, &
         lext, ptr_work%rwrk, lier)
@@ -647,6 +629,7 @@ pure subroutine splder_real64 (knots, coefs, n, k, order, x, y, ext, work, statu
 
 100 continue
     if (present(status)) status = lstatus
+    call assert_dealloc_ptr (work, ptr_work)
 end subroutine
 
 ! splder_scalar_real64 evaluates the derivate of a spline at a single scalar point
@@ -661,7 +644,7 @@ pure subroutine splder_scalar_real64 (knots, coefs, n, k, order, x, y, ext, work
     real (PREC), intent(in) :: x
     real (PREC), intent(out) :: y
     integer, intent(in), optional :: ext
-    class (workspace), intent(in out), optional, target :: work
+    type (workspace_real64), intent(in out), optional, target :: work
     type (status_t), intent(out), optional :: status
 
     real (PREC), dimension(1) :: lx, ly

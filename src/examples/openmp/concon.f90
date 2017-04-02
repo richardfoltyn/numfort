@@ -5,7 +5,7 @@
 program curfit_demo_omp
 
     use iso_fortran_env
-    use numfort_interpolate
+    use numfort_interpolate, workspace => workspace_real64
     use omp_lib
 
     implicit none
@@ -125,7 +125,7 @@ pure subroutine fit (x, y, v, s, knots, coefs, nknots, ws, ssr, status, &
     real (PREC), intent(in) :: s
     real (PREC), intent(out), dimension(:) :: knots, coefs
     integer, intent(out) :: nknots
-    class (workspace), intent(in out) :: ws
+    type (workspace), intent(in out) :: ws
     real (PREC), intent(out) :: ssr
     type (status_t), intent(out) :: status
     real (PREC), intent(out), dimension(:) :: sp, sp1, sp2
@@ -160,7 +160,7 @@ subroutine print_report (iopt, s, ssr, status, n, knots, coefs, x, y, &
     call status%decode (istatus, nstatus)
 
     stat_ok = any ([NF_STATUS_OK, NF_STATUS_APPROX] .in. status)
-    
+
     print "(/,'(', i0, ')', t6, 'iopt: ', i2, '; smoothing factor: ', es12.5e2)", &
         counter, iopt, s
     print "(t6, 'status code: ', *(i0, :, ', '))", istatus(1:nstatus)

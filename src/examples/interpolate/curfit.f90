@@ -5,7 +5,7 @@
 program curfit_demo
 
     use iso_fortran_env
-    use numfort_common
+    use numfort_common, workspace => workspace_real64
     use numfort_interpolate
 
     implicit none
