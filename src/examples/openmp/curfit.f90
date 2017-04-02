@@ -108,7 +108,7 @@ subroutine example1 ()
             "d(coefs)=", maxval(abs(coefs(:,j)-coefs2(:,j))), &
             "nknots eq.=", nknots(j) == nknots2(j), &
             "d(ssr)=", abs(ssr(j)-ssr2(j)), &
-            "status eq.=", status(j) == status2(j)
+            "status eq.=", status_equals (status(j), status2(j))
     end do
 
 end subroutine
@@ -131,7 +131,7 @@ pure subroutine fit (x, y, k, s, knots, coefs, nknots, ws, ssr, status, yhat, &
     call curfit (x, y, k, s, knots, coefs, nknots, &
        iopt=iopt, work=ws, w=w, ssr=ssr, status=status)
 
-    if (.not. (NF_STATUS_INVALID_ARG .in. status)) then
+    if (status_contains (status, NF_STATUS_INVALID_ARG)) then
        call splev (knots, coefs, nknots, k, x, yhat, ext=ext)
     end if
 end subroutine
@@ -152,7 +152,7 @@ subroutine print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat, c
     print "(t6, 'status code: ', *(i0, :, ', '))", istatus(1:nstatus)
     ! Approximation is returned even if status /= NF_STATUS_OK as long as
     ! input arguments were valid.
-    if (NF_STATUS_INVALID_ARG .notin. status) then
+    if (.not. status_contains (status, NF_STATUS_INVALID_ARG)) then
         print "(t6, 'SSR: ', es12.5e2)", ssr
         print "(t6, 'Number of knots: ', i0)", n
         print "(t6, 'Knots: ', *(t14, 8(f8.3, :, ', '), :, /))", knots(1:n)

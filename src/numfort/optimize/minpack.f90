@@ -157,25 +157,25 @@ subroutine root_hybrd_real64 (func, x, fx, xtol, maxfev, ml, mu, eps, factor, di
 
     select case (info)
     case (0)
-        status = NF_STATUS_INVALID_ARG
+        call status_set (status, NF_STATUS_INVALID_ARG)
         msg = "Invalid input parameters"
     case (1)
-        status = NF_STATUS_OK
+        call status_set (status, NF_STATUS_OK)
         msg = "Convergence achieved, relative error is at most xtol"
     case (2)
-        status = NF_STATUS_MAX_EVAL
+        call status_set (status, NF_STATUS_MAX_EVAL)
         msg = "Exceeded max. number of function evaluations"
     case (3)
-        status = NF_STATUS_NOT_CONVERGED
+        call status_set (status, NF_STATUS_NOT_CONVERGED)
         msg = "xtol too small, no further improvement possible"
     case (4)
-        status = NF_STATUS_NOT_CONVERGED
+        call status_set (status, NF_STATUS_NOT_CONVERGED)
         msg = "Not making progress (as measured by last five Jacobians)"
     case (5)
-        status = NF_STATUS_NOT_CONVERGED
+        call status_set (status, NF_STATUS_NOT_CONVERGED)
         msg = "Not making progress (as measured by last ten iterations)"
     case default
-        status = NF_STATUS_UNKNOWN
+        call status_set (status, NF_STATUS_UNKNOWN)
     end select
 
     if (present(res)) then
@@ -292,25 +292,25 @@ subroutine root_hybrj_real64 (func, x, fx, xtol, maxfev, factor, diag, work, res
 
     select case (info)
     case (0)
-        status = NF_STATUS_INVALID_ARG
+        call status_set (status, NF_STATUS_INVALID_ARG)
         msg = "Invalid input parameters"
     case (1)
-        status = NF_STATUS_OK
+        call status_set (status, NF_STATUS_OK)
         msg = "Convergence achieved, relative error is at most xtol"
     case (2)
-        status = NF_STATUS_MAX_EVAL
+        call status_set (status, NF_STATUS_MAX_EVAL)
         msg = "Exceeded max. number of function evaluations"
     case (3)
-        status = NF_STATUS_NOT_CONVERGED
+        call status_set (status, NF_STATUS_NOT_CONVERGED)
         msg = "xtol too small, no further improvement possible"
     case (4)
-        status = NF_STATUS_NOT_CONVERGED
+        call status_set (status, NF_STATUS_NOT_CONVERGED)
         msg = "Not making progress (as measured by last five Jacobians)"
     case (5)
-        status = NF_STATUS_NOT_CONVERGED
+        call status_set (status, NF_STATUS_NOT_CONVERGED)
         msg = "Not making progress (as measured by last ten iterations)"
     case default
-        status = NF_STATUS_UNKNOWN
+        call status_set (status, NF_STATUS_UNKNOWN)
     end select
 
     if (present(res)) then
@@ -438,31 +438,31 @@ subroutine root_lmdif_real64 (func, x, fx, ftol, xtol, gtol, maxfev, eps, &
 
     select case (info)
     case (0)
-        status = NF_STATUS_INVALID_ARG
+        call status_set (status, NF_STATUS_INVALID_ARG)
         msg = "Invalid input parameters"
     case (1)
-        status = NF_STATUS_OK
+        call status_set (status, NF_STATUS_OK)
         msg = "Convergence in terms of ftol"
     case (2)
-        status = NF_STATUS_OK
+        call status_set (status, NF_STATUS_OK)
         msg = "Convergence in terms of xtol"
     case (3)
-        status = NF_STATUS_OK
+        call status_set (status, NF_STATUS_OK)
         msg = "Convegence in terms of ftol and xtol"
     case (4)
-        status = NF_STATUS_OK
+        call status_set (status, NF_STATUS_OK)
         msg = "Convergence in terms of gtol"
     case (5)
-        status = NF_STATUS_MAX_EVAL
+        call status_set (status, NF_STATUS_MAX_EVAL)
         msg = "Exceeded max. number of function evaluations"
     case (6)
-        status = NF_STATUS_NOT_CONVERGED
+        call status_set (status, NF_STATUS_NOT_CONVERGED)
         msg = "ftol too small. No further reduction possible"
     case (7)
-        status = NF_STATUS_NOT_CONVERGED
+        call status_set (status, NF_STATUS_NOT_CONVERGED)
         msg = "xtol is too small. No further improvement in solution possible"
     case (8)
-        status = NF_STATUS_NOT_CONVERGED
+        call status_set (status, NF_STATUS_NOT_CONVERGED)
         msg = "gtol is too small. fvec is orthogonal to columns of Jacobian"
     end select
 
@@ -527,7 +527,7 @@ subroutine root_lmder_real64 (func, x, fx, ftol, xtol, gtol, maxfev, &
 
     call lm_check_input (m, n, ftol, xtol, gtol, maxfev, factor, &
         status=status, msg=msg)
-    if (NF_STATUS_INVALID_ARG .in. status) goto 100
+    if (status_contains (status, NF_STATUS_INVALID_ARG)) goto 100
 
     ! set default values
     lmaxfev = 200 * (n + 1)
@@ -593,31 +593,31 @@ subroutine root_lmder_real64 (func, x, fx, ftol, xtol, gtol, maxfev, &
 
     select case (info)
     case (0)
-        status = NF_STATUS_INVALID_ARG
+        call status_set (status, NF_STATUS_INVALID_ARG)
         msg = "Invalid input parameters"
     case (1)
-        status = NF_STATUS_OK
+        call status_set (status, NF_STATUS_OK)
         msg = "Convergence in terms of ftol"
     case (2)
-        status = NF_STATUS_OK
+        call status_set (status, NF_STATUS_OK)
         msg = "Convergence in terms of xtol"
     case (3)
-        status = NF_STATUS_OK
+        call status_set (status, NF_STATUS_OK)
         msg = "Convegence in terms of ftol and xtol"
     case (4)
-        status = NF_STATUS_OK
+        call status_set (status, NF_STATUS_OK)
         msg = "Convergence in terms of gtol"
     case (5)
-        status = NF_STATUS_MAX_EVAL
+        call status_set (status, NF_STATUS_MAX_EVAL)
         msg = "Exceeded max. number of function evaluations"
     case (6)
-        status = NF_STATUS_NOT_CONVERGED
+        call status_set (status, NF_STATUS_NOT_CONVERGED)
         msg = "ftol too small. No further reduction possible"
     case (7)
-        status = NF_STATUS_NOT_CONVERGED
+        call status_set (status, NF_STATUS_NOT_CONVERGED)
         msg = "xtol is too small. No further improvement in solution possible"
     case (8)
-        status = NF_STATUS_NOT_CONVERGED
+        call status_set (status, NF_STATUS_NOT_CONVERGED)
         msg = "gtol is too small. fvec is orthogonal to columns of Jacobian"
     end select
 
@@ -659,31 +659,31 @@ subroutine lm_check_input (m, n, ftol, xtol, gtol, maxfev, factor, eps, &
     type (status_t), intent(out) :: status
     character (*), intent(out) :: msg
 
-    status = NF_STATUS_OK
+    call status_set (status, NF_STATUS_OK)
 
     if (m < n) then
         msg = "Least-squares minimization requires m >= n"
-        status = NF_STATUS_INVALID_ARG
+        call status_set (status, NF_STATUS_INVALID_ARG)
         return
     end if
 
     call check_nonneg (1.0_PREC, ftol, 'ftol', status, msg)
-    if (NF_STATUS_INVALID_ARG .in. status) return
+    if (status_contains (status, NF_STATUS_INVALID_ARG)) return
 
     call check_nonneg (1.0_PREC, xtol, 'xtol', status, msg)
-    if (NF_STATUS_INVALID_ARG .in. status) return
+    if (status_contains (status, NF_STATUS_INVALID_ARG)) return
 
     call check_nonneg (1.0_PREC, gtol, 'gtol', status, msg)
-    if (NF_STATUS_INVALID_ARG .in. status) return
+    if (status_contains (status, NF_STATUS_INVALID_ARG)) return
 
     call check_nonneg (1, maxfev, 'maxfev', status, msg)
-    if (NF_STATUS_INVALID_ARG .in. status) return
+    if (status_contains (status, NF_STATUS_INVALID_ARG)) return
 
     call check_positive (1.0_PREC, factor, 'factor', status, msg)
-    if (NF_STATUS_INVALID_ARG .in. status) return
+    if (status_contains (status, NF_STATUS_INVALID_ARG)) return
 
     call check_positive (1.0_PREC, eps, 'eps', status, msg)
-    if (NF_STATUS_INVALID_ARG .in. status) return
+    if (status_contains (status, NF_STATUS_INVALID_ARG)) return
 
 
 end subroutine
@@ -710,7 +710,7 @@ subroutine chkder_real64 (fcn, m, x, err, status)
 
     n = size(x)
     if (size(err) < m) then
-        lstatus = NF_STATUS_INVALID_ARG
+        call status_set (lstatus, NF_STATUS_INVALID_ARG)
         goto 100
     end if
 

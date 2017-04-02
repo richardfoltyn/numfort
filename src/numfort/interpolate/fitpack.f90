@@ -53,10 +53,10 @@ pure function check_length (arr1, arr2) result(status)
     real (PREC), intent(in), dimension(:), optional :: arr2
     type (status_t) :: status
 
-    status = NF_STATUS_OK
+    call status_set (status, NF_STATUS_OK)
     if (present(arr2)) then
         if (size(arr1) /= size(arr2)) then
-            status = NF_STATUS_INVALID_ARG
+            call status_set (status, NF_STATUS_INVALID_ARG)
         end if
     end if
 
@@ -78,14 +78,15 @@ pure subroutine check_input (x, y, w, k, knots, coefs, maxiter, v, sx, bind, sta
     type (status_t), intent(out) :: status
     character (len=*), intent(out), optional :: msg
 
-    status = NF_STATUS_OK
+    call status_set (status, NF_STATUS_OK)
 
     if (size(x) /= size(y)) then
         if (present(msg)) msg = "Non-conformable arrays x, y"
         goto 100
     end if
 
-    if (check_length (x, w) /= NF_STATUS_OK) then
+    status = check_length (x, w)
+    if (.not. status_equals (status, NF_STATUS_OK)) then
         if (present(msg)) msg = "Non-conformable arrays x, w"
         goto 100
     end if
@@ -110,7 +111,8 @@ pure subroutine check_input (x, y, w, k, knots, coefs, maxiter, v, sx, bind, sta
         goto 100
     end if
 
-    if (check_length (x, sx) /= NF_STATUS_OK) then
+    status = check_length (x, sx)
+    if (.not. status_equals (status, NF_STATUS_OK)) then
         if (present(msg)) msg = "x and sx must be of equal size"
         goto 100
     end if
@@ -124,7 +126,8 @@ pure subroutine check_input (x, y, w, k, knots, coefs, maxiter, v, sx, bind, sta
         end if
     end if
 
-    if (check_length (x, v) /= NF_STATUS_OK) then
+    status = check_length (x, v)
+    if (.not. status_equals (status, NF_STATUS_OK)) then
         if (present(msg)) msg = "x and v must be of equal size"
         goto 100
     end if
@@ -132,7 +135,7 @@ pure subroutine check_input (x, y, w, k, knots, coefs, maxiter, v, sx, bind, sta
     return
 
 100 continue
-    status = NF_STATUS_INVALID_ARG
+    call status_set (status, NF_STATUS_INVALID_ARG)
 
 end subroutine
 
@@ -148,7 +151,7 @@ pure subroutine check_eval_input (knots, coefs, n, k, x, y, order, ext, status, 
 
     integer :: lk
 
-    status = NF_STATUS_OK
+    call status_set (status, NF_STATUS_OK)
 
     lk = DEFAULT_SPLINE_DEGREE
     if (present(k)) lk = k
@@ -185,13 +188,13 @@ pure subroutine check_eval_input (knots, coefs, n, k, x, y, order, ext, status, 
 
     if (present(ext)) then
         call check_input_ext (ext, status, msg)
-        if (status /= NF_STATUS_OK) goto 100
+        if (.not. status_equals (status, NF_STATUS_OK)) goto 100
     end if
 
     return
 
 100 continue
-    status = NF_STATUS_INVALID_ARG
+    call status_set (status, NF_STATUS_INVALID_ARG)
 
 end subroutine
 
@@ -213,10 +216,10 @@ pure subroutine check_input_ext (ext, status, msg)
     end do
 
     if (.not. is_valid) then
-        status = NF_STATUS_INVALID_ARG
+        call status_set (status, NF_STATUS_INVALID_ARG)
         if (present(msg)) msg = "Invalid value extrapolation mode"
     else
-        status = NF_STATUS_OK
+        call status_set (status, NF_STATUS_OK)
     end if
 end subroutine
 
@@ -251,7 +254,7 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
     nullify(ptr_work)
 
     call check_input (x, y, w, k, knots, coefs, maxiter=maxiter, status=lstatus, msg=msg)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    if (status_contains (lstatus, NF_STATUS_INVALID_ARG)) goto 100
 
     ! initialize default values
     lk = DEFAULT_SPLINE_DEGREE
@@ -315,33 +318,28 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
     ! Map CURFIT ier code to NF status code
     select case (ier)
     case (0)
-        lstatus = NF_STATUS_OK
+        call status_set (lstatus, NF_STATUS_OK)
     case (-1)
         ! retuned spline is an interpolating spline, ie ssr=0
-        lstatus = NF_STATUS_OK
-        lstatus = lstatus + NF_STATUS_CURFIT_INTERP
+        call status_set (lstatus, NF_STATUS_OK, NF_STATUS_CURFIT_INTERP)
     case (-2)
         ! returned spline is an WLS polynomial of degree k
-        lstatus = NF_STATUS_OK
-        lstatus = lstatus + NF_STATUS_CURFIT_WLS
+        call status_set (lstatus, NF_STATUS_OK, NF_STATUS_CURFIT_WLS)
     case (1)
         ! nest is too small, probably because s is too small.
         ! CURFIT returns an approximation in this case
-        lstatus = NF_STATUS_STORAGE_ERROR
-        lstatus = lstatus + NF_STATUS_APPROX
+        call status_set (lstatus, NF_STATUS_STORAGE_ERROR, NF_STATUS_APPROX)
     case (2)
         ! Theoretically impossible result encountered, probably because s
         ! is too small
-        lstatus = NF_STATUS_INVALID_STATE
-        lstatus = lstatus + NF_STATUS_APPROX
+        call status_set (lstatus, NF_STATUS_INVALID_STATE, NF_STATUS_APPROX)
     case (3)
         ! Max. number of iterations exceeded, probably because s is too small.
-        lstatus = NF_STATUS_MAX_ITER
-        lstatus = lstatus + NF_STATUS_APPROX
+        call status_set (lstatus, NF_STATUS_MAX_ITER, NF_STATUS_APPROX)
     case (10)
-        lstatus = NF_STATUS_INVALID_ARG
+        call status_set (lstatus, NF_STATUS_INVALID_ARG)
     case default
-        lstatus = NF_STATUS_UNKNOWN
+        call status_set (lstatus, NF_STATUS_UNKNOWN)
     end select
 
     if (present(ssr)) ssr = lssr
@@ -392,7 +390,7 @@ pure subroutine concon_real64 (x, y, v, s, &
 
     call check_input (x, y, w, knots=knots, coefs=coefs, v=v, bind=bind, sx=sx,&
         status=lstatus, msg=msg)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    if (status_contains (lstatus, NF_STATUS_INVALID_ARG)) goto 100
 
     ! default values
     liopt = 0
@@ -479,20 +477,20 @@ pure subroutine concon_real64 (x, y, v, s, &
     end if
 
     if (ier == 0) then
-        lstatus = NF_STATUS_OK
+        call status_set (lstatus, NF_STATUS_OK)
     else if (ier == -3) then
         ! this should not happen if nest=m+4, as returned by concon_get_nest()
-        lstatus = ior(NF_STATUS_STORAGE_ERROR, NF_STATUS_APPROX)
+        call status_set (lstatus, NF_STATUS_STORAGE_ERROR, NF_STATUS_APPROX)
     else if (ier == -2 .or. ier == -1) then
-        lstatus = NF_STATUS_APPROX
+        call status_set (lstatus, NF_STATUS_APPROX)
     else if (ier == 1 .or. ier == 2) then
-        lstatus = NF_STATUS_STORAGE_ERROR
+        call status_set (lstatus, NF_STATUS_STORAGE_ERROR)
     else if (ier == 3 .or. ier == 4 .or. ier == 5) then
-        lstatus = NF_STATUS_OTHER
+        call status_set (lstatus, NF_STATUS_OTHER)
     else if (ier == 10) then
-        lstatus = NF_STATUS_INVALID_ARG
+        call status_set (lstatus, NF_STATUS_INVALID_ARG)
     else
-        lstatus = NF_STATUS_UNKNOWN
+        call status_set (lstatus, NF_STATUS_UNKNOWN)
     end if
 
     if (present(ssr)) ssr = lssr
@@ -521,7 +519,7 @@ pure subroutine splev_real64 (knots, coefs, n, k, x, y, ext, status)
     type (status_t) :: lstatus
 
     call check_eval_input (knots, coefs, n, k, x, y, ext=ext, status=lstatus)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    if (status_contains (lstatus, NF_STATUS_INVALID_ARG)) goto 100
 
     m = size(x)
     ! by default assume that all elements in knots/coefs array are valid
@@ -541,13 +539,13 @@ pure subroutine splev_real64 (knots, coefs, n, k, x, y, ext, status)
     ! remap SPLEV status codes to NUMFORT codes
     select case (lier)
     case (0)
-        lstatus = NF_STATUS_OK
+        call status_set (lstatus, NF_STATUS_OK)
     case (1)
-        lstatus = NF_STATUS_BOUNDS_ERROR
+        call status_set (lstatus, NF_STATUS_BOUNDS_ERROR)
     case (10)
-        lstatus = NF_STATUS_INVALID_ARG
+        call status_set (lstatus, NF_STATUS_INVALID_ARG)
     case default
-        lstatus = NF_STATUS_UNKNOWN
+        call status_set (lstatus, NF_STATUS_UNKNOWN)
     end select
 
 100 continue
@@ -596,7 +594,7 @@ pure subroutine splder_real64 (knots, coefs, n, k, order, x, y, ext, work, statu
     type (status_t) :: lstatus
 
     call check_eval_input (knots, coefs, n, k, x, y, order, ext, status=lstatus)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    if (status_contains (lstatus, NF_STATUS_INVALID_ARG)) goto 100
 
     lk = DEFAULT_SPLINE_DEGREE
     lorder = 1
@@ -618,13 +616,13 @@ pure subroutine splder_real64 (knots, coefs, n, k, order, x, y, ext, work, statu
     ! remap SPLDER status codes to NUMFORT codes
     select case (lier)
     case (0)
-        lstatus = NF_STATUS_OK
+        call status_set (lstatus, NF_STATUS_OK)
     case (1)
-        lstatus = NF_STATUS_BOUNDS_ERROR
+        call status_set (lstatus, NF_STATUS_BOUNDS_ERROR)
     case (10)
-        lstatus = NF_STATUS_INVALID_ARG
+        call status_set (lstatus, NF_STATUS_INVALID_ARG)
     case default
-        lstatus = NF_STATUS_UNKNOWN
+        call status_set (lstatus, NF_STATUS_UNKNOWN)
     end select
 
 100 continue

@@ -7,10 +7,8 @@ module numfort_common_status
     public :: status_t
     public :: status_decode
 
-    public :: assignment (=)
-    public :: operator(+), iand, ior
-    public :: operator(==), operator(/=)
-    public :: operator(.in.), operator(.notin.)
+    public :: status_set, status_add, status_reset
+    public :: status_equals, status_contains
     public :: char, size
 
     integer (NF_ENUM_KIND), public, parameter :: NF_STATUS_UNDEFINED = 0
@@ -34,36 +32,21 @@ module numfort_common_status
         integer (NF_ENUM_KIND) :: code = NF_STATUS_UNDEFINED
     end type
 
-    interface operator(+)
-        module procedure add_int_status, add_status_int
+
+    interface status_add
+        module procedure status_add_int, status_add_status
     end interface
 
-    interface ior
-        module procedure add_int_status, add_status_int
+    interface status_set
+        module procedure status_set_int, status_set_int_int, status_set_status
     end interface
 
-    interface iand
-        module procedure iand_int_status, iand_status_int
+    interface status_equals
+        module procedure status_equals_int, status_equals_status
     end interface
 
-    interface assignment (=)
-        module procedure assign_int_status, assign_status_int
-    end interface
-
-    interface operator (==)
-        module procedure equal_status_status, equal_status_int, equal_int_status
-    end interface
-
-    interface operator (/=)
-        module procedure nequal_status_status, nequal_status_int, nequal_int_status
-    end interface
-
-    interface operator (.in.)
-        module procedure operator_in_int_status
-    end interface
-
-    interface operator (.notin.)
-        module procedure operator_notin_int_status
+    interface status_contains
+        module procedure status_contains_int, status_contains_status
     end interface
 
     interface char
@@ -97,10 +80,10 @@ pure subroutine status_decode (self, x, n)
     x = -1
     n = 0
 
-    if ((size(x) >= 1) .and. (self /= NF_STATUS_UNDEFINED)) then
+    if ((size(x) >= 1) .and. (.not. status_equals (self, NF_STATUS_UNDEFINED))) then
         do i = 1, min(size(x), NF_MAX_STATUS_CODES)
             pattern = ishft(1, i-1)
-            if (iand(self, pattern) == pattern) then
+            if (status_contains (self, pattern)) then
                 n = n + 1
                 x(n) = i-1
             end if
@@ -117,7 +100,7 @@ pure function status_size (self) result(res)
     res = 0
     do i = NF_MAX_STATUS_CODES, 1, -1
         pattern = ishft(1, i-1)
-        if (iand(self%code, pattern) == pattern) then
+        if (status_contains (self, pattern)) then
             res = i
             return
         end if
@@ -149,100 +132,67 @@ pure function status_to_char (self) result(res)
 end function
 
 ! ------------------------------------------------------------------------------
-! Operator overloads
+! "Operators"
 
-elemental function add_status_int (lhs, rhs) result(res)
-    type (status_t), intent(in) :: lhs
-    integer (NF_ENUM_KIND), intent(in) :: rhs
-    type (status_t) :: res
-    res%code = ior(lhs%code, rhs)
-end function
-
-elemental function add_int_status (lhs, rhs) result(res)
-    integer (NF_ENUM_KIND), intent(in) :: lhs
-    type (status_t), intent(in) :: rhs
-    type (status_t) :: res
-    res%code = ior(lhs, rhs%code)
-end function
-
-elemental function iand_status_int (lhs, rhs) result(res)
-    type (status_t), intent(in) :: lhs
-    integer (NF_ENUM_KIND), intent(in) :: rhs
-    type (status_t) :: res
-    res%code = iand(lhs%code, rhs)
-end function
-
-elemental function iand_int_status (lhs, rhs) result(res)
-    integer (NF_ENUM_KIND), intent(in) :: lhs
-    type (status_t), intent(in) :: rhs
-    type (status_t) :: res
-    res%code = iand(lhs, rhs%code)
-end function
-
-elemental subroutine assign_int_status (lhs, rhs)
-    integer (NF_ENUM_KIND), intent(out) :: lhs
-    type (status_t), intent(in) :: rhs
-    lhs = rhs%code
+pure subroutine status_add_int (self, other)
+    type (status_t), intent(in out) :: self
+    integer (NF_ENUM_KIND), intent(in) :: other
+    self%code = ior(self%code, other)
 end subroutine
 
-elemental subroutine assign_status_int (lhs, rhs)
-    type (status_t), intent(out) :: lhs
-    integer (NF_ENUM_KIND), intent(in) :: rhs
-    lhs%code = rhs
+pure subroutine status_add_status (self, other)
+    type (status_t), intent(in out) :: self
+    type (status_t), intent(in) :: other
+    self%code = ior(self%code, other%code)
 end subroutine
 
-elemental function equal_status_status (lhs, rhs) result(res)
-    type (status_t), intent(in) :: lhs, rhs
+pure subroutine status_set_int (self, other)
+    type (status_t), intent(out) :: self
+    integer (NF_ENUM_KIND), intent(in) :: other
+    self%code = other
+end subroutine
+
+pure subroutine status_set_int_int (self, val1, val2)
+    type (status_t), intent(out) :: self
+    integer (NF_ENUM_KIND), intent(in) :: val1, val2
+    self%code = ior(val1, val2)
+end subroutine
+
+pure subroutine status_set_status (self, other)
+    type (status_t), intent(out) :: self
+    type (status_t), intent(in) :: other
+    self%code = other%code
+end subroutine
+
+pure function status_equals_status (self, other) result(res)
+    type (status_t), intent(in) :: self, other
     logical :: res
-    res = (lhs%code == rhs%code)
+    res = (self%code == other%code)
 end function
 
-elemental function equal_status_int (lhs, rhs) result(res)
-    type (status_t), intent(in) :: lhs
-    integer (NF_ENUM_KIND), intent(in) :: rhs
+pure function status_equals_int (self, other) result(res)
+    type (status_t), intent(in) :: self
+    integer (NF_ENUM_KIND), intent(in) :: other
     logical :: res
-    res = (lhs%code == rhs)
+    res = (self%code == other)
 end function
 
-elemental function equal_int_status (lhs, rhs) result(res)
-    integer (NF_ENUM_KIND), intent(in) :: lhs
-    type (status_t), intent(in) :: rhs
+pure function status_contains_int (self, other) result(res)
+    type (status_t), intent(in) :: self
+    integer (NF_ENUM_KIND), intent(in) :: other
     logical :: res
-    res = (lhs == rhs%code)
+    res = (iand(self%code, other) == other)
 end function
 
-elemental function nequal_status_status (lhs, rhs) result(res)
-    type (status_t), intent(in) :: lhs, rhs
+pure function status_contains_status (self, other) result(res)
+    type (status_t), intent(in) :: self, other
     logical :: res
-    res = .not. (lhs == rhs)
+    res = (iand(self%code, other%code) == other%code)
 end function
 
-elemental function nequal_status_int (lhs, rhs) result(res)
-    type (status_t), intent(in) :: lhs
-    integer (NF_ENUM_KIND), intent(in) :: rhs
-    logical :: res
-    res = .not. (lhs == rhs)
-end function
-
-elemental function nequal_int_status (lhs, rhs) result(res)
-    integer (NF_ENUM_KIND), intent(in) :: lhs
-    type (status_t), intent(in) :: rhs
-    logical :: res
-    res = .not. (lhs == rhs)
-end function
-
-elemental function operator_in_int_status (lhs, rhs) result(res)
-    integer (NF_ENUM_KIND), intent(in) :: lhs
-    type (status_t), intent(in) :: rhs
-    logical :: res
-    res = (iand(lhs, rhs%code) == lhs)
-end function
-
-elemental function operator_notin_int_status (lhs, rhs) result(res)
-    integer (NF_ENUM_KIND), intent(in) :: lhs
-    type (status_t), intent(in) :: rhs
-    logical :: res
-    res = .not. (lhs .in. rhs)
-end function
+pure subroutine status_reset (self)
+    type (status_t), intent(out) :: self
+    self%code = NF_STATUS_UNDEFINED
+end subroutine
 
 end module

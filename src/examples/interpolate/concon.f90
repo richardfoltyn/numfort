@@ -58,11 +58,12 @@ subroutine example1 ()
     do is = 1, size(s)
         call concon (x, y, v, s(is), knots, coefs, n, iopt, w, maxtr, maxbin, &
             sx=sx, bind=bind, ssr=ssr, status=status)
-        if (NF_STATUS_OK .notin. status) then
+        if (.not. status_contains (status, NF_STATUS_OK)) then
             write (ERROR_UNIT, *) "Failed to find spline approximation"
         end if
 
-        stat_ok = any([NF_STATUS_OK, NF_STATUS_APPROX] .in. status)
+        stat_ok = status_contains (status, NF_STATUS_OK) &
+            .or. status_contains (status, NF_STATUS_APPROX)
 
         ! Evaluate spline and derivatives only if at least approximate spline
         ! representation was found.
@@ -102,7 +103,9 @@ subroutine print_report (iopt, s, ssr, status, n, knots, coefs, x, y, yhat, &
     if (present(counter)) ii = counter
 
     call status_decode (status, istatus, nstatus)
-    stat_ok = any([NF_STATUS_OK, NF_STATUS_APPROX] .in. status)
+
+    stat_ok = status_contains (status, NF_STATUS_OK) .or. &
+        status_contains (status, NF_STATUS_APPROX)
 
     ! determine knots where convexity restriction is binding
     str_bind = ''

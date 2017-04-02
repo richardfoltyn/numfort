@@ -124,7 +124,7 @@ subroutine example2 ()
         call curfit (x, y, k, s, knots, coefs, n, w=w, iopt=iopt, &
             work=ws, ssr=ssr, status=status)
 
-        stat_ok = .not. (NF_STATUS_INVALID_ARG .in. status)
+        stat_ok = status_contains (status, NF_STATUS_INVALID_ARG)
 
         if (stat_ok) then
             call splev (knots, coefs, n, k, x, yhat, ext)
@@ -160,7 +160,7 @@ subroutine print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat, &
     if (present(counter)) ii = counter
 
     call status_decode (status, istatus, nstatus)
-    stat_ok = .not. (NF_STATUS_INVALID_ARG .in. status)
+    stat_ok = status_contains (status, NF_STATUS_INVALID_ARG)
 
     print "(/,'(', i0, ')', t6, 'iopt: ', i2, '; smoothing factor: ', es12.5e2, '; spline degree: ', i1)", &
         ii, iopt, s, k

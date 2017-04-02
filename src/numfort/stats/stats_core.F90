@@ -52,10 +52,10 @@ pure subroutine mean_std_init (shp, dim, ldim, nvars, nobs, status)
         !!  Status flag (either NF_STATUS_OK or NF_STATUS_INVALID_ARG)
 
     ldim = 1
-    status = NF_STATUS_OK
+    call status_set (status, NF_STATUS_OK)
     if (present(dim)) then
         if (dim /= 1 .and. dim /= 2) then
-            status = NF_STATUS_INVALID_ARG
+            call status_set (status, NF_STATUS_INVALID_ARG)
             return
         end if
         ldim = dim

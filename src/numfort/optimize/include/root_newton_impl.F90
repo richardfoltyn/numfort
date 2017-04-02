@@ -51,12 +51,12 @@ subroutine __APPEND(root_newton_impl,__PREC) (x, args, xtol, tol, maxiter, res, 
     lmaxiter = 50
 
     msg = ""
-    lstatus = NF_STATUS_OK
+    call status_set (lstatus, NF_STATUS_OK)
 
     ! Note: there is only one common input validation routine which accepts
     ! double precision arguments
     call newton_check_inputs (real(xtol, real64), real(tol, real64), maxiter, lstatus, msg)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    if (status_contains (lstatus, NF_STATUS_INVALID_ARG)) goto 100
 
     if (present(tol)) ltol = tol
     if (present(maxiter)) lmaxiter = maxiter
@@ -75,13 +75,13 @@ subroutine __APPEND(root_newton_impl,__PREC) (x, args, xtol, tol, maxiter, res, 
 
         if (abs(fx) < ltol) then
             msg = "Convergence achieved; abs(f(x)) < tol"
-            lstatus = NF_STATUS_OK
+            call status_set (lstatus, NF_STATUS_OK)
             goto 100
         end if
 
         if (fpx == 0.0_PREC) then
             msg = "Derivative evaluted to 0"
-            lstatus = NF_STATUS_OK
+            call status_set (lstatus, NF_STATUS_OK)
             goto 100
         end if
 
@@ -100,7 +100,7 @@ subroutine __APPEND(root_newton_impl,__PREC) (x, args, xtol, tol, maxiter, res, 
 
         ! Exit if tolerance level achieved
         if (abs(x - x0) < lxtol) then
-            lstatus = NF_STATUS_OK
+            call status_set (lstatus, NF_STATUS_OK)
             msg = "Convergence achieved: abs(x(n)-x(n-1)) < xtol"
             goto 100
         end if
@@ -110,8 +110,7 @@ subroutine __APPEND(root_newton_impl,__PREC) (x, args, xtol, tol, maxiter, res, 
     end do
 
    msg = "Max. number of iterations exceeded"
-   lstatus = NF_STATUS_MAX_ITER
-   lstatus = lstatus + NF_STATUS_NOT_CONVERGED
+   call status_set (lstatus, NF_STATUS_MAX_ITER, NF_STATUS_NOT_CONVERGED)
 
 100 continue
     if (present(res)) then

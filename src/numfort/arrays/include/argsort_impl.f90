@@ -2,14 +2,18 @@ integer, intent(out), dimension(:) :: rnk
     !!  Array of indices that sort arr.
 character (*), intent(in), optional :: algorithm
     !!  Sorting algorithm to use. Valid values are: "mergesort"
-integer (NF_ENUM_KIND), intent(out), optional :: status
+type (status_t), intent(out), optional :: status
     !!  Status flag.
 
 if (size(arr) /= size(rnk)) then
-    if (present(status)) status = NF_STATUS_INVALID_ARG
+    if (present(status)) then
+        call status_set (status, NF_STATUS_INVALID_ARG)
+    end if
     return
 end if
 
 call mrgrnk (arr, rnk)
 
-if (present(status)) status = NF_STATUS_OK
+if (present(status)) then
+    call status_set (status, NF_STATUS_OK)
+end if

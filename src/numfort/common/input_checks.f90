@@ -64,7 +64,7 @@ pure subroutine clear_status (status, msg)
     type (status_t), intent(in out) :: status
     character (*), intent(out), optional :: msg
 
-    status = NF_STATUS_OK
+    call status_set (status, NF_STATUS_OK)
     if (present(msg)) msg = ""
 end subroutine
 

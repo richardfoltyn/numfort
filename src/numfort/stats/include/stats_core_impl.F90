@@ -18,7 +18,7 @@ pure subroutine __APPEND(mean_std_check_input,__PREC) (nvars, nobs, out1, out2, 
         !!  Optional degrees of freedom correction
     type (status_t), intent(out) :: status
 
-    status = NF_STATUS_INVALID_ARG
+    call status_set (status, NF_STATUS_INVALID_ARG)
 
     if (nobs < 1) return
 
@@ -34,7 +34,7 @@ pure subroutine __APPEND(mean_std_check_input,__PREC) (nvars, nobs, out1, out2, 
         if (dof < 0) return
     end if
 
-    status = NF_STATUS_OK
+    call status_set (status, NF_STATUS_OK)
 end subroutine
 
 
@@ -63,11 +63,11 @@ pure subroutine __APPEND(mean_1d,__PREC) (x, m, dim, status)
     integer :: i
 
     ! initialize to default values
-    lstatus = NF_STATUS_OK
+    call status_set (lstatus, NF_STATUS_OK)
     m = 0.0_PREC
 
     if (size(x) == 0) then
-        lstatus = NF_STATUS_INVALID_ARG
+        call status_set (lstatus, NF_STATUS_INVALID_ARG)
         goto 100
     end if
 
@@ -113,14 +113,14 @@ pure subroutine __APPEND(mean_2d,__PREC) (x, m, dim, status)
     integer :: iv, iobs, nvars, nobs, ldim
 
     ! default values
-    lstatus = NF_STATUS_OK
+    call status_set (lstatus, NF_STATUS_OK)
     m = 0.0_PREC
 
     call mean_std_init (shape(x), dim, ldim, nvars, nobs, status=lstatus)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    if (status_contains (lstatus, NF_STATUS_INVALID_ARG)) goto 100
 
     call mean_std_check_input (nvars, nobs, m, status=lstatus)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    if (status_contains (lstatus, NF_STATUS_INVALID_ARG)) goto 100
 
     ! compute mean and std. dev. using Welford's method; see
     ! http://www.johndcook.com/blog/standard_deviation/
@@ -180,21 +180,21 @@ pure subroutine __APPEND(std_1d,__PREC) (x, s, m, dof, dim, status)
     type (status_t) :: lstatus
 
     ! initiliaze default values
-    lstatus = NF_STATUS_OK
+    call status_set (lstatus, NF_STATUS_OK)
     ldof = 1
     s = 0.0_PREC
     if (present(m)) m = 0.0_PREC
 
     if (present(dof)) then
         if (dof < 0) then
-            lstatus = NF_STATUS_INVALID_ARG
+            call status_set (lstatus, NF_STATUS_INVALID_ARG)
             goto 100
         end if
         ldof = dof
     end if
 
     if (size(x) == 0) then
-        lstatus = NF_STATUS_INVALID_ARG
+        call status_set (lstatus, NF_STATUS_INVALID_ARG)
         goto 100
     end if
 
@@ -263,16 +263,16 @@ pure subroutine __APPEND(std_2d,__PREC) (x, s, m, dof, dim, status)
     integer :: iv, iobs, nvars, nobs, ldof, ldim
 
     ! set default values
-    lstatus = NF_STATUS_OK
+    call status_set (lstatus, NF_STATUS_OK)
     s = 0.0_PREC
     ldof = 1
     if (present(m)) m = 0.0_PREC
 
     call mean_std_init (shape(x), dim, ldim, nvars, nobs, status=lstatus)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    if (status_contains (lstatus, NF_STATUS_INVALID_ARG)) goto 100
 
     call mean_std_check_input (nvars, nobs, m, s, dof, status=lstatus)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    if (status_contains (lstatus, NF_STATUS_INVALID_ARG)) goto 100
 
     if (present(dof)) ldof = dof
 
@@ -365,7 +365,7 @@ pure subroutine __APPEND(normalize_2d,__PREC) (x, m, s, dim, center, scale, &
 
     ! initialize dim, nvars and nobs from input data
     call mean_std_init (shape(x), dim, ldim, nvars, nobs, status=lstatus)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    if (status_contains (lstatus, NF_STATUS_INVALID_ARG)) goto 100
 
     ! Delegate all remaining input checking to STD or MEAN routines
 
@@ -377,10 +377,10 @@ pure subroutine __APPEND(normalize_2d,__PREC) (x, m, s, dim, center, scale, &
     ! mean and set std = 1.0
     if (lscale) then
         call std (x, s=lstd, m=lmean, dim=ldim, dof=ldof, status=lstatus)
-        if (.not. (NF_STATUS_OK .in. lstatus)) goto 100
+        if (.not. status_contains (lstatus, NF_STATUS_OK)) goto 100
     else if (lcenter) then
         call mean (x, m=lmean, dim=ldim, status=lstatus)
-        if (.not. (NF_STATUS_OK .in. lstatus)) goto 100
+        if (.not. status_contains (lstatus, NF_STATUS_OK)) goto 100
     end if
 
     ! Reset to zero mean correction if case lscale = .true. but lcenter = .false.
