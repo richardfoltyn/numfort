@@ -101,7 +101,7 @@ subroutine print_report (iopt, s, ssr, status, n, knots, coefs, x, y, yhat, &
 
     if (present(counter)) ii = counter
 
-    call status%decode (istatus, nstatus)
+    call status_decode (status, istatus, nstatus)
     stat_ok = any([NF_STATUS_OK, NF_STATUS_APPROX] .in. status)
 
     ! determine knots where convexity restriction is binding

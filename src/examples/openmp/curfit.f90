@@ -145,7 +145,7 @@ subroutine print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat, c
     integer :: i, nstatus
     integer, dimension(NF_MAX_STATUS_CODES) :: istatus
 
-    call status%decode (istatus, nstatus)
+    call status_decode (status, istatus, nstatus)
 
     print "(/,'(', i0, ')', t6, 'iopt: ', i2, '; smoothing factor: ', es12.5e2, '; spline degree: ', i1)", &
         counter, iopt, s, k

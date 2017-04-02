@@ -5,6 +5,8 @@ module numfort_common_status
     private
 
     public :: status_t
+    public :: status_decode
+
     public :: assignment (=)
     public :: operator(+), iand, ior
     public :: operator(==), operator(/=)
@@ -30,8 +32,6 @@ module numfort_common_status
     type :: status_t
         private
         integer (NF_ENUM_KIND) :: code = NF_STATUS_UNDEFINED
-    contains
-        procedure, public, pass :: decode => status_decode
     end type
 
     interface operator(+)
@@ -81,7 +81,7 @@ contains
 pure subroutine status_decode (self, x, n)
     !*  DECODE disaggregates a composize status code into its
     !   components and turns their base-2 exponents.
-    class (status_t), intent(in) :: self
+    type (status_t), intent(in) :: self
         !!  Status container object.
     integer, dimension(:), intent(out) :: x
         !!  Array to store individual status codes. The lowest-exponent codes
@@ -109,7 +109,7 @@ pure subroutine status_decode (self, x, n)
 end subroutine
 
 pure function status_size (self) result(res)
-    class (status_t), intent(in) :: self
+    type (status_t), intent(in) :: self
     integer :: res
 
     integer :: i
@@ -125,14 +125,14 @@ pure function status_size (self) result(res)
 end function
 
 pure function status_to_char (self) result(res)
-    class (status_t), intent(in) :: self
+    type (status_t), intent(in) :: self
     character (:), allocatable :: res
 
     integer, dimension(NF_MAX_STATUS_CODES) :: b2status
     integer :: nstatus, n
     character (:), allocatable :: buf
 
-    call self%decode (b2status, nstatus)
+    call status_decode (self, b2status, nstatus)
 
     ! compute char length including separators and parenthesis
     n = NF_MAX_STATUS_CODES * 4 + 2
@@ -152,7 +152,7 @@ end function
 ! Operator overloads
 
 elemental function add_status_int (lhs, rhs) result(res)
-    class (status_t), intent(in) :: lhs
+    type (status_t), intent(in) :: lhs
     integer (NF_ENUM_KIND), intent(in) :: rhs
     type (status_t) :: res
     res%code = ior(lhs%code, rhs)
@@ -160,13 +160,13 @@ end function
 
 elemental function add_int_status (lhs, rhs) result(res)
     integer (NF_ENUM_KIND), intent(in) :: lhs
-    class (status_t), intent(in) :: rhs
+    type (status_t), intent(in) :: rhs
     type (status_t) :: res
     res%code = ior(lhs, rhs%code)
 end function
 
 elemental function iand_status_int (lhs, rhs) result(res)
-    class (status_t), intent(in) :: lhs
+    type (status_t), intent(in) :: lhs
     integer (NF_ENUM_KIND), intent(in) :: rhs
     type (status_t) :: res
     res%code = iand(lhs%code, rhs)
@@ -174,14 +174,14 @@ end function
 
 elemental function iand_int_status (lhs, rhs) result(res)
     integer (NF_ENUM_KIND), intent(in) :: lhs
-    class (status_t), intent(in) :: rhs
+    type (status_t), intent(in) :: rhs
     type (status_t) :: res
     res%code = iand(lhs, rhs%code)
 end function
 
 elemental subroutine assign_int_status (lhs, rhs)
     integer (NF_ENUM_KIND), intent(out) :: lhs
-    class (status_t), intent(in) :: rhs
+    type (status_t), intent(in) :: rhs
     lhs = rhs%code
 end subroutine
 
@@ -192,13 +192,13 @@ elemental subroutine assign_status_int (lhs, rhs)
 end subroutine
 
 elemental function equal_status_status (lhs, rhs) result(res)
-    class (status_t), intent(in) :: lhs, rhs
+    type (status_t), intent(in) :: lhs, rhs
     logical :: res
     res = (lhs%code == rhs%code)
 end function
 
 elemental function equal_status_int (lhs, rhs) result(res)
-    class (status_t), intent(in) :: lhs
+    type (status_t), intent(in) :: lhs
     integer (NF_ENUM_KIND), intent(in) :: rhs
     logical :: res
     res = (lhs%code == rhs)
@@ -206,19 +206,19 @@ end function
 
 elemental function equal_int_status (lhs, rhs) result(res)
     integer (NF_ENUM_KIND), intent(in) :: lhs
-    class (status_t), intent(in) :: rhs
+    type (status_t), intent(in) :: rhs
     logical :: res
     res = (lhs == rhs%code)
 end function
 
 elemental function nequal_status_status (lhs, rhs) result(res)
-    class (status_t), intent(in) :: lhs, rhs
+    type (status_t), intent(in) :: lhs, rhs
     logical :: res
     res = .not. (lhs == rhs)
 end function
 
 elemental function nequal_status_int (lhs, rhs) result(res)
-    class (status_t), intent(in) :: lhs
+    type (status_t), intent(in) :: lhs
     integer (NF_ENUM_KIND), intent(in) :: rhs
     logical :: res
     res = .not. (lhs == rhs)
@@ -226,21 +226,21 @@ end function
 
 elemental function nequal_int_status (lhs, rhs) result(res)
     integer (NF_ENUM_KIND), intent(in) :: lhs
-    class (status_t), intent(in) :: rhs
+    type (status_t), intent(in) :: rhs
     logical :: res
     res = .not. (lhs == rhs)
 end function
 
 elemental function operator_in_int_status (lhs, rhs) result(res)
     integer (NF_ENUM_KIND), intent(in) :: lhs
-    class (status_t), intent(in) :: rhs
+    type (status_t), intent(in) :: rhs
     logical :: res
     res = (iand(lhs, rhs%code) == lhs)
 end function
 
 elemental function operator_notin_int_status (lhs, rhs) result(res)
     integer (NF_ENUM_KIND), intent(in) :: lhs
-    class (status_t), intent(in) :: rhs
+    type (status_t), intent(in) :: rhs
     logical :: res
     res = .not. (lhs .in. rhs)
 end function

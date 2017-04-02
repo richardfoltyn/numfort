@@ -90,7 +90,7 @@ subroutine print_report (n, k, knots, coefs, x, y, status)
     integer, dimension(NF_MAX_STATUS_CODES) :: istatus
     integer :: nstatus
 
-    call status%decode (istatus, nstatus)
+    call status_decode (status, istatus, nstatus)
 
     print "(/,'(', i0, ')', t6, 'spline degree: ', i1, '; error flag: ', i3)", &
         ii, k

@@ -157,7 +157,7 @@ subroutine print_report (iopt, s, ssr, status, n, knots, coefs, x, y, &
     integer :: i, nstatus
     integer, dimension(NF_MAX_STATUS_CODES) :: istatus
 
-    call status%decode (istatus, nstatus)
+    call status_decode (status, istatus, nstatus)
 
     stat_ok = any ([NF_STATUS_OK, NF_STATUS_APPROX] .in. status)
 
