@@ -13,19 +13,21 @@ module numfort_common_workspace
 
     integer, parameter :: SIZE_UNALLOCATED = -1
 
-    type, abstract :: workspace_base
+    type :: workspace_real64
         integer, dimension(:), allocatable :: iwrk
         logical, dimension(:), allocatable :: lwrk
         character (len=:), allocatable :: cwrk
         integer :: nrwrk = SIZE_UNALLOCATED, niwrk = SIZE_UNALLOCATED, &
             ncwrk = SIZE_UNALLOCATED, nlwrk = SIZE_UNALLOCATED
-    end type
-
-    type, extends(workspace_base) :: workspace_real64
         real (real64), dimension(:), allocatable :: rwrk
     end type
 
-    type, extends(workspace_base) :: workspace_real32
+    type :: workspace_real32
+        integer, dimension(:), allocatable :: iwrk
+        logical, dimension(:), allocatable :: lwrk
+        character (len=:), allocatable :: cwrk
+        integer :: nrwrk = SIZE_UNALLOCATED, niwrk = SIZE_UNALLOCATED, &
+            ncwrk = SIZE_UNALLOCATED, nlwrk = SIZE_UNALLOCATED
         real (real32), dimension(:), allocatable :: rwrk
     end type
 
