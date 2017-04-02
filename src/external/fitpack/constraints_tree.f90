@@ -7,26 +7,22 @@ module constraints_tree_mod
 
     public :: TREE_STATUS_SUCCESS, TREE_STATUS_FULL_CAPACITY
 
-    type, public :: constraints_tree
+    public :: constraints_tree
+    public :: tree_init
+    public :: tree_add_constraint, tree_has_constraints, tree_keep_constraints, &
+        tree_next_constraint
+    public :: tree_reset_branch_pointer
+
+    type :: constraints_tree
         private
         integer, dimension(:), pointer, contiguous :: up, left, right, info
         integer :: ifree = 1, ncount = 0, maxtr = -1, ibranch = -1
-    contains
-        procedure, public, pass :: init => tree_init
-        procedure, public, pass :: keep_constraints
-        procedure, public, pass :: add_constraint
-        procedure, public, pass :: has_constraints
-        procedure, public, pass :: next_constraint
-        procedure, public, pass :: reset_branch_pointer
-        procedure, pass :: insert_node
-        procedure, pass :: delete_node
-        procedure, pass :: remove_subtree
     end type
 
 contains
 
 pure subroutine tree_init (self, up, left, right, info)
-    class (constraints_tree), intent(in out) :: self
+    type (constraints_tree), intent(in out) :: self
     integer, intent(in out), dimension(:), target, contiguous :: up
     integer, intent(in out), dimension(:), target, contiguous :: left
     integer, intent(in out), dimension(:), target, contiguous :: right
@@ -51,15 +47,15 @@ pure subroutine tree_init (self, up, left, right, info)
     self%info = 0
 
     ! insert root node
-    call insert_node (self, 1, 0, idx, status)
+    call tree_insert_node (self, 1, 0, idx, status)
 
     ! set branch pointer to root node
     self%ibranch = 1
 
 end subroutine
 
-pure subroutine insert_node (self, parent, info, inew, status, leftof, rightof)
-    class (constraints_tree), intent(in out) :: self
+pure subroutine tree_insert_node (self, parent, info, inew, status, leftof, rightof)
+    type (constraints_tree), intent(in out) :: self
     integer, intent(in) :: parent, info, leftof, rightof
     integer, intent(out) :: status, inew
 
@@ -100,8 +96,8 @@ pure subroutine insert_node (self, parent, info, inew, status, leftof, rightof)
 
 end subroutine
 
-pure subroutine delete_node (self, idx)
-    class (constraints_tree), intent(in out) :: self
+pure subroutine tree_delete_node (self, idx)
+    type (constraints_tree), intent(in out) :: self
     integer, intent(in) :: idx
 
     ! do not allow root node to be deleted
@@ -118,8 +114,8 @@ pure subroutine delete_node (self, idx)
 
 end subroutine
 
-pure subroutine reset_branch_pointer (self)
-    class (constraints_tree), intent(in out) :: self
+pure subroutine tree_reset_branch_pointer (self)
+    type (constraints_tree), intent(in out) :: self
     integer :: il
 
     ! point branch pointer to terminal node of left-most branch if there is one,
@@ -132,41 +128,41 @@ pure subroutine reset_branch_pointer (self)
     end do
 end subroutine
 
-pure function has_constraints (self) result(res)
-    class (constraints_tree), intent (in) :: self
+pure function tree_has_constraints (self) result(res)
+    type (constraints_tree), intent (in) :: self
     logical :: res
 
     res = (self%ibranch > 1)
 end function
 
-pure subroutine keep_constraints (self, nbind)
-    class (constraints_tree), intent(in out) :: self
+pure subroutine tree_keep_constraints (self, nbind)
+    type (constraints_tree), intent(in out) :: self
     integer, intent (in) :: nbind
 
     if (self%left(1) /= 0) then
-        call remove_subtree(self, self%left(1), 1, nbind)
+        call tree_remove_subtree (self, self%left(1), 1, nbind)
         ! remove reference to left child node if it was deleted
         if (self%up(self%left(1)) == 0) self%left(1) = 0
     end if
 end subroutine
 
 
-pure recursive subroutine remove_subtree (self, idx, depth, nbind)
-    class (constraints_tree), intent (in out) :: self
+pure recursive subroutine tree_remove_subtree (self, idx, depth, nbind)
+    type (constraints_tree), intent (in out) :: self
     integer, intent (in) :: idx, depth, nbind
 
     integer :: il, ir
 
     ir = self%right(idx)
     if (ir /= 0) then
-        call remove_subtree (self, ir, depth, nbind)
+        call tree_remove_subtree (self, ir, depth, nbind)
         ! in case subtree on the right was removed, delete reference
         if (self%up(ir) == 0) self%right(idx) = 0
     end if
 
     il = self%left(idx)
     if (il /= 0) then
-        call remove_subtree (self, il, depth + 1, nbind)
+        call tree_remove_subtree (self, il, depth + 1, nbind)
         if (self%up(il) == 0) self%left(idx) = 0
     end if
 
@@ -203,12 +199,12 @@ pure recursive subroutine remove_subtree (self, idx, depth, nbind)
     if (il == 0 .and. ir == 0 .and. depth < nbind) then
         ! mark current node as deleted if required number of binding
         ! constraints not found
-        call delete_node (self, idx)
+        call tree_delete_node (self, idx)
     end if
 end subroutine
 
-pure subroutine add_constraint (self, ibind, status)
-    class (constraints_tree), intent(in out) :: self
+pure subroutine tree_add_constraint (self, ibind, status)
+    type (constraints_tree), intent(in out) :: self
     integer, dimension(:), intent(in) :: ibind
     integer, intent(out) :: status
 
@@ -223,7 +219,7 @@ pure subroutine add_constraint (self, ibind, status)
     level = 1
 
     if (inode == 0) then
-        call insert_node (self, 1, ibind(1), inode, status, leftof=1)
+        call tree_insert_node (self, 1, ibind(1), inode, status, leftof=1)
         if (status /= TREE_STATUS_SUCCESS) return
         level = level + 1
     end if
@@ -256,7 +252,7 @@ pure subroutine add_constraint (self, ibind, status)
 contains
 
     pure subroutine handle_child (self, level, inode, status)
-        class (constraints_tree), intent(in out) :: self
+        type (constraints_tree), intent(in out) :: self
         integer, intent(in out) :: inode, level, status
         integer :: inew
 
@@ -264,7 +260,7 @@ contains
         ! to child instance; otherwise create child node first
         if (self%left(inode) == 0) then
             ! need to create child note first
-            call insert_node (self, inode, ibind(level+1), inew, status, &
+            call tree_insert_node (self, inode, ibind(level+1), inew, status, &
                 leftof=inode)
             if (status /= TREE_STATUS_SUCCESS) return
             inode = inew
@@ -276,12 +272,12 @@ contains
     end subroutine
 
     pure subroutine handle_right_sibling (self, inode, status)
-        class (constraints_tree), intent(in out) :: self
+        type (constraints_tree), intent(in out) :: self
         integer, intent(in out) :: inode, status
         integer :: inew
 
         if (self%right(inode) == 0) then
-            call insert_node (self, self%up(inode), vinsert, inew, status, rightof=inode)
+            call tree_insert_node (self, self%up(inode), vinsert, inew, status, rightof=inode)
             if (status /= TREE_STATUS_SUCCESS) return
             inode = inew
         else
@@ -290,7 +286,7 @@ contains
     end subroutine
 
     pure subroutine handle_left_sibling (self, inode, status)
-        class (constraints_tree), intent(in out) :: self
+        type (constraints_tree), intent(in out) :: self
         integer, intent(in out) :: inode, status
         integer :: inew, il
 
@@ -299,7 +295,7 @@ contains
         il = self%left(self%up(inode))
         if (il == inode) then
             ! current node is the first child
-            call insert_node (self, self%up(inode), vinsert, inew, status, &
+            call tree_insert_node (self, self%up(inode), vinsert, inew, status, &
                 leftof=self%up(inode))
         else
             ! Need to insert a sibling whose right reference points to current
@@ -309,7 +305,7 @@ contains
             do while (self%right(il) /= inode)
                 il = self%right(il)
             end do
-            call insert_node (self, self%up(inode), vinsert, inew, status, rightof=il)
+            call tree_insert_node (self, self%up(inode), vinsert, inew, status, rightof=il)
         end if
 
         if (status /= TREE_STATUS_SUCCESS) return
@@ -320,8 +316,8 @@ contains
 
 end subroutine
 
-pure subroutine next_constraint (self, ibind)
-    class (constraints_tree), intent(in out) :: self
+pure subroutine tree_next_constraint (self, ibind)
+    type (constraints_tree), intent(in out) :: self
     integer, dimension(:), intent(in out) :: ibind
 
     integer :: inode, i, nbind, level

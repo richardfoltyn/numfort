@@ -110,7 +110,7 @@ c  we partition the working space
       jjb = jr+maxtr
       jib = jjb+mb
 
-      call tree%init (iwrk(ju:ju+maxtr-1), iwrk(jl:jl+maxtr-1),
+      call tree_init (tree, iwrk(ju:ju+maxtr-1), iwrk(jl:jl+maxtr-1),
      &  iwrk(jr:jr+maxtr-1), iwrk(ji:ji+maxtr-1))
 c  given the set of knots t(j),j=1,2,...n, find the least-squares cubic
 c  spline which satisfies the imposed concavity/convexity constraints.

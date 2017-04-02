@@ -321,7 +321,7 @@ c  arranged in increasing order.
           jbind(i+1) = ibind(i)
  420    continue
 c 430    call fpadno(maxtr,up,left,right,info,count,merk,jbind,n1,ier)
- 430    call tree%add_constraint (jbind(1:n1), ier)
+ 430    call tree_add_constraint (tree, jbind(1:n1), ier)
 c  test whether the storage space which is required for the tree,exceeds
 c  the available storage space.
         if (ier /= TREE_STATUS_SUCCESS) go to 560
@@ -331,7 +331,7 @@ c  constraints is a feasible solution.
       if(number.eq.0) go to 470
 c  test whether there are still cases with nbind constraints in
 c  equality form to be considered.
- 450  if(tree%has_constraints()) go to 460
+ 450  if(tree_has_constraints (tree)) go to 460
       nbind = n1
 c  test whether the number of knots where s''(x)=0 exceeds maxbin.
       if(nbind.gt.maxbin) go to 550
@@ -340,15 +340,15 @@ c  test whether the number of knots where s''(x)=0 exceeds maxbin.
 c  search which cases with nbind constraints in equality form
 c  are going to be considered.
 c      call fpdeno2 (maxtr, up, left, right, nbind, merk)
-      call tree%keep_constraints (nbind)
+      call tree_keep_constraints (tree, nbind)
 c  Reset branch pointer to the left-most branch of length nbind
-      call tree%reset_branch_pointer ()
+      call tree_reset_branch_pointer (tree)
 c  test whether the quadratic programming problem has a solution.
 c      if(merk.eq.1) go to 570
-      if (.not. tree%has_constraints()) go to 570
+      if (.not. tree_has_constraints (tree)) go to 570
 c  find a new case with nbind constraints in equality form.
 c 460  call fpseno(maxtr,up,left,right,info,merk,ibind,nbind)
- 460  call tree%next_constraint (ibind(1:nbind))
+ 460  call tree_next_constraint (tree, ibind(1:nbind))
       go to 150
 c  test whether the feasible solution is optimal.
  470  ier = 0
