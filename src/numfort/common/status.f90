@@ -8,9 +8,9 @@ module numfort_common_status
     public :: status_decode
 
     public :: assignment (=)
-    public :: operator(+), iand, ior
+    public :: operator(+)
     public :: operator(==), operator(/=)
-    public :: operator(.in.), operator(.notin.)
+    public :: operator(.in.)
     public :: char, size
 
     integer (NF_ENUM_KIND), public, parameter :: NF_STATUS_UNDEFINED = 0
@@ -38,14 +38,6 @@ module numfort_common_status
         module procedure add_int_status, add_status_int
     end interface
 
-    interface ior
-        module procedure add_int_status, add_status_int
-    end interface
-
-    interface iand
-        module procedure iand_int_status, iand_status_int
-    end interface
-
     interface assignment (=)
         module procedure assign_int_status, assign_status_int
     end interface
@@ -60,10 +52,6 @@ module numfort_common_status
 
     interface operator (.in.)
         module procedure operator_in_int_status
-    end interface
-
-    interface operator (.notin.)
-        module procedure operator_notin_int_status
     end interface
 
     interface char
@@ -100,7 +88,7 @@ pure subroutine status_decode (self, x, n)
     if ((size(x) >= 1) .and. (self /= NF_STATUS_UNDEFINED)) then
         do i = 1, min(size(x), NF_MAX_STATUS_CODES)
             pattern = ishft(1, i-1)
-            if (iand(self, pattern) == pattern) then
+            if (pattern .in. self) then
                 n = n + 1
                 x(n) = i-1
             end if
@@ -165,20 +153,6 @@ elemental function add_int_status (lhs, rhs) result(res)
     res%code = ior(lhs, rhs%code)
 end function
 
-elemental function iand_status_int (lhs, rhs) result(res)
-    type (status_t), intent(in) :: lhs
-    integer (NF_ENUM_KIND), intent(in) :: rhs
-    type (status_t) :: res
-    res%code = iand(lhs%code, rhs)
-end function
-
-elemental function iand_int_status (lhs, rhs) result(res)
-    integer (NF_ENUM_KIND), intent(in) :: lhs
-    type (status_t), intent(in) :: rhs
-    type (status_t) :: res
-    res%code = iand(lhs, rhs%code)
-end function
-
 elemental subroutine assign_int_status (lhs, rhs)
     integer (NF_ENUM_KIND), intent(out) :: lhs
     type (status_t), intent(in) :: rhs
@@ -238,11 +212,5 @@ elemental function operator_in_int_status (lhs, rhs) result(res)
     res = (iand(lhs, rhs%code) == lhs)
 end function
 
-elemental function operator_notin_int_status (lhs, rhs) result(res)
-    integer (NF_ENUM_KIND), intent(in) :: lhs
-    type (status_t), intent(in) :: rhs
-    logical :: res
-    res = .not. (lhs .in. rhs)
-end function
 
 end module

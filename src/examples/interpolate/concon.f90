@@ -58,7 +58,7 @@ subroutine example1 ()
     do is = 1, size(s)
         call concon (x, y, v, s(is), knots, coefs, n, iopt, w, maxtr, maxbin, &
             sx=sx, bind=bind, ssr=ssr, status=status)
-        if (NF_STATUS_OK .notin. status) then
+        if (.not. (NF_STATUS_OK .in. status)) then
             write (ERROR_UNIT, *) "Failed to find spline approximation"
         end if
 
