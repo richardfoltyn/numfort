@@ -96,7 +96,7 @@ subroutine print_report (n, k, knots, coefs, x, y, status)
         ii, k
     print "(t6, 'status code: ', *(i0, :, ', '))", istatus(1:nstatus)
 
-    if (status_contains (status, NF_STATUS_OK)) then
+    if (NF_STATUS_OK .in. status) then
         print "(t6, 'Number of knots: ', i0)", n
         print "(t6, 'Knots: ', *(t14, 10(f8.1, :, ', '), :, /))", knots
         print "(t6, 'Coefs: ', *(t14, 10(f8.4, :, ', '), :, /))", coefs

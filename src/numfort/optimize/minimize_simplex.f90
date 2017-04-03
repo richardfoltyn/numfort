@@ -89,7 +89,7 @@ subroutine minimize_simplex_real64 (func, x, tol, maxfun, quad, iprint, res)
     ! map mimum status into numfort_optimize status
     call map_ifault (ifault, status, msg)
 
-    if (.not. status_contains (status, NF_STATUS_OK) .and. liprint > NF_PRINT_NONE) then
+    if ((NF_STATUS_OK .notin. status) .and. liprint > NF_PRINT_NONE) then
         write (ERROR_UNIT, *) msg
     end if
 
@@ -158,15 +158,15 @@ pure subroutine map_ifault (ifault, status, msg)
         !!  On exit, contains the corresponding NF status code
     character (len=*), intent(out), optional :: msg
 
-    call status_set (status, NF_STATUS_UNKNOWN)
+    status = NF_STATUS_UNKNOWN
     if (ifault == 0) then
-        call status_set (status, NF_STATUS_OK)
+        status = NF_STATUS_OK
         if (present(msg)) msg = "Simplex: successful termination"
     else if (ifault == 1) then
-        call status_set (status, NF_STATUS_MAX_EVAL)
+        status = NF_STATUS_MAX_EVAL
         if (present(msg)) msg = "Simplex: max. number of function evaluations exceeded"
     else if (ifault == 3 .or. ifault == 4) then
-        call status_set (status, NF_STATUS_INVALID_ARG)
+        status = NF_STATUS_INVALID_ARG
         if (present(msg)) msg = "Simplex: invalid input argument(s)"
     end if
 end subroutine

@@ -74,7 +74,7 @@ pure subroutine newton_check_inputs (xtol, tol, maxiter, status, msg)
     type (status_t), intent(out) :: status
     character (*), intent(out) :: msg
 
-    call status_set (status, NF_STATUS_OK)
+    status = NF_STATUS_OK
 
     if (present(xtol)) then
         if (xtol <= 0.0_PREC) then
@@ -100,7 +100,7 @@ pure subroutine newton_check_inputs (xtol, tol, maxiter, status, msg)
     return
 
 100 continue
-    call status_set (status, NF_STATUS_INVALID_ARG)
+    status = NF_STATUS_INVALID_ARG
 end subroutine
 
 #define __PREC real32

@@ -6,7 +6,7 @@ call clear_status (status, msg)
 
 if (present(val)) then
     if (val < 0) then
-        call status_set (status, NF_STATUS_INVALID_ARG)
+        status = NF_STATUS_INVALID_ARG
         if (present(msg)) then
             if (present(name)) then
                 msg = "Invalid argument '" // name // "': non-negative real number required"

@@ -114,7 +114,7 @@ subroutine example1 ()
             "d(coefs)=", maxval(abs(coefs(:,j)-coefs2(:,j))), &
             "knots. eq=", nknots(j) == nknots2(j), &
             "d(ssr)=", abs(ssr(j)-ssr2(j)), &
-            "status eq.=", status_equals (status(j), status2(j))
+            "status eq.=", status(j) == status2(j)
     end do
 
 end subroutine
@@ -138,8 +138,7 @@ pure subroutine fit (x, y, v, s, knots, coefs, nknots, ws, ssr, status, &
     call concon (x, y, v, s, knots, coefs, nknots, &
        iopt=iopt, work=ws, w=w, ssr=ssr, sx=sp, status=status)
 
-    stat_ok = status_contains (status, NF_STATUS_OK) &
-        .or. status_contains (status, NF_STATUS_APPROX)
+    stat_ok = any ([NF_STATUS_OK, NF_STATUS_APPROX] .in. status)
 
     if (stat_ok) then
        call splder (knots, coefs, nknots, 3, 1, x, sp1, work=ws, ext=ext)
@@ -160,8 +159,7 @@ subroutine print_report (iopt, s, ssr, status, n, knots, coefs, x, y, &
 
     call status_decode (status, istatus, nstatus)
 
-    stat_ok = status_contains (status, NF_STATUS_OK) &
-        .or. status_contains (status, NF_STATUS_APPROX)
+    stat_ok = any ([NF_STATUS_OK, NF_STATUS_APPROX] .in. status)
 
     print "(/,'(', i0, ')', t6, 'iopt: ', i2, '; smoothing factor: ', es12.5e2)", &
         counter, iopt, s

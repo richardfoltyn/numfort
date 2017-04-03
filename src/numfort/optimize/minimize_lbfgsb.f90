@@ -217,7 +217,7 @@ subroutine lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
     ! number of iterations and function evaluations
     integer :: iter, nfeval
 
-    call status_set (status, NF_STATUS_INVALID_ARG)
+    status = NF_STATUS_INVALID_ARG
     nullify (ptr_work)
 
     ! set defaults for optional parameters
@@ -241,7 +241,7 @@ subroutine lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
     if (present(m)) then
         if (m < 3) then
             msg = 'Number of corrections in limited memory matrix set < 3'
-            call status_set (status, NF_STATUS_INVALID_ARG)
+            status = NF_STATUS_INVALID_ARG
             goto 100
         end if
         lm = m
@@ -294,7 +294,7 @@ subroutine lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
                 call func_grad_args (x, fx, gradx, args)
             else
                 msg = "Invalid objective function/gradient specified"
-                call status_set (status, NF_STATUS_INVALID_ARG)
+                status = NF_STATUS_INVALID_ARG
                 goto 100
             end if
         else if (task(1:5) == 'NEW_X') then
@@ -315,21 +315,21 @@ subroutine lbfgsb_impl_real64 (x, lbounds, ubounds, maxiter, maxfun, &
 
     if (task(1:4) == 'CONV') then
         msg = task
-        call status_set (status, NF_STATUS_OK)
+        status = NF_STATUS_OK
     else if (task(1:5) == 'ERROR') then
         msg = task
-        call status_set (status, NF_STATUS_INVALID_ARG)
+        status = NF_STATUS_INVALID_ARG
     else if (task(1:4) == 'ABNO') then
         msg = task
-        call status_set (status, NF_STATUS_NOT_CONVERGED)
+        status = NF_STATUS_NOT_CONVERGED
     else if (iter > lmaxiter) then
         msg = "Number of iterations exceeded limit"
-        call status_set (status, NF_STATUS_MAX_ITER)
+        status = NF_STATUS_MAX_ITER
     else if (nfeval > lmaxfun) then
         msg = "Number of function evaluations exceeded limit"
-        call status_set (status, NF_STATUS_MAX_EVAL)
+        status = NF_STATUS_MAX_EVAL
     else
-        call status_set (status, NF_STATUS_UNKNOWN)
+        status = NF_STATUS_UNKNOWN
     end if
 
 100 if (present(res)) then

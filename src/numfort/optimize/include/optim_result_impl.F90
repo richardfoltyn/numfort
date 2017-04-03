@@ -54,7 +54,7 @@ pure subroutine __APPEND(update,__PREC) (res, x, fx, status, nit, nfev, msg)
     call alloc_assign (fx, res%fx)
 
     if (present(status)) then
-        res%success = status_contains (status, NF_STATUS_OK)
+        res%success = (NF_STATUS_OK .in. status)
         res%status = status
     end if
 
@@ -74,6 +74,6 @@ pure subroutine __APPEND(reset,__PREC) (res)
     res%msg = ""
     res%x = 0.0_PREC
     res%fx = 0.0_PREC
-    call status_set (res%status, NF_STATUS_UNDEFINED)
+    res%status = NF_STATUS_UNDEFINED
     res%success = .false.
 end subroutine

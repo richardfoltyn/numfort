@@ -27,7 +27,7 @@ subroutine __APPEND(root_brentq,__PREC) (f, a, b, xtol, rtol, maxiter, x0, res)
     call root_brentq_impl (f, a, b, lxtol, lrtol, lmaxiter, x0, fx0, iter, nfev, status)
 
     if (present(res)) then
-        if (status_contains (status, NF_STATUS_INVALID_ARG)) then
+        if (NF_STATUS_INVALID_ARG .in. status) then
             call result_update (res, status=status, msg="Not a bracketing interval")
         else
             call result_update (res, x=x0, fx=fx0, status=status, nit=iter, nfev=nfev)
@@ -69,13 +69,13 @@ subroutine __APPEND(root_brentq_impl,__PREC) (f, a, b, xtol, rtol, maxiter, &
     iter = 0
 
     if (fpre * fcur > 0.0_PREC) then
-        call status_set (status, NF_STATUS_INVALID_ARG)
+        status = NF_STATUS_INVALID_ARG
         return
     else if (fpre == 0.0_PREC) then
-        call status_set (status, NF_STATUS_OK)
+        status = NF_STATUS_OK
         return
     else if (fcur == 0.0_PREC) then
-        call status_set (status, NF_STATUS_OK)
+        status = NF_STATUS_OK
         return
     end if
 
@@ -108,7 +108,7 @@ subroutine __APPEND(root_brentq_impl,__PREC) (f, a, b, xtol, rtol, maxiter, &
         if (fcur == 0.0_PREC .or. abs(sbis) < delta) then
             x0 = xcur
             fx0 = fcur
-            call status_set (status, NF_STATUS_OK)
+            status = NF_STATUS_OK
             return
         end if
 
@@ -157,7 +157,7 @@ subroutine __APPEND(root_brentq_impl,__PREC) (f, a, b, xtol, rtol, maxiter, &
     end do
 
     ! algorithm did not converge
-    call status_set (status, NF_STATUS_NOT_CONVERGED)
+    status = NF_STATUS_NOT_CONVERGED
     ! store best guesses so far
     x0 = xcur
     fx0 = fcur

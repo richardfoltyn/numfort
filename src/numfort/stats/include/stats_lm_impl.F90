@@ -30,7 +30,7 @@ pure subroutine __APPEND(ols_check_input,__PREC) (x, y, beta, add_const, trans_x
 
     integer :: nvars, nobs, nconst, nlhs, ncoefs
 
-    call status_set (status, NF_STATUS_INVALID_ARG)
+    status = NF_STATUS_INVALID_ARG
 
     call ols_get_dims (x, y, add_const, trans_x, nobs, nvars, nlhs, ncoefs, nconst)
 
@@ -40,7 +40,7 @@ pure subroutine __APPEND(ols_check_input,__PREC) (x, y, beta, add_const, trans_x
     if (size(beta, 1) /= ncoefs) return
     if (rcond < 0) return
 
-    call status_set (status, NF_STATUS_OK)
+    status = NF_STATUS_OK
 
 end subroutine
 
@@ -99,7 +99,7 @@ subroutine __APPEND(ols_2d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
     integer :: lrank
     integer :: lwork, info, m, n, nrhs, lda, ldb, mn, liwork
 
-    call status_set (lstatus, NF_STATUS_OK)
+    lstatus = NF_STATUS_OK
 
     ladd_const = .true.
     if (present(add_const)) ladd_const = add_const
@@ -112,7 +112,7 @@ subroutine __APPEND(ols_2d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
     if (present(rcond)) lrcond = rcond
 
     call ols_check_input (x, y, beta, ladd_const, ltrans_x, lrcond, lstatus)
-    if (status_contains (lstatus, NF_STATUS_INVALID_ARG)) goto 100
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
     call ols_get_dims (x, y, ladd_const, ltrans_x, nobs, nvars, nlhs, ncoefs, nconst)
 
@@ -148,7 +148,7 @@ subroutine __APPEND(ols_2d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
         lwork, iwork, info)
 
     if (info < 0) then
-        call status_set (lstatus, NF_STATUS_INVALID_ARG)
+        lstatus = NF_STATUS_INVALID_ARG
         goto 100
     end if
 
@@ -167,7 +167,7 @@ subroutine __APPEND(ols_2d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
     ! Note: Does GESDD return some approximate solution in this case, and
     ! should we return it to the user?
     if (info > 0) then
-        call status_set (lstatus, NF_STATUS_NOT_CONVERGED)
+        lstatus = NF_STATUS_NOT_CONVERGED
         goto 100
     end if
 
@@ -227,7 +227,7 @@ pure subroutine __APPEND(pca_check_input,__PREC) (x, scores, ncomp, trans_x, s, 
 
     integer :: nobs, nvars
 
-    call status_set (status, NF_STATUS_INVALID_ARG)
+    status = NF_STATUS_INVALID_ARG
 
     call pca_get_dims (x, trans_x, nobs, nvars)
 
@@ -256,7 +256,7 @@ pure subroutine __APPEND(pca_check_input,__PREC) (x, scores, ncomp, trans_x, s, 
         if (size(propvar) < ncomp) return
     end if
 
-    call status_set (status, NF_STATUS_OK)
+    status = NF_STATUS_OK
 
 end subroutine
 
@@ -321,7 +321,7 @@ subroutine __APPEND(pca,__PREC) (x, scores, ncomp, center, scale, trans_x, &
     real (PREC), parameter :: alpha = 1.0_PREC, beta = 0.0_PREC
     integer :: ldb, ldc, k
 
-    call status_set (lstatus, NF_STATUS_OK)
+    lstatus = NF_STATUS_OK
 
     lcenter = .true.
     lscale = .true.
@@ -332,7 +332,7 @@ subroutine __APPEND(pca,__PREC) (x, scores, ncomp, center, scale, trans_x, &
 
     call pca_check_input (x, scores, ncomp, ltrans_x, sval, loadings, &
         mean_x, std_x, propvar, lstatus)
-    if (status_contains (lstatus, NF_STATUS_INVALID_ARG)) goto 100
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
     call pca_get_dims (x, ltrans_x, nobs, nvars)
 
@@ -372,7 +372,7 @@ subroutine __APPEND(pca,__PREC) (x, scores, ncomp, center, scale, trans_x, &
 
     ! Recover minimal work space size
     if (info /= 0) then
-        call status_set (lstatus, NF_STATUS_INVALID_ARG)
+        lstatus = NF_STATUS_INVALID_ARG
         goto 100
     end if
     lwork = int(qwork(1))
@@ -386,9 +386,9 @@ subroutine __APPEND(pca,__PREC) (x, scores, ncomp, center, scale, trans_x, &
     if (info /= 0) then
         if (info < 0) then
             ! This should not happen since we checked arguments before
-            call status_set (lstatus, NF_STATUS_INVALID_ARG)
+            lstatus = NF_STATUS_INVALID_ARG
         else
-            call status_set (lstatus, NF_STATUS_NOT_CONVERGED)
+            lstatus = NF_STATUS_NOT_CONVERGED
         end if
         goto 100
     end if
@@ -448,7 +448,7 @@ pure subroutine __APPEND(pcr_check_input,__PREC) (lhs, scores, sval, loadings, &
 
     integer :: nobs, nvars, ncomp, nlhs, nconst, ncoefs
 
-    call status_set (status, NF_STATUS_INVALID_ARG)
+    status = NF_STATUS_INVALID_ARG
 
     call pcr_get_dims (lhs, scores, coefs, add_const, &
         nobs, nvars, ncomp, nlhs, ncoefs, nconst)
@@ -468,7 +468,7 @@ pure subroutine __APPEND(pcr_check_input,__PREC) (lhs, scores, sval, loadings, &
         if (size(std_x) < nvars) return
     end if
 
-    call status_set (status, NF_STATUS_OK)
+    status = NF_STATUS_OK
 
 end subroutine
 
@@ -522,7 +522,7 @@ subroutine __APPEND(pcr_2d,__PREC) (lhs, scores, sval, loadings, coefs, mean_x, 
     integer :: m, n, k, lda, ldb, ldc
     real (PREC), parameter :: alpha = 1.0_PREC, beta = 0.0_PREC
 
-    call status_set (lstatus, NF_STATUS_OK)
+    lstatus = NF_STATUS_OK
 
     ladd_const = .true.
     lcenter = .true.
@@ -531,7 +531,7 @@ subroutine __APPEND(pcr_2d,__PREC) (lhs, scores, sval, loadings, coefs, mean_x, 
 
     call pcr_check_input (lhs, scores, sval, loadings, coefs, mean_x, std_x, &
         ladd_const, lstatus)
-    if (status_contains (lstatus, NF_STATUS_INVALID_ARG)) goto 100
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
     call pcr_get_dims (lhs, scores, coefs, ladd_const, &
         nobs, nvars, ncomp, nlhs, ncoefs, nconst)
