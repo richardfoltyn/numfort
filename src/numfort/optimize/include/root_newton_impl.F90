@@ -52,15 +52,15 @@ subroutine __APPEND(root_newton_impl,__PREC) (x, args, xtol, tol, maxiter, res, 
 
     msg = ""
     lstatus = NF_STATUS_OK
-
-    ! Note: there is only one common input validation routine which accepts
-    ! double precision arguments
-    call newton_check_inputs (real(xtol, real64), real(tol, real64), maxiter, lstatus, msg)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
-
+    
     if (present(tol)) ltol = tol
     if (present(maxiter)) lmaxiter = maxiter
     if (present(xtol)) lxtol = xtol
+
+    ! Note: there is only one common input validation routine which accepts
+    ! double precision arguments
+    call newton_check_inputs (real(lxtol, real64), real(ltol, real64), lmaxiter, lstatus, msg)
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
     do_halley = present(fcn2)
 
