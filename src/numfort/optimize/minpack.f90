@@ -690,12 +690,11 @@ end subroutine
 
 
 
-subroutine chkder_real64 (fcn, m, x, err, status)
+recursive subroutine chkder_real64 (fcn, x, err, status)
     !*  CHKDER verifies that the Jacobian of a function f: R^n -> R^m
     !   is reasonably close to a Jacobian obtained by numerical differentiation.
     procedure (func_jac_real64) :: fcn
-    integer, intent(in) :: m
-        !!  Dimension of function's range
+
     real (PREC), intent(in), dimension(:), contiguous :: x
         !!  Point in function domain where derivative should be evaluated
     real (PREC), intent(out), dimension(:), contiguous :: err
@@ -704,15 +703,12 @@ subroutine chkder_real64 (fcn, m, x, err, status)
     type (status_t), intent(out), optional :: status
         !!  Optional status flag.
 
-    real (PREC) :: fvec(m), fvecp(m), fjac(m,size(x)), xp(size(x))
-    integer :: n, mode, task
+    real (PREC) :: fvec(size(err)), fvecp(size(err)), fjac(size(err),size(x)), xp(size(x))
+    integer :: n, m, mode, task
     type (status_t) :: lstatus
 
     n = size(x)
-    if (size(err) < m) then
-        lstatus = NF_STATUS_INVALID_ARG
-        goto 100
-    end if
+    m = size(err)
 
     mode = 1
 

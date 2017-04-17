@@ -33,7 +33,7 @@ subroutine example1 ()
 
     ! Compare analytical and numerical derivative using chkder
     x = x0
-    call chkder (fcn1_jac, n, x, err)
+    call chkder (fcn1_jac, x, err)
     print '(t3, "Gradient diagnostics: ", *(f10.7, :, ","))', err
 
     ! Compare to results obtained from hybrd using numerical differentiation
