@@ -131,7 +131,10 @@ set(${PROJECT_NAME}_MODDIR "${CMAKE_BINARY_DIR}/include")
 set(CMAKE_Fortran_MODULE_DIRECTORY "${${PROJECT_NAME}_MODDIR}")
 
 # set include directory to directory where MOD files are stored
-list(APPEND ${PROJECT_NAME}_INCLUDE_DIRS "${${PROJECT_NAME}_MODDIR}")
+list(APPEND ${PROJECT_NAME}_INCLUDE_DIRS
+	"${${PROJECT_NAME}_MODDIR}"
+	"${CMAKE_CURRENT_SOURCE_DIR}/numfort/include"
+)
 
 # store test executables in this root directory
 set(${PROJECT_NAME}_TESTS_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")
@@ -252,6 +255,8 @@ set(CMAKE_Fortran_FLAGS_DEBUG
 ################################################################################
 # Targets
 # Create single numfort library by merging all object libraries
+
+include_directories(${${PROJECT_NAME}_INCLUDE_DIRS})
 
 add_subdirectory(numfort)
 

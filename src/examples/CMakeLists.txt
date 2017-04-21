@@ -22,6 +22,7 @@ foreach (_dir IN LISTS _MODULES)
 		set(_target example_${_dir}_${exe_name})
 		add_executable(${_target} "${_dir}/${_file}")
 		target_link_libraries(${_target} ${${CMAKE_PROJECT_NAME}_LIBRARIES})
+        target_include_directories(${_target} PUBLIC "${_dir}/include")
 		set_target_properties(${_target} PROPERTIES
 			OUTPUT_NAME ${exe_name}
 		)
