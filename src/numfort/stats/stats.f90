@@ -13,6 +13,8 @@ module numfort_stats
 
     use numfort_stats_lm
 
+    use numfort_stats_qrng
+
     implicit none
 
 end module

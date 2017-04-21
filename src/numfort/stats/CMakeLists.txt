@@ -11,6 +11,7 @@ set(SOURCE_FILES
     drandint.F90
     stats.f90
     stats_lm.F90
+    stats_qrng.F90
 )
 
 include_directories(

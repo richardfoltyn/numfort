@@ -1,4 +1,10 @@
+
+
+#include "numfort.h"
+
 module numfort_stats_qrng
+    !*  Module implements generation of quasi-random sequences (such as
+    !   Sobol sequences).
 
     use, intrinsic :: iso_fortran_env
     use sobol_direction_num
@@ -8,71 +14,68 @@ module numfort_stats_qrng
 
     private
 
-    public :: sobol_init
+    public :: sobol_state
+    public :: sobol_init, sobol_reset, sobol_next
 
-    integer, parameter :: SOBOL_MAX_NUM_M = 63
+    ! Do not use sign bit so all numbers remain positive!
+    integer, parameter :: SOBOL_MAX_BITS = 63
 
-    type, public :: sobol_state
+    type :: sobol_state
         private
-        integer :: d = 1
+        integer (int64) :: ndim = 1
+            !*  Dimension of Sobol sequence
         integer (int64) :: idx = 0
-        integer, dimension(SOBOL_MAX_NUM_M) :: v
+            !*  Position of last sampled point in Sobol sequence
+        integer (int64), dimension(:), allocatable :: x
+            !*  Element of Sobol sequence at position idx.
+        integer (int64), dimension(:,:), allocatable :: v
+            !*  Direction numbers, scaled by 2 ** SOBOL_MAX_BITS; each
+            !   column contains up to SOBOL_MAX_BITS direction numbers for
+            !   the corresponding dimension.
     end type
+
+    interface sobol_init_check_input
+        module procedure sobol_init_check_input_int32, &
+            sobol_init_check_input_int64
+    end interface
+
+    interface sobol_init
+        module procedure sobol_init_scalar_int32, sobol_init_array_int32, &
+            sobol_init_scalar_int64, sobol_init_array_int64
+    end interface
+
+    interface sobol_next
+        module procedure sobol_next_scalar_real32, sobol_next_array_real32, &
+            sobol_next_scalar_real64, sobol_next_array_real64
+    end interface
 
 contains
 
-
-pure subroutine sobol_init (self, d, s, a, m_i, status)
+pure subroutine sobol_reset (self)
     type (sobol_state), intent(in out) :: self
-    integer, intent(in) :: d
-    integer, intent(in), optional :: s
-    integer, intent(in), optional :: a
-    integer, intent(in), dimension(:), optional :: m_i
-    type (status_t), intent(out), optional :: status
 
-    integer, dimension(SOBOL_MAX_NUM_M) :: lm
-    integer :: ls, la, ifrom, ito, k, i, mk
-    logical :: user_m
-
-    user_m = present(s) .and. present(a) .and. present(m_i)
-
-    if (user_m) then
-        ls = s
-        lm(1:ls) = m_i
-        la = a
-    else
-        ls = SOBOL_DEFAULT_S(d)
-        la = SOBOL_DEFAULT_A(d)
-        ifrom = sum(SOBOL_DEFAULT_S(:d-1)) + 1
-        ito = ifrom + ls - 1
-        lm(1:ls) = SOBOL_DEFAULT_M(ifrom:ito)
-    end if
-
-    do k = ls+1, SOBOL_MAX_NUM_M
-        mk = ieor(2 ** ls * lm(k-ls), lm(k-ls))
-        do i = 1, ls-1
-            mk = ieor(mk, 2 ** i * lm(k-i) * ibtest(la, i))
-        end do
-        lm(k) = mk
-    end do
-
-    do k = 1, SOBOL_MAX_NUM_M
-        self%v(k) = lm(k) / (2 ** k)
-    end do
-
+    self%ndim = 1
+    self%idx = 0
+    if (allocated(self%x)) deallocate(self%x)
+    if (allocated(self%v)) deallocate(self%v)
 end subroutine
 
-pure function ibtest(i, pos) result(res)
-    integer, intent(in) :: i
-    integer, intent(in) :: pos
-    integer :: res
+#define __INTSIZE int32
+#include "sobol_init_impl.F90"
+#undef __INTSIZE
 
-    if (btest(i, pos)) then
-        res = 1
-    else
-        res = 0
-    end if
+#define __INTSIZE int64
+#include "sobol_init_impl.F90"
+#undef __INTSIZE
 
-end function
+#define __PREC real32
+#include "sobol_eval_impl.F90"
+#undef __PREC
+
+#define __PREC real64
+#include "sobol_eval_impl.F90"
+#undef __PREC
+
+
 
 end module
