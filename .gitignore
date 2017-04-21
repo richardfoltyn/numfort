@@ -5,4 +5,5 @@ build*/
 *.mod
 *.o
 docs/
+.idea/
 
