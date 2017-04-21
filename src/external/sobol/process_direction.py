@@ -30,16 +30,22 @@ SOBOL_MAX_DIM = 1024
 
 def read_data(fn, nrow, ncol):
 
-    d = np.empty(nrow, dtype=np.int32)
+    # Insert additional row for 1st dimension
+    d = np.empty(nrow+1, dtype=np.int32)
     s = np.empty_like(d)
     a = np.empty_like(d)
 
-    m = np.zeros((nrow, ncol), dtype=np.int32)
+    m = np.zeros((nrow+1, ncol), dtype=np.int32)
+
+    d[0] = 1
+    s[0] = 1
+    a[0] = 0
+    m[0,0] = 1
 
     with open(fn, 'r') as f:
         # skip header line
         f.readline()
-        for i, line in enumerate(f):
+        for i, line in enumerate(f, 1):
             dat = line.split()
             d[i] = dat[IDX_D]
             s[i] = dat[IDX_S]
@@ -54,12 +60,12 @@ def write_fortran(fn, d, s, a, m):
     with open(fn, 'wt', encoding='ascii') as f:
         print(FORTRAN_MODULE_HEADER, file=f)
 
-        fmt = 'integer, parameter :: SOBOL_DEFAULT_MAX_DIM = {:d}'
-        print(fmt.format(SOBOL_MAX_DIM), file=f)
+        fmt = '{:4s}integer, parameter :: SOBOL_DEFAULT_MAX_DIM = {:d}'
+        print(fmt.format('', SOBOL_MAX_DIM), file=f)
 
-        fmt = 'integer, parameter :: SOBOL_DEFAULT_MAX_M = {:d}'
+        fmt = '{:4s}integer, parameter :: SOBOL_DEFAULT_MAX_M = {:d}'
         max_nm = np.amax(s[:SOBOL_MAX_DIM])
-        print(fmt.format(max_nm), file=f)
+        print(fmt.format('', max_nm), file=f)
 
         # write_array(f, 'SOBOL_D', d[:SOBOL_MAX_DIM])
         write_array(f, 'SOBOL_DEFAULT_S', s[:SOBOL_MAX_DIM])
@@ -77,10 +83,9 @@ def write_fortran(fn, d, s, a, m):
         print(FORTRAN_MODULE_FOOTER, file=f)
 
 
-def write_array(f, name, data):
-    prefix = ' ' * 4
+def write_array(f, name, data, prefix=' ' * 4):
 
-    print('{:s}integer, parameter :: {:s}(*) = &'.format(prefix, name), file=f)
+    print('{:s}integer, parameter :: {:s}(*) = [ &'.format(prefix, name), file=f)
 
     width = math.ceil(math.log10(np.amax(data)))
     n = (FORTRAN_LINEWIDTH - len(prefix)) // (width + 2)
@@ -93,7 +98,7 @@ def write_array(f, name, data):
         s = ', '.join(fmt.format(x) for x in data[istart:iend])
         print(s, file=f, end='')
         if i < nlines - 1:
-            print(' &', file=f)
+            print(', &', file=f)
         else:
             print(' ]\n\n', file=f)
 
