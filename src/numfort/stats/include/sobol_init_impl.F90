@@ -58,6 +58,8 @@ pure subroutine __APPEND(sobol_init_array,__INTSIZE) (self, ndim, s, a, m, max_l
 
     integer, parameter :: INTSIZE = __INTSIZE
 
+    type (sobol_state), intent(in out) :: self
+        !*  Object to store Sobol sequence state
     integer (INTSIZE), intent(in) :: ndim
         !*  Number of dimension of each sequence element
     integer (INTSIZE), intent(in), dimension(:), optional :: s
