@@ -48,6 +48,19 @@ module numfort_stats_lm
         module procedure pcr_get_dims_real32, pcr_get_dims_real64
     end interface
 
+    interface pcr_pca_get_dims
+        module procedure pcr_pca_get_dims_real32, pcr_pca_get_dims_real64
+    end interface
+
+    interface pcr_pca_check_input
+        module procedure pcr_pca_check_input_real32, pcr_pca_check_input_real64
+    end interface
+
+    interface pcr
+        module procedure pcr_pca_1d_real32, pcr_pca_1d_real64, &
+            pcr_pca_2d_real32, pcr_pca_2d_real64
+    end interface
+
     public :: ols, pca, pcr
 
 contains
