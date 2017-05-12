@@ -10,6 +10,7 @@ module numfort_common_workspace
 
     public :: workspace_real32, workspace_real64
     public :: assert_alloc, assert_alloc_ptr, assert_dealloc_ptr
+    public :: workspace_finalize
 
     integer, parameter :: SIZE_UNALLOCATED = -1
 
@@ -41,6 +42,10 @@ module numfort_common_workspace
 
     interface assert_dealloc_ptr
         module procedure ws_assert_dealloc_ptr_real32, ws_assert_dealloc_ptr_real64
+    end interface
+
+    interface workspace_finalize
+        module procedure ws_finalize_real32, ws_finalize_real64
     end interface
 
 contains

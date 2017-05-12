@@ -94,11 +94,23 @@ pure subroutine __APPEND(ws_assert_dealloc_ptr,__PREC) (ws, ptr_ws)
 
     if (associated(ptr_ws)) then
         if (.not. present(ws)) then
+            call workspace_finalize (ptr_ws)
             deallocate (ptr_ws)
             nullify (ptr_ws)
         else if (.not. associated(ptr_ws, ws)) then
+            call workspace_finalize (ptr_ws)
             deallocate (ptr_ws)
             nullify (ptr_ws)
         end if
     end if
+end subroutine
+
+pure subroutine __APPEND(ws_finalize,__PREC) (self)
+    type (__APPEND(workspace,__PREC)), intent(in out) :: self
+
+    if (allocated(self%rwrk)) deallocate (self%rwrk)
+    if (allocated(self%cwrk)) deallocate (self%cwrk)
+    if (allocated(self%lwrk)) deallocate (self%lwrk)
+    if (allocated(self%iwrk)) deallocate (self%iwrk)
+
 end subroutine
