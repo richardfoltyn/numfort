@@ -1,18 +1,6 @@
 
 ! Define LAPACK routines for given precision
 
-#if __PREC == real64
-#define __GESVD DGESVD
-#define __GEMM DGEMM
-#define __GELSD DGELSD
-#define __GESDD DGESDD
-#elif __PREC == real32
-#define __GESVD SGESVD
-#define __GEMM SGEMM
-#define __GELSD SGELSD
-#define __GESDD SGESDD
-#endif
-
 !-------------------------------------------------------------------------------
 ! OLS
 
