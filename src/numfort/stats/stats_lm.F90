@@ -65,12 +65,10 @@ module numfort_stats_lm
 
 contains
 
-#define __PREC real64
+#include "numfort_real32.h"
 #include "stats_lm_impl.F90"
-#undef __PREC
 
-#define __PREC real32
+#include "numfort_real64.h"
 #include "stats_lm_impl.F90"
-#undef __PREC
 
 end module
