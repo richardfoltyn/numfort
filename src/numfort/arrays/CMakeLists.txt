@@ -8,6 +8,7 @@ set(SOURCE_FILES
 	arrays_index.f90
 	arrays_create.f90
 	arrays_norms.F90
+	arrays_setops.F90
 )
 
 include_directories(
