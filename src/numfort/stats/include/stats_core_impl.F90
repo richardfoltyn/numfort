@@ -271,7 +271,9 @@ pure subroutine __APPEND(std_2d,__PREC) (x, s, m, dof, dim, status)
     call mean_std_init (shape(x), dim, ldim, nvars, nobs, status=lstatus)
     if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
-    call mean_std_check_input (nvars, nobs, m, s, dof, status=lstatus)
+    ! Note: Array s must come before m, as m is optional and needs to 
+    ! be associated with optional dummy argument.
+    call mean_std_check_input (nvars, nobs, s, m, dof, status=lstatus)
     if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
     if (present(dof)) ldof = dof
