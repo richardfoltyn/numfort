@@ -7,7 +7,6 @@ program test_interp_linear
     implicit none
 
     integer, parameter :: PREC = real64
-    integer, parameter :: INTSIZE = int32
 
     call test_all ()
 
@@ -34,7 +33,7 @@ subroutine test_extrap (tests)
     class (test_suite) :: tests
     class (test_case), pointer :: tc
 
-    real (PREC), dimension(10) :: xp, fp, fx, x
+    real (PREC), dimension(10) :: xp, fp, fx
     integer :: i, j, k
 
     tc => tests%add_test ("Linear extrapolation")
@@ -72,7 +71,7 @@ subroutine test_exact (tests)
     class (test_case), pointer :: tc
 
     real (PREC), dimension(10) :: xp, fp, fx, x
-    integer :: i, j, k
+    integer :: i
 
     tc => tests%add_test ("Exact 'interpolation': x in xp")
 
@@ -149,7 +148,7 @@ subroutine test_truncate (tests)
     class (test_suite) :: tests
     class (test_case), pointer :: tc
 
-    real (PREC), dimension(10) :: xp, fp, fx, x, fx1
+    real (PREC), dimension(10) :: xp, fp, fx, fx1
     integer :: i, j, k
     real (PREC) :: left, right
 

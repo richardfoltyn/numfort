@@ -33,7 +33,7 @@ pure subroutine __APPEND(sobol_next_array,__PREC) (self, x, status)
             i = ishft(i, - 1_int64)
         end do
 
-        self%x = ieor(self%x, self%v(:,k))
+        self%x(:) = ieor(self%x, self%v(:,k))
         ! Actual x
         x = real(self%x, real64) / (2.0_real64 ** SOBOL_MAX_BITS)
 
@@ -52,6 +52,8 @@ pure subroutine __APPEND(sobol_next_scalar,__PREC) (self, x, status)
     type (status_t), intent(out), optional :: status
 
     real (PREC), dimension(1) :: x1
+
+    x1 = 0.0
 
     call sobol_next (self, x1, status)
 

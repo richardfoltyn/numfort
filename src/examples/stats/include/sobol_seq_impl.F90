@@ -1,9 +1,6 @@
 
 subroutine __APPEND2(test,__INTSIZE,__PREC) ()
 
-    integer, parameter :: PREC = __PREC
-    integer, parameter :: INTSIZE = __INTSIZE
-
     integer, parameter :: LENGTH = 10
 
     call __APPEND2(test_dim,__INTSIZE,__PREC) (1, LENGTH)
@@ -15,8 +12,6 @@ end subroutine
 subroutine __APPEND2(test_dim,__INTSIZE,__PREC) (ndim, length)
 
     integer, parameter :: PREC = __PREC
-    integer, parameter :: INTSIZE = __INTSIZE
-
     integer, intent(in) :: ndim, length
 
     integer :: i
@@ -40,7 +35,6 @@ end subroutine
 
 subroutine __APPEND2(print,__INTSIZE,__PREC) (x)
     integer, parameter :: PREC = __PREC
-    integer, parameter :: INTSIZE = __INTSIZE
 
     real (PREC), intent(in), dimension(:,:) :: x
 

@@ -5,7 +5,6 @@ program test_numfort_indexing
     use numfort_arrays
     implicit none
 
-    integer, parameter :: PREC = real64
     integer, parameter :: INTSIZE = int32
 
     call test_all ()
@@ -31,9 +30,9 @@ subroutine test_ind2sub (tests)
     class (test_suite) :: tests
     class (test_case), pointer :: tc
 
-    integer (INTSIZE), dimension(:), allocatable :: lin, lin2, shp
+    integer (INTSIZE), dimension(:), allocatable :: lin, shp
     integer (INTSIZE), dimension(:, :), allocatable :: sub, sub2
-    integer :: i, n, m
+    integer :: i, n
 
     tc => tests%add_test ("ind2sub test cases")
 

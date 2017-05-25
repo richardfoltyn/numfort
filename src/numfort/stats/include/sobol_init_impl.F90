@@ -22,6 +22,9 @@ pure subroutine __APPEND(sobol_init_check_input,__INTSIZE) (ndim, s, a, m, max_l
     logical :: user_data
     integer :: lndim, nm
 
+    integer (int64), parameter :: CONST_MAX_LEN = &
+        ishft(1_int64, int(SOBOL_MAX_BITS, int64))
+
     status = NF_STATUS_INVALID_ARG
 
     user_data = present(s) .and. present(a) .and. present(m)
@@ -42,7 +45,7 @@ pure subroutine __APPEND(sobol_init_check_input,__INTSIZE) (ndim, s, a, m, max_l
     if (lndim < 1) goto 100
 
     if (present(max_len)) then
-        if (max_len < 1 .or. max_len > 2 ** SOBOL_MAX_BITS) goto 100
+        if (max_len < 1 .or. max_len > CONST_MAX_LEN) goto 100
     end if
 
     status = NF_STATUS_OK
