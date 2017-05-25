@@ -1,5 +1,4 @@
-real (PREC), intent(in), dimension(:) :: haystack
-real (PREC), intent(in) :: needle
+
     
 integer :: lb, ub, midx
     

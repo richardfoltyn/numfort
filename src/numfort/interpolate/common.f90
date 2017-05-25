@@ -16,7 +16,7 @@ module numfort_interpolate_common
     public :: NF_INTERP_EVAL_BOUNDARY
 
     interface bsearch
-        module procedure bsearch_real64, bsearch_real32
+        module procedure bsearch_real64, bsearch_real32, bsearch_int32
     end interface
 
     interface interp_find
@@ -25,21 +25,34 @@ module numfort_interpolate_common
 
     public :: interp_find, bsearch
 
-    contains
+contains
 
 pure function bsearch_real64 (needle, haystack) result(lb)
     integer, parameter :: PREC = real64
-    integer, parameter :: INTSIZE = int32
+    real (PREC), intent(in) :: needle
+    real (PREC), intent(in), dimension(:) :: haystack
 
     include "include/bsearch_impl.f90"
 end function
+
 
 pure function bsearch_real32 (needle, haystack) result(lb)
     integer, parameter :: PREC = real32
-    integer, parameter :: INTSIZE = int32
+    real (PREC), intent(in) :: needle
+    real (PREC), intent(in), dimension(:) :: haystack
 
     include "include/bsearch_impl.f90"
 end function
+
+
+pure function bsearch_int32 (needle, haystack) result(lb)
+    integer, parameter :: INTSIZE = int32
+    integer (INTSIZE), intent(in) :: needle
+    integer (INTSIZE), intent(in), dimension(:) :: haystack
+
+    include "include/bsearch_impl.f90"
+end function
+
 
 pure function interp_find_real64 (needle, haystack) result (res)
     integer, parameter :: PREC = real64
