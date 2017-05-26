@@ -22,6 +22,7 @@ subroutine test_all ()
 
     call test_setdiff (tests)
     call test_intersect (tests)
+    call test_union (tests)
 
     ! print test statistics
     call tests%print ()
@@ -215,6 +216,120 @@ subroutine test_intersect (tests)
     call intersect (set_a, set_b, res, n)
     call tc%assert_true (n == 3 .and. all(res(1:n) == [2,3,5]), &
         "Non-empty A, B; non-empty intersection")
+
+    ! Test the same if assuming that elements are unique
+    n = -1
+    call intersect (set_a, set_b, res, n)
+    call tc%assert_true (n == 3 .and. all(res(1:n) == [2,3,5]), &
+        "Non-empty A, B; non-empty intersection; assumed unique")
+    deallocate (set_a, set_b, res)
+
+
+    ! 8. Test with arrays containing duplicates
+    allocate (set_a(10), set_b(10), res(10))
+    set_a = [1, 1, 2, 2, 3, 3, 4, 4, 5, 5]
+    set_b = [2, 2, 3, 4, 4, 6, 6, 7, 8, 9]
+    n = -1
+    call intersect (set_a, set_b, res, n)
+    call tc%assert_true (n == 3 .and. all(res(1:n) == [2,3,4]), &
+        "A, B containing duplicates, non-empty intersection")
+    deallocate (set_a, set_b, res)
+
+end subroutine
+
+
+subroutine test_union (tests)
+    class (test_suite) :: tests
+    class (test_case), pointer :: tc
+
+    real (PREC), dimension(:), allocatable :: set_a, set_b, res
+    integer :: n, i
+
+    tc => tests%add_test ("set UNION routine: C = A union B")
+
+
+    ! 1. Both operands are empty sets
+    allocate (set_a(0), set_b(0), res(0))
+    n = -1
+    call union (set_a, set_b, res, n)
+    call tc%assert_true (n == 0, "A, B empty sets")
+    deallocate (set_a, set_b, res)
+
+    ! 2. First operand empty, second operand non-empty
+    allocate (set_a(0), set_b(10), res(10))
+    set_b = [(i, i = 1, 10)]
+    n = -1
+    call union (set_a, set_b, res, n)
+    call tc%assert_true (n == size(set_b) .and. all(res(1:n) == set_b), &
+        "A empty, B non-empty")
+    deallocate (set_a, set_b, res)
+
+    ! 3. Second operand empty, first non-empty
+    allocate (set_a(10), set_b(0), res(10))
+    set_a = [(i, i = 1, 10)]
+    n = -1
+    call union (set_a, set_b, res, n)
+    call tc%assert_true (n == size(set_a) .and. all(res(1:n) == set_a), &
+        "A non-empty, B empty")
+    deallocate (set_a, set_b, res)
+
+    ! 4. Nonempty operands
+    allocate (set_a(5), set_b(5), res(10))
+    set_a = [(i, i=1,5)]
+    set_b = [(i, i=6,10)]
+    n = -1
+    call union (set_a, set_b, res, n)
+    call tc%assert_true (n == 10 .and. all(res(1:n) == [(i,i=1,10)]), &
+        "A, B non-empty")
+    deallocate (set_a, set_b, res)
+
+    ! 5. A strict subset of B
+    allocate (set_a(5), set_b(10), res(10))
+    set_a = [(i, i = 1, 5)]
+    set_b = [(i, i = 1, 10)]
+    n = -1
+    call union (set_a, set_b, res, n)
+    call tc%assert_true (n == size(set_b) .and. all(res(1:n) == set_b), &
+        "A, B nonempty, C == B")
+    deallocate (set_a, set_b, res)
+
+    ! 6. B strict subset of A
+    allocate (set_a(10), set_b(5), res(10))
+    set_a = [(i, i = 1, 10)]
+    set_b = [(i, i = 6, 10)]
+    n = -1
+    call union (set_a, set_b, res, n)
+    call tc%assert_true (n == size(set_a) .and. all(res(1:n) == set_a), &
+        "A, B nonempty, C == A")
+    deallocate (set_a, set_b, res)
+
+    ! 7. Test some random non-empty unionion, res array not large enough
+    ! no hold union
+    allocate (set_a(5), set_b(5), res(3))
+    set_a = [(i, i = 1, 5)]
+    set_b = [2, 3, 5, 7, 10]
+    n = -1
+    call union (set_a, set_b, res, n)
+    call tc%assert_true (n == 7 .and. all(res == [1,2,3]), &
+        "Non-empty A, B; result array too small to hold union")
+
+    ! Test the same if assuming that elements are unique
+    n = -1
+    res = 0
+    call union (set_a, set_b, res, n)
+    call tc%assert_true (n == 7 .and. all(res == [1,2,3]), &
+        "Non-empty A, B; result array too small to hold union; assumed unique")
+    deallocate (set_a, set_b, res)
+
+
+    ! 8. Test with arrays containing duplicates
+    allocate (set_a(10), set_b(10), res(10))
+    set_a = [1, 1, 2, 2, 3, 3, 4, 4, 5, 5]
+    set_b = [2, 2, 3, 4, 4, 6, 6, 7, 8, 9]
+    n = -1
+    call union (set_a, set_b, res, n)
+    call tc%assert_true (n == 9 .and. all(res(1:n) == [1,2,3,4,5,6,7,8,9]), &
+        "A, B containing duplicates")
     deallocate (set_a, set_b, res)
 
 end subroutine

@@ -8,7 +8,7 @@ module numfort_arrays_setops
 
     private
 
-    public :: unique, setdiff, intersect
+    public :: unique, setdiff, intersect, union
 
     interface unique
         module procedure unique_real32, unique_real64, unique_int32
@@ -22,7 +22,11 @@ module numfort_arrays_setops
         module procedure intersect_real32, intersect_real64, intersect_int32
     end interface
 
-contains
+    interface union
+        module procedure union_real32, union_real64, union_int32
+    end interface
+
+    contains
 
 ! ------------------------------------------------------------------------------
 ! UNIQUE routines
@@ -194,6 +198,71 @@ subroutine intersect_int32 (arr1, arr2, res, n, assume_unique)
     integer (INTSIZE), dimension(:), allocatable :: work
 
 #include "intersect_impl.f90"
+end subroutine
+
+
+!-------------------------------------------------------------------------------
+! UNION routines
+
+
+subroutine union_real32 (arr1, arr2, res, n, assume_unique)
+    !*  INTERSECT returns the unique, sorted elements that are present in
+    !   both input arrays.
+
+    integer, parameter :: PREC = real32
+    integer, parameter :: INTSIZE = int32
+
+    real (PREC), intent(in), dimension(:) :: arr1
+        !*  First input array
+    real (PREC), intent(in), dimension(:) :: arr2
+        !*  Second input array
+    real (PREC), intent(out), dimension(:) :: res
+        !*  Intersection of input arrays, sorted in ascending order
+
+    real (PREC), dimension(:), allocatable :: work
+
+#include "union_impl.f90"
+end subroutine
+
+
+subroutine union_real64 (arr1, arr2, res, n, assume_unique)
+    !*  INTERSECT returns the unique, sorted elements that are present in
+    !   both input arrays.
+
+
+    integer, parameter :: PREC = real64
+    integer, parameter :: INTSIZE = int32
+
+    real (PREC), intent(in), dimension(:) :: arr1
+        !*  First input array
+    real (PREC), intent(in), dimension(:) :: arr2
+        !*  Second input array
+    real (PREC), intent(out), dimension(:) :: res
+        !*  Intersection of input arrays, sorted in ascending order
+
+    real (PREC), dimension(:), allocatable :: work
+
+#include "union_impl.f90"
+end subroutine
+
+
+subroutine union_int32 (arr1, arr2, res, n, assume_unique)
+    !*  INTERSECT returns the unique, sorted elements that are present in
+    !   both input arrays.
+
+
+    integer, parameter :: INTSIZE = int32
+
+    integer (INTSIZE), intent(in), dimension(:) :: arr1
+        !*  First input array
+    integer (INTSIZE), intent(in), dimension(:) :: arr2
+        !*  Second input array
+    integer (INTSIZE), intent(out), dimension(:) :: res
+        !*  Intersection of input arrays, sorted in ascending order
+
+    integer (INTSIZE), dimension(:), allocatable :: work
+
+#include "union_impl.f90"
 end subroutine
 
 
