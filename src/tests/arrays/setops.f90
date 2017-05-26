@@ -21,6 +21,7 @@ subroutine test_all ()
     call tests%set_label ("numfort_arrays_setops unit tests")
 
     call test_setdiff (tests)
+    call test_intersect (tests)
 
     ! print test statistics
     call tests%print ()
@@ -141,5 +142,83 @@ subroutine test_setdiff (tests)
 
 
 end subroutine
+
+
+
+subroutine test_intersect (tests)
+    class (test_suite) :: tests
+    class (test_case), pointer :: tc
+
+    real (PREC), dimension(:), allocatable :: set_a, set_b, res
+    integer :: n, i
+
+    tc => tests%add_test ("set INTERSECT routine: C = A intersect B")
+
+
+    ! 1. Both operands are empty sets
+    allocate (set_a(0), set_b(0), res(0))
+    n = -1
+    call intersect (set_a, set_b, res, n)
+    call tc%assert_true (n == 0, "A, B empty sets")
+    deallocate (set_a, set_b, res)
+
+    ! 2. First operand empty, second operand non-empty
+    allocate (set_a(0), set_b(10), res(10))
+    set_b = [(i, i = 1, 10)]
+    n = -1
+    call intersect (set_a, set_b, res, n)
+    call tc%assert_true (n == 0, "A empty, B non-empty")
+    deallocate (set_a, set_b, res)
+
+    ! 3. Second operand empty, first non-empty
+    allocate (set_a(10), set_b(0), res(0))
+    set_a = [(i, i = 1, 10)]
+    n = -1
+    call intersect (set_a, set_b, res, n)
+    call tc%assert_true (n == 0, "A non-empty, B empty")
+    deallocate (set_a, set_b, res)
+
+    ! 4. Nonempty operands, empty intersection
+    allocate (set_a(5), set_b(5), res(0))
+    set_a = [(i, i=1,5)]
+    set_b = [(i, i=6,10)]
+    n = -1
+    call intersect (set_a, set_b, res, n)
+    call tc%assert_true (n == 0, "A, B non-empty, empty intersection")
+    deallocate (set_a, set_b, res)
+
+    ! 5. A strict subset of B
+    allocate (set_a(5), set_b(10), res(5))
+    set_a = [(i, i = 1, 5)]
+    set_b = [(i, i = 1, 10)]
+    n = -1
+    call intersect (set_a, set_b, res, n)
+    call tc%assert_true (n == 5 .and. all(res(1:n) == set_a), &
+        "A, B nonempty, C == A")
+    deallocate (set_a, set_b, res)
+
+    ! 6. B strict subset of A
+    allocate (set_a(10), set_b(5), res(5))
+    set_a = [(i, i = 1, 10)]
+    set_b = [(i, i = 6, 10)]
+    n = -1
+    call intersect (set_a, set_b, res, n)
+    call tc%assert_true (n == 5 .and. all(res(1:n) == set_b), &
+        "A, B nonempty, C == B")
+    deallocate (set_a, set_b, res)
+
+    ! 7. Test some random non-empty intersection
+    allocate (set_a(5), set_b(5), res(3))
+    set_a = [(i, i = 1, 5)]
+    set_b = [2, 3, 5, 7, 10]
+    n = -1
+    call intersect (set_a, set_b, res, n)
+    call tc%assert_true (n == 3 .and. all(res(1:n) == [2,3,5]), &
+        "Non-empty A, B; non-empty intersection")
+    deallocate (set_a, set_b, res)
+
+end subroutine
+
+
 
 end program
