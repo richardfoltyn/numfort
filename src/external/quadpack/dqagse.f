@@ -17,24 +17,24 @@ c***description
 c
 c        computation of a definite integral
 c        standard fortran subroutine
-c        double precision version
+c        real (PREC) version
 c
 c        parameters
 c         on entry
-c            f      - double precision
+c            f      - real (PREC)
 c                     function subprogram defining the integrand
 c                     function f(x). the actual name for f needs to be
 c                     declared e x t e r n a l in the driver program.
 c
-c            a      - double precision
+c            a      - real (PREC)
 c                     lower limit of integration
 c
-c            b      - double precision
+c            b      - real (PREC)
 c                     upper limit of integration
 c
-c            epsabs - double precision
+c            epsabs - real (PREC)
 c                     absolute accuracy requested
-c            epsrel - double precision
+c            epsrel - real (PREC)
 c                     relative accuracy requested
 c                     if  epsabs.le.0
 c                     and epsrel.lt.max(50*rel.mach.acc.,0.5d-28),
@@ -45,10 +45,10 @@ c                     gives an upperbound on the number of subintervals
 c                     in the partition of (a,b)
 c
 c         on return
-c            result - double precision
+c            result - real (PREC)
 c                     approximation to the integral
 c
-c            abserr - double precision
+c            abserr - real (PREC)
 c                     estimate of the modulus of the absolute error,
 c                     which should equal or exceed abs(i-result)
 c
@@ -107,24 +107,24 @@ c                             iord(1) and elist(1) are set to zero.
 c                             alist(1) and blist(1) are set to a and b
 c                             respectively.
 c
-c            alist  - double precision
+c            alist  - real (PREC)
 c                     vector of dimension at least limit, the first
 c                      last  elements of which are the left end points
 c                     of the subintervals in the partition of the
 c                     given integration range (a,b)
 c
-c            blist  - double precision
+c            blist  - real (PREC)
 c                     vector of dimension at least limit, the first
 c                      last  elements of which are the right end points
 c                     of the subintervals in the partition of the given
 c                     integration range (a,b)
 c
-c            rlist  - double precision
+c            rlist  - real (PREC)
 c                     vector of dimension at least limit, the first
 c                      last  elements of which are the integral
 c                     approximations on the subintervals
 c
-c            elist  - double precision
+c            elist  - real (PREC)
 c                     vector of dimension at least limit, the first
 c                      last  elements of which are the moduli of the
 c                     absolute error estimates on the subintervals
@@ -146,10 +146,10 @@ c***references  (none)
 c***routines called  d1mach,dqelg,dqk21,dqpsrt
 c***end prologue  dqagse
 c
-      double precision a,abseps,abserr,alist,area,area1,area12,area2,a1,
-     *  a2,b,blist,b1,b2,correc,dabs,defabs,defab1,defab2,d1mach,dmax1,
+      real (PREC) a,abseps,abserr,alist,area,area1,area12,area2,a1,
+     *  a2,b,blist,b1,b2,correc,defabs,defab1,defab2,d1mach,
      *  dres,elist,epmach,epsabs,epsrel,erlarg,erlast,errbnd,errmax,
-     *  error1,error2,erro12,errsum,ertest,f,oflow,resabs,reseps,result,
+     *  error1,error2,erro12,errsum,ertest,oflow,resabs,reseps,result,
      *  res3la,rlist,rlist2,small,uflow
       integer id,ier,ierro,iord,iroff1,iroff2,iroff3,jupbnd,k,ksgn,
      *  ktmin,last,limit,maxerr,neval,nres,nrmax,numrl2
@@ -158,7 +158,7 @@ c
       dimension alist(limit),blist(limit),elist(limit),iord(limit),
      * res3la(3),rlist(limit),rlist2(52)
 c
-      external f
+      procedure (f_integrand) :: f
 c
 c            the dimension of rlist2 is determined by the value of
 c            limexp in subroutine dqelg (rlist2 should be of dimension
@@ -221,13 +221,13 @@ c            ------------------------------
       ier = 0
       neval = 0
       last = 0
-      result = 0.0d+00
-      abserr = 0.0d+00
+      result = 0.0_PREC
+      abserr = 0.0_PREC
       alist(1) = a
       blist(1) = b
-      rlist(1) = 0.0d+00
-      elist(1) = 0.0d+00
-      if(epsabs.le.0.0d+00.and.epsrel.lt.dmax1(0.5d+02*epmach,0.5d-28))
+      rlist(1) = 0.0_PREC
+      elist(1) = 0.0_PREC
+      if(epsabs.le.0.0_PREC.and.epsrel.lt.max(0.5d+02*epmach,0.5d-28))
      *   ier = 6
       if(ier.eq.6) go to 999
 c
@@ -241,8 +241,8 @@ c
 c
 c           test on accuracy.
 c
-      dres = dabs(result)
-      errbnd = dmax1(epsabs,epsrel*dres)
+      dres = abs(result)
+      errbnd = max(epsabs,epsrel*dres)
       last = 1
       rlist(1) = result
       elist(1) = abserr
@@ -250,7 +250,7 @@ c
       if(abserr.le.1.0d+02*epmach*defabs.and.abserr.gt.errbnd) ier = 2
       if(limit.eq.1) ier = 1
       if(ier.ne.0.or.(abserr.le.errbnd.and.abserr.ne.resabs).or.
-     *  abserr.eq.0.0d+00) go to 140
+     *  abserr.eq.0.0_PREC) go to 140
 c
 c           initialization
 c           --------------
@@ -282,7 +282,7 @@ c           bisect the subinterval with the nrmax-th largest error
 c           estimate.
 c
         a1 = alist(maxerr)
-        b1 = 0.5d+00*(alist(maxerr)+blist(maxerr))
+        b1 = 0.5_PREC*(alist(maxerr)+blist(maxerr))
         a2 = b1
         b2 = blist(maxerr)
         erlast = errmax
@@ -297,14 +297,14 @@ c
         errsum = errsum+erro12-errmax
         area = area+area12-rlist(maxerr)
         if(defab1.eq.error1.or.defab2.eq.error2) go to 15
-        if(dabs(rlist(maxerr)-area12).gt.0.1d-04*dabs(area12)
-     *  .or.erro12.lt.0.99d+00*errmax) go to 10
+        if(abs(rlist(maxerr)-area12).gt.0.1d-04*abs(area12)
+     *  .or.erro12.lt.0.99_PREC*errmax) go to 10
         if(extrap) iroff2 = iroff2+1
         if(.not.extrap) iroff1 = iroff1+1
    10   if(last.gt.10.and.erro12.gt.errmax) iroff3 = iroff3+1
    15   rlist(maxerr) = area1
         rlist(last) = area2
-        errbnd = dmax1(epsabs,epsrel*dabs(area))
+        errbnd = max(epsabs,epsrel*abs(area))
 c
 c           test for roundoff error and eventually set error flag.
 c
@@ -319,8 +319,8 @@ c
 c           set error flag in the case of bad integrand behaviour
 c           at a point of the integration range.
 c
-        if(dmax1(dabs(a1),dabs(b2)).le.(0.1d+01+0.1d+03*epmach)*
-     *  (dabs(a2)+0.1d+04*uflow)) ier = 4
+        if(max(abs(a1),abs(b2)).le.(0.1d+01+0.1d+03*epmach)*
+     *  (abs(a2)+0.1d+04*uflow)) ier = 4
 c
 c           append the newly-created intervals to the list.
 c
@@ -351,13 +351,13 @@ c ***jump out of do-loop
         if(last.eq.2) go to 80
         if(noext) go to 90
         erlarg = erlarg-erlast
-        if(dabs(b1-a1).gt.small) erlarg = erlarg+erro12
+        if(abs(b1-a1).gt.small) erlarg = erlarg+erro12
         if(extrap) go to 40
 c
 c           test whether the interval to be bisected next is the
 c           smallest interval.
 c
-        if(dabs(blist(maxerr)-alist(maxerr)).gt.small) go to 90
+        if(abs(blist(maxerr)-alist(maxerr)).gt.small) go to 90
         extrap = .true.
         nrmax = 2
    40   if(ierro.eq.3.or.erlarg.le.ertest) go to 60
@@ -373,7 +373,7 @@ c
           maxerr = iord(nrmax)
           errmax = elist(maxerr)
 c ***jump out of do-loop
-          if(dabs(blist(maxerr)-alist(maxerr)).gt.small) go to 90
+          if(abs(blist(maxerr)-alist(maxerr)).gt.small) go to 90
           nrmax = nrmax+1
    50   continue
 c
@@ -389,7 +389,7 @@ c
         abserr = abseps
         result = reseps
         correc = erlarg
-        ertest = dmax1(epsabs,epsrel*dabs(reseps))
+        ertest = max(epsabs,epsrel*abs(reseps))
 c ***jump out of do-loop
         if(abserr.le.ertest) go to 100
 c
@@ -401,10 +401,10 @@ c
         errmax = elist(maxerr)
         nrmax = 1
         extrap = .false.
-        small = small*0.5d+00
+        small = small*0.5_PREC
         erlarg = errsum
         go to 90
-   80   small = dabs(b-a)*0.375d+00
+   80   small = abs(b-a)*0.375_PREC
         erlarg = errsum
         ertest = errbnd
         rlist2(2) = area
@@ -417,23 +417,23 @@ c
       if(ier+ierro.eq.0) go to 110
       if(ierro.eq.3) abserr = abserr+correc
       if(ier.eq.0) ier = 3
-      if(result.ne.0.0d+00.and.area.ne.0.0d+00) go to 105
+      if(result.ne.0.0_PREC.and.area.ne.0.0_PREC) go to 105
       if(abserr.gt.errsum) go to 115
-      if(area.eq.0.0d+00) go to 130
+      if(area.eq.0.0_PREC) go to 130
       go to 110
-  105 if(abserr/dabs(result).gt.errsum/dabs(area)) go to 115
+  105 if(abserr/abs(result).gt.errsum/abs(area)) go to 115
 c
 c           test on divergence.
 c
-  110 if(ksgn.eq.(-1).and.dmax1(dabs(result),dabs(area)).le.
+  110 if(ksgn.eq.(-1).and.max(abs(result),abs(area)).le.
      * defabs*0.1d-01) go to 130
       if(0.1d-01.gt.(result/area).or.(result/area).gt.0.1d+03
-     * .or.errsum.gt.dabs(area)) ier = 6
+     * .or.errsum.gt.abs(area)) ier = 6
       go to 130
 c
 c           compute global integral sum.
 c
-  115 result = 0.0d+00
+  115 result = 0.0_PREC
       do 120 k = 1,last
          result = result+rlist(k)
   120 continue

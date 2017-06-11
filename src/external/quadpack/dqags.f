@@ -17,35 +17,35 @@ c***description
 c
 c        computation of a definite integral
 c        standard fortran subroutine
-c        double precision version
+c        real (PREC) version
 c
 c
 c        parameters
 c         on entry
-c            f      - double precision
+c            f      - real (PREC)
 c                     function subprogram defining the integrand
 c                     function f(x). the actual name for f needs to be
 c                     declared e x t e r n a l in the driver program.
 c
-c            a      - double precision
+c            a      - real (PREC)
 c                     lower limit of integration
 c
-c            b      - double precision
+c            b      - real (PREC)
 c                     upper limit of integration
 c
-c            epsabs - double precision
+c            epsabs - real (PREC)
 c                     absolute accuracy requested
-c            epsrel - double precision
+c            epsrel - real (PREC)
 c                     relative accuracy requested
 c                     if  epsabs.le.0
 c                     and epsrel.lt.max(50*rel.mach.acc.,0.5d-28),
 c                     the routine will end with ier = 6.
 c
 c         on return
-c            result - double precision
+c            result - real (PREC)
 c                     approximation to the integral
 c
-c            abserr - double precision
+c            abserr - real (PREC)
 c                     estimate of the modulus of the absolute error,
 c                     which should equal or exceed abs(i-result)
 c
@@ -135,7 +135,7 @@ c                    work(limit*3+iwork(k)) form a decreasing
 c                    sequence, with k = last if last.le.(limit/2+2),
 c                    and k = limit+1-last otherwise
 c
-c            work  - double precision
+c            work  - real (PREC)
 c                    vector of dimension at least lenw
 c                    on return
 c                    work(1), ..., work(last) contain the left
@@ -153,12 +153,13 @@ c***routines called  dqagse,xerror
 c***end prologue  dqags
 c
 c
-      double precision a,abserr,b,epsabs,epsrel,f,result,work
+      real (PREC) a,abserr,b,epsabs,epsrel,result,work
       integer ier,iwork,last,lenw,limit,lvl,l1,l2,l3,neval
 c
       dimension iwork(limit),work(lenw)
+
+      procedure (f_integrand) :: f
 c
-      external f
 c
 c         check validity of limit and lenw.
 c

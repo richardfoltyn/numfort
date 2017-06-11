@@ -16,7 +16,7 @@ c***description
 c
 c           ordering routine
 c           standard fortran subroutine
-c           double precision version
+c           real (PREC) version
 c
 c           parameters (meaning at output)
 c              limit  - integer
@@ -30,11 +30,11 @@ c              maxerr - integer
 c                       maxerr points to the nrmax-th largest error
 c                       estimate currently in the list
 c
-c              ermax  - double precision
+c              ermax  - real (PREC)
 c                       nrmax-th largest error estimate
 c                       ermax = elist(maxerr)
 c
-c              elist  - double precision
+c              elist  - real (PREC)
 c                       vector of dimension last containing
 c                       the error estimates
 c
@@ -52,7 +52,7 @@ c                       maxerr = iord(nrmax)
 c
 c***end prologue  dqpsrt
 c
-      double precision elist,ermax,errmax,errmin
+      real (PREC) elist,ermax,errmax,errmin
       integer i,ibeg,ido,iord,isucc,j,jbnd,jupbn,k,last,limit,maxerr,
      *  nrmax
       dimension elist(last),iord(last)
