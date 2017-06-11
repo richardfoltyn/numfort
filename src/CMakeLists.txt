@@ -49,10 +49,9 @@ option(IFORT_STD_MOD_PROC_NAME
 
 ################################################################################
 # Additional CMAKE modules
-# include FindMKL module taken from ARMA project
 
 list(APPEND CMAKE_MODULE_PATH
-  "${CMAKE_CURRENT_SOURCE_DIR}/submodules/cmake/Modules")
+  "${CMAKE_CURRENT_SOURCE_DIR}/../submodules/cmake/Modules")
 
 ################################################################################
 # Detect features supported by Fortran compiler
