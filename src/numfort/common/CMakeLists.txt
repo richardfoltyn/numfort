@@ -3,13 +3,14 @@
 set(COMPONENT_NAME common)
 
 set(SOURCE_FILES
-	alloc.f90
-	common.f90
-	enums.f90
-	kinds.f90
-	status.f90
-	workspace.F90
+    alloc.f90
+    common.f90
+    enums.f90
+    kinds.f90
+    status.f90
+    workspace.F90
     input_checks.f90
+    strings.F90
 )
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
