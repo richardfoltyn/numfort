@@ -7,8 +7,16 @@ project(numfort C Fortran)
 # Target definitions
 
 # add individual numfort components as object libraries
-set(COMPONENTS core common arrays interpolate linalg optimize stats)
-# set(COMPONENTS core arrays interpolate linalg)
+set(COMPONENTS 
+    core 
+    common 
+    arrays 
+    interpolate 
+    integrate
+    linalg 
+    optimize 
+    stats
+)
 
 foreach (_comp IN LISTS COMPONENTS)
 	add_subdirectory(${_comp})

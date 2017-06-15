@@ -271,8 +271,6 @@ set(SOURCE_FILES
 	numfort/numfort.f90
 )
 
-include_directories("${${PROJECT_NAME}_MODDIR}")
-
 # get list of targets the ultimate library depends on. This list is populated
 # in the sub-components' directories
 get_property(_TARGETS GLOBAL PROPERTY ${CMAKE_PROJECT_NAME}_COMPONENT_TARGETS)
