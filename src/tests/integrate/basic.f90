@@ -54,11 +54,13 @@ subroutine test_trapezoid (tests)
         !   Error tolerance of Fortran vs. Scipy solution
 
     ! Results for trapezoid rule according to scipy's implementation
-    real (PREC), parameter :: INT_SCIPY(size(NPOINTS), NFUNCS) = [ real(PREC) :: &
+    real (PREC), parameter :: INT_SCIPY(size(NPOINTS), NFUNCS) = reshape(&
+        [ real(PREC) :: &
         0.721145896,  0.766453333,  0.779700174,  0.78579685 ,  0.798975959, &
         1.76372449 ,  1.192210267,  1.044767731,  0.985702522,  0.90137377, &
         1.73416246 ,  1.722257492,  1.720049244,  1.719276089,  1.718296438, &
-        0.605555556,  0.558333333,  0.55617284 ,  0.554166667,  0.551254974 ]
+        0.605555556,  0.558333333,  0.55617284 ,  0.554166667,  0.551254974 ], &
+        shape=[size(NPOINTS), NFUNCS])
 
     real (PREC), dimension(:), allocatable :: x, fx
     real (PREC) :: res, diff

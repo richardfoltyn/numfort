@@ -57,11 +57,13 @@ subroutine test_quad (tests)
         !   Default tol. in Scipy's wrapper
 
     ! Results for QUAD according to scipy's implementation
-    real (PREC), parameter :: INT_SCIPY(size(NPOINTS), NFUNCS) = [ real(PREC) :: &
+    real (PREC), parameter :: INT_SCIPY(size(NPOINTS), NFUNCS) = reshape( &
+        [ real(PREC) :: &
         0.800001791067, 0.8, 0.8, 0.8, 0.8, &
         0.9, 0.9, 0.9, 0.9, 0.9, &
         1.718281828459, 1.718281828459, 1.718281828459, 1.718281828459, 1.718281828459, &
-        0.551254597428, 0.551250154728, 0.551250001122, 0.55125, 0.55125 ]
+        0.551254597428, 0.551250154728, 0.551250001122, 0.55125, 0.55125 ], &
+        shape=[size(NPOINTS), NFUNCS])
 
     real (PREC) :: res, diff
     procedure (fcn1), pointer :: ptr_fcn
