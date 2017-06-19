@@ -7,7 +7,7 @@
 
         private
 
-        public :: qags, qagse
+        public :: qagse
 
         integer, parameter :: PREC = real64
 
@@ -19,17 +19,12 @@
             end function
         end interface
 
-        interface qags
-            module procedure dqags
-        end interface
-
         interface qagse
             module procedure dqagse
         end interface
 
         contains
 
-        include "dqags.f"
         include "dqagse.f"
         include "dqelg.f"
         include "dqk21.f"

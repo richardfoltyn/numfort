@@ -51,6 +51,7 @@ endif ()
 # Target definitions
 
 set(SOURCE_FILES
+    d1mach.f90
     quadpack.f90
     quadpack_real64.f
 )
