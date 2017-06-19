@@ -50,13 +50,11 @@ module numfort_common_workspace
 
 contains
 
-#define __PREC real32
+#include "numfort_real32.h"
 #include "workspace_impl.F90"
-#undef __PREC
 
-#define __PREC real64
+#include "numfort_real64.h"
 #include "workspace_impl.F90"
-#undef __PREC
 
 
 end module
