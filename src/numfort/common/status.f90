@@ -32,6 +32,9 @@ module numfort_common_status
     type :: status_t
         private
         integer (NF_ENUM_KIND) :: code = NF_STATUS_UNDEFINED
+        integer, public :: code_orig = 0
+            !*  Original status code returned by the underlying implementation,
+            !   if applicable.
     end type
 
     interface operator(+)
