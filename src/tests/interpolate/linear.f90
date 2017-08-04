@@ -1,7 +1,7 @@
 program test_interp_linear
 
     use iso_fortran_env
-    use corelib_testing
+    use fcore_testing
     use numfort_arrays
     use numfort_interpolate
     implicit none

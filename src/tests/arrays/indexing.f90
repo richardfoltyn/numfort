@@ -1,7 +1,7 @@
 program test_numfort_indexing
 
     use iso_fortran_env
-    use corelib_testing
+    use fcore_testing
     use numfort_arrays
     implicit none
 

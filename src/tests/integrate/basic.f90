@@ -5,8 +5,8 @@ program test_nf_integrate_basic
     use numfort_arrays
     use numfort_integrate
 
-    use corelib_testing, only: test_suite, test_case
-    use corelib_common, only: str, operator(//)
+    use fcore_testing, only: test_suite, test_case
+    use fcore_common, only: str, operator(//)
 
     use tests_nf_integrate_funcs
 

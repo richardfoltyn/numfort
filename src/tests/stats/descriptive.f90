@@ -2,8 +2,7 @@ program test_nf_stats_desc
 
     use iso_fortran_env
 
-    use corelib_strings, only: str
-    use corelib_testing, only: test_suite, test_case
+    use fcore_testing, only: test_suite, test_case
     use numfort_arrays
     use numfort_stats
     use numfort_common

@@ -4,8 +4,8 @@ program test_nf_arrays_setops
     use, intrinsic :: iso_fortran_env
     use numfort_arrays
 
-    use corelib_testing, only: test_suite, test_case
-    use corelib_common, only: str
+    use fcore_testing, only: test_suite, test_case
+    use fcore_common, only: str
 
     implicit none
 

@@ -2,8 +2,8 @@ program test_numfort_stats_random_order
 
     use iso_fortran_env
 
-    use corelib_strings
-    use corelib_testing
+    use fcore_common
+    use fcore_testing
     use numfort_stats, only: random_order
 
     implicit none
