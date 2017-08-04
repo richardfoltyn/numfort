@@ -19,11 +19,11 @@ set(COMPONENTS
 )
 
 foreach (_comp IN LISTS COMPONENTS)
-	add_subdirectory(${_comp})
-	# set mod-file output directory
-	set_target_properties(${_comp} PROPERTIES
-	    Fortran_MODULE_DIRECTORY "${${PROJECT_NAME}_MODDIR}"
-	)
+    add_subdirectory(${_comp})
+    # set mod-file output directory
+    set_target_properties(${_comp} PROPERTIES
+        Fortran_MODULE_DIRECTORY "${${PROJECT_NAME}_MODDIR}"
+    )
 
     # we need to make sure that -fPIC etc. is passed to compiler when building
     # object libraries that will be used to create a shared lib
@@ -31,8 +31,8 @@ foreach (_comp IN LISTS COMPONENTS)
         set_target_properties(${_comp} PROPERTIES POSITION_INDEPENDENT_CODE ON)
     endif ()
 
-	# append to list of object library targets
-	set_property(GLOBAL APPEND
-		PROPERTY ${CMAKE_PROJECT_NAME}_COMPONENT_TARGETS ${_comp}
-	)
+    # append to list of object library targets
+    set_property(GLOBAL APPEND
+        PROPERTY ${CMAKE_PROJECT_NAME}_COMPONENT_TARGETS ${_comp}
+    )
 endforeach()

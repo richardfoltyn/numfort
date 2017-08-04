@@ -1,5 +1,6 @@
-module numfort_version_mod
+module numfort
 
+    use numfort_core
     implicit none
 
     integer, parameter, dimension(${NUMFORT_VERSION_COUNT}) :: NUMFORT_VERSION_COMPONENTS = &

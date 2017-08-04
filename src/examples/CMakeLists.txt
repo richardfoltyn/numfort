@@ -12,21 +12,21 @@ foreach (_dir IN LISTS _MODULES)
     unset(${_dir}_FILES)
     add_subdirectory(${_dir})
 
-	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY
-		"${${PROJECT_NAME}_EXAMPLES_DIRECTORY}/${_dir}"
-	)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY
+        "${${PROJECT_NAME}_EXAMPLES_DIRECTORY}/${_dir}"
+    )
 
-	foreach (_file IN LISTS ${_dir}_FILES)
-		get_filename_component(exe_name "${_file}" NAME_WE)
-		# set target name that does not possibly conflict with other stuff
-		set(_target example_${_dir}_${exe_name})
-		add_executable(${_target} "${_dir}/${_file}")
-		target_link_libraries(${_target} ${${CMAKE_PROJECT_NAME}_LIBRARIES})
+    foreach (_file IN LISTS ${_dir}_FILES)
+        get_filename_component(exe_name "${_file}" NAME_WE)
+        # set target name that does not possibly conflict with other stuff
+        set(_target example_${_dir}_${exe_name})
+        add_executable(${_target} "${_dir}/${_file}")
+        target_link_libraries(${_target} ${${CMAKE_PROJECT_NAME}_LIBRARIES})
         target_include_directories(${_target} PUBLIC "${_dir}/include")
-		set_target_properties(${_target} PROPERTIES
-			OUTPUT_NAME ${exe_name}
-		)
-	endforeach ()
+        set_target_properties(${_target} PROPERTIES
+            OUTPUT_NAME ${exe_name}
+        )
+    endforeach ()
 
 endforeach ()
 
