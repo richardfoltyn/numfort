@@ -7,6 +7,7 @@ module numfort_stats
     use numfort_stats_core
 
     use numfort_stats_random
+    use numfort_stats_dgenpareto
     use numfort_stats_dnorm
     use numfort_stats_drandint
     use numfort_stats_duniform
