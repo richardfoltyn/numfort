@@ -7,7 +7,7 @@ program test_numfort_stats_dnorm
     use fcore_testing
     use numfort_arrays
     use numfort_common
-    use numfort_stats, only: dnorm, norm, mean, std
+    use numfort_stats, only: dnorm => dnorm_real64, norm, mean, std, cdf, pdf, rvs
 
     implicit none
 
@@ -51,22 +51,22 @@ subroutine test_cdf (tests)
 
     do i = 1, size(means)
 
-        msg = " (mean=" // str(means(i), 'g8.1e2') // ", sd=" // &
+        msg = " (loc=" // str(means(i), 'g8.1e2') // ", scale=" // &
             str(sd(i), 'g8.3e2') // ")"
 
         x1 = means(i)
-        fx1 = norm%cdf (x1, mean=means(i), sd=sd(i))
+        fx1 = cdf (norm, x1, loc=means(i), scale=sd(i))
         call tc%assert_true (abs(fx1 - 0.5d0) < tol, &
             "Check CDF(mean) == 0.5" // msg)
 
         ! Check boundary behavior
         x1 = huge(x1)
-        fx1 = norm%cdf (x1, mean=means(i), sd=sd(i))
+        fx1 = cdf (norm, x1, loc=means(i), scale=sd(i))
         call tc%assert_true (abs(fx1 - 1.0d0) < tol, &
             "Check CDF(inf) == 1.0" // msg)
 
         x1 = -huge(x1)
-        fx1 = norm%cdf (x1, mean=means(i), sd=sd(i))
+        fx1 = cdf (norm, x1, loc=means(i), scale=sd(i))
         call tc%assert_true (abs(fx1) < tol, &
             "Check CDF(-inf) = 0.0" // msg)
 
@@ -75,7 +75,7 @@ subroutine test_cdf (tests)
         allocate (x(n), fx(n))
 
         call linspace (x, -1d10, 1d10)
-        fx = norm%cdf (x, mean=means(i), sd=sd(i))
+        fx = cdf (norm, x, loc=means(i), scale=sd(i))
         call tc%assert_true (all(fx(2:)-fx(1:n-1) >= 0.0d0), &
             "Check that CDF is non-decreasing" // msg)
 
@@ -105,13 +105,13 @@ subroutine test_cdf_rvs (tests)
     allocate (x(n), fx(n))
     do i = 1, size(means)
 
-        msg = " (mean=" // str(means(i), 'g8.1e2') // ", sd=" // &
+        msg = " (loc=" // str(means(i), 'g8.1e2') // ", scale=" // &
             str(sd(i), 'g8.3e2') // ")"
 
         ! draw random sample of normally distributed RV
-        call norm%rvs (x, mean=means(i), sd=sd(i))
+        call rvs (norm, x, loc=means(i), scale=sd(i))
         ! compute CDF(x): is standard uniformly distributed RV
-        fx = norm%cdf (x, mean=means(i), sd=sd(i))
+        fx = cdf (norm, x, loc=means(i), scale=sd(i))
 
         in_range = all(fx >= 0.0_PREC) .and. all(fx <= 1.0_PREC)
 

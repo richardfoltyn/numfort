@@ -1,5 +1,4 @@
 #include "numfort.h"
-#include "dist_pdt.h"
 
 module numfort_stats_dnorm
 
@@ -10,51 +9,24 @@ module numfort_stats_dnorm
     use random, only: random_normal
 
     use numfort_core, only : PI
-    use numfort_stats_dcont, only: dcont
 
     implicit none
     private
 
+    public :: pdf, cdf, rvs
+    public :: norm 
+
     real (real64), parameter :: NORM_CONST = 1/sqrt(2 * PI)
 
-    !>  Implementation of the univariate normal distribution
-    type, public, extends(dcont) :: dnorm
-        real (__PDT_REAL_KIND) :: mean = 0.0
-            !!  Mean of normal distribution
-        real (__PDT_REAL_KIND) :: sd = 1.0
-            !!  Standard deviation of normal distribution
-    contains
-        procedure, private, pass :: pdf_real64
-        procedure, private, pass :: pdf_params_real64
-        generic, public :: pdf => pdf_params_real64
+#include "numfort_real64.h"
+#include "cont/dnorm_types.F90"
 
-        procedure, private, pass :: cdf_real64
-        procedure, private, pass :: cdf_params_real64
-        generic, public :: cdf => cdf_params_real64
-
-        procedure, private, pass :: rvs_real64
-        procedure, private, pass :: rvs_params_real64
-        generic, public :: rvs => rvs_params_real64
-
-        procedure, private, pass :: get_params_real64
-        generic, private :: get_params => get_params_real64
-    end type
-
-    interface pdf_impl
-        module procedure pdf_impl_real64
-    end interface
-
-    interface cdf_impl
-        module procedure cdf_impl_real64
-    end interface
-
-    !>  Instance of the standard normal distribution
-    type (dnorm), public, protected :: norm = dnorm(mean=0.0d0, sd=1.0d0)
+    type (dnorm_real64), parameter :: norm = dnorm_real64(loc=0.0d0, scale=1.0d0)
+        !*  Instance of the standard normal distribution (double precision)
 
 contains
 
-#define __PREC real64
-#include "norm/routines.F90"
-
+#include "numfort_real64.h"
+#include "cont/dnorm_impl.F90"
 
 end module

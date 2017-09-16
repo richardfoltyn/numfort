@@ -4,11 +4,8 @@ get_filename_component(COMPONENT_NAME "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
 set(SOURCE_FILES
     random.F90
     stats_core.F90
-    dcont.F90
-    ddisc.F90
     dnorm.F90
     duniform.F90
-    drandint.F90
     dgenpareto.F90
     stats.f90
     stats_lm.F90
