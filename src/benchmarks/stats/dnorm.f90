@@ -2,7 +2,7 @@ program benchmark_dnorm
 
     use iso_fortran_env
     use numfort_arrays
-    use numfort_stats, only: dnorm
+    use numfort_stats, only: dnorm => dnorm_real64, cdf
     implicit none
 
 
@@ -17,7 +17,7 @@ subroutine benchmark_cdf ()
 
     real (real64), dimension(:,:), allocatable :: x, fx
     real (real64), dimension(:), allocatable :: vals
-    type (dnorm) :: norm = dnorm(mean=0.0d0, sd=1.0d0)
+    type (dnorm) :: norm = dnorm(loc=0.0d0, scale=1.0d0)
 
     repeat = 1
 
@@ -30,7 +30,7 @@ subroutine benchmark_cdf ()
     end do
 
     do i = 1, repeat
-        fx = norm%cdf (x)
+        fx = cdf (norm, x)
     end do
 
 
