@@ -50,7 +50,7 @@ subroutine test_extrap (tests)
     !$omp parallel default(shared) private(i)
     !$omp do
     do i = 1, size(x)
-        call interp_linear (x(i), xp, fp, fx_hat(i), ext=.true.)
+        call interp_linear (x(i), xp, fp, fx_hat(i), ext=NF_INTERP_EVAL_EXTRAPOLATE)
     end do
     !$omp end do
 

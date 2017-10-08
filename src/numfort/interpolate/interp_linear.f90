@@ -2,6 +2,7 @@
 module numfort_interpolate_linear
 
     use iso_fortran_env
+    use numfort_common_kinds
     use numfort_interpolate_common
     implicit none
     private

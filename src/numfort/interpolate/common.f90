@@ -5,15 +5,11 @@ module numfort_interpolate_common
     implicit none
     private
 
-    integer (NF_ENUM_KIND), parameter :: NF_INTERP_EVAL_EXTRAPOLATE = 0
-    integer (NF_ENUM_KIND), parameter :: NF_INTERP_EVAL_ZERO = 1
-    integer (NF_ENUM_KIND), parameter :: NF_INTERP_EVAL_ERROR = 2
-    integer (NF_ENUM_KIND), parameter :: NF_INTERP_EVAL_BOUNDARY = 3
-
-    public :: NF_INTERP_EVAL_EXTRAPOLATE
-    public :: NF_INTERP_EVAL_ZERO
-    public :: NF_INTERP_EVAL_ERROR
-    public :: NF_INTERP_EVAL_BOUNDARY
+    integer (NF_ENUM_KIND), public, parameter :: NF_INTERP_EVAL_EXTRAPOLATE = 0
+    integer (NF_ENUM_KIND), public, parameter :: NF_INTERP_EVAL_ZERO = ishft(1, 0)
+    integer (NF_ENUM_KIND), public, parameter :: NF_INTERP_EVAL_ERROR = ishft(1, 1)
+    integer (NF_ENUM_KIND), public, parameter :: NF_INTERP_EVAL_BOUNDARY = ishft(1, 2)
+    integer (NF_ENUM_KIND), public, parameter :: NF_INTERP_EVAL_CONST = ishft(1, 3)
 
     interface bsearch
         module procedure bsearch_real64, bsearch_real32, bsearch_int32

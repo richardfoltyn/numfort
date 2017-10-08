@@ -50,7 +50,8 @@ subroutine test_extrap (tests)
     k = size(xp) / 2 + 1
 
     do i = 1, size(xp)
-        call interp_linear (xp(i), xp(j:k), fp(j:k), fx(i), ext=.true.)
+        call interp_linear (xp(i), xp(j:k), fp(j:k), fx(i), &
+            ext=NF_INTERP_EVAL_EXTRAPOLATE)
     end do
 
     call tc%assert_true (all(abs(fx-fp) < 1d-12), &
@@ -58,7 +59,7 @@ subroutine test_extrap (tests)
 
     ! ===== Array arguments =====
     fx = 0.0
-    call interp_linear (xp, xp(j:k), fp(j:k), fx, ext=.true.)
+    call interp_linear (xp, xp(j:k), fp(j:k), fx, ext=NF_INTERP_EVAL_EXTRAPOLATE)
     call tc%assert_true (all(abs(fx-fp) < 1d-12), &
         "Extrapolation, array argument")
 
@@ -167,7 +168,8 @@ subroutine test_truncate (tests)
     k = size(xp) / 2 + 1
 
     do i = 1, size(xp)
-        call interp_linear (xp(i), xp(j:k), fp(j:k), fx(i), ext=.false.)
+        call interp_linear (xp(i), xp(j:k), fp(j:k), fx(i), &
+            ext=NF_INTERP_EVAL_BOUNDARY)
     end do
 
     ! Compute expected result
@@ -181,7 +183,8 @@ subroutine test_truncate (tests)
     fx = 0.0
     left = -1.0
     do i = 1, size(xp)
-        call interp_linear (xp(i), xp(j:k), fp(j:k), fx(i), ext=.false., left=left)
+        call interp_linear (xp(i), xp(j:k), fp(j:k), fx(i), &
+            ext=NF_INTERP_EVAL_CONST, left=left)
     end do
 
     ! compute expected result
@@ -195,7 +198,8 @@ subroutine test_truncate (tests)
     fx = 0.0
     right = -10.0
     do i = 1, size(xp)
-        call interp_linear (xp(i), xp(j:k), fp(j:k), fx(i), ext=.false., right=right)
+        call interp_linear (xp(i), xp(j:k), fp(j:k), fx(i), &
+            ext=NF_INTERP_EVAL_CONST, right=right)
     end do
 
     ! compute expected result
@@ -214,7 +218,7 @@ subroutine test_truncate (tests)
     j = size(xp) / 2 - 1
     k = size(xp) / 2 + 1
 
-    call interp_linear (xp, xp(j:k), fp(j:k), fx, ext=.false.)
+    call interp_linear (xp, xp(j:k), fp(j:k), fx, ext=NF_INTERP_EVAL_BOUNDARY)
 
     ! Compute expected result
     fx1 = fp
@@ -227,7 +231,8 @@ subroutine test_truncate (tests)
     fx = 0.0
     left = -1.0
 
-    call interp_linear (xp, xp(j:k), fp(j:k), fx, left=left)
+    call interp_linear (xp, xp(j:k), fp(j:k), fx, ext=NF_INTERP_EVAL_CONST, &
+        left=left)
 
     ! compute expected result
     fx1 = fp
@@ -239,7 +244,8 @@ subroutine test_truncate (tests)
     ! >>> Truncation: exlicitly specify right value
     fx = 0.0
     right = -10.0
-    call interp_linear (xp, xp(j:k), fp(j:k), fx, right=right)
+    call interp_linear (xp, xp(j:k), fp(j:k), fx, ext=NF_INTERP_EVAL_CONST, &
+        right=right)
 
     ! compute expected result
     fx1 = fp
