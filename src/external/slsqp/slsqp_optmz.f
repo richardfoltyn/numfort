@@ -143,7 +143,7 @@ c    $          +(N1-MEQ+1)*(MINEQ+2) + 2*MINEQ
 c    $          +(N1+MINEQ)*(N1-MEQ) + 2*MEQ + N1
 c    $          +(N+1)*N/2 + 2*M + 3*N + 3*N1 + 1,
 c    $           LEN_JW=MINEQ)
-C     DOUBLE PRECISION W(LEN_W)
+C     real (PREC) W(LEN_W)
 C     INTEGER          JW(LEN_JW)
 c#######################################################################
 C*                   THE FIRST M+N+N*N1/2 ELEMENTS OF W MUST NOT BE    *
@@ -216,7 +216,7 @@ C***********************************************************************
       INTEGER          il, im, ir, is, iter, iu, iv, iw, ix, l_w, l_jw,
      *                 jw(l_jw), la, m, meq, mineq, mode, n, n1
 
-      DOUBLE PRECISION acc, a(la,n+1), c(la), f, g(n+1),
+      real (PREC) acc, a(la,n+1), c(la), f, g(n+1),
      *                 x(n), xl(n), xu(n), w(l_w)
 
 c     dim(W) =         N1*(N1+1) + MEQ*(N1+1) + MINEQ*(N1+1)  for LSQ
@@ -270,12 +270,12 @@ C                      BODY SUBROUTINE FOR SLSQP
       INTEGER          iw(*), i, iexact, incons, ireset, iter, itermx,
      *                 k, j, la, line, m, meq, mode, n, n1, n2, n3
 
-      DOUBLE PRECISION a(la,n+1), c(la), g(n+1), l((n+1)*(n+2)/2),
+      real (PREC) a(la,n+1), c(la), g(n+1), l((n+1)*(n+2)/2),
      *                 mu(la), r(m+n+n+2), s(n+1), u(n+1), v(n+1), w(*),
      *                 x(n), xl(n), xu(n), x0(n),
      *                 ddot_sl, dnrm2_, linmin,
-     *                 acc, alfmin, alpha, f, f0, gs, h1, h2, h3, h4,
-     *                 hun, one, t, t0, ten, tol, two, ZERO
+     *                 acc, alpha, f, f0, gs, h1, h2, h3, h4,
+     *                 t, t0, tol
 
 c     dim(W) =         N1*(N1+1) + MEQ*(N1+1) + MINEQ*(N1+1)  for LSQ
 c                     +(N1-MEQ+1)*(MINEQ+2) + 2*MINEQ
@@ -285,8 +285,12 @@ c                      with MINEQ = M - MEQ + 2*N1  &  N1 = N+1
       SAVE             alpha, f0, gs, h1, h2, h3, h4, t, t0, tol,
      *                 iexact, incons, ireset, itermx, line, n1, n2, n3
 
-      DATA             ZERO /0.0d0/, one /1.0d0/, alfmin /1.0d-1/,
-     *                 hun /1.0d+2/, ten /1.0d+1/, two /2.0d0/
+      real (PREC), parameter :: zero = 0.0_PREC
+      real (PREC), parameter :: one = 1.0_PREC
+      real (PREC), parameter :: alfmin = 1.0d-1
+      real (PREC), parameter :: hun = 100.0_PREC
+      real (PREC), parameter :: ten = 10.0_PREC
+      real (PREC), parameter :: two = 2.0_PREC
 
       IF (mode) 260, 100, 220
 
@@ -594,17 +598,18 @@ C               7: RANK DEFECT IN HFTI
 c     coded            Dieter Kraft, april 1987
 c     revised                        march 1989
 
-      DOUBLE PRECISION l,g,a,b,w,xl,xu,x,y,
-     .                 diag,ZERO,one,ddot_sl,xnorm
+      real (PREC) l,g,a,b,w,xl,xu,x,y,
+     .                 diag,ddot_sl,xnorm
 
-      INTEGER          jw(*),i,ic,id,ie,IF,ig,ih,il,im,ip,iu,iw,
+      INTEGER          jw(*),i,ic,id,ie,IF,ig,ih,il,ip,iw,
      .     i1,i2,i3,i4,la,m,meq,mineq,mode,m1,n,nl,n1,n2,n3,
      .     nancnt,j
 
       DIMENSION        a(la,n), b(la), g(n), l(nl),
      .                 w(*), x(n), xl(n), xu(n), y(m+n+n)
 
-      DATA             ZERO/0.0d0/, one/1.0d0/
+      real (PREC), parameter :: zero = 0.0_PREC
+      real (PREC), parameter :: one = 1.0_PREC
 
       n1 = n + 1
       mineq = m - meq
@@ -805,9 +810,10 @@ C     20.3.1987, DIETER KRAFT, DFVLR OBERPFAFFENHOFEN
 
       INTEGER          jw(*),i,ie,IF,ig,iw,j,k,krank,l,lc,LE,lg,
      .                 mc,mc1,me,mg,mode,n
-      DOUBLE PRECISION c(lc,n),e(LE,n),g(lg,n),d(lc),f(LE),h(lg),x(n),
-     .                 w(*),t,ddot_sl,xnrm,dnrm2_,epmach,ZERO
-      DATA             epmach/2.22d-16/,ZERO/0.0d+00/
+      real (PREC) c(lc,n),e(LE,n),g(lg,n),d(lc),f(LE),h(lg),x(n),
+     .                 w(*),t,ddot_sl,xnrm,dnrm2_
+      real (PREC), parameter :: epmach = 2.22D-16
+      real (PREC), parameter :: zero = 0.0_PREC
 
       mode=2
       IF(mc.GT.n)                      GOTO 75
@@ -931,9 +937,11 @@ C     03.01.1980, DIETER KRAFT: CODED
 C     20.03.1987, DIETER KRAFT: REVISED TO FORTRAN 77
 
       INTEGER          i,j,LE,lg,me,mg,mode,n,jw(lg)
-      DOUBLE PRECISION e(LE,n),f(LE),g(lg,n),h(lg),x(n),w(*),
-     .                 ddot_sl,xnorm,dnrm2_,epmach,t,one
-      DATA             epmach/2.22d-16/,one/1.0d+00/
+      real (PREC) e(LE,n),f(LE),g(lg,n),h(lg),x(n),w(*),
+     .                 ddot_sl,xnorm,dnrm2_,t
+      real (PREC), parameter :: epmach = 2.22D-16
+      real (PREC), parameter :: zero = 0.0_PREC
+      real (PREC), parameter :: one = 1.0_PREC
 
 C  QR-FACTORS OF E AND APPLICATION TO F
 
@@ -1006,12 +1014,13 @@ C               2: ERROR RETURN BECAUSE OF WRONG DIMENSIONS (N.LE.0)
 C               3: ITERATION COUNT EXCEEDED BY NNLS
 C               4: INEQUALITY CONSTRAINTS INCOMPATIBLE
 
-      DOUBLE PRECISION g,h,x,xnorm,w,u,v,
-     .                 ZERO,one,fac,rnorm,dnrm2_,ddot_sl,diff
+      real (PREC) g,h,x,xnorm,w,u,v,
+     .                 fac,rnorm,dnrm2_,ddot_sl,diff
       INTEGER          INDEX,i,IF,iw,iwdual,iy,iz,j,m,mg,mode,n,n1
       DIMENSION        g(mg,n),h(m),x(n),w(*),INDEX(m)
       diff(u,v)=       u-v
-      DATA             ZERO,one/0.0d0,1.0d0/
+      real (PREC), parameter :: zero = 0.0_PREC
+      real (PREC), parameter :: one = 1.0_PREC
 
       mode=2
       IF(n.LE.0)                    GOTO 50
@@ -1115,13 +1124,15 @@ C            3    ITERATION COUNT EXCEEDED, MORE THAN 3*N ITERATIONS.
       INTEGER          i,ii,ip,iter,itmax,iz,izmax,iz1,iz2,j,jj,jz,
      *                 k,l,m,mda,mode,n,npp1,nsetp,INDEX(n)
 
-      DOUBLE PRECISION a(mda,n),b(m),x(n),w(n),z(m),asave,diff,
-     *                 factor,ddot_sl,ZERO,one,wmax,alpha,
+      real (PREC) a(mda,n),b(m),x(n),w(n),z(m),asave,diff,
+     *                 ddot_sl,wmax,alpha,
      *                 c,s,t,u,v,up,rnorm,unorm,dnrm2_
 
       diff(u,v)=       u-v
 
-      DATA             ZERO,one,factor/0.0d0,1.0d0,1.0d-2/
+      real (PREC), parameter :: zero = 0.0_PREC
+      real (PREC), parameter :: one = 1.0_PREC
+      real (PREC), parameter :: factor = 1.0d-2
 
 c     revised          Dieter Kraft, March 1983
 
@@ -1297,10 +1308,11 @@ C                      RECORDING PERMUTATION INDICES OF COLUMN VECTORS
 
       INTEGER          i,j,jb,k,kp1,krank,l,ldiag,lmax,m,
      .                 mda,mdb,n,nb,ip(n)
-      DOUBLE PRECISION a(mda,n),b(mdb,nb),h(n),g(n),rnorm(nb),factor,
-     .                 tau,ZERO,hmax,diff,tmp,ddot_sl,dnrm2_,u,v
+      real (PREC) a(mda,n),b(mdb,nb),h(n),g(n),rnorm(nb),
+     .                 tau,hmax,diff,tmp,ddot_sl,dnrm2_,u,v
+      real (PREC), parameter :: zero = 0.0_PREC
+      real (PREC), parameter :: factor = 1.0d-3
       diff(u,v)=       u-v
-      DATA             ZERO/0.0d0/, factor/1.0d-3/
 
       k=0
       ldiag=MIN(m,n)
@@ -1424,9 +1436,10 @@ C            IF NCV <= 0 NO OPERATIONS WILL BE DONE ON C().
 
       INTEGER          incr, ice, icv, iue, lpivot, l1, mode, ncv
       INTEGER          i, i2, i3, i4, j, m
-      DOUBLE PRECISION u,up,c,cl,clinv,b,sm,one,ZERO
+      real (PREC) u,up,c,cl,clinv,b,sm
       DIMENSION        u(iue,*), c(*)
-      DATA             one/1.0d+00/, ZERO/0.0d+00/
+      real (PREC), parameter :: one = 1.0_PREC
+      real (PREC), parameter :: zero = 0.0_PREC
 
       IF (0.GE.lpivot.OR.lpivot.GE.l1.OR.l1.GT.m) GOTO 80
       cl=ABS(u(1,lpivot))
@@ -1509,9 +1522,12 @@ C   STATUS: 15. JANUARY 1980
 C   SUBROUTINES REQUIRED: NONE
 
       INTEGER          i, ij, j, n
-      DOUBLE PRECISION a(*), t, v, w(*), z(*), u, tp, one, beta, four,
-     *                 ZERO, alpha, delta, gamma, sigma, epmach
-      DATA ZERO, one, four, epmach /0.0d0, 1.0d0, 4.0d0, 2.22d-16/
+      real (PREC) a(*), t, v, w(*), z(*), u, tp, beta,
+     *                 alpha, delta, gamma, sigma 
+      real (PREC), parameter :: zero = 0.0_PREC
+      real (PREC), parameter :: one = 1.0_PREC
+      real (PREC), parameter :: four = 4.0_PREC
+      real (PREC), parameter :: epmach = 2.22d-16
 
       IF(sigma.EQ.ZERO)               GOTO 280
       ij=1
@@ -1563,7 +1579,7 @@ C HERE UPDATING BEGINS
 C END OF LDL
       END
 
-      DOUBLE PRECISION FUNCTION linmin (mode, ax, bx, f, tol)
+      real (PREC) FUNCTION linmin (mode, ax, bx, f, tol)
 C   LINMIN  LINESEARCH WITHOUT DERIVATIVES
 
 C   PURPOSE:
@@ -1610,9 +1626,11 @@ C   STATUS: 31. AUGUST  1984
 C   SUBROUTINES REQUIRED: NONE
 
       INTEGER          mode
-      DOUBLE PRECISION f, tol, a, b, c, d, e, p, q, r, u, v, w, x, m,
-     &                 fu, fv, fw, fx, eps, tol1, tol2, ZERO, ax, bx
-      DATA             c /0.381966011d0/, eps /1.5d-8/, ZERO /0.0d0/
+      real (PREC) f, tol, a, b, d, e, p, q, r, u, v, w, x, m,
+     &                 fu, fv, fw, fx, tol1, tol2, ax, bx
+      real (PREC), parameter :: c = 0.381966011d0
+      real (PREC), parameter :: eps = 1.5d-8 
+      real (PREC), parameter :: zero = 0.0_PREC
 
 C  EPS = SQUARE - ROOT OF MACHINE PRECISION
 C  C = GOLDEN SECTION RATIO = (3-SQRT(5))/2
@@ -1734,7 +1752,7 @@ C     CONSTANT TIMES A VECTOR PLUS A VECTOR.
 C     USES UNROLLED LOOPS FOR INCREMENTS EQUAL TO ONE.
 C     JACK DONGARRA, LINPACK, 3/11/78.
 
-      DOUBLE PRECISION dx(*),dy(*),da
+      real (PREC) dx(*),dy(*),da
       INTEGER i,incx,incy,ix,iy,m,mp1,n
 
       IF(n.LE.0)RETURN
@@ -1781,7 +1799,7 @@ C     COPIES A VECTOR, X, TO A VECTOR, Y.
 C     USES UNROLLED LOOPS FOR INCREMENTS EQUAL TO ONE.
 C     JACK DONGARRA, LINPACK, 3/11/78.
 
-      DOUBLE PRECISION dx(*),dy(*)
+      real (PREC) dx(*),dy(*)
       INTEGER i,incx,incy,ix,iy,m,mp1,n
 
       IF(n.LE.0)RETURN
@@ -1824,13 +1842,13 @@ C        CLEAN-UP LOOP
       RETURN
       END
 
-      DOUBLE PRECISION FUNCTION ddot_sl(n,dx,incx,dy,incy)
+      real (PREC) FUNCTION ddot_sl(n,dx,incx,dy,incy)
 
 C     FORMS THE DOT PRODUCT OF TWO VECTORS.
 C     USES UNROLLED LOOPS FOR INCREMENTS EQUAL TO ONE.
 C     JACK DONGARRA, LINPACK, 3/11/78.
 
-      DOUBLE PRECISION dx(*),dy(*),dtemp
+      real (PREC) dx(*),dy(*),dtemp
       INTEGER i,incx,incy,ix,iy,m,mp1,n
 
       ddot_sl = 0.0d0
@@ -1872,10 +1890,11 @@ C        CLEAN-UP LOOP
       RETURN
       END
 
-      DOUBLE PRECISION FUNCTION dnrm1(n,x,i,j)
+      real (PREC) FUNCTION dnrm1(n,x,i,j)
       INTEGER n, i, j, k
-      DOUBLE PRECISION snormx, sum, x(n), ZERO, one, scale, temp
-      DATA ZERO/0.0d0/, one/1.0d0/
+      real (PREC) snormx, sum, x(n), scale, temp
+      real (PREC), parameter :: zero = 0.0_PREC
+      real (PREC), parameter :: one = 1.0_PREC
 
 C      DNRM1 - COMPUTES THE I-NORM OF A VECTOR
 C              BETWEEN THE ITH AND THE JTH ELEMENTS
@@ -1907,10 +1926,11 @@ C      DNRM1   NORM
       RETURN
       END
 
-      DOUBLE PRECISION FUNCTION dnrm2_ ( n, dx, incx)
+      real (PREC) FUNCTION dnrm2_ ( n, dx, incx)
       INTEGER          n, i, j, nn, next, incx
-      DOUBLE PRECISION dx(*), cutlo, cuthi, hitest, sum, xmax, ZERO, one
-      DATA             ZERO, one /0.0d0, 1.0d0/
+      real (PREC) dx(*), hitest, sum, xmax
+      real (PREC), parameter :: zero = 0.0_PREC
+      real (PREC), parameter :: one = 1.0_PREC
 
 C     EUCLIDEAN NORM OF THE N-VECTOR STORED IN DX() WITH STORAGE
 C     INCREMENT INCX .
@@ -1949,7 +1969,8 @@ C                   THUS CUTLO = 2**(-33.5) = 8.23181D-11
 C     CUTHI, D.P.   SAME AS S.P.  CUTHI = 1.30438D19
 C     DATA CUTLO, CUTHI / 8.232D-11,  1.304D19 /
 C     DATA CUTLO, CUTHI / 4.441E-16,  1.304E19 /
-      DATA cutlo, cuthi / 8.232d-11,  1.304d19 /
+      real (PREC), parameter :: cutlo = 8.232d-11
+      real (PREC), parameter :: cuthi = 1.304d19 
 
       IF(n .GT. 0) GO TO 10
          dnrm2_  = ZERO
@@ -2034,7 +2055,7 @@ C              COMPUTE SQUARE ROOT AND ADJUST FOR SCALING.
 C     APPLIES A PLANE ROTATION.
 C     JACK DONGARRA, LINPACK, 3/11/78.
 
-      DOUBLE PRECISION dx(*),dy(*),dtemp,c,s
+      real (PREC) dx(*),dy(*),dtemp,c,s
       INTEGER i,incx,incy,ix,iy,n
 
       IF(n.LE.0)RETURN
@@ -2072,8 +2093,9 @@ C     CONSTRUCT GIVENS PLANE ROTATION.
 C     JACK DONGARRA, LINPACK, 3/11/78.
 C                    MODIFIED 9/27/86.
 
-      DOUBLE PRECISION da,db,c,s,roe,scale,r,z,one,ZERO
-      DATA one, ZERO /1.0d+00, 0.0d+00/
+      real (PREC) da,db,c,s,roe,scale,r,z
+      real (PREC), parameter :: zero = 0.0_PREC
+      real (PREC), parameter :: one = 1.0_PREC
 
       roe = db
       IF( ABS(da) .GT. ABS(db) ) roe = da
@@ -2100,7 +2122,7 @@ C     SCALES A VECTOR BY A CONSTANT.
 C     USES UNROLLED LOOPS FOR INCREMENT EQUAL TO ONE.
 C     JACK DONGARRA, LINPACK, 3/11/78.
 
-      DOUBLE PRECISION da,dx(*)
+      real (PREC) da,dx(*)
       INTEGER i,incx,m,mp1,n,nincx
 
       IF(n.LE.0)RETURN
@@ -2138,7 +2160,7 @@ C        CLEAN-UP LOOP
 
       subroutine bound(n, x, xl, xu)
       integer n, i
-      double precision x(n), xl(n), xu(n)
+      real (PREC) x(n), xl(n), xu(n)
       do i = 1, n
 C        Note that xl(i) and xu(i) may be NaN to indicate no bound
          if(xl(i).eq.xl(i).and.x(i) < xl(i))then

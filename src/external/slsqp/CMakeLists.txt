@@ -51,7 +51,8 @@ endif ()
 # Target definitions
 
 set(SOURCE_FILES
-    slsqp_optmz.f
+    slsqp_mod_real64.f
+    slsqp_mod.f90
 )
 
 set(_name ${${PROJECT_NAME}_LIBRARY_NAME})
