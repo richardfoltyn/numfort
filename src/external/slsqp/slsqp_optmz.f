@@ -34,7 +34,7 @@ C
 *                              optimizer                               *
 ************************************************************************
 
-      SUBROUTINE slsqp (m, meq, la, n, x, xl, xu, f, c, g, a,
+      SUBROUTINE slsqp (dat, m, meq, la, n, x, xl, xu, f, c, g, a,
      *                  acc, iter, mode, w, l_w, jw, l_jw)
 
 C   SLSQP       S EQUENTIAL  L EAST  SQ UARES  P ROGRAMMING
@@ -213,6 +213,10 @@ C*  Copyright 1991: Dieter Kraft, FHM                                  *
 C*                                                                     *
 C***********************************************************************
 
+      type (slsqp_data), intent(in out) :: dat
+C       Container object used to store variables that were originally
+C       declared with the SAVE attribute in SLSQPB.
+
       INTEGER          il, im, ir, is, iter, iu, iv, iw, ix, l_w, l_jw,
      *                 jw(l_jw), la, m, meq, mineq, mode, n, n1
 
@@ -253,12 +257,13 @@ C   PREPARE DATA FOR CALLING SQPBDY  -  INITIAL ADDRESSES IN W
       iv = iu + n1
       iw = iv + n1
 
-      CALL slsqpb  (m, meq, la, n, x, xl, xu, f, c, g, a, acc, iter,
-     * mode, w(ir), w(il), w(ix), w(im), w(is), w(iu), w(iv), w(iw), jw)
+      CALL slsqpb  (dat, m, meq, la, n, x, xl, xu, f, c, g, a, acc,
+     *  iter, mode, w(ir), w(il), w(ix), w(im), w(is), w(iu), w(iv),
+     *  w(iw), jw)
 
       END
 
-      SUBROUTINE slsqpb (m, meq, la, n, x, xl, xu, f, c, g, a, acc,
+      SUBROUTINE slsqpb (dat, m, meq, la, n, x, xl, xu, f, c, g, a, acc,
      *                   iter, mode, r, l, x0, mu, s, u, v, w, iw)
 
 C   NONLINEAR PROGRAMMING BY SOLVING SEQUENTIALLY QUADRATIC PROGRAMS
@@ -266,47 +271,37 @@ C   NONLINEAR PROGRAMMING BY SOLVING SEQUENTIALLY QUADRATIC PROGRAMS
 C        -  L1 - LINE SEARCH,  POSITIVE DEFINITE  BFGS UPDATE  -
 
 C                      BODY SUBROUTINE FOR SLSQP
+      type (slsqp_data), intent(in out) :: dat
 
-      INTEGER          iw(*), i, iexact, incons, ireset, iter, itermx,
-     *                 k, j, la, line, m, meq, mode, n, n1, n2, n3
+      INTEGER          iw(*), i, iter, k, j, la, m, meq, mode, n
 
       real (PREC) a(la,n+1), c(la), g(n+1), l((n+1)*(n+2)/2),
      *                 mu(la), r(m+n+n+2), s(n+1), u(n+1), v(n+1), w(*),
      *                 x(n), xl(n), xu(n), x0(n),
-     *                 ddot_sl, dnrm2_, linmin,
-     *                 acc, alpha, f, f0, gs, h1, h2, h3, h4,
-     *                 t, t0, tol
+     *                 ddot_sl, dnrm2_, linmin, acc, f
 
 c     dim(W) =         N1*(N1+1) + MEQ*(N1+1) + MINEQ*(N1+1)  for LSQ
 c                     +(N1-MEQ+1)*(MINEQ+2) + 2*MINEQ
 c                     +(N1+MINEQ)*(N1-MEQ) + 2*MEQ + N1       for LSEI
 c                      with MINEQ = M - MEQ + 2*N1  &  N1 = N+1
 
-      SAVE             alpha, f0, gs, h1, h2, h3, h4, t, t0, tol,
-     *                 iexact, incons, ireset, itermx, line, n1, n2, n3
-
-      real (PREC), parameter :: zero = 0.0_PREC
-      real (PREC), parameter :: one = 1.0_PREC
       real (PREC), parameter :: alfmin = 1.0d-1
-      real (PREC), parameter :: hun = 100.0_PREC
-      real (PREC), parameter :: ten = 10.0_PREC
-      real (PREC), parameter :: two = 2.0_PREC
 
       IF (mode) 260, 100, 220
 
-  100 itermx = iter
+  100 dat%itermx = iter
       IF (acc.GE.ZERO) THEN
-          iexact = 0
+          dat%iexact = 0
       ELSE
-          iexact = 1
+          dat%iexact = 1
       ENDIF
       acc = ABS(acc)
-      tol = ten*acc
+      dat%tol = ten*acc
       iter = 0
-      ireset = 0
-      n1 = n + 1
-      n2 = n1*n/2
-      n3 = n2 + 1
+      dat%ireset = 0
+      dat%n1 = n + 1
+      dat%n2 = dat%n1*n/2
+      dat%n3 = dat%n2 + 1
       s(1) = ZERO
       mu(1) = ZERO
       CALL dcopy_(n, s(1),  0, s,  1)
@@ -314,21 +309,21 @@ c                      with MINEQ = M - MEQ + 2*N1  &  N1 = N+1
 
 C   RESET BFGS MATRIX
 
-  110 ireset = ireset + 1
-      IF (ireset.GT.5) GO TO 255
+  110 dat%ireset = dat%ireset + 1
+      IF (dat%ireset.GT.5) GO TO 255
       l(1) = ZERO
-      CALL dcopy_(n2, l(1), 0, l, 1)
+      CALL dcopy_(dat%n2, l(1), 0, l, 1)
       j = 1
       DO 120 i=1,n
          l(j) = one
-         j = j + n1 - i
+         j = j + dat%n1 - i
   120 CONTINUE
 
 C   MAIN ITERATION : SEARCH DIRECTION, STEPLENGTH, LDL'-UPDATE
 
   130 iter = iter + 1
       mode = 9
-      IF (iter.GT.itermx) GO TO 330
+      IF (iter.GT.dat%itermx) GO TO 330
 
 C   SEARCH DIRECTION AS SOLUTION OF QP - SUBPROBLEM
 
@@ -336,8 +331,9 @@ C   SEARCH DIRECTION AS SOLUTION OF QP - SUBPROBLEM
       CALL dcopy_(n, xu, 1, v, 1)
       CALL daxpy_sl(n, -one, x, 1, u, 1)
       CALL daxpy_sl(n, -one, x, 1, v, 1)
-      h4 = one
-      CALL lsq (m, meq, n , n3, la, l, g, a, c, u, v, s, r, w, iw, mode)
+      dat%h4 = one
+      CALL lsq (m, meq, n, dat%n3, la, l, g, a, c, u, v, s, r, w, iw,
+     *   mode)
 
 C   AUGMENTED PROBLEM FOR INCONSISTENT LINEARIZATION
 
@@ -349,27 +345,27 @@ C   AUGMENTED PROBLEM FOR INCONSISTENT LINEARIZATION
       IF (mode.EQ.4) THEN
           DO 140 j=1,m
              IF (j.LE.meq) THEN
-                 a(j,n1) = -c(j)
+                 a(j,dat%n1) = -c(j)
              ELSE
-                 a(j,n1) = MAX(-c(j),ZERO)
+                 a(j,dat%n1) = MAX(-c(j),ZERO)
              ENDIF
   140     CONTINUE
           s(1) = ZERO
           CALL dcopy_(n, s(1), 0, s, 1)
-          h3 = ZERO
-          g(n1) = ZERO
-          l(n3) = hun
-          s(n1) = one
-          u(n1) = ZERO
-          v(n1) = one
-          incons = 0
-  150     CALL lsq (m, meq, n1, n3, la, l, g, a, c, u, v, s, r,
+          dat%h3 = ZERO
+          g(dat%n1) = ZERO
+          l(dat%n3) = hun
+          s(dat%n1) = one
+          u(dat%n1) = ZERO
+          v(dat%n1) = one
+          dat%incons = 0
+  150     CALL lsq (m, meq, dat%n1, dat%n3, la, l, g, a, c, u, v, s, r,
      *              w, iw, mode)
-          h4 = one - s(n1)
+          dat%h4 = one - s(dat%n1)
           IF (mode.EQ.4) THEN
-              l(n3) = ten*l(n3)
-              incons = incons + 1
-              IF (incons.GT.5) GO TO 330
+              l(dat%n3) = ten*l(dat%n3)
+              dat%incons = dat%incons + 1
+              IF (dat%incons.GT.5) GO TO 330
               GOTO 150
           ELSE IF (mode.NE.1) THEN
               GOTO 330
@@ -383,98 +379,99 @@ C   UPDATE MULTIPLIERS FOR L1-TEST
       DO 160 i=1,n
          v(i) = g(i) - ddot_sl(m,a(1,i),1,r,1)
   160 CONTINUE
-      f0 = f
+      dat%f0 = f
       CALL dcopy_(n, x, 1, x0, 1)
-      gs = ddot_sl(n, g, 1, s, 1)
-      h1 = ABS(gs)
-      h2 = ZERO
+      dat%gs = ddot_sl(n, g, 1, s, 1)
+      dat%h1 = ABS(dat%gs)
+      dat%h2 = ZERO
       DO 170 j=1,m
          IF (j.LE.meq) THEN
-             h3 = c(j)
+             dat%h3 = c(j)
          ELSE
-             h3 = ZERO
+             dat%h3 = ZERO
          ENDIF
-         h2 = h2 + MAX(-c(j),h3)
-         h3 = ABS(r(j))
-         mu(j) = MAX(h3,(mu(j)+h3)/two)
-         h1 = h1 + h3*ABS(c(j))
+         dat%h2 = dat%h2 + MAX(-c(j),dat%h3)
+         dat%h3 = ABS(r(j))
+         mu(j) = MAX(dat%h3,(mu(j)+dat%h3)/two)
+         dat%h1 = dat%h1 + dat%h3*ABS(c(j))
   170 CONTINUE
 
 C   CHECK CONVERGENCE
 
       mode = 0
-      IF (h1.LT.acc .AND. h2.LT.acc) GO TO 330
-      h1 = ZERO
+      IF (dat%h1.LT.acc .AND. dat%h2.LT.acc) GO TO 330
+      dat%h1 = ZERO
       DO 180 j=1,m
          IF (j.LE.meq) THEN
-             h3 = c(j)
+             dat%h3 = c(j)
          ELSE
-             h3 = ZERO
+             dat%h3 = ZERO
          ENDIF
-         h1 = h1 + mu(j)*MAX(-c(j),h3)
+         dat%h1 = dat%h1 + mu(j)*MAX(-c(j),dat%h3)
   180 CONTINUE
-      t0 = f + h1
-      h3 = gs - h1*h4
+      dat%t0 = f + dat%h1
+      dat%h3 = dat%gs - dat%h1*dat%h4
       mode = 8
-      IF (h3.GE.ZERO) GO TO 110
+      IF (dat%h3.GE.ZERO) GO TO 110
 
 C   LINE SEARCH WITH AN L1-TESTFUNCTION
 
-      line = 0
-      alpha = one
-      IF (iexact.EQ.1) GOTO 210
+      dat%line = 0
+      dat%alpha = one
+      IF (dat%iexact.EQ.1) GOTO 210
 
 C   INEXACT LINESEARCH
 
-  190     line = line + 1
-          h3 = alpha*h3
-          CALL dscal_sl(n, alpha, s, 1)
+  190     dat%line = dat%line + 1
+          dat%h3 = dat%alpha*dat%h3
+          CALL dscal_sl(n, dat%alpha, s, 1)
           CALL dcopy_(n, x0, 1, x, 1)
           CALL daxpy_sl(n, one, s, 1, x, 1)
           mode = 1
           GO TO 330
-  200         IF (h1.LE.h3/ten .OR. line.GT.10) GO TO 240
-              alpha = MAX(h3/(two*(h3-h1)),alfmin)
+  200         IF (dat%h1.LE.dat%h3/ten .OR. dat%line.GT.10) GO TO 240
+              dat%alpha = MAX(dat%h3/(two*(dat%h3-dat%h1)),alfmin)
               GO TO 190
 
 C   EXACT LINESEARCH
 
-  210 IF (line.NE.3) THEN
-          alpha = linmin(line,alfmin,one,t,tol)
+  210 IF (dat%line.NE.3) THEN
+          dat%alpha = linmin(dat%line,alfmin,one,dat%t,dat%tol)
           CALL dcopy_(n, x0, 1, x, 1)
-          CALL daxpy_sl(n, alpha, s, 1, x, 1)
+          CALL daxpy_sl(n, dat%alpha, s, 1, x, 1)
           mode = 1
           GOTO 330
       ENDIF
-      CALL dscal_sl(n, alpha, s, 1)
+      CALL dscal_sl(n, dat%alpha, s, 1)
       GOTO 240
 
 C   CALL FUNCTIONS AT CURRENT X
 
-  220     t = f
+  220     dat%t = f
           DO 230 j=1,m
              IF (j.LE.meq) THEN
-                 h1 = c(j)
+                 dat%h1 = c(j)
              ELSE
-                 h1 = ZERO
+                 dat%h1 = ZERO
              ENDIF
-             t = t + mu(j)*MAX(-c(j),h1)
+             dat%t = dat%t + mu(j)*MAX(-c(j),dat%h1)
   230     CONTINUE
-          h1 = t - t0
-          GOTO (200, 210) iexact+1
+          dat%h1 = dat%t - dat%t0
+          GOTO (200, 210) dat%iexact+1
 
 C   CHECK CONVERGENCE
 
-  240 h3 = ZERO
+  240 dat%h3 = ZERO
       DO 250 j=1,m
          IF (j.LE.meq) THEN
-             h1 = c(j)
+             dat%h1 = c(j)
          ELSE
-             h1 = ZERO
+             dat%h1 = ZERO
          ENDIF
-         h3 = h3 + MAX(-c(j),h1)
+         dat%h3 = dat%h3 + MAX(-c(j),dat%h1)
   250 CONTINUE
-      IF ((ABS(f-f0).LT.acc .OR. dnrm2_(n,s,1).LT.acc) .AND. h3.LT.acc)
+      IF ((ABS(f-dat%f0).LT.acc .OR. dnrm2_(n,s,1).LT.acc)
+     *          .AND. dat%h3.LT.acc)
      *   THEN
             mode = 0
          ELSE
@@ -485,7 +482,8 @@ C   CHECK CONVERGENCE
 C   CHECK relaxed CONVERGENCE in case of positive directional derivative
 
   255 CONTINUE
-      IF ((ABS(f-f0).LT.tol .OR. dnrm2_(n,s,1).LT.tol) .AND. h3.LT.tol)
+      IF ((ABS(f-dat%f0).LT.dat%tol .OR. dnrm2_(n,s,1).LT.dat%tol) 
+     *      .AND. dat%h3.LT.dat%tol)
      *   THEN
             mode = 0
          ELSE
@@ -505,13 +503,13 @@ C   L'*S
 
       k = 0
       DO 290 i=1,n
-         h1 = ZERO
+         dat%h1 = ZERO
          k = k + 1
          DO 280 j=i+1,n
             k = k + 1
-            h1 = h1 + l(k)*s(j)
+            dat%h1 = dat%h1 + l(k)*s(j)
   280    CONTINUE
-         v(i) = s(i) + h1
+         v(i) = s(i) + dat%h1
   290 CONTINUE
 
 C   D*L'*S
@@ -519,32 +517,32 @@ C   D*L'*S
       k = 1
       DO 300 i=1,n
          v(i) = l(k)*v(i)
-         k = k + n1 - i
+         k = k + dat%n1 - i
   300 CONTINUE
 
 C   L*D*L'*S
 
       DO 320 i=n,1,-1
-         h1 = ZERO
+         dat%h1 = ZERO
          k = i
          DO 310 j=1,i - 1
-            h1 = h1 + l(k)*v(j)
+            dat%h1 = dat%h1 + l(k)*v(j)
             k = k + n - j
   310    CONTINUE
-         v(i) = v(i) + h1
+         v(i) = v(i) + dat%h1
   320 CONTINUE
 
-      h1 = ddot_sl(n,s,1,u,1)
-      h2 = ddot_sl(n,s,1,v,1)
-      h3 = 0.2d0*h2
-      IF (h1.LT.h3) THEN
-          h4 = (h2-h3)/(h2-h1)
-          h1 = h3
-          CALL dscal_sl(n, h4, u, 1)
-          CALL daxpy_sl(n, one-h4, v, 1, u, 1)
+      dat%h1 = ddot_sl(n,s,1,u,1)
+      dat%h2 = ddot_sl(n,s,1,v,1)
+      dat%h3 = 0.2d0*dat%h2
+      IF (dat%h1.LT.dat%h3) THEN
+          dat%h4 = (dat%h2-dat%h3)/(dat%h2-dat%h1)
+          dat%h1 = dat%h3
+          CALL dscal_sl(n, dat%h4, u, 1)
+          CALL daxpy_sl(n, one-dat%h4, v, 1, u, 1)
       ENDIF
-      CALL ldl(n, l, u, +one/h1, v)
-      CALL ldl(n, l, v, -one/h2, u)
+      CALL ldl(n, l, u, +one/dat%h1, v)
+      CALL ldl(n, l, v, -one/dat%h2, u)
 
 C   END OF MAIN ITERATION
 
@@ -607,9 +605,6 @@ c     revised                        march 1989
 
       DIMENSION        a(la,n), b(la), g(n), l(nl),
      .                 w(*), x(n), xl(n), xu(n), y(m+n+n)
-
-      real (PREC), parameter :: zero = 0.0_PREC
-      real (PREC), parameter :: one = 1.0_PREC
 
       n1 = n + 1
       mineq = m - meq
@@ -812,8 +807,11 @@ C     20.3.1987, DIETER KRAFT, DFVLR OBERPFAFFENHOFEN
      .                 mc,mc1,me,mg,mode,n
       real (PREC) c(lc,n),e(LE,n),g(lg,n),d(lc),f(LE),h(lg),x(n),
      .                 w(*),t,ddot_sl,xnrm,dnrm2_
-      real (PREC), parameter :: epmach = 2.22D-16
-      real (PREC), parameter :: zero = 0.0_PREC
+
+C       RF: 1d-version of xnrm that can be passed to HFTI (needed to
+C       fix a compile error with gfortran.)
+      real (PREC) :: xnrm1(1)
+
 
       mode=2
       IF(mc.GT.n)                      GOTO 75
@@ -862,7 +860,11 @@ C  SOLVE LS WITHOUT INEQUALITY CONSTRAINTS
       mode=7
       k=MAX(LE,n)
       t=SQRT(epmach)
-      CALL hfti (w(ie),me,me,l,w(IF),k,1,t,krank,xnrm,w,w(l+1),jw)
+C   RF: change call to HFTI such that actual argument bound to rnorm
+C   is a 1d-array, not a scalar. Fixes compile error with gfortran.
+      xnrm1(1) = xnrm
+      CALL hfti (w(ie),me,me,l,w(IF),k,1,t,krank,xnrm1,w,w(l+1),jw)
+      xnrm = xnrm1(1)
       CALL dcopy_(l,w(IF),1,x(mc1),1)
       IF(krank.NE.l)                   GOTO 75
       mode=1
@@ -939,9 +941,6 @@ C     20.03.1987, DIETER KRAFT: REVISED TO FORTRAN 77
       INTEGER          i,j,LE,lg,me,mg,mode,n,jw(lg)
       real (PREC) e(LE,n),f(LE),g(lg,n),h(lg),x(n),w(*),
      .                 ddot_sl,xnorm,dnrm2_,t
-      real (PREC), parameter :: epmach = 2.22D-16
-      real (PREC), parameter :: zero = 0.0_PREC
-      real (PREC), parameter :: one = 1.0_PREC
 
 C  QR-FACTORS OF E AND APPLICATION TO F
 
@@ -1019,8 +1018,6 @@ C               4: INEQUALITY CONSTRAINTS INCOMPATIBLE
       INTEGER          INDEX,i,IF,iw,iwdual,iy,iz,j,m,mg,mode,n,n1
       DIMENSION        g(mg,n),h(m),x(n),w(*),INDEX(m)
       diff(u,v)=       u-v
-      real (PREC), parameter :: zero = 0.0_PREC
-      real (PREC), parameter :: one = 1.0_PREC
 
       mode=2
       IF(n.LE.0)                    GOTO 50
@@ -1130,8 +1127,6 @@ C            3    ITERATION COUNT EXCEEDED, MORE THAN 3*N ITERATIONS.
 
       diff(u,v)=       u-v
 
-      real (PREC), parameter :: zero = 0.0_PREC
-      real (PREC), parameter :: one = 1.0_PREC
       real (PREC), parameter :: factor = 1.0d-2
 
 c     revised          Dieter Kraft, March 1983
@@ -1310,7 +1305,6 @@ C                      RECORDING PERMUTATION INDICES OF COLUMN VECTORS
      .                 mda,mdb,n,nb,ip(n)
       real (PREC) a(mda,n),b(mdb,nb),h(n),g(n),rnorm(nb),
      .                 tau,hmax,diff,tmp,ddot_sl,dnrm2_,u,v
-      real (PREC), parameter :: zero = 0.0_PREC
       real (PREC), parameter :: factor = 1.0d-3
       diff(u,v)=       u-v
 
@@ -1438,8 +1432,6 @@ C            IF NCV <= 0 NO OPERATIONS WILL BE DONE ON C().
       INTEGER          i, i2, i3, i4, j, m
       real (PREC) u,up,c,cl,clinv,b,sm
       DIMENSION        u(iue,*), c(*)
-      real (PREC), parameter :: one = 1.0_PREC
-      real (PREC), parameter :: zero = 0.0_PREC
 
       IF (0.GE.lpivot.OR.lpivot.GE.l1.OR.l1.GT.m) GOTO 80
       cl=ABS(u(1,lpivot))
@@ -1524,10 +1516,6 @@ C   SUBROUTINES REQUIRED: NONE
       INTEGER          i, ij, j, n
       real (PREC) a(*), t, v, w(*), z(*), u, tp, beta,
      *                 alpha, delta, gamma, sigma 
-      real (PREC), parameter :: zero = 0.0_PREC
-      real (PREC), parameter :: one = 1.0_PREC
-      real (PREC), parameter :: four = 4.0_PREC
-      real (PREC), parameter :: epmach = 2.22d-16
 
       IF(sigma.EQ.ZERO)               GOTO 280
       ij=1
@@ -1630,7 +1618,6 @@ C   SUBROUTINES REQUIRED: NONE
      &                 fu, fv, fw, fx, tol1, tol2, ax, bx
       real (PREC), parameter :: c = 0.381966011d0
       real (PREC), parameter :: eps = 1.5d-8 
-      real (PREC), parameter :: zero = 0.0_PREC
 
 C  EPS = SQUARE - ROOT OF MACHINE PRECISION
 C  C = GOLDEN SECTION RATIO = (3-SQRT(5))/2
@@ -1893,8 +1880,6 @@ C        CLEAN-UP LOOP
       real (PREC) FUNCTION dnrm1(n,x,i,j)
       INTEGER n, i, j, k
       real (PREC) snormx, sum, x(n), scale, temp
-      real (PREC), parameter :: zero = 0.0_PREC
-      real (PREC), parameter :: one = 1.0_PREC
 
 C      DNRM1 - COMPUTES THE I-NORM OF A VECTOR
 C              BETWEEN THE ITH AND THE JTH ELEMENTS
@@ -1929,8 +1914,6 @@ C      DNRM1   NORM
       real (PREC) FUNCTION dnrm2_ ( n, dx, incx)
       INTEGER          n, i, j, nn, next, incx
       real (PREC) dx(*), hitest, sum, xmax
-      real (PREC), parameter :: zero = 0.0_PREC
-      real (PREC), parameter :: one = 1.0_PREC
 
 C     EUCLIDEAN NORM OF THE N-VECTOR STORED IN DX() WITH STORAGE
 C     INCREMENT INCX .
@@ -2094,8 +2077,6 @@ C     JACK DONGARRA, LINPACK, 3/11/78.
 C                    MODIFIED 9/27/86.
 
       real (PREC) da,db,c,s,roe,scale,r,z
-      real (PREC), parameter :: zero = 0.0_PREC
-      real (PREC), parameter :: one = 1.0_PREC
 
       roe = db
       IF( ABS(da) .GT. ABS(db) ) roe = da
