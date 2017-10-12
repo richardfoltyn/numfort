@@ -1,4 +1,4 @@
-module slsqpi_mod
+module slsqp_mod
 
     use, intrinsic :: iso_fortran_env
     
