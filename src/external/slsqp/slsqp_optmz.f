@@ -217,11 +217,15 @@ C***********************************************************************
 C       Container object used to store variables that were originally
 C       declared with the SAVE attribute in SLSQPB.
 
-      INTEGER          il, im, ir, is, iter, iu, iv, iw, ix, l_w, l_jw,
-     *                 jw(l_jw), la, m, meq, mineq, mode, n, n1
+      integer, intent(in) :: m, meq, la, n, l_w, l_jw
+      integer, intent(in out) :: iter, mode
+      integer, intent(in out) :: jw(l_jw)
+      real (PREC), intent(in) :: xl(n), xu(n)
+      real (PREC), intent(in) :: a(la,n+1), c(la), f, g(n+1)
+      real (PREC), intent(in out) :: acc
+      real (PREC), intent(in out) :: x(n), w(l_w)
 
-      real (PREC) acc, a(la,n+1), c(la), f, g(n+1),
-     *                 x(n), xl(n), xu(n), w(l_w)
+      INTEGER          il, im, ir, is, iu, iv, iw, ix, mineq, n1
 
 c     dim(W) =         N1*(N1+1) + MEQ*(N1+1) + MINEQ*(N1+1)  for LSQ
 c                    +(N1-MEQ+1)*(MINEQ+2) + 2*MINEQ          for LSI
@@ -278,7 +282,7 @@ C                      BODY SUBROUTINE FOR SLSQP
       real (PREC) a(la,n+1), c(la), g(n+1), l((n+1)*(n+2)/2),
      *                 mu(la), r(m+n+n+2), s(n+1), u(n+1), v(n+1), w(*),
      *                 x(n), xl(n), xu(n), x0(n),
-     *                 ddot_sl, dnrm2_, linmin, acc, f
+     *                 acc, f
 
 c     dim(W) =         N1*(N1+1) + MEQ*(N1+1) + MINEQ*(N1+1)  for LSQ
 c                     +(N1-MEQ+1)*(MINEQ+2) + 2*MINEQ
@@ -597,7 +601,7 @@ c     coded            Dieter Kraft, april 1987
 c     revised                        march 1989
 
       real (PREC) l,g,a,b,w,xl,xu,x,y,
-     .                 diag,ddot_sl,xnorm
+     .                 diag,xnorm
 
       INTEGER          jw(*),i,ic,id,ie,IF,ig,ih,il,ip,iw,
      .     i1,i2,i3,i4,la,m,meq,mineq,mode,m1,n,nl,n1,n2,n3,
@@ -806,7 +810,7 @@ C     20.3.1987, DIETER KRAFT, DFVLR OBERPFAFFENHOFEN
       INTEGER          jw(*),i,ie,IF,ig,iw,j,k,krank,l,lc,LE,lg,
      .                 mc,mc1,me,mg,mode,n
       real (PREC) c(lc,n),e(LE,n),g(lg,n),d(lc),f(LE),h(lg),x(n),
-     .                 w(*),t,ddot_sl,xnrm,dnrm2_
+     .                 w(*),t,xnrm
 
 C       RF: 1d-version of xnrm that can be passed to HFTI (needed to
 C       fix a compile error with gfortran.)
@@ -940,7 +944,7 @@ C     20.03.1987, DIETER KRAFT: REVISED TO FORTRAN 77
 
       INTEGER          i,j,LE,lg,me,mg,mode,n,jw(lg)
       real (PREC) e(LE,n),f(LE),g(lg,n),h(lg),x(n),w(*),
-     .                 ddot_sl,xnorm,dnrm2_,t
+     .                 xnorm,t
 
 C  QR-FACTORS OF E AND APPLICATION TO F
 
@@ -1014,7 +1018,7 @@ C               3: ITERATION COUNT EXCEEDED BY NNLS
 C               4: INEQUALITY CONSTRAINTS INCOMPATIBLE
 
       real (PREC) g,h,x,xnorm,w,u,v,
-     .                 fac,rnorm,dnrm2_,ddot_sl,diff
+     .                 fac,rnorm,diff
       INTEGER          INDEX,i,IF,iw,iwdual,iy,iz,j,m,mg,mode,n,n1
       DIMENSION        g(mg,n),h(m),x(n),w(*),INDEX(m)
       diff(u,v)=       u-v
@@ -1122,8 +1126,8 @@ C            3    ITERATION COUNT EXCEEDED, MORE THAN 3*N ITERATIONS.
      *                 k,l,m,mda,mode,n,npp1,nsetp,INDEX(n)
 
       real (PREC) a(mda,n),b(m),x(n),w(n),z(m),asave,diff,
-     *                 ddot_sl,wmax,alpha,
-     *                 c,s,t,u,v,up,rnorm,unorm,dnrm2_
+     *                 wmax,alpha,
+     *                 c,s,t,u,v,up,rnorm,unorm
 
       diff(u,v)=       u-v
 
@@ -1304,7 +1308,7 @@ C                      RECORDING PERMUTATION INDICES OF COLUMN VECTORS
       INTEGER          i,j,jb,k,kp1,krank,l,ldiag,lmax,m,
      .                 mda,mdb,n,nb,ip(n)
       real (PREC) a(mda,n),b(mdb,nb),h(n),g(n),rnorm(nb),
-     .                 tau,hmax,diff,tmp,ddot_sl,dnrm2_,u,v
+     .                 tau,hmax,diff,tmp,u,v
       real (PREC), parameter :: factor = 1.0d-3
       diff(u,v)=       u-v
 

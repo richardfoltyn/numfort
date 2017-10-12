@@ -4,6 +4,9 @@ module slsqp_mod
     
     use slsqp_mod_real64, only: slsqp_real64 => slsqp, slsqp_data_real64 => slsqp_data
     
+    private
+    public :: slsqp, slsqp_data_real64
+    
     interface slsqp
         procedure :: slsqp_real64
     end interface
