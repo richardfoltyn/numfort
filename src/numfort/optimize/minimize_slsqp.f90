@@ -3,18 +3,19 @@ module numfort_optimize_slsqp
     use, intrinsic :: ieee_arithmetic
     use, intrinsic :: iso_fortran_env
     use numfort_common
+    use numfort_common_input_checks
     use numfort_common_workspace
     use numfort_optimize_result
-    use slsqp_mod, slsqp_impl => slsqp
+    use slsqp_mod, only: slsqp_impl => slsqp, slsqp_data_real64
 
     implicit none
 
     private
 
-    public :: slsqp
+    public :: minimize_slsqp
 
-    interface slsqp
-        module procedure slsqp_wrapper_real64
+    interface minimize_slsqp
+        module procedure slsqp_args_real64
     end interface
 
     interface slsqp_check_input
@@ -34,7 +35,7 @@ module numfort_optimize_slsqp
     integer, parameter :: MODE_EVAL_JAC = -1
 
     abstract interface
-        subroutine fobj_real64 (x, fx, fpx, args)
+        subroutine fobj_args_real64 (x, fx, fpx, args)
             import real64
             real (real64), intent(in), dimension(:) :: x
             real (real64), intent(out), optional :: fx
@@ -42,39 +43,32 @@ module numfort_optimize_slsqp
             real (real64), intent(in), dimension(:), optional :: args
         end subroutine
 
-        subroutine f_eqcons_real64 (x, fx, fpx, args)
+        subroutine fcons_args_real64 (x, fx, fpx, args)
             import real64
             real (real64), intent(in), dimension(:) :: x
             real (real64), intent(out), dimension(:), optional :: fx
             real (real64), intent(out), dimension(:,:), optional :: fpx
             real (real64), intent(in), dimension(:), optional :: args
         end subroutine
-
-        subroutine f_ieqcons_real64 (x, fx, fpx, args)
-            import real64
-            real (real64), intent(in), dimension(:) :: x
-            real (real64), intent(out), dimension(:), optional :: fx
-            real (real64), intent(out), dimension(:,:), optional :: fpx
-            real (real64), intent(in), dimension(:), optional :: args
-        end subroutine
+       
     end interface
 
 contains
 
 
-subroutine slsqp_wrapper_real64 (func, x, lbounds, ubounds, f_eqcons, meq, &
-        f_ieqcons, mieq, args, maxiter, tol, work, res)
+
+subroutine slsqp_args_real64 (func, x, lbounds, ubounds, m, meq, f_eqcons, &
+        f_ieqcons, args, maxiter, tol, work, res)
 
     integer, parameter :: PREC = real64
 
-    procedure (fobj_real64) :: func
+    procedure (fobj_args_real64) :: func
     real (PREC), intent(in out), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), optional :: lbounds
     real (PREC), intent(in), dimension(:), optional :: ubounds
-    procedure (f_eqcons_real64), optional :: f_eqcons
-    integer, intent(in), optional :: meq
-    procedure (f_ieqcons_real64), optional :: f_ieqcons
-    integer, intent(in), optional :: mieq
+    integer, intent(in), optional :: m, meq
+    procedure (fcons_args_real64), optional :: f_eqcons
+    procedure (fcons_args_real64), optional :: f_ieqcons
     real (PREC), intent(in), dimension(:), optional :: args
     integer, intent(in), optional :: maxiter
     real (PREC), intent(in), optional :: tol
@@ -99,7 +93,7 @@ subroutine slsqp_wrapper_real64 (func, x, lbounds, ubounds, f_eqcons, meq, &
         !   constraints.
     integer :: nrwrk, niwrk, ioffset
 
-    integer :: n, n1, m, mineq, mode, lmeq, lmieq, k, lda, lw
+    integer :: n, n1, mineq, mode, lmeq, lm, mieq, k, lda, lw
     logical :: has_eq, has_ieq
     real (PREC) :: fx, ltol
 
@@ -110,32 +104,51 @@ subroutine slsqp_wrapper_real64 (func, x, lbounds, ubounds, f_eqcons, meq, &
     nullify (ptr_cx_eq, ptr_cx_ieq)
     nullify (ptr_cpx_eq, ptr_cpx_ieq)
 
-    call slsqp_check_input (f_eqcons, meq, f_ieqcons, mieq, maxiter, tol, status, msg)
+    call slsqp_check_input (m ,meq, f_eqcons, f_ieqcons, maxiter, tol, status, msg)
     if (NF_STATUS_INVALID_ARG .in. status) goto 100
 
-    has_eq = present(f_eqcons) .and. present(meq)
-    has_ieq = present(f_ieqcons) .and. present(mieq)
+    ! Determine if enough information is present for equality or inequality
+    ! constraints.
+    has_eq = present(f_eqcons) .and. (present(meq) .or. &
+        (.not. present(f_ieqcons) .and. present(m)))
+        
+    has_ieq = (present(f_ieqcons) .and. present(m)) .and. &
+        (.not. present(f_eqcons) .or. present(meq))
 
     lmaxiter = 100
     ltol = 1.0d-6
     lmeq = 0
-    lmieq = 0
+    lm = 0
     if (present(maxiter)) lmaxiter = maxiter
     if (present(tol)) ltol = tol
-    ! If any equality or inequality constraints were specified, store dimension
-    ! of constraint function range.
-    if (has_eq) lmeq = meq
-    if (has_ieq) lmieq = mieq
+    if (present(m)) lm = m
+    if (present(meq)) lmeq = meq
 
+    ! if equality constraint specified, but no inequality constraint, 
+    ! m = meq and allow for missing meq if m is present.
+    if (has_eq .and. .not. present(f_ieqcons)) then
+        if (present(meq) .and. .not. present(m)) then
+            lm = lmeq
+        else if (present(m) .and. .not. present(meq)) then
+            lmeq = lm
+        end if
+    end if
+    
+    ! if inequality constraint specified, but no equality constraint, 
+    ! meq = 0 and mieq = m, thus allow for missing meq
+    if (has_ieq .and. .not. present(f_eqcons)) lmeq = 0
+    
+    ! implied number of inequality constraints
+    mieq = lm - lmeq
+    
     n = size(x)
-    m = lmeq + lmieq
-    mineq = lmieq + 2 * (n + 1)
+    mineq = mieq + 2 * (n + 1)
 
     niwrk = mineq
     n1 = n + 1
     ! Workspace used directly by SLSQP
-    lw = (3*n1+m)*(n1+1)+(n1-lmeq+1)*(mineq+2) + 2*mineq+(n1+mineq)*(n1-lmeq) &
-        + 2*lmeq + n1 + ((n+1)*n)/2 + 2*m + 3*n + 3*n1 + 1
+    lw = (3*n1+lm)*(n1+1)+(n1-lmeq+1)*(mineq+2) + 2*mineq+(n1+mineq)*(n1-lmeq) &
+        + 2*lmeq + n1 + ((n+1)*n)/2 + 2*lm + 3*n + 3*n1 + 1
     nrwrk = lw
 
     ! Add space for lower / upper bounds
@@ -144,15 +157,15 @@ subroutine slsqp_wrapper_real64 (func, x, lbounds, ubounds, f_eqcons, meq, &
     nrwrk = nrwrk + n + 1
     ! Add space for eq. and ineq. constraint values; SLSQP expects constraint
     ! array to be at least size 1 regardless of how many constraints are present.
-    nrwrk = nrwrk + max(1, m)
+    nrwrk = nrwrk + max(1, lm)
     ! Space for stacked constraint Jacobian matrix A. These are just the
     ! "vertically" stacked Jacobians of eq. and ineq. constraints, but
     ! due to vertical stacking we need separate arrays to pass to
     ! f_eqcons and f_ieqcons if we want arguments to be contiguous. Hence
     ! allocate additional set of arrays.
-    nrwrk = nrwrk + max(1, m) * (n+1)
+    nrwrk = nrwrk + max(1, lm) * (n+1)
     ! Space for Jacobians of eq. and ineq. constraints
-    nrwrk = nrwrk + lmeq * n + lmieq * n
+    nrwrk = nrwrk + lmeq * n + mieq * n
 
     ! Allocate workspace arrays
     call assert_alloc_ptr (work, ptr_work)
@@ -191,9 +204,9 @@ subroutine slsqp_wrapper_real64 (func, x, lbounds, ubounds, f_eqcons, meq, &
     else
         ! Array C is expected to contain eq. and ineq. constraint values
         ! concatenated together.
-        ptr_c => workspace_get_ptr (ptr_work, m)
-        ptr_tmp => workspace_get_ptr (ptr_work, m * (n+1))
-        ptr_a(1:m,1:n+1) => ptr_tmp
+        ptr_c => workspace_get_ptr (ptr_work, lm)
+        ptr_tmp => workspace_get_ptr (ptr_work, lm * (n+1))
+        ptr_a(1:lm,1:n+1) => ptr_tmp
         nullify (ptr_tmp)
 
         ioffset = 0
@@ -201,22 +214,33 @@ subroutine slsqp_wrapper_real64 (func, x, lbounds, ubounds, f_eqcons, meq, &
             ptr_cx_eq => ptr_c(1:lmeq)
             ioffset = lmeq
 
-            k = lmeq * (n+1)
+            k = lmeq * n
             ptr_tmp => workspace_get_ptr (ptr_work, k)
-            ptr_cpx_eq(1:lmeq,1:n+1) => ptr_tmp
+            ptr_cpx_eq(1:lmeq,1:n) => ptr_tmp
             nullify (ptr_tmp)
         end if
         if (has_ieq) then
-            ptr_cx_ieq(1:n) => ptr_c(ioffset+1:m)
+            ptr_cx_ieq(1:mieq) => ptr_c(ioffset+1:lm)
 
-            k = lmieq * (n+1)
+            k = mieq * n
             ptr_tmp => workspace_get_ptr (ptr_work, k)
-            ptr_cpx_ieq(1:lmieq,1:n+1) => ptr_tmp
+            ptr_cpx_ieq(1:mieq,1:n) => ptr_tmp
             nullify (ptr_tmp)
         end if
     end if
 
+    ! Assign remaining arguments
+    lda = max(1, lm)
+    ! Pointer to workspace used directly by SLSQP
+    ptr_w => workspace_get_ptr (ptr_work, lw)
+    
+    ! Overwrite any garbage. In particular, column n+1 of these arrays
+    ! will never be used to store data, so no idea what SLSQP is doing with in.
+    ptr_g(:) = 0.0_PREC
+    ptr_a(:,:) = 0.0_PREC
 
+    nfeval = 0
+    
     do iter = 1, lmaxiter
         if (mode == MODE_INIT .or. mode == MODE_EVAL_FUNCS) then
             ! Compute objective function fx
@@ -245,23 +269,19 @@ subroutine slsqp_wrapper_real64 (func, x, lbounds, ubounds, f_eqcons, meq, &
                 call f_eqcons (x, fpx=ptr_cpx_eq, args=args)
                 ! Copy Jacobian into array A using a loop, otherwise
                 ! (at least) gfortran allocates a temporary array.
-                forall (k=1:lmeq) ptr_a(k,:) = ptr_cpx_eq(k,:)
+                forall (k=1:lmeq) ptr_a(k,1:n) = ptr_cpx_eq(k,:)
             end if
 
             if (has_ieq) then
                 call f_ieqcons (x, fpx=ptr_cpx_ieq, args=args)
                 ! Concatenate Jacobian into array A, taking into account
                 ! whether Jacobian of eq. constr. is already present
-                forall (k=ioffset+1:ioffset+lmieq) ptr_a(k,:) = ptr_cpx_ieq(k,:)
+                forall (k=1:mieq) ptr_a(ioffset+k,1:n) = ptr_cpx_ieq(k,:)
             end if
         end if
 
-        ! Assign remaining arguments
-        lda = max(1, m)
-        ! Pointer to workspace used directly by SLSQP
-        ptr_w => workspace_get_ptr (ptr_work, lw)
         ! call original SLSQP routine
-        call slsqp_impl (dat, m, lmeq, lda, n, x, ptr_xlb, ptr_xub, fx, &
+        call slsqp_impl (dat, lm, lmeq, lda, n, x, ptr_xlb, ptr_xub, fx, &
             ptr_c, ptr_g, ptr_a, ltol, lmaxiter, mode, ptr_w, lw, &
             ptr_work%iwrk, mineq)
 
@@ -312,38 +332,43 @@ end subroutine
 
 
 
-subroutine slsqp_check_input_real64 (f_eqcons, meq, f_ieqcons, mieq, maxiter, &
+subroutine slsqp_check_input_real64 (m, meq, f_eqcons, f_ieqcons, maxiter, &
         tol, status, msg)
 
     integer, parameter :: PREC = real64
 
-    procedure (f_eqcons_real64), optional :: f_eqcons
-    integer, intent(in), optional :: meq
-    procedure (f_ieqcons_real64), optional :: f_ieqcons
-    integer, intent(in), optional :: mieq
+    integer, intent(in), optional :: m, meq
+    procedure (fcons_args_real64), optional :: f_eqcons
+    procedure (fcons_args_real64), optional :: f_ieqcons
     integer, intent(in), optional :: maxiter
     real (PREC), intent(in), optional :: tol
     type (status_t), intent(in out) :: status
     character (*), intent(out) :: msg
+    
+    logical :: has_eq, has_ieq
 
     status = NF_STATUS_OK
+    
+    has_eq = present(f_eqcons) .and. (present(meq) .or. &
+        (.not. present(f_ieqcons) .and. present(m)))
+        
+    has_ieq = (present(f_ieqcons) .and. present(m)) .and. &
+        (.not. present(f_eqcons) .or. present(meq))
 
-    if ((present(f_eqcons) .and. .not. present(meq)) .or. &
-        .not. present(f_eqcons) .and. present(meq)) then
-        msg = "Arguments 'f_eqcons' and 'meq' must be both present"
+    if (present(f_eqcons) .and. .not. has_eq) then 
+        msg = "Number of equality constraints not specified"
         goto 100
     end if
 
-    if ((present(f_ieqcons) .and. .not. present(mieq)) .or. &
-        .not. present(f_ieqcons) .and. present(mieq)) then
-        msg = "Arguments 'f_ieqcons' and 'mieq' must be both present"
+    if (present(f_ieqcons) .and. .not. has_ieq) then
+        msg = "Number of inequality constraints not specified"
         goto 100
     end if
 
     call check_positive (1, meq, 'meq', status, msg)
     if (NF_STATUS_INVALID_ARG .in. status) goto 100
 
-    call check_positive (1, mieq, 'mieq', status, msg)
+    call check_positive (1, m, 'm', status, msg)
     if (NF_STATUS_INVALID_ARG .in. status) goto 100
 
     call check_positive (1, maxiter, 'maxiter', status, msg)
