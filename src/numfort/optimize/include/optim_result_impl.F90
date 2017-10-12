@@ -48,8 +48,6 @@ pure subroutine __APPEND(update,__PREC) (res, x, fx, status, nit, nfev, msg)
     intent (in) :: x, fx, nit, nfev, msg
     optional :: x, fx, nit, nfev, msg
 
-    call result_reset (res)
-
     call alloc_assign (x, res%x)
     call alloc_assign (fx, res%fx)
 
@@ -72,8 +70,8 @@ pure subroutine __APPEND(reset,__PREC) (res)
     res%nit = UNINITIALIZED_COUNTER
     res%nfev = UNINITIALIZED_COUNTER
     res%msg = ""
-    res%x = 0.0_PREC
-    res%fx = 0.0_PREC
+    if (allocated(res%x)) res%x = 0.0_PREC
+    if (allocated(res%fx)) res%fx = 0.0_PREC
     res%status = NF_STATUS_UNDEFINED
     res%success = .false.
 end subroutine
