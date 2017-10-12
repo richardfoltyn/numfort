@@ -16,7 +16,7 @@ module numfort_common_workspace
     integer, parameter :: SIZE_UNALLOCATED = -1
 
     type :: workspace_real64
-        integer (int64) :: roffset = 0, ioffset = 0, coffset = 0, loffset = 0
+        integer (int64), private :: roffset = 0, ioffset = 0, coffset = 0, loffset = 0
         integer, dimension(:), allocatable :: iwrk
         logical, dimension(:), allocatable :: lwrk
         character (len=:), allocatable :: cwrk
@@ -26,7 +26,7 @@ module numfort_common_workspace
     end type
 
     type :: workspace_real32
-        integer (int64) :: roffset = 0, ioffset = 0, coffset = 0, loffset = 0
+        integer (int64), private :: roffset = 0, ioffset = 0, coffset = 0, loffset = 0
         integer, dimension(:), allocatable :: iwrk
         logical, dimension(:), allocatable :: lwrk
         character (len=:), allocatable :: cwrk
