@@ -1,9 +1,26 @@
-pure subroutine __APPEND(ws_assert_alloc,__PREC) (self, nrwrk, niwrk, ncwrk, nlwrk)
+
+pure subroutine __APPEND(ws_reset,__PREC) (self)
+    !*  WORKSPACE_CLEAR clear any internal state other than allocated
+    !   working arrays.
+
+    type (__APPEND(workspace,__PREC)), intent(in out) :: self
+
+    self%roffset = 0
+    self%ioffset = 0
+    self%coffset = 0
+    self%loffset = 0
+
+end subroutine
+
+
+pure subroutine __APPEND(ws_assert_alloc_int64,__PREC) &
+        (self, nrwrk, niwrk, ncwrk, nlwrk)
 
     integer, parameter :: PREC = __PREC
+    integer, parameter :: INTSIZE = int64
     ! Note: avoid polymorphic calls, might break OpenMP
     type (__APPEND(workspace,__PREC)), intent(in out) :: self
-    integer, intent(in), optional :: nrwrk, niwrk, ncwrk, nlwrk
+    integer (INTSIZE), intent(in), optional :: nrwrk, niwrk, ncwrk, nlwrk
 
     real (PREC), dimension(:), allocatable :: rtmp
     integer, dimension(:), allocatable :: itmp
@@ -66,6 +83,31 @@ pure subroutine __APPEND(ws_assert_alloc,__PREC) (self, nrwrk, niwrk, ncwrk, nlw
 end subroutine
 
 
+pure subroutine __APPEND(ws_assert_alloc_int32,__PREC) &
+        (self, nrwrk, niwrk, ncwrk, nlwrk)
+
+    integer, parameter :: INTSIZE = int32
+    ! Note: avoid polymorphic calls, might break OpenMP
+    type (__APPEND(workspace,__PREC)), intent(in out) :: self
+    integer (INTSIZE), intent(in) :: nrwrk
+    integer (INTSIZE), intent(in), optional :: niwrk, ncwrk, nlwrk
+
+    integer (int64) :: lnrwrk, lniwrk, lncwrk, lnlwrk
+
+    lnrwrk = int(nrwrk, int64)
+    lniwrk = 0
+    lncwrk = 0
+    lnlwrk = 0
+
+    if (present(niwrk)) lniwrk = int(niwrk, int64)
+    if (present(ncwrk)) lncwrk = int(ncwrk, int64)
+    if (present(nlwrk)) lnlwrk = int(nlwrk, int64)
+
+    call assert_alloc (self, lnrwrk, lniwrk, lncwrk, lnlwrk)
+end subroutine
+
+
+
 pure subroutine __APPEND(ws_assert_alloc_ptr,__PREC) (ws, ptr_ws)
     !*  ASSERT_ALLOC_PTR ensures that ptr_ws points to allocated memory:
     !   If argument ws is present, ptr_ws points to ws and no additional
@@ -113,4 +155,34 @@ pure subroutine __APPEND(ws_finalize,__PREC) (self)
     if (allocated(self%lwrk)) deallocate (self%lwrk)
     if (allocated(self%iwrk)) deallocate (self%iwrk)
 
+    self%roffset = 0
+    self%ioffset = 0
+    self%coffset = 0
+    self%loffset = 0
+
 end subroutine
+
+
+
+function __APPEND(ws_get_ptr_int32,__PREC) (self, n) result(ptr)
+
+    integer, parameter :: PREC = __PREC
+    integer, parameter :: INTSIZE = int32
+
+    type (__APPEND(workspace,__PREC)), intent(in out), target :: self
+    integer (INTSIZE), intent(in) :: n
+    real (PREC), dimension(:), pointer, contiguous :: ptr
+
+    integer (int64) :: ifrom, ito
+
+    nullify (ptr)
+
+    ifrom = self%roffset + 1
+    ito = self%roffset + n
+
+    call assert_alloc (self, nrwrk=ito)
+    ptr => self%rwrk(ifrom:ito)
+
+    self%roffset = ito
+
+end function

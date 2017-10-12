@@ -3,18 +3,20 @@
 
 module numfort_common_workspace
 
-    use, intrinsic :: iso_fortran_env, only : real32, real64, int32
+    use, intrinsic :: iso_fortran_env, only : real32, real64, int32, int64
 
     implicit none
     private
 
     public :: workspace_real32, workspace_real64
     public :: assert_alloc, assert_alloc_ptr, assert_dealloc_ptr
-    public :: workspace_finalize
+    public :: workspace_get_ptr
+    public :: workspace_finalize, workspace_reset
 
     integer, parameter :: SIZE_UNALLOCATED = -1
 
     type :: workspace_real64
+        integer (int64) :: roffset = 0, ioffset = 0, coffset = 0, loffset = 0
         integer, dimension(:), allocatable :: iwrk
         logical, dimension(:), allocatable :: lwrk
         character (len=:), allocatable :: cwrk
@@ -24,6 +26,7 @@ module numfort_common_workspace
     end type
 
     type :: workspace_real32
+        integer (int64) :: roffset = 0, ioffset = 0, coffset = 0, loffset = 0
         integer, dimension(:), allocatable :: iwrk
         logical, dimension(:), allocatable :: lwrk
         character (len=:), allocatable :: cwrk
@@ -33,7 +36,9 @@ module numfort_common_workspace
     end type
 
     interface assert_alloc
-        module procedure ws_assert_alloc_real32, ws_assert_alloc_real64
+        module procedure ws_assert_alloc_int32_real32, &
+            ws_assert_alloc_int32_real64, ws_assert_alloc_int64_real32, &
+            ws_assert_alloc_int64_real64
     end interface
 
     interface assert_alloc_ptr
@@ -46,6 +51,14 @@ module numfort_common_workspace
 
     interface workspace_finalize
         module procedure ws_finalize_real32, ws_finalize_real64
+    end interface
+
+    interface workspace_get_ptr
+        module procedure ws_get_ptr_int32_real32, ws_get_ptr_int32_real64
+    end interface
+
+    interface workspace_reset
+        module procedure ws_reset_real32, ws_reset_real64
     end interface
 
 contains
