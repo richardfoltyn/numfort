@@ -5,7 +5,7 @@ module numfort_optimize_minpack
     use numfort_common
     use numfort_common_workspace
     use numfort_common_input_checks
-    use numfort_optim_result
+    use numfort_optimize_result
 
     use minpack_real64, only: minpack_hybrd_real64 => hybrd, &
         minpack_lmdif_real64 => lmdif, minpack_lmder_real64 => lmder, &

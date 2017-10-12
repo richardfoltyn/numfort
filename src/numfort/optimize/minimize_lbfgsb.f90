@@ -5,7 +5,7 @@ module numfort_optimize_lbfgsb
     use, intrinsic :: iso_fortran_env, only: real64
     use numfort_common
     use numfort_common_workspace
-    use numfort_optim_result
+    use numfort_optimize_result
     use lbfgsb_bmnz_real64, only: setulb
 
     implicit none

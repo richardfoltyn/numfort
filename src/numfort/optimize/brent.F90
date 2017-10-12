@@ -6,7 +6,7 @@ module numfort_optimize_brent
     use, intrinsic :: iso_fortran_env
 
     use numfort_common
-    use numfort_optim_result
+    use numfort_optimize_result
 
     implicit none
     private

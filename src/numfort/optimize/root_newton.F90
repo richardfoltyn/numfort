@@ -5,7 +5,7 @@ module numfort_optimize_newton
 
     use, intrinsic :: iso_fortran_env
     use numfort_common
-    use numfort_optim_result
+    use numfort_optimize_result
     implicit none
     private
 

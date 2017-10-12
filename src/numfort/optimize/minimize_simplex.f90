@@ -5,7 +5,7 @@ module numfort_optimize_simplex
 
     use, intrinsic :: iso_fortran_env
     use numfort_common
-    use numfort_optim_result
+    use numfort_optimize_result
 
     use simplex_csiro, only: minim, func_real32, func_real64
 
