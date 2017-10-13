@@ -5,7 +5,8 @@ type, public :: __APPEND(dfrechet,__PREC)
     real (__PREC) :: loc = 0.0
         !*  Location parameter
     real (__PREC) :: shape = 0.0
-        !*  Shape parameter
+        !*  Shape parameter (there is no sensible default, so initialize
+        !   to zero)
     real (__PREC) :: scale = 1.0
         !*  Scale parameter
 end type
@@ -22,6 +23,10 @@ interface ppf
     module procedure __APPEND(dfrechet_ppf,__PREC)
 end interface
 
-interface get_dist_params 
+interface mean
+    module procedure __APPEND(dfrechet_mean,__PREC)
+end interface
+
+interface get_dist_params
     module procedure __APPEND(get_dist_params,__PREC)
 end interface
