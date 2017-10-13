@@ -11,6 +11,7 @@ set(SOURCE_FILES
     workspace.F90
     input_checks.f90
     strings.F90
+    testing.F90
 )
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
