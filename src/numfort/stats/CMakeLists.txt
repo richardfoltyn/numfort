@@ -7,6 +7,7 @@ set(SOURCE_FILES
     dlogistic.F90
     dnorm.F90
     duniform.F90
+    dfrechet.F90
     dgenpareto.F90
     stats.f90
     stats_lm.F90
