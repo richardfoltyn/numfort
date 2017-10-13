@@ -5,7 +5,7 @@ real (PREC) :: step
 integer :: i, n
 
 n = size(x)
-step = (xto - xfrom) / (n - 1)
+step = (xto - xfrom) / (n - 1.0_PREC)
 
 x(1) = xfrom
 do i = 2, n-1
