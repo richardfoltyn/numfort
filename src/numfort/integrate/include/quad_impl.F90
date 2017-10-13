@@ -58,7 +58,7 @@ subroutine __APPEND(quad,__PREC) (fcn, a, b, res, epsabs, epsrel, nmax, work, ab
     integer :: niwrk, nrwrk
     ! Arguments to QUADPACK routines
     integer :: ier, neval
-    integer :: ln 
+    integer :: ln
         !*  Actual number of subintervals used
     real (PREC) :: labserr
     real (PREC), dimension(:), pointer, contiguous :: ptr_alist, ptr_blist, &
@@ -69,10 +69,10 @@ subroutine __APPEND(quad,__PREC) (fcn, a, b, res, epsabs, epsrel, nmax, work, ab
     labserr = 0.0_PREC
     lstatus = NF_STATUS_OK
 
-    ! Use Scipy's tolerance levels by default
-    ! TODO: should be changed to something else for single precision
-    lepsabs = 1.49e-8_PREC 
-    lepsrel = 1.49e-8_PREC
+    ! Use Scipy's tolerance levels by default (halve machine epsilon exponent
+    ! for given precision).
+    lepsabs = 10.0 ** (log10(epsilon(0.0_PREC))/2.0)
+    lepsrel = 10.0 ** (log10(epsilon(0.0_PREC))/2.0)
     lnmax = 50
 
     if (present(epsabs)) lepsabs = epsabs
@@ -98,9 +98,9 @@ subroutine __APPEND(quad,__PREC) (fcn, a, b, res, epsabs, epsrel, nmax, work, ab
     ! Call underlying QUADPACK implementation
     call qagse (fcn, a, b, lepsabs, lepsrel, lnmax, res, labserr, neval, ier, &
         ptr_alist, ptr_blist, ptr_rlist, ptr_elist, ptr_iord, ln)
-    
+
     call map_qagse_status (ier, lstatus)
-    
+
 
 100 continue
     ! Clean up any "local" working arrays
