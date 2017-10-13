@@ -164,14 +164,20 @@ end subroutine
 
 
 
-function __APPEND(ws_get_ptr_int32,__PREC) (self, n) result(ptr)
+pure subroutine __APPEND(ws_get_ptr_1d_int32,__PREC) (self, n, ptr)
+    !*  WORKSPACE_GET_PTR associates a given pointer to a 1d-array with
+    !   a subset of the workspace array of desired length.
+    !
+    !   Note: Cannot be implemented as function returning 1d-pointer,
+    !   as it won't compile with ifort (CONTIGUOUS attribute on function
+    !   return values seems to be ignored).
 
     integer, parameter :: PREC = __PREC
     integer, parameter :: INTSIZE = int32
 
     type (__APPEND(workspace,__PREC)), intent(in out), target :: self
     integer (INTSIZE), intent(in) :: n
-    real (PREC), dimension(:), pointer, contiguous :: ptr
+    real (PREC), intent(out), dimension(:), pointer, contiguous :: ptr
 
     integer (int64) :: ifrom, ito
 
@@ -185,4 +191,35 @@ function __APPEND(ws_get_ptr_int32,__PREC) (self, n) result(ptr)
 
     self%roffset = ito
 
-end function
+end subroutine
+
+
+pure subroutine __APPEND(ws_get_ptr_2d_int32,__PREC) (self, shp, ptr)
+    !*  WORKSPACE_GET_PTR maps a pointer to a 2d-array of given shape to 
+    !   a subset of the 1-dimensional workspace array of appropriate length.
+    !
+    !   Note: Cannot be implemented as function returning 1d-pointer,
+    !   as it won't compile with ifort (CONTIGUOUS attribute on function
+    !   return values seems to be ignored).
+    
+    integer, parameter :: PREC = __PREC
+    integer, parameter :: INTSIZE = int32
+
+    type (__APPEND(workspace,__PREC)), intent(in out), target :: self
+    integer (INTSIZE), intent(in), dimension(:) :: shp
+    real (PREC), intent(out), dimension(:,:), pointer, contiguous :: ptr
+
+    integer (int64) :: ifrom, ito, n
+
+    nullify (ptr)
+
+    n = product(shp)
+    ifrom = self%roffset + 1
+    ito = self%roffset + n
+
+    call assert_alloc (self, nrwrk=ito)
+    ptr(1:shp(1),1:shp(2)) => self%rwrk(ifrom:ito)
+
+    self%roffset = ito
+
+end subroutine

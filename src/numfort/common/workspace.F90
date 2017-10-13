@@ -23,6 +23,8 @@ module numfort_common_workspace
         integer :: nrwrk = SIZE_UNALLOCATED, niwrk = SIZE_UNALLOCATED, &
             ncwrk = SIZE_UNALLOCATED, nlwrk = SIZE_UNALLOCATED
         real (real64), dimension(:), allocatable :: rwrk
+    contains
+        final :: ws_finalize_real64
     end type
 
     type :: workspace_real32
@@ -33,6 +35,8 @@ module numfort_common_workspace
         integer :: nrwrk = SIZE_UNALLOCATED, niwrk = SIZE_UNALLOCATED, &
             ncwrk = SIZE_UNALLOCATED, nlwrk = SIZE_UNALLOCATED
         real (real32), dimension(:), allocatable :: rwrk
+    contains
+        final :: ws_finalize_real32
     end type
 
     interface assert_alloc
@@ -54,7 +58,8 @@ module numfort_common_workspace
     end interface
 
     interface workspace_get_ptr
-        module procedure ws_get_ptr_int32_real32, ws_get_ptr_int32_real64
+        module procedure ws_get_ptr_1d_int32_real32, ws_get_ptr_2d_int32_real32, &
+            ws_get_ptr_1d_int32_real64, ws_get_ptr_2d_int32_real64
     end interface
 
     interface workspace_reset

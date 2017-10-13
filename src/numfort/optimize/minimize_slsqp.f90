@@ -84,7 +84,7 @@ subroutine slsqp_args_real64 (func, x, lbounds, ubounds, m, meq, f_eqcons, &
         !   with a SAVE attribute.
     type (workspace_real64), pointer :: ptr_work
     real (PREC), dimension(:), pointer, contiguous :: ptr_xlb, ptr_xub
-    real (PREC), dimension(:), pointer, contiguous :: ptr_g, ptr_w, ptr_c, ptr_tmp
+    real (PREC), dimension(:), pointer, contiguous :: ptr_g, ptr_w, ptr_c
     real (PREC), dimension(:), pointer, contiguous :: ptr_cx_eq, ptr_cx_ieq
     real (PREC), dimension(:,:), pointer, contiguous :: ptr_cpx_eq, ptr_cpx_ieq
         !   Pointers to arrays that store Jacobians of eq. and ineq. constraints
@@ -100,7 +100,7 @@ subroutine slsqp_args_real64 (func, x, lbounds, ubounds, m, meq, f_eqcons, &
     status = NF_STATUS_INVALID_ARG
     nullify (ptr_work)
     nullify (ptr_xlb, ptr_xub)
-    nullify (ptr_g, ptr_c, ptr_a, ptr_w, ptr_tmp)
+    nullify (ptr_g, ptr_c, ptr_a, ptr_w)
     nullify (ptr_cx_eq, ptr_cx_ieq)
     nullify (ptr_cpx_eq, ptr_cpx_ieq)
 
@@ -174,8 +174,8 @@ subroutine slsqp_args_real64 (func, x, lbounds, ubounds, m, meq, f_eqcons, &
     call workspace_reset (ptr_work)
     call assert_alloc (ptr_work, nrwrk=nrwrk, niwrk=niwrk)
 
-    ptr_xlb => workspace_get_ptr (ptr_work, n)
-    ptr_xub => workspace_get_ptr (ptr_work, n)
+    call workspace_get_ptr (ptr_work, n, ptr_xlb)
+    call workspace_get_ptr (ptr_work, n, ptr_xub)
 
     ! Assert that bounds values are as expected by underlying routine
     call slsqp_sanitize_bounds (lbounds, ubounds, ptr_xlb, ptr_xub)
@@ -186,53 +186,40 @@ subroutine slsqp_args_real64 (func, x, lbounds, ubounds, m, meq, f_eqcons, &
     mode = 0
 
     ! SLSQP implementation expects gradient array to be of size (n+1)
-    ptr_g => workspace_get_ptr (ptr_work, n+1)
+    call workspace_get_ptr (ptr_work, n+1, ptr_g)
 
     ! Pointers to data containing evaluated constraints
     if (.not. has_eq .and. .not. has_ieq) then
         ! Array C is expected to be at least size 1
-        ptr_c => workspace_get_ptr (ptr_work, 1)
+        call workspace_get_ptr (ptr_work, 1, ptr_c)
 
         ! Add "empty" row of stacked Jacobian matrices as SLSQP expects
         ! argument A to be at least (1, n+1).
-        ! BUG: gfortran-5.x segfaults when assigning a pointer to a 1d array
-        ! return from a function to a 2d array. Use temporary 1d-array pointer
-        ! as workaround.
-        ptr_tmp => workspace_get_ptr (ptr_work, n+1)
-        ptr_a(1:1,1:n+1) => ptr_tmp
-        nullify (ptr_tmp)
+        call workspace_get_ptr (ptr_work, [1,n+1], ptr_a)
     else
         ! Array C is expected to contain eq. and ineq. constraint values
         ! concatenated together.
-        ptr_c => workspace_get_ptr (ptr_work, lm)
-        ptr_tmp => workspace_get_ptr (ptr_work, lm * (n+1))
-        ptr_a(1:lm,1:n+1) => ptr_tmp
-        nullify (ptr_tmp)
+        call workspace_get_ptr (ptr_work, lm, ptr_c)
+        call workspace_get_ptr (ptr_work, [lm, n+1], ptr_a)
 
         ioffset = 0
         if (has_eq) then
             ptr_cx_eq => ptr_c(1:lmeq)
             ioffset = lmeq
 
-            k = lmeq * n
-            ptr_tmp => workspace_get_ptr (ptr_work, k)
-            ptr_cpx_eq(1:lmeq,1:n) => ptr_tmp
-            nullify (ptr_tmp)
+            call workspace_get_ptr (ptr_work, [lmeq,n], ptr_cpx_eq)
         end if
         if (has_ieq) then
             ptr_cx_ieq(1:mieq) => ptr_c(ioffset+1:lm)
 
-            k = mieq * n
-            ptr_tmp => workspace_get_ptr (ptr_work, k)
-            ptr_cpx_ieq(1:mieq,1:n) => ptr_tmp
-            nullify (ptr_tmp)
+            call workspace_get_ptr (ptr_work, [mieq,n], ptr_cpx_ieq)
         end if
     end if
 
     ! Assign remaining arguments
     lda = max(1, lm)
     ! Pointer to workspace used directly by SLSQP
-    ptr_w => workspace_get_ptr (ptr_work, lw)
+    call workspace_get_ptr (ptr_work, lw, ptr_w)
     
     ! Overwrite any garbage. In particular, column n+1 of these arrays
     ! will never be used to store data, so no idea what SLSQP is doing with in.
@@ -240,8 +227,13 @@ subroutine slsqp_args_real64 (func, x, lbounds, ubounds, m, meq, f_eqcons, &
     ptr_a(:,:) = 0.0_PREC
 
     nfeval = 0
+    ! Initial value passed into SLSQP determines max. iterations, but
+    ! value is subsequently reset and incremented as new iteration starts.
+    ! SLSQP aborts by itself with the appropriate exit code when max. iter. 
+    ! count is exceeded.
+    iter = lmaxiter
     
-    do iter = 1, lmaxiter
+    do while (.true.)
         if (mode == MODE_INIT .or. mode == MODE_EVAL_FUNCS) then
             ! Compute objective function fx
             call func (x, fx, args=args)
@@ -282,7 +274,7 @@ subroutine slsqp_args_real64 (func, x, lbounds, ubounds, m, meq, f_eqcons, &
 
         ! call original SLSQP routine
         call slsqp_impl (dat, lm, lmeq, lda, n, x, ptr_xlb, ptr_xub, fx, &
-            ptr_c, ptr_g, ptr_a, ltol, lmaxiter, mode, ptr_w, lw, &
+            ptr_c, ptr_g, ptr_a, ltol, iter, mode, ptr_w, lw, &
             ptr_work%iwrk, mineq)
 
         select case (mode)
