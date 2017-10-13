@@ -24,13 +24,6 @@
       integer, intent(inout):: iwrk(kwrk)
       integer, intent(out)  :: ier
 
-c  ..scalar arguments..
-      !real*8 s,sq
-      !integer iopt,m,nest,maxtr,maxbin,n,lwrk,kwrk,ier
-c  ..array arguments..
-      !integer iwrk(kwrk)
-      !real*8 x(m),y(m),w(m),v(m),t(nest),c(nest),sx(m),e(nest),wrk(lwrk)
-      !logical bind(nest)
 c  ..local scalars..
       integer i,ia,ib,ic,iq,iu,iz,izz,i1,j,k,l,l1,m1,nmax,nr,n4,n6,n8,
      * ji,jib,jjb,jl,jr,ju,mb,nm
