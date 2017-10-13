@@ -67,8 +67,9 @@ elemental function __APPEND(dlogistic_ppf,__PREC) (obj, q, loc, scale) &
     type (__APPEND(dlogistic,__PREC)), intent(in) :: obj
         !*  Object identifying type of distribution
     real (PREC), intent(in) :: q
+        !*  Percentile at which to evaluate PPF.
     real (PREC) :: x
-        !*  Value of PDF at point x.
+        !*  Value of PPF at point x.
     real (PREC), intent(in), optional :: loc
         !*  Optional location parameter; if present, overrides
         !   value stored in distribution object

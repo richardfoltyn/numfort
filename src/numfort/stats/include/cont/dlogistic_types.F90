@@ -2,9 +2,9 @@
 type, public :: __APPEND(dlogistic,__PREC)
     !*  Type representing logistic distribution
 
-    real (__PREC) :: loc
+    real (__PREC) :: loc = 0.0
         !*  Location parameter
-    real (__PREC) :: scale
+    real (__PREC) :: scale = 1.0
         !*  Scale parameter
 end type
 
