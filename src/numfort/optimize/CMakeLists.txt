@@ -3,6 +3,8 @@ set(COMPONENT_NAME optimize)
 
 set(SOURCE_FILES
     optimize.f90
+    interfaces.f90
+    fwrapper.f90
     optim_result.F90
     minimize_lbfgsb.f90
     minimize_simplex.f90
