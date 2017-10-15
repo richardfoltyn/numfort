@@ -10,7 +10,7 @@ pure function __APPEND(norm_sup_diff_3d,__PREC) (arr1, arr2) result(res)
     integer :: i1, i2, i3
 
     res = - 1.0_PREC
-    if (any(shape(arr1) /= shape(arr2))) return
+    if (.not. shape_equal(arr1, arr2)) return
 
     do i3 = 1, size(arr1, 3)
         do i2 = 1, size(arr1, 2)
@@ -33,7 +33,7 @@ pure function __APPEND(norm_sup_diff_4d,__PREC) (arr1, arr2) result(res)
     integer :: i1, i2, i3, i4
     
     res = - 1.0_PREC
-    if (any(shape(arr1) /= shape(arr2))) return
+    if (.not. shape_equal(arr1, arr2)) return
 
     do i4 = 1, size(arr1, 4)
         do i3 = 1, size(arr1, 3)
