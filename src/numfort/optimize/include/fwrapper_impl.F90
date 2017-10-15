@@ -15,9 +15,9 @@ end subroutine
 subroutine __APPEND(fwrapper_vec_scalar_dispatch,__PREC) (self, x, fx, fpx, args)
     integer, parameter :: PREC = __PREC
     type (__APPEND(fwrapper_vec_scalar,__PREC)), intent(in) :: self
-    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(out), optional :: fx
-    real (PREC), intent(out), dimension(:), optional :: fpx
+    real (PREC), intent(out), dimension(:), contiguous, optional :: fpx
     real (PREC), intent(in), dimension(:), optional :: args
 
     if (associated(self%fcn_args)) then
@@ -53,9 +53,9 @@ end subroutine
 subroutine __APPEND(fwrapper_vec_vec_dispatch,__PREC) (self, x, fx, fpx, args)
     integer, parameter :: PREC = __PREC
     type (__APPEND(fwrapper_vec_vec,__PREC)), intent(in) :: self
-    real (PREC), intent(in), dimension(:) :: x
-    real (PREC), intent(out), dimension(:), optional :: fx
-    real (PREC), intent(out), dimension(:,:), optional :: fpx
+    real (PREC), intent(in), dimension(:), contiguous :: x
+    real (PREC), intent(out), dimension(:), contiguous, optional :: fx
+    real (PREC), intent(out), dimension(:,:), contiguous, optional :: fpx
     real (PREC), intent(in), dimension(:), optional :: args
 
     if (associated(self%fcn_args)) then
