@@ -40,14 +40,6 @@ else ()
 endif ()
 
 ################################################################################
-# Set Fortran compiler FLAGS
-
-if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-    # enable optimization that does not break debugging
-    set(CMAKE_Fortran_FLAGS_DEBUG "-Og")
-endif ()
-
-################################################################################
 # Target definitions
 
 set(SOURCE_FILES

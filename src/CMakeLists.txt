@@ -173,70 +173,41 @@ message(STATUS "MOD file install directory: ${CMAKE_INSTALL_PREFIX}/${CMAKE_INST
 ################################################################################
 # Compiler FLAGS
 
-unset(_FFLAGS)
-unset(_FFLAGS_DEBUG)
-# global _FFLAGS will be added to CMAKE_Fortran_FLAGS and thus effect
-# compilation of F77 external code
-unset(_FFLAGS_GLOBAL)
-
 # Notes on the floating point model used by ifort:
 # https://software.intel.com/en-us/articles/consistency-of-floating-point-results-using-the-intel-compiler/
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     # explicitly add -cpp to run C preprocessor if required
-    set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} -Wall -Wextra -Wno-compare-reals")
-    set(GNU_WARN "-Warray-temporaries -Wrealloc-lhs -pedantic")
-    set(_FFLAGS "${GNU_WARN} -std=f2008")
-    set(_FFLAGS_GLOBAL_DEBUG "-fcheck=all -Og")
-    set(_FFLAGS_DEBUG "-save-temps")
+    # By default set -Wall, but disable warnings when comparing reals 
+    # and -Wsurpsiring, as this generates numerous warnings about finalizers.
+    set(_FFLAGS "${_FFLAGS} -Wall -Wno-compare-reals -Wno-surprising")
+    set(_FFLAGS_DEBUG "-fcheck=all -Og")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
         set(_FFLAGS_FP "/fp:precise /fp:source")
-        set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} /warn:all /auto ")
-        set(_FFLAGS "/standard-semantics /stand:f08")
-        set(_FFLAGS_GLOBAL_DEBUG "/check:all")
-        set(_FFLAGS_DEBUG "/Qsave-temps")
+        set(_FFLAGS "/warn:all /auto ${_FFLAGS_FP}")
+        set(_FFLAGS_DEBUG "/check:all")
 
         if (NOT IFORT_STD_MOD_PROC_NAME)
-            set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} /assume:nostd_mod_proc_name")
+            set(_FFLAGS "${_FFLAGS} /assume:nostd_mod_proc_name")
         else ()
-            set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} /assume:std_mod_proc_name")
+            set(_FFLAGS "${_FFLAGS} /assume:std_mod_proc_name")
         endif ()
     else ()
         set(_FFLAGS_FP "-fp-model precise -fp-model source")
-        set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} -warn all -auto")
-        set (_FFLAGS "-standard-semantics -std08")
-        set(_FFLAGS_GLOBAL_DEBUG "-check all")
-        set(_FFLAGS_DEBUG "-save-temps")
+        set(_FFLAGS " -warn all -auto ${_FFLAGS_FP}")
+        set(_FFLAGS_DEBUG "-check all")
 
         if (NOT IFORT_STD_MOD_PROC_NAME)
-            set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} -assume nostd_mod_proc_name")
+            set(_FFLAGS "${_FFLAGS} -assume nostd_mod_proc_name")
         else ()
-            set(_FFLAGS_GLOBAL "${_FFLAGS_GLOBAL} -assume std_mod_proc_name")
+            set(_FFLAGS "${_FFLAGS} -assume std_mod_proc_name")
         endif ()
     endif (WIN32)
 endif ()
 
-# add standard semantics to compiler flags even for F77 files, in case
-# these reference any submodules
-set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS_GLOBAL} ${_FFLAGS_FP}")
-set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${_FFLAGS_GLOBAL_DEBUG}")
-
-message(STATUS "Default compiler flags: ${CMAKE_Fortran_FLAGS}")
-# Make sure build type is upper case, otherwise the wrong flags will be shown
-string(TOUPPER "${CMAKE_BUILD_TYPE}" _CONFIG)
-if (CMAKE_Fortran_FLAGS_${_CONFIG})
-    message(STATUS "Default compiler flags for ${CMAKE_BUILD_TYPE}: ${CMAKE_Fortran_FLAGS_${_CONFIG}}")
-endif ()
-if (_FFLAGS)
-    message(STATUS "Add. compiler flags: ${_FFLAGS}")
-endif ()
-if (_FFLAGS_${_CONFIG})
-    message(STATUS "Add. compiler flags for ${CMAKE_BUILD_TYPE}: ${_FFLAGS_GLOBAL_${_CONFIG}} ${_FFLAGS_${_CONFIG}}")
-endif ()
-
-set(${CMAKE_PROJECT_NAME}_FFLAGS "${_FFLAGS}")
-set(${CMAKE_PROJECT_NAME}_FFLAGS_DEBUG "${_FFLAGS_DEBUG}")
+set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS}")
+set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${_FFLAGS_DEBUG}")
 
 ################################################################################
 # External projects
@@ -246,14 +217,6 @@ set(${CMAKE_PROJECT_NAME}_FFLAGS_DEBUG "${_FFLAGS_DEBUG}")
 
 add_subdirectory(external)
 add_subdirectory(interfaces)
-
-################################################################################
-# FFLAGS for numfort, benchmark and testing subdirectories
-
-set(CMAKE_Fortran_FLAGS "${_FFLAGS} ${CMAKE_Fortran_FLAGS}")
-set(CMAKE_Fortran_FLAGS_DEBUG
-    "${_FFLAGS_DEBUG} ${CMAKE_Fortran_FLAGS_DEBUG}"
-)
 
 ################################################################################
 # Targets

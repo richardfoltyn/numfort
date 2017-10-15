@@ -3,6 +3,44 @@
 
 find_package(fcore REQUIRED)
 
+################################################################################
+# Additional compiler flags for unit tests
+
+unset(_FFLAGS)
+unset(_FFLAGS_DEBUG)
+
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
+    # explicitly add -cpp to run C preprocessor if required
+    set(_FFLAGS "-std=f2008")
+elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+    if (WIN32)
+        set(_FFLAGS "/standard-semantics /stand:f08")
+        if (NOT IFORT_STD_MOD_PROC_NAME)
+            set(_FFLAGS "${_FFLAGS} /assume:nostd_mod_proc_name")
+        else ()
+            set(_FFLAGS "${_FFLAGS} /assume:std_mod_proc_name")
+        endif ()
+    else ()
+        set (_FFLAGS "-standard-semantics -std08")
+        if (NOT IFORT_STD_MOD_PROC_NAME)
+            set(_FFLAGS "${_FFLAGS} -assume nostd_mod_proc_name")
+        else ()
+            set(_FFLAGS "${_FFLAGS} -assume std_mod_proc_name")
+        endif ()
+    endif (WIN32)
+endif ()
+
+# add standard semantics to compiler flags even for F77 files, in case
+# these reference any submodules
+set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS}")
+set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${_FFLAGS_DEBUG}")
+
+string(TOUPPER "${CMAKE_BUILD_TYPE}" _CONFIG)
+message(STATUS "Flags for TESTS: ${CMAKE_Fortran_FLAGS} ${CMAKE_Fortran_FLAGS_${_CONFIG}}")
+
+################################################################################
+
+
 list(APPEND COMPONENTS
     arrays
     integrate
