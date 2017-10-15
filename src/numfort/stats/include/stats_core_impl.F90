@@ -111,12 +111,17 @@ pure subroutine __APPEND(mean_2d,__PREC) (x, m, dim, status)
     type (status_t) :: lstatus
     ! iv indexes variables, iobs individual observations
     integer :: iv, iobs, nvars, nobs, ldim
+    integer, dimension(2) :: shp
 
     ! default values
     lstatus = NF_STATUS_OK
     m = 0.0_PREC
+    shp = shape(x)
+    ! initialize to something so gfortran does not complain
+    nvars = -1
+    nobs = -1
 
-    call mean_std_init (shape(x), dim, ldim, nvars, nobs, status=lstatus)
+    call mean_std_init (shp, dim, ldim, nvars, nobs, status=lstatus)
     if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
     call mean_std_check_input (nvars, nobs, m, status=lstatus)
@@ -261,14 +266,19 @@ pure subroutine __APPEND(std_2d,__PREC) (x, s, m, dof, dim, status)
     type (status_t) :: lstatus
     ! iv indexes variables, iobs individual observations
     integer :: iv, iobs, nvars, nobs, ldof, ldim
+    integer, dimension(2) :: shp
 
     ! set default values
     lstatus = NF_STATUS_OK
     s = 0.0_PREC
     ldof = 1
     if (present(m)) m = 0.0_PREC
+    ! Initialize to something so gfortran does not complain
+    nvars = -1
+    nobs = -1
 
-    call mean_std_init (shape(x), dim, ldim, nvars, nobs, status=lstatus)
+    shp = shape(x)
+    call mean_std_init (shp, dim, ldim, nvars, nobs, status=lstatus)
     if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
     ! Note: Array s must come before m, as m is optional and needs to 
@@ -357,6 +367,7 @@ pure subroutine __APPEND(normalize_2d,__PREC) (x, m, s, dim, center, scale, &
     ! iv indexes variables, iobs individual observations
     integer :: iv, iobs, nvars, nobs
     logical :: lscale, lcenter
+    integer, dimension(2) :: shp
 
     lcenter = .true.
     lscale = .true.
@@ -365,8 +376,13 @@ pure subroutine __APPEND(normalize_2d,__PREC) (x, m, s, dim, center, scale, &
     if (present(scale)) lscale = scale
     if (present(dof)) ldof = dof
 
+    ! Initialize to supress gfortran warnings
+    nvars = -1
+    nobs = -1
+
     ! initialize dim, nvars and nobs from input data
-    call mean_std_init (shape(x), dim, ldim, nvars, nobs, status=lstatus)
+    shp = shape(x)
+    call mean_std_init (shp, dim, ldim, nvars, nobs, status=lstatus)
     if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
     ! Delegate all remaining input checking to STD or MEAN routines
