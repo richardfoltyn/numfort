@@ -130,9 +130,9 @@ end subroutine
 
 
 pure subroutine fobj (x, fx, fpx, args)
-    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(out), optional :: fx
-    real (PREC), intent(out), dimension(:), optional :: fpx
+    real (PREC), intent(out), dimension(:), contiguous, optional :: fpx
     real (PREC), intent(in), dimension(:), optional :: args
     
     real (PREC) :: alpha, beta
@@ -160,9 +160,9 @@ end subroutine
 pure subroutine fconstr (x, fx, fpx, args)
     !*  Function evaluating inequality constraints
     !   Constraints needs to be formulated such that C(x) >= 0
-    real (real64), intent(in), dimension(:) :: x
-    real (real64), intent(out), dimension(:), optional :: fx
-    real (real64), intent(out), dimension(:,:), optional :: fpx
+    real (real64), intent(in), dimension(:), contiguous :: x
+    real (real64), intent(out), dimension(:), contiguous, optional :: fx
+    real (real64), intent(out), dimension(:,:), contiguous, optional :: fpx
     real (real64), intent(in), dimension(:), optional :: args
     
     real (PREC) :: alpha, beta

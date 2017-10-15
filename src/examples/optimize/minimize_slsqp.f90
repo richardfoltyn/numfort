@@ -52,9 +52,9 @@ subroutine example2 ()
 end subroutine
 
 subroutine fobj (x, fx, fpx)
-    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(out), optional :: fx
-    real (PREC), intent(out), dimension(:), optional :: fpx
+    real (PREC), intent(out), dimension(:), optional, contiguous :: fpx
 
     if (present(fx)) then
         ! Compute objective
@@ -71,9 +71,9 @@ end subroutine
 subroutine fconstr (x, fx, fpx)
     !*  Function evaluating inequality constraints
     !   Constraints needs to be formulated such that C(x) >= 0
-    real (real64), intent(in), dimension(:) :: x
-    real (real64), intent(out), dimension(:), optional :: fx
-    real (real64), intent(out), dimension(:,:), optional :: fpx
+    real (real64), intent(in), dimension(:), contiguous :: x
+    real (real64), intent(out), dimension(:), contiguous, optional :: fx
+    real (real64), intent(out), dimension(:,:), contiguous, optional :: fpx
 
     if (present(fx)) then
         fx = -x(1)**2.0d0 - x(2) ** 2.0d0 + 1.0d0
@@ -87,9 +87,9 @@ end subroutine
 
 
 subroutine fconstr2 (x, fx, fpx)
-    real (PREC), intent(in), dimension(:) :: x
-    real (PREC), intent(out), dimension(:), optional :: fx
-    real (PREC), intent(out), dimension(:,:), optional :: fpx
+    real (PREC), intent(in), dimension(:), contiguous :: x
+    real (PREC), intent(out), dimension(:), contiguous, optional :: fx
+    real (PREC), intent(out), dimension(:,:), contiguous, optional :: fpx
 
     if (present(fx)) then
         fx = -x(1)**2.0d0 - x(2) ** 3.0d0 + 1.0d0
