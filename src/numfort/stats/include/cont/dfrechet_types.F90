@@ -23,7 +23,7 @@ interface ppf
     module procedure __APPEND(dfrechet_ppf,__PREC)
 end interface
 
-interface mean
+interface dist_mean
     module procedure __APPEND(dfrechet_mean,__PREC)
 end interface
 

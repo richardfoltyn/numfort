@@ -140,7 +140,7 @@ elemental function __APPEND(dfrechet_ppf,__PREC) (obj, q, loc, scale, shape) &
         !*  Optional shape parameter; if present, overrides
         !   value stored in distribution object
 
-    real (PREC) :: lloc, lscale, lshape, z
+    real (PREC) :: lloc, lscale, lshape
 
     call get_dist_params (obj, loc, scale, shape, lloc, lscale, lshape)
 

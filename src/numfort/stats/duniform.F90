@@ -15,7 +15,8 @@ module numfort_stats_duniform
 #include "numfort_real64.h"
 #include "cont/duniform_types.F90"
 
-    type (duniform_real64), protected :: uniform = duniform_real64(loc=0.0d0, scale=1.0d0)
+    type (duniform_real64), protected, public :: &
+        uniform = duniform_real64(loc=0.0d0, scale=1.0d0)
         !*  Distribution object for the continuous standard uniform
         !   distribution (double precision)
 

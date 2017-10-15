@@ -14,7 +14,7 @@ module numfort_stats_dfrechet
 
     private
 
-    public :: cdf, pdf, ppf, mean
+    public :: cdf, pdf, ppf, dist_mean
 
 
 #include "numfort_real32.h"
