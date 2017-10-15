@@ -140,6 +140,7 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
         !   Pointer to array that stores stacked Jacobians of eq. and ineq.
         !   constraints.
     integer :: nrwrk, niwrk, ioffset
+    integer, dimension(2) :: shp
 
     integer :: n, n1, mineq, mode, lmeq, lm, mieq, k, lda, lw
     logical :: has_eq, has_ieq
@@ -243,24 +244,34 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
 
         ! Add "empty" row of stacked Jacobian matrices as SLSQP expects
         ! argument A to be at least (1, n+1).
-        call workspace_get_ptr (ptr_work, [1,n+1], ptr_a)
+        ! Assign shape such that gfortran does not create warnings about
+        ! temporaray arrays.
+        shp(1) = 1
+        shp(2) = n+1
+        call workspace_get_ptr (ptr_work, shp, ptr_a)
     else
         ! Array C is expected to contain eq. and ineq. constraint values
         ! concatenated together.
         call workspace_get_ptr (ptr_work, lm, ptr_c)
-        call workspace_get_ptr (ptr_work, [lm, n+1], ptr_a)
+        shp = lm
+        shp(2) = n+1
+        call workspace_get_ptr (ptr_work, shp, ptr_a)
 
         ioffset = 0
         if (has_eq) then
             ptr_cx_eq => ptr_c(1:lmeq)
             ioffset = lmeq
-
-            call workspace_get_ptr (ptr_work, [lmeq,n], ptr_cpx_eq)
+            
+            shp(1) = lmeq
+            shp(2) = n
+            call workspace_get_ptr (ptr_work, shp, ptr_cpx_eq)
         end if
         if (has_ieq) then
             ptr_cx_ieq(1:mieq) => ptr_c(ioffset+1:lm)
 
-            call workspace_get_ptr (ptr_work, [mieq,n], ptr_cpx_ieq)
+            shp(1) = mieq
+            shp(2) = n
+            call workspace_get_ptr (ptr_work, shp, ptr_cpx_ieq)
         end if
     end if
 
