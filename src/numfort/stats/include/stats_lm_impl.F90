@@ -440,12 +440,12 @@ pure subroutine __APPEND(pcr_check_input,__PREC) (lhs, scores, sval, loadings, &
 
     call pcr_get_dims (lhs, scores, coefs, add_const, &
         nobs, nvars, ncomp, nlhs, ncoefs, nconst)
-        
+
     if (nobs < 1 .or. nobs < ncomp) return
     ! Check shapes for all arrays, even though some of these were used to
     ! obtain the dimensions in the first place and are thus by definition true.
     if (size(lhs,1) /= nobs .or. size(lhs,2) /= nlhs) return
-    if (size(scores,1) /= nobs .or. size(lhs,2) /= ncomp) return
+    if (size(scores,1) /= nobs .or. size(scores,2) /= ncomp) return
     if (size(sval) < ncomp) return
     if (size(loadings,1) /= nvars .or. size(loadings,2) /= ncomp) return
     if (size(coefs,1) /= ncoefs .or. size(coefs,2) /= nlhs) return
