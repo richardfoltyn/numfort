@@ -153,7 +153,8 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     nullify (ptr_cx_eq, ptr_cx_ieq)
     nullify (ptr_cpx_eq, ptr_cpx_ieq)
 
-    call slsqp_check_input (m ,meq, f_eqcons, f_ieqcons, maxiter, tol, status, msg)
+    call slsqp_check_input (x, lbounds, ubounds, m ,meq, f_eqcons, f_ieqcons, &
+        maxiter, tol, status, msg)
     if (NF_STATUS_INVALID_ARG .in. status) goto 100
 
     ! Determine if enough information is present for equality or inequality
@@ -261,7 +262,7 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
         if (has_eq) then
             ptr_cx_eq => ptr_c(1:lmeq)
             ioffset = lmeq
-            
+
             shp(1) = lmeq
             shp(2) = n
             call workspace_get_ptr (ptr_work, shp, ptr_cpx_eq)
@@ -383,11 +384,13 @@ end subroutine
 
 
 
-subroutine slsqp_check_input_real64 (m, meq, f_eqcons, f_ieqcons, maxiter, &
-        tol, status, msg)
+subroutine slsqp_check_input_real64 (x, lbounds, ubounds, m, meq, &
+        f_eqcons, f_ieqcons, maxiter, tol, status, msg)
 
     integer, parameter :: PREC = real64
 
+    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), optional :: lbounds, ubounds
     integer, intent(in), optional :: m, meq
     type (fwrapper_vec_vec_real64), intent(in) :: f_eqcons
     type (fwrapper_vec_vec_real64), optional :: f_ieqcons
@@ -397,8 +400,25 @@ subroutine slsqp_check_input_real64 (m, meq, f_eqcons, f_ieqcons, maxiter, &
     character (*), intent(out) :: msg
 
     logical :: has_eq, has_ieq
+    integer :: n
 
     status = NF_STATUS_OK
+
+    n = size(x)
+
+    if (present(lbounds)) then
+        if (size(lbounds) < n) then
+            msg = "Argument 'lbounds': non-conformable array size"
+            goto 100
+        end if
+    end if
+
+    if (present(ubounds)) then
+        if (size(ubounds) < n) then
+            msg = "Argument 'ubounds': non-conformable array size"
+            goto 100
+        end if
+    end if
 
     has_eq = is_present(f_eqcons) .and. (present(meq) .or. &
         (.not. is_present(f_ieqcons) .and. present(m)))
