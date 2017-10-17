@@ -4,7 +4,7 @@
 
 unset(_FFLAGS_DEBUG)
 unset(_FFLAGS)
-unset(_FFLAGS)
+unset(_FFLAGS_RELEASE)
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     # there shouldn't be many issues with LHS reallocation or temporary arrays
@@ -13,8 +13,10 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
         set(_FFLAGS "/warn:all")
+        set(_FLAGS_RELEASE "/Qipo")
     else ()
         set(_FFLAGS "-warn all")
+        set(_FFLAGS_RELEASE "-ipo")
     endif (WIN32)
 endif ()
 
