@@ -9,6 +9,7 @@ project(numfort C Fortran)
 
 unset(_FFLAGS)
 unset(_FFLAGS_DEBUG)
+unset(_FFLAGS_RELEASE)
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     # explicitly add -cpp to run C preprocessor if required
@@ -19,7 +20,7 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
         set(_FFLAGS "/warn:all /standard-semantics /stand:f08")
         set(_FFLAGS_DEBUG "/Qsave-temps")
-        
+
         # NOTE: When setting -standard-semantics, resets any previously
         # given -assume std_mod_proc_name, so we need to append it again!
         if (NOT IFORT_STD_MOD_PROC_NAME)
@@ -30,7 +31,7 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     else ()
         set(_FFLAGS "-warn all -standard-semantics -std08")
         set(_FFLAGS_DEBUG "-save-temps")
-        
+
         if (NOT IFORT_STD_MOD_PROC_NAME)
             set(_FFLAGS "${_FFLAGS} -assume nostd_mod_proc_name")
         else ()
@@ -41,6 +42,9 @@ endif ()
 
 set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS}")
 set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${_FFLAGS_DEBUG}")
+set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} ${_FFLAGS_RELEASE}")
+
+set_property(DIRECTORY PROPERTY INTERPROCEDURAL_OPTIMIZATION 1)
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" _CONFIG)
 message(STATUS "Flags for NUMFORT library: ${CMAKE_Fortran_FLAGS} ${CMAKE_Fortran_FLAGS_${_CONFIG}}")
@@ -49,14 +53,14 @@ message(STATUS "Flags for NUMFORT library: ${CMAKE_Fortran_FLAGS} ${CMAKE_Fortra
 # Target definitions
 
 # add individual numfort components as object libraries
-set(COMPONENTS 
-    core 
-    common 
-    arrays 
-    interpolate 
+set(COMPONENTS
+    core
+    common
+    arrays
+    interpolate
     integrate
-    linalg 
-    optimize 
+    linalg
+    optimize
     stats
 )
 

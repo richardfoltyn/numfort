@@ -4,6 +4,7 @@
 
 unset(_FFLAGS_DEBUG)
 unset(_FFLAGS)
+unset(_FFLAGS)
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     # there shouldn't be many issues with LHS reallocation or temporary arrays
@@ -19,6 +20,7 @@ endif ()
 
 set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS}")
 set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${_FFLAGS_DEBUG}")
+set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} ${_FFLAGS_RELEASE}")
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" _CONFIG)
 message(STATUS "Flags for EXTERNAL code: ${CMAKE_Fortran_FLAGS} ${CMAKE_Fortran_FLAGS_${_CONFIG}}")

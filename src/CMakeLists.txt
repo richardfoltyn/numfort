@@ -88,7 +88,8 @@ endif()
 ################################################################################
 # MKL
 if (USE_MKL)
-    find_package(MKL REQUIRED)
+    # find_package(MKL REQUIRED)
+    find_package(MKL REQUIRED SEQUENTIAL LAPACK95 BLAS95)
     set(${PROJECT_NAME}_BLA_LIBRARIES ${MKL_LIBRARIES})
 else ()
     find_package(LAPACK REQUIRED)
@@ -178,7 +179,7 @@ message(STATUS "MOD file install directory: ${CMAKE_INSTALL_PREFIX}/${CMAKE_INST
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     # explicitly add -cpp to run C preprocessor if required
-    # By default set -Wall, but disable warnings when comparing reals 
+    # By default set -Wall, but disable warnings when comparing reals
     # and -Wsurpsiring, as this generates numerous warnings about finalizers.
     set(_FFLAGS "${_FFLAGS} -Wall -Wno-compare-reals -Wno-surprising")
     set(_FFLAGS_DEBUG "-fcheck=all -Og")
@@ -205,6 +206,8 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
         endif ()
     endif (WIN32)
 endif ()
+
+set_property(DIRECTORY PROPERTY INTERPROCEDURAL_OPTIMIZATION 1)
 
 set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS}")
 set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${_FFLAGS_DEBUG}")
@@ -272,7 +275,7 @@ add_library(${NUMFORT_LIBRARY_NAME}_static STATIC ${SOURCE_FILES} ${COMPONENT_OB
 
 include(CMakePackageConfigHelpers)
 
-# Allow for installing ifort and gfortran version of libraries side-by-side by 
+# Allow for installing ifort and gfortran version of libraries side-by-side by
 # appending compiler suffix
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     set(Fortran_COMPILER_SUFFIX "gf")
@@ -283,7 +286,7 @@ else ()
 endif ()
 
 # Installation directory within <prefix>/lib, <prefix>/include, etc.
-# If ont defined by -DNUMFORT_INSTALL_DIR by the user, create 
+# If ont defined by -DNUMFORT_INSTALL_DIR by the user, create
 # version- and compiler-specific directory name.
 if (NOT DEFINED NUMFORT_INSTALL_DIR)
     set(_version ${NUMFORT_VERSION_MAJOR}.${NUMFORT_VERSION_MINOR})
@@ -295,7 +298,7 @@ if (NOT DEFINED NUMFORT_INSTALL_DIR)
 endif()
 
 # Path there cmake config files will be installed
-set(NUMFORT_INSTALL_CONFIG_PATH 
+set(NUMFORT_INSTALL_CONFIG_PATH
     ${CMAKE_INSTALL_LIBDIR}/${NUMFORT_INSTALL_DIR}/cmake
 )
 set(NUMFORT_INSTALL_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/install")
