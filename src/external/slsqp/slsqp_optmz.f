@@ -34,8 +34,8 @@ C
 *                              optimizer                               *
 ************************************************************************
 
-      SUBROUTINE slsqp (dat, m, meq, la, n, x, xl, xu, f, c, g, a,
-     *                  acc, iter, mode, w, l_w, jw, l_jw)
+      SUBROUTINE slsqp (dat, dat_lm, m, meq, la, n, x, xl, xu, f, c, g,
+     *                  a, acc, iter, mode, w, l_w, jw, l_jw)
 
 C   SLSQP       S EQUENTIAL  L EAST  SQ UARES  P ROGRAMMING
 C            TO SOLVE GENERAL NONLINEAR OPTIMIZATION PROBLEMS
@@ -216,6 +216,9 @@ C***********************************************************************
       type (slsqp_data), intent(in out) :: dat
 C       Container object used to store variables that were originally
 C       declared with the SAVE attribute in SLSQPB.
+      type (linmin_data), intent(in out) :: dat_lm
+C       Container object used to store variables that should have been
+C       declared with the SAVE attribute in LINMIN.
 
       integer, intent(in) :: m, meq, la, n, l_w, l_jw
       integer, intent(in out) :: iter, mode
@@ -261,13 +264,14 @@ C   PREPARE DATA FOR CALLING SQPBDY  -  INITIAL ADDRESSES IN W
       iv = iu + n1
       iw = iv + n1
 
-      CALL slsqpb  (dat, m, meq, la, n, x, xl, xu, f, c, g, a, acc,
-     *  iter, mode, w(ir), w(il), w(ix), w(im), w(is), w(iu), w(iv),
-     *  w(iw), jw)
+      CALL slsqpb  (dat, dat_lm, m, meq, la, n, x, xl, xu, f, c, g, a,
+     *  acc, iter, mode, w(ir), w(il), w(ix), w(im), w(is), w(iu),
+     *  w(iv), w(iw), jw)
 
       END
 
-      SUBROUTINE slsqpb (dat, m, meq, la, n, x, xl, xu, f, c, g, a, acc,
+      SUBROUTINE slsqpb (dat, dat_lm, m, meq, la, n, x, xl, xu, f, c,
+     *                   g, a, acc,
      *                   iter, mode, r, l, x0, mu, s, u, v, w, iw)
 
 C   NONLINEAR PROGRAMMING BY SOLVING SEQUENTIALLY QUADRATIC PROGRAMS
@@ -276,6 +280,7 @@ C        -  L1 - LINE SEARCH,  POSITIVE DEFINITE  BFGS UPDATE  -
 
 C                      BODY SUBROUTINE FOR SLSQP
       type (slsqp_data), intent(in out) :: dat
+      type (linmin_data), intent(in out) :: dat_lm
 
       INTEGER          iw(*), i, iter, k, j, la, m, meq, mode, n
 
@@ -440,7 +445,8 @@ C   INEXACT LINESEARCH
 C   EXACT LINESEARCH
 
   210 IF (dat%line.NE.3) THEN
-          dat%alpha = linmin(dat%line,alfmin,one,dat%t,dat%tol)
+          call linmin (dat_lm,dat%line,alfmin,one,dat%t,dat%tol,
+     *                 dat%alpha)
           CALL dcopy_(n, x0, 1, x, 1)
           CALL daxpy_sl(n, dat%alpha, s, 1, x, 1)
           mode = 1
@@ -486,7 +492,7 @@ C   CHECK CONVERGENCE
 C   CHECK relaxed CONVERGENCE in case of positive directional derivative
 
   255 CONTINUE
-      IF ((ABS(f-dat%f0).LT.dat%tol .OR. dnrm2_(n,s,1).LT.dat%tol) 
+      IF ((ABS(f-dat%f0).LT.dat%tol .OR. dnrm2_(n,s,1).LT.dat%tol)
      *      .AND. dat%h3.LT.dat%tol)
      *   THEN
             mode = 0
@@ -1519,7 +1525,7 @@ C   SUBROUTINES REQUIRED: NONE
 
       INTEGER          i, ij, j, n
       real (PREC) a(*), t, v, w(*), z(*), u, tp, beta,
-     *                 alpha, delta, gamma, sigma 
+     *                 alpha, delta, gamma, sigma
 
       IF(sigma.EQ.ZERO)               GOTO 280
       ij=1
@@ -1571,7 +1577,7 @@ C HERE UPDATING BEGINS
 C END OF LDL
       END
 
-      real (PREC) FUNCTION linmin (mode, ax, bx, f, tol)
+      pure subroutine linmin (dat, mode, ax, bx, f, tol, res)
 C   LINMIN  LINESEARCH WITHOUT DERIVATIVES
 
 C   PURPOSE:
@@ -1617,117 +1623,126 @@ C   STATUS: 31. AUGUST  1984
 
 C   SUBROUTINES REQUIRED: NONE
 
-      INTEGER          mode
-      real (PREC) f, tol, a, b, d, e, p, q, r, u, v, w, x, m,
-     &                 fu, fv, fw, fx, tol1, tol2, ax, bx
-      real (PREC), parameter :: c = 0.381966011d0
-      real (PREC), parameter :: eps = 1.5d-8 
+      type (linmin_data), intent(in out) :: dat
+C       Container object to store variables that need to be persistent
+C       across calls.
+      integer, intent(in out) :: mode
+      real (PREC), intent(in) :: ax, bx
+      real (PREC), intent(in) :: f
+      real (PREC), intent(in) :: tol
+      real (PREC), intent(out) :: res
 
-C  EPS = SQUARE - ROOT OF MACHINE PRECISION
+      real (PREC) p, q, r, m, tol1, tol2
+
 C  C = GOLDEN SECTION RATIO = (3-SQRT(5))/2
+      real (PREC), parameter :: c = 0.381966011d0
+C  EPS = SQUARE - ROOT OF MACHINE PRECISION
+      real (PREC), parameter :: eps = sqrt(epsilon(0.0_PREC))
+
 
       GOTO (10, 55), mode
 
 C  INITIALIZATION
 
-      a = ax
-      b = bx
-      e = ZERO
-      v = a + c*(b - a)
-      w = v
-      x = w
-      linmin = x
+      dat%a = ax
+      dat%b = bx
+      dat%e = ZERO
+      dat%v = dat%a + c*(dat%b - dat%a)
+      dat%w = dat%v
+      dat%x = dat%w
+      res = dat%x
       mode = 1
       GOTO 100
 
 C  MAIN LOOP STARTS HERE
 
-   10 fx = f
-      fv = fx
-      fw = fv
-   20 m = 0.5d0*(a + b)
-      tol1 = eps*ABS(x) + tol
+   10 dat%fx = f
+      dat%fv = dat%fx
+      dat%fw = dat%fv
+   20 m = 0.5d0*(dat%a + dat%b)
+      tol1 = eps*ABS(dat%x) + tol
       tol2 = tol1 + tol1
 
 C  TEST CONVERGENCE
 
-      IF (ABS(x - m) .LE. tol2 - 0.5d0*(b - a)) GOTO 90
+      IF (ABS(dat%x - m) .LE. tol2 - 0.5d0*(dat%b - dat%a)) GOTO 90
       r = ZERO
       q = r
       p = q
-      IF (ABS(e) .LE. tol1) GOTO 30
+      IF (ABS(dat%e) .LE. tol1) GOTO 30
 
 C  FIT PARABOLA
 
-      r = (x - w)*(fx - fv)
-      q = (x - v)*(fx - fw)
-      p = (x - v)*q - (x - w)*r
+      r = (dat%x - dat%w)*(dat%fx - dat%fv)
+      q = (dat%x - dat%v)*(dat%fx - dat%fw)
+      p = (dat%x - dat%v)*q - (dat%x - dat%w)*r
       q = q - r
       q = q + q
       IF (q .GT. ZERO) p = -p
       IF (q .LT. ZERO) q = -q
-      r = e
-      e = d
+      r = dat%e
+      dat%e = dat%d
 
 C  IS PARABOLA ACCEPTABLE
 
    30 IF (ABS(p) .GE. 0.5d0*ABS(q*r) .OR.
-     &    p .LE. q*(a - x) .OR. p .GE. q*(b-x)) GOTO 40
+     &    p .LE. q*(dat%a - dat%x) .OR. p .GE. q*(dat%b-dat%x)) GOTO 40
 
 C  PARABOLIC INTERPOLATION STEP
 
-      d = p/q
+      dat%d = p/q
 
 C  F MUST NOT BE EVALUATED TOO CLOSE TO A OR B
 
-      IF (u - a .LT. tol2) d = SIGN(tol1, m - x)
-      IF (b - u .LT. tol2) d = SIGN(tol1, m - x)
+      IF (dat%u - dat%a .LT. tol2) dat%d = SIGN(tol1, m - dat%x)
+      IF (dat%b - dat%u .LT. tol2) dat%d = SIGN(tol1, m - dat%x)
       GOTO 50
 
 C  GOLDEN SECTION STEP
 
-   40 IF (x .GE. m) e = a - x
-      IF (x .LT. m) e = b - x
-      d = c*e
+   40 IF (dat%x .GE. m) dat%e = dat%a - dat%x
+      IF (dat%x .LT. m) dat%e = dat%b - dat%x
+      dat%d = c*dat%e
 
 C  F MUST NOT BE EVALUATED TOO CLOSE TO X
 
-   50 IF (ABS(d) .LT. tol1) d = SIGN(tol1, d)
-      u = x + d
-      linmin = u
+   50 IF (ABS(dat%d) .LT. tol1) dat%d = SIGN(tol1, dat%d)
+      dat%u = dat%x + dat%d
+      res = dat%u
       mode = 2
       GOTO 100
-   55 fu = f
+   55 dat%fu = f
 
 C  UPDATE A, B, V, W, AND X
 
-      IF (fu .GT. fx) GOTO 60
-      IF (u .GE. x) a = x
-      IF (u .LT. x) b = x
-      v = w
-      fv = fw
-      w = x
-      fw = fx
-      x = u
-      fx = fu
+      IF (dat%fu .GT. dat%fx) GOTO 60
+      IF (dat%u .GE. dat%x) dat%a = dat%x
+      IF (dat%u .LT. dat%x) dat%b = dat%x
+      dat%v = dat%w
+      dat%fv = dat%fw
+      dat%w = dat%x
+      dat%fw = dat%fx
+      dat%x = dat%u
+      dat%fx = dat%fu
       GOTO 85
-   60 IF (u .LT. x) a = u
-      IF (u .GE. x) b = u
-      IF (fu .LE. fw .OR. w .EQ. x) GOTO 70
-      IF (fu .LE. fv .OR. v .EQ. x .OR. v .EQ. w) GOTO 80
+   60 IF (dat%u .LT. dat%x) dat%a = dat%u
+      IF (dat%u .GE. dat%x) dat%b = dat%u
+      IF (dat%fu .LE. dat%fw .OR. dat%w .EQ. dat%x) GOTO 70
+      IF (dat%fu .LE. dat%fv .OR. dat%v .EQ. dat%x .OR. dat%v .EQ.
+     *      dat%w) GOTO 80
       GOTO 85
-   70 v = w
-      fv = fw
-      w = u
-      fw = fu
+   70 dat%v = dat%w
+      dat%fv = dat%fw
+      dat%w = dat%u
+      dat%fw = dat%fu
       GOTO 85
-   80 v = u
-      fv = fu
+   80 dat%v = dat%u
+      dat%fv = dat%fu
    85 GOTO 20
 
 C  END OF MAIN LOOP
 
-   90 linmin = x
+   90 res = dat%x
       mode = 3
   100 RETURN
 
@@ -1957,7 +1972,7 @@ C     CUTHI, D.P.   SAME AS S.P.  CUTHI = 1.30438D19
 C     DATA CUTLO, CUTHI / 8.232D-11,  1.304D19 /
 C     DATA CUTLO, CUTHI / 4.441E-16,  1.304E19 /
       real (PREC), parameter :: cutlo = 8.232d-11
-      real (PREC), parameter :: cuthi = 1.304d19 
+      real (PREC), parameter :: cuthi = 1.304d19
 
       IF(n .GT. 0) GO TO 10
          dnrm2_  = ZERO

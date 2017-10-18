@@ -8,7 +8,7 @@ module numfort_optimize_slsqp
     use numfort_optimize_result
     use numfort_optimize_interfaces
     use numfort_optimize_fwrapper
-    use slsqp_mod, only: slsqp_impl => slsqp, slsqp_data_real64
+    use slsqp_mod, only: slsqp_impl => slsqp, slsqp_data_real64, linmin_data_real64
 
     implicit none
 
@@ -45,7 +45,7 @@ contains
 
 
 subroutine slsqp_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
-        f_ieqcons, maxiter, tol, work, res)
+        f_ieqcons, maxiter, linesearch, tol, work, res)
 
     integer, parameter :: PREC = real64
 
@@ -57,6 +57,7 @@ subroutine slsqp_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     procedure (fvec_vec_real64), optional :: f_eqcons
     procedure (fvec_vec_real64), optional :: f_ieqcons
     integer, intent(in), optional :: maxiter
+    integer (NF_ENUM_KIND), intent(in), optional :: linesearch
     real (PREC), intent(in), optional :: tol
     type (workspace_real64), intent(in out), optional :: work
     type (optim_result_real64), intent(in out), optional :: res
@@ -69,13 +70,13 @@ subroutine slsqp_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     call wrap_procedure (f_ieqcons_wrapper, f_ieqcons)
 
     call slsqp_impl (fobj_wrapper, x, lbounds, ubounds, m, meq, &
-        f_eqcons_wrapper, f_ieqcons_wrapper, maxiter, tol, work, res)
+        f_eqcons_wrapper, f_ieqcons_wrapper, maxiter, linesearch, tol, work, res)
 
 end subroutine
 
 
 subroutine slsqp_args_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
-        f_ieqcons, args, maxiter, tol, work, res)
+        f_ieqcons, args, maxiter, linesearch, tol, work, res)
 
     integer, parameter :: PREC = real64
 
@@ -88,6 +89,7 @@ subroutine slsqp_args_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     procedure (fvec_vec_args_real64), optional :: f_ieqcons
     real (PREC), intent(in), dimension(:) :: args
     integer, intent(in), optional :: maxiter
+    integer (NF_ENUM_KIND), intent(in), optional :: linesearch
     real (PREC), intent(in), optional :: tol
     type (workspace_real64), intent(in out), optional :: work
     type (optim_result_real64), intent(in out), optional :: res
@@ -100,13 +102,13 @@ subroutine slsqp_args_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     call wrap_procedure (f_ieqcons_wrapper, fcn_args=f_ieqcons)
 
     call slsqp_impl (fobj_wrapper, x, lbounds, ubounds, m, meq, &
-        f_eqcons_wrapper, f_ieqcons_wrapper, maxiter, tol, work, res, args)
+        f_eqcons_wrapper, f_ieqcons_wrapper, maxiter, linesearch, tol, work, res, args)
 
 end subroutine
 
 
 subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
-        f_ieqcons, maxiter, tol, work, res, args)
+        f_ieqcons, maxiter, linesearch, tol, work, res, args)
 
     integer, parameter :: PREC = real64
 
@@ -118,6 +120,7 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     type (fwrapper_vec_vec_real64) :: f_eqcons
     type (fwrapper_vec_vec_real64) :: f_ieqcons
     integer, intent(in), optional :: maxiter
+    integer (NF_ENUM_KIND), intent(in), optional :: linesearch
     real (PREC), intent(in), optional :: tol
     type (workspace_real64), intent(in out), optional :: work
     type (optim_result_real64), intent(in out), optional :: res
@@ -126,10 +129,13 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     type (status_t) :: status
     character (100) :: msg
     integer :: iter, nfeval, lmaxiter
+    integer (NF_ENUM_KIND) :: llinesearch
+    real (PREC) :: acc
 
     type (slsqp_data_real64) :: dat
-        !   Stores internal data used in SLSQPB that was originally declared
-        !   with a SAVE attribute.
+        !   Stores persistent internal data used in SLSQPB routine
+    type (linmin_data_real64) :: dat_lm
+        !   Stores persistent internal data used in LINMIN routine
     type (workspace_real64), pointer :: ptr_work
     real (PREC), dimension(:), pointer, contiguous :: ptr_xlb, ptr_xub
     real (PREC), dimension(:), pointer, contiguous :: ptr_g, ptr_w, ptr_c
@@ -154,7 +160,7 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     nullify (ptr_cpx_eq, ptr_cpx_ieq)
 
     call slsqp_check_input (x, lbounds, ubounds, m ,meq, f_eqcons, f_ieqcons, &
-        maxiter, tol, status, msg)
+        maxiter, linesearch, tol, status, msg)
     if (NF_STATUS_INVALID_ARG .in. status) goto 100
 
     ! Determine if enough information is present for equality or inequality
@@ -169,10 +175,12 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     ltol = 1.0d-6
     lmeq = 0
     lm = 0
+    llinesearch = NF_LINESEARCH_BACKTRACK
     if (present(maxiter)) lmaxiter = maxiter
     if (present(tol)) ltol = tol
     if (present(m)) lm = m
     if (present(meq)) lmeq = meq
+    if (present(linesearch)) llinesearch = linesearch
 
     ! if equality constraint specified, but no inequality constraint,
     ! m = meq and allow for missing meq if m is present.
@@ -280,6 +288,9 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     lda = max(1, lm)
     ! Pointer to workspace used directly by SLSQP
     call workspace_get_ptr (ptr_work, lw, ptr_w)
+    ! ACC argument: for exact linesearch this has to be the negative tolerance
+    acc = tol
+    if (llinesearch == NF_LINESEARCH_EXACT) acc = - abs(tol)
 
     ! Overwrite any garbage. In particular, column n+1 of these arrays
     ! will never be used to store data, so no idea what SLSQP is doing with in.
@@ -333,8 +344,8 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
         end if
 
         ! call original SLSQP routine
-        call slsqp_impl (dat, lm, lmeq, lda, n, x, ptr_xlb, ptr_xub, fx, &
-            ptr_c, ptr_g, ptr_a, ltol, iter, mode, ptr_w, lw, &
+        call slsqp_impl (dat, dat_lm, lm, lmeq, lda, n, x, ptr_xlb, ptr_xub, fx, &
+            ptr_c, ptr_g, ptr_a, acc, iter, mode, ptr_w, lw, &
             ptr_work%iwrk, mineq)
 
         select case (mode)
@@ -385,7 +396,7 @@ end subroutine
 
 
 subroutine slsqp_check_input_real64 (x, lbounds, ubounds, m, meq, &
-        f_eqcons, f_ieqcons, maxiter, tol, status, msg)
+        f_eqcons, f_ieqcons, maxiter, linesearch, tol, status, msg)
 
     integer, parameter :: PREC = real64
 
@@ -395,10 +406,13 @@ subroutine slsqp_check_input_real64 (x, lbounds, ubounds, m, meq, &
     type (fwrapper_vec_vec_real64), intent(in) :: f_eqcons
     type (fwrapper_vec_vec_real64), optional :: f_ieqcons
     integer, intent(in), optional :: maxiter
+    integer (NF_ENUM_KIND), intent(in), optional :: linesearch
     real (PREC), intent(in), optional :: tol
     type (status_t), intent(in out) :: status
     character (*), intent(out) :: msg
 
+    integer, parameter :: LS_VALID(2) = [NF_LINESEARCH_BACKTRACK, NF_LINESEARCH_EXACT]
+        !   Valid values for linesearch argument
     logical :: has_eq, has_ieq
     integer :: n
 
@@ -443,6 +457,9 @@ subroutine slsqp_check_input_real64 (x, lbounds, ubounds, m, meq, &
     if (NF_STATUS_INVALID_ARG .in. status) goto 100
 
     call check_positive (1, maxiter, 'maxiter', status, msg)
+    if (NF_STATUS_INVALID_ARG .in. status) goto 100
+
+    call check_enum (linesearch, LS_VALID, 'linesearch', status, msg)
     if (NF_STATUS_INVALID_ARG .in. status) goto 100
 
     call check_positive (1.0_PREC, tol, 'tol', status, msg)
