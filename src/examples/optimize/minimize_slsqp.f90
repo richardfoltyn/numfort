@@ -23,8 +23,17 @@ subroutine example1 ()
 
     m = 1
 
+    x0 = xlb + 0.5*(xub-xlb)
     call minimize_slsqp (fobj, x0, xlb, xub, m, f_ieqcons=fconstr, tol=tol, &
         res=res)
+
+    print '(tr1, "Min. at x=", 2(f0.8,:,", "), "; fx=", f0.8, "; iter=", i0, "; nfev=", i0)', &
+        res%x, res%fx, res%nit, res%nfev
+
+    ! Repeat with exact line search
+    x0 = xlb + 0.5*(xub-xlb)
+    call minimize_slsqp (fobj, x0, xlb, xub, m, f_ieqcons=fconstr, tol=tol, &
+        res=res, linesearch=NF_LINESEARCH_EXACT)
 
     print '(tr1, "Min. at x=", 2(f0.8,:,", "), "; fx=", f0.8, "; iter=", i0, "; nfev=", i0)', &
         res%x, res%fx, res%nit, res%nfev
@@ -42,8 +51,17 @@ subroutine example2 ()
 
     m = 1
 
+    x0 = xlb + 0.5*(xub-xlb)
     call minimize_slsqp (fobj, x0, xlb, xub, m, f_eqcons=fconstr2, tol=tol, &
         res=res)
+
+    print '(tr1, "Min. at x=", 2(f0.8,:,", "), "; fx=", f0.8, "; iter=", i0, "; nfev=", i0)', &
+        res%x, res%fx, res%nit, res%nfev
+
+    ! Repeat with exact line search
+    x0 = xlb + 0.5*(xub-xlb)
+    call minimize_slsqp (fobj, x0, xlb, xub, m, f_eqcons=fconstr2, tol=tol, &
+        res=res, linesearch=NF_LINESEARCH_EXACT)
 
     print '(tr1, "Min. at x=", 2(f0.8,:,", "), "; fx=", f0.8, "; iter=", i0, "; nfev=", i0)', &
         res%x, res%fx, res%nit, res%nfev
