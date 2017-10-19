@@ -51,7 +51,8 @@ subroutine example2 ()
 
     m = 1
 
-    x0 = xlb + 0.5*(xub-xlb)
+    ! Pick initial guess that satisfies equality constraint
+    x0 = sqrt(0.5)
     call minimize_slsqp (fobj, x0, xlb, xub, m, f_eqcons=fconstr2, tol=tol, &
         res=res)
 
@@ -59,7 +60,7 @@ subroutine example2 ()
         res%x, res%fx, res%nit, res%nfev
 
     ! Repeat with exact line search
-    x0 = xlb + 0.5*(xub-xlb)
+    x0 = sqrt(0.5)
     call minimize_slsqp (fobj, x0, xlb, xub, m, f_eqcons=fconstr2, tol=tol, &
         res=res, linesearch=NF_LINESEARCH_EXACT)
 
@@ -110,13 +111,13 @@ subroutine fconstr2 (x, fx, fpx)
     real (PREC), intent(out), dimension(:,:), contiguous, optional :: fpx
 
     if (present(fx)) then
-        fx = -x(1)**2.0d0 - x(2) ** 3.0d0 + 1.0d0
+        fx = x(1)**2.0d0 + x(2) ** 2.0d0 - 1.0d0
     end if
 
     ! Jacobian of constraint function
     if (present(fpx)) then
-        fpx(1,1) = -2.0d0 * x(1)
-        fpx(1,2) = -3.0d0 * x(2) ** 2.0d0
+        fpx(1,1) = 2.0d0 * x(1)
+        fpx(1,2) = 2.0d0 * x(2)
     end if
 end subroutine
 

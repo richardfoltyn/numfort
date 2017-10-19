@@ -313,15 +313,15 @@ c                      with MINEQ = M - MEQ + 2*N1  &  N1 = N+1
       dat%n3 = dat%n2 + 1
       s(1) = ZERO
       mu(1) = ZERO
-      CALL dcopy_(n, s(1),  0, s,  1)
-      CALL dcopy_(m, mu(1), 0, mu, 1)
+      CALL dcopy(n, s(1),  0, s,  1)
+      CALL dcopy(m, mu(1), 0, mu, 1)
 
 C   RESET BFGS MATRIX
 
   110 dat%ireset = dat%ireset + 1
       IF (dat%ireset.GT.5) GO TO 255
       l(1) = ZERO
-      CALL dcopy_(dat%n2, l(1), 0, l, 1)
+      CALL dcopy(dat%n2, l(1), 0, l, 1)
       j = 1
       DO 120 i=1,n
          l(j) = one
@@ -336,10 +336,10 @@ C   MAIN ITERATION : SEARCH DIRECTION, STEPLENGTH, LDL'-UPDATE
 
 C   SEARCH DIRECTION AS SOLUTION OF QP - SUBPROBLEM
 
-      CALL dcopy_(n, xl, 1, u, 1)
-      CALL dcopy_(n, xu, 1, v, 1)
-      CALL daxpy_sl(n, -one, x, 1, u, 1)
-      CALL daxpy_sl(n, -one, x, 1, v, 1)
+      CALL dcopy(n, xl, 1, u, 1)
+      CALL dcopy(n, xu, 1, v, 1)
+      CALL daxpy(n, -one, x, 1, u, 1)
+      CALL daxpy(n, -one, x, 1, v, 1)
       dat%h4 = one
       CALL lsq (m, meq, n, dat%n3, la, l, g, a, c, u, v, s, r, w, iw,
      *   mode)
@@ -360,7 +360,7 @@ C   AUGMENTED PROBLEM FOR INCONSISTENT LINEARIZATION
              ENDIF
   140     CONTINUE
           s(1) = ZERO
-          CALL dcopy_(n, s(1), 0, s, 1)
+          CALL dcopy(n, s(1), 0, s, 1)
           dat%h3 = ZERO
           g(dat%n1) = ZERO
           l(dat%n3) = hun
@@ -386,11 +386,11 @@ C   AUGMENTED PROBLEM FOR INCONSISTENT LINEARIZATION
 C   UPDATE MULTIPLIERS FOR L1-TEST
 
       DO 160 i=1,n
-         v(i) = g(i) - ddot_sl(m,a(1,i),1,r,1)
+         v(i) = g(i) - ddot(m,a(1,i),1,r,1)
   160 CONTINUE
       dat%f0 = f
-      CALL dcopy_(n, x, 1, x0, 1)
-      dat%gs = ddot_sl(n, g, 1, s, 1)
+      CALL dcopy(n, x, 1, x0, 1)
+      dat%gs = ddot(n, g, 1, s, 1)
       dat%h1 = ABS(dat%gs)
       dat%h2 = ZERO
       DO 170 j=1,m
@@ -433,9 +433,9 @@ C   INEXACT LINESEARCH
 
   190     dat%line = dat%line + 1
           dat%h3 = dat%alpha*dat%h3
-          CALL dscal_sl(n, dat%alpha, s, 1)
-          CALL dcopy_(n, x0, 1, x, 1)
-          CALL daxpy_sl(n, one, s, 1, x, 1)
+          CALL dscal(n, dat%alpha, s, 1)
+          CALL dcopy(n, x0, 1, x, 1)
+          CALL daxpy(n, one, s, 1, x, 1)
           mode = 1
           GO TO 330
   200         IF (dat%h1.LE.dat%h3/ten .OR. dat%line.GT.10) GO TO 240
@@ -447,12 +447,12 @@ C   EXACT LINESEARCH
   210 IF (dat%line.NE.3) THEN
           call linmin (dat_lm,dat%line,alfmin,one,dat%t,dat%tol,
      *                 dat%alpha)
-          CALL dcopy_(n, x0, 1, x, 1)
-          CALL daxpy_sl(n, dat%alpha, s, 1, x, 1)
+          CALL dcopy(n, x0, 1, x, 1)
+          CALL daxpy(n, dat%alpha, s, 1, x, 1)
           mode = 1
           GOTO 330
       ENDIF
-      CALL dscal_sl(n, dat%alpha, s, 1)
+      CALL dscal(n, dat%alpha, s, 1)
       GOTO 240
 
 C   CALL FUNCTIONS AT CURRENT X
@@ -480,7 +480,7 @@ C   CHECK CONVERGENCE
          ENDIF
          dat%h3 = dat%h3 + MAX(-c(j),dat%h1)
   250 CONTINUE
-      IF ((ABS(f-dat%f0).LT.acc .OR. dnrm2_(n,s,1).LT.acc)
+      IF ((ABS(f-dat%f0).LT.acc .OR. dnrm2(n,s,1).LT.acc)
      *          .AND. dat%h3.LT.acc)
      *   THEN
             mode = 0
@@ -492,7 +492,7 @@ C   CHECK CONVERGENCE
 C   CHECK relaxed CONVERGENCE in case of positive directional derivative
 
   255 CONTINUE
-      IF ((ABS(f-dat%f0).LT.dat%tol .OR. dnrm2_(n,s,1).LT.dat%tol)
+      IF ((ABS(f-dat%f0).LT.dat%tol .OR. dnrm2(n,s,1).LT.dat%tol)
      *      .AND. dat%h3.LT.dat%tol)
      *   THEN
             mode = 0
@@ -506,7 +506,7 @@ C   CALL JACOBIAN AT CURRENT X
 C   UPDATE CHOLESKY-FACTORS OF HESSIAN MATRIX BY MODIFIED BFGS FORMULA
 
   260 DO 270 i=1,n
-         u(i) = g(i) - ddot_sl(m,a(1,i),1,r,1) - v(i)
+         u(i) = g(i) - ddot(m,a(1,i),1,r,1) - v(i)
   270 CONTINUE
 
 C   L'*S
@@ -542,14 +542,14 @@ C   L*D*L'*S
          v(i) = v(i) + dat%h1
   320 CONTINUE
 
-      dat%h1 = ddot_sl(n,s,1,u,1)
-      dat%h2 = ddot_sl(n,s,1,v,1)
+      dat%h1 = ddot(n,s,1,u,1)
+      dat%h2 = ddot(n,s,1,v,1)
       dat%h3 = 0.2d0*dat%h2
       IF (dat%h1.LT.dat%h3) THEN
           dat%h4 = (dat%h2-dat%h3)/(dat%h2-dat%h1)
           dat%h1 = dat%h3
-          CALL dscal_sl(n, dat%h4, u, 1)
-          CALL daxpy_sl(n, one-dat%h4, v, 1, u, 1)
+          CALL dscal(n, dat%h4, u, 1)
+          CALL daxpy(n, one-dat%h4, v, 1, u, 1)
       ENDIF
       CALL ldl(n, l, u, +one/dat%h1, v)
       CALL ldl(n, l, v, -one/dat%h2, u)
@@ -643,11 +643,11 @@ C  RECOVER MATRIX E AND VECTOR F FROM L AND G
          i1 = n1-i
          diag = SQRT (l(i2))
          w(i3) = ZERO
-         CALL dcopy_ (i1  ,  w(i3), 0, w(i3), 1)
-         CALL dcopy_ (i1-n2, l(i2), 1, w(i3), n)
-         CALL dscal_sl (i1-n2,     diag, w(i3), n)
+         CALL dcopy (i1  ,  w(i3), 0, w(i3), 1)
+         CALL dcopy (i1-n2, l(i2), 1, w(i3), n)
+         CALL dscal (i1-n2,     diag, w(i3), n)
          w(i3) = diag
-         w(IF-1+i) = (g(i) - ddot_sl (i-1, w(i4), 1, w(IF), 1))/diag
+         w(IF-1+i) = (g(i) - ddot (i-1, w(i4), 1, w(IF), 1))/diag
          i2 = i2 + i1 - n2
          i3 = i3 + n1
          i4 = i4 + n
@@ -655,10 +655,10 @@ C  RECOVER MATRIX E AND VECTOR F FROM L AND G
       IF (n2.EQ.1) THEN
           w(i3) = l(nl)
           w(i4) = ZERO
-          CALL dcopy_ (n3, w(i4), 0, w(i4), 1)
+          CALL dcopy (n3, w(i4), 0, w(i4), 1)
           w(IF-1+n) = ZERO
       ENDIF
-      CALL dscal_sl (n, - one, w(IF), 1)
+      CALL dscal (n, - one, w(IF), 1)
 
       ic = IF + n
       id = ic + meq*n
@@ -668,13 +668,13 @@ C  RECOVER MATRIX E AND VECTOR F FROM L AND G
 C  RECOVER MATRIX C FROM UPPER PART OF A
 
           DO 20 i=1,meq
-              CALL dcopy_ (n, a(i,1), la, w(ic-1+i), meq)
+              CALL dcopy (n, a(i,1), la, w(ic-1+i), meq)
    20     CONTINUE
 
 C  RECOVER VECTOR D FROM UPPER PART OF B
 
-          CALL dcopy_ (meq, b(1), 1, w(id), 1)
-          CALL dscal_sl (meq,   - one, w(id), 1)
+          CALL dcopy (meq, b(1), 1, w(id), 1)
+          CALL dscal (meq,   - one, w(id), 1)
 
       ENDIF
 
@@ -688,7 +688,7 @@ C  bounds are unbounded.
       IF (mineq .GT. 0) THEN
 
           DO 30 i=1,mineq
-              CALL dcopy_ (n, a(meq+i,1), la, w(ig-1+i), m1)
+              CALL dcopy (n, a(meq+i,1), la, w(ig-1+i), m1)
    30     CONTINUE
 
       ENDIF
@@ -701,8 +701,8 @@ C  bounds are unbounded.
 C  RECOVER H FROM LOWER PART OF B
 C  The vector H(mineq+2*n) is stored at w(ih)
 
-          CALL dcopy_ (mineq, b(meq+1), 1, w(ih), 1)
-          CALL dscal_sl (mineq,       - one, w(ih), 1)
+          CALL dcopy (mineq, b(meq+1), 1, w(ih), 1)
+          CALL dscal (mineq,       - one, w(ih), 1)
 
       ENDIF
 
@@ -749,7 +749,7 @@ C  NaN value indicates no bound
 
 c   restore Lagrange multipliers (only for user-defined variables)
 
-          CALL dcopy_ (m,  w(iw),     1, y(1),      1)
+          CALL dcopy (m,  w(iw),     1, y(1),      1)
 
 c   set rest of the multipliers to nan (they are not used)
 
@@ -845,23 +845,23 @@ C  SOLVE C*X=D AND MODIFY F
       mode=6
       DO 15 i=1,mc
           IF(ABS(c(i,i)).LT.epmach)    GOTO 75
-          x(i)=(d(i)-ddot_sl(i-1,c(i,1),lc,x,1))/c(i,i)
+          x(i)=(d(i)-ddot(i-1,c(i,1),lc,x,1))/c(i,i)
    15 CONTINUE
       mode=1
       w(mc1) = ZERO
-      CALL dcopy_ (mg-mc,w(mc1),0,w(mc1),1)
+      CALL dcopy (mg-mc,w(mc1),0,w(mc1),1)
 
       IF(mc.EQ.n)                      GOTO 50
 
       DO 20 i=1,me
-   20     w(IF-1+i)=f(i)-ddot_sl(mc,e(i,1),LE,x,1)
+   20     w(IF-1+i)=f(i)-ddot(mc,e(i,1),LE,x,1)
 
 C  STORE TRANSFORMED E & G
 
       DO 25 i=1,me
-   25     CALL dcopy_(l,e(i,mc1),LE,w(ie-1+i),me)
+   25     CALL dcopy(l,e(i,mc1),LE,w(ie-1+i),me)
       DO 30 i=1,mg
-   30     CALL dcopy_(l,g(i,mc1),lg,w(ig-1+i),mg)
+   30     CALL dcopy(l,g(i,mc1),lg,w(ig-1+i),mg)
 
       IF(mg.GT.0)                      GOTO 40
 
@@ -875,34 +875,34 @@ C   is a 1d-array, not a scalar. Fixes compile error with gfortran.
       xnrm1(1) = xnrm
       CALL hfti (w(ie),me,me,l,w(IF),k,1,t,krank,xnrm1,w,w(l+1),jw)
       xnrm = xnrm1(1)
-      CALL dcopy_(l,w(IF),1,x(mc1),1)
+      CALL dcopy(l,w(IF),1,x(mc1),1)
       IF(krank.NE.l)                   GOTO 75
       mode=1
                                        GOTO 50
 C  MODIFY H AND SOLVE INEQUALITY CONSTRAINED LS PROBLEM
 
    40 DO 45 i=1,mg
-   45     h(i)=h(i)-ddot_sl(mc,g(i,1),lg,x,1)
+   45     h(i)=h(i)-ddot(mc,g(i,1),lg,x,1)
       CALL lsi
      . (w(ie),w(IF),w(ig),h,me,me,mg,mg,l,x(mc1),xnrm,w(mc1),jw,mode)
       IF(mc.EQ.0)                      GOTO 75
-      t=dnrm2_(mc,x,1)
+      t=dnrm2(mc,x,1)
       xnrm=SQRT(xnrm*xnrm+t*t)
       IF(mode.NE.1)                    GOTO 75
 
 C  SOLUTION OF ORIGINAL PROBLEM AND LAGRANGE MULTIPLIERS
 
    50 DO 55 i=1,me
-   55     f(i)=ddot_sl(n,e(i,1),LE,x,1)-f(i)
+   55     f(i)=ddot(n,e(i,1),LE,x,1)-f(i)
       DO 60 i=1,mc
-   60     d(i)=ddot_sl(me,e(1,i),1,f,1)-ddot_sl(mg,g(1,i),1,w(mc1),1)
+   60     d(i)=ddot(me,e(1,i),1,f,1)-ddot (mg,g(1,i),1,w(mc1),1)
 
       DO 65 i=mc,1,-1
    65     CALL h12(2,i,i+1,n,c(i,1),lc,w(iw+i),x,1,1,1)
 
       DO 70 i=mc,1,-1
           j=MIN(i+1,lc)
-          w(i)=(d(i)-ddot_sl(mc-i,c(j,i),1,w(j),1))/c(i,i)
+          w(i)=(d(i)-ddot(mc-i,c(j,i),1,w(j),1))/c(i,i)
    70 CONTINUE
 
 C  END OF SUBROUTINE LSEI
@@ -965,8 +965,8 @@ C  TRANSFORM G AND H TO GET LEAST DISTANCE PROBLEM
       DO 30 i=1,mg
           DO 20 j=1,n
               IF (ABS(e(j,j)).LT.epmach) GOTO 50
-   20         g(i,j)=(g(i,j)-ddot_sl(j-1,g(i,1),lg,e(1,j),1))/e(j,j)
-   30     h(i)=h(i)-ddot_sl(n,g(i,1),lg,f,1)
+   20         g(i,j)=(g(i,j)-ddot(j-1,g(i,1),lg,e(1,j),1))/e(j,j)
+   30     h(i)=h(i)-ddot(n,g(i,1),lg,f,1)
 
 C  SOLVE LEAST DISTANCE PROBLEM
 
@@ -975,12 +975,12 @@ C  SOLVE LEAST DISTANCE PROBLEM
 
 C  SOLUTION OF ORIGINAL PROBLEM
 
-      CALL daxpy_sl(n,one,f,1,x,1)
+      CALL daxpy(n,one,f,1,x,1)
       DO 40 i=n,1,-1
           j=MIN(i+1,n)
-   40     x(i)=(x(i)-ddot_sl(n-i,e(i,j),LE,x(j),1))/e(i,i)
+   40     x(i)=(x(i)-ddot(n-i,e(i,j),LE,x(j),1))/e(i,i)
       j=MIN(n+1,me)
-      t=dnrm2_(me-n,f(j),1)
+      t=dnrm2(me-n,f(j),1)
       xnorm=SQRT(xnorm*xnorm+t*t)
 
 C  END OF SUBROUTINE LSI
@@ -1036,7 +1036,7 @@ C  STATE DUAL PROBLEM
 
       mode=1
       x(1)=ZERO
-      CALL dcopy_(n,x(1),0,x,1)
+      CALL dcopy(n,x(1),0,x,1)
       xnorm=ZERO
       IF(m.EQ.0)                    GOTO 50
       iw=0
@@ -1066,19 +1066,19 @@ C  SOLVE DUAL PROBLEM
 
 C  COMPUTE SOLUTION OF PRIMAL PROBLEM
 
-      fac=one-ddot_sl(m,h,1,w(iy),1)
+      fac=one-ddot(m,h,1,w(iy),1)
       IF(diff(one+fac,one).LE.ZERO) GOTO 50
       mode=1
       fac=one/fac
       DO 40 j=1,n
-   40     x(j)=fac*ddot_sl(m,g(1,j),1,w(iy),1)
-      xnorm=dnrm2_(n,x,1)
+   40     x(j)=fac*ddot(m,g(1,j),1,w(iy),1)
+      xnorm=dnrm2(n,x,1)
 
 C  COMPUTE LAGRANGE MULTIPLIERS FOR PRIMAL PROBLEM
 
       w(1)=ZERO
-      CALL dcopy_(m,w(1),0,w,1)
-      CALL daxpy_sl(m,fac,w(iy),1,w,1)
+      CALL dcopy(m,w(1),0,w,1)
+      CALL daxpy(m,fac,w(iy),1,w,1)
 
 C  END OF SUBROUTINE LDP
 
@@ -1156,7 +1156,7 @@ C STEP ONE (INITIALIZE)
       nsetp=0
       npp1=1
       x(1)=ZERO
-      CALL dcopy_(n,x(1),0,x,1)
+      CALL dcopy(n,x(1),0,x,1)
 
 C STEP TWO (COMPUTE DUAL VARIABLES)
 C .....ENTRY LOOP A
@@ -1164,7 +1164,7 @@ C .....ENTRY LOOP A
   110 IF(iz1.GT.iz2.OR.nsetp.GE.m)    GOTO 280
       DO 120 iz=iz1,iz2
          j=INDEX(iz)
-  120    w(j)=ddot_sl(m-nsetp,a(npp1,j),1,b(npp1),1)
+  120    w(j)=ddot(m-nsetp,a(npp1,j),1,b(npp1),1)
 
 C STEP THREE (TEST DUAL VARIABLES)
 
@@ -1186,10 +1186,10 @@ C STEP FOUR (TEST INDEX J FOR LINEAR DEPENDENCY)
 
       asave=a(npp1,j)
       CALL h12(1,npp1,npp1+1,m,a(1,j),1,up,z,1,1,0)
-      unorm=dnrm2_(nsetp,a(1,j),1)
+      unorm=dnrm2(nsetp,a(1,j),1)
       t=factor*ABS(a(npp1,j))
       IF(diff(unorm+t,unorm).LE.ZERO) GOTO 150
-      CALL dcopy_(m,b,1,z,1)
+      CALL dcopy(m,b,1,z,1)
       CALL h12(2,npp1,npp1+1,m,a(1,j),1,up,z,1,1,1)
       IF(z(npp1)/a(npp1,j).GT.ZERO)   GOTO 160
   150 a(npp1,j)=asave
@@ -1197,7 +1197,7 @@ C STEP FOUR (TEST INDEX J FOR LINEAR DEPENDENCY)
                                       GOTO 130
 C STEP FIVE (ADD COLUMN)
 
-  160 CALL dcopy_(m,z,1,b,1)
+  160 CALL dcopy(m,z,1,b,1)
       INDEX(iz)=INDEX(iz1)
       INDEX(iz1)=j
       iz1=iz1+1
@@ -1208,14 +1208,14 @@ C STEP FIVE (ADD COLUMN)
   170    CALL h12(2,nsetp,npp1,m,a(1,j),1,up,a(1,jj),1,mda,1)
       k=MIN(npp1,mda)
       w(j)=ZERO
-      CALL dcopy_(m-nsetp,w(j),0,a(k,j),1)
+      CALL dcopy(m-nsetp,w(j),0,a(k,j),1)
 
 C STEP SIX (SOLVE LEAST SQUARES SUB-PROBLEM)
 C .....ENTRY LOOP B
 
   180 DO 200 ip=nsetp,1,-1
          IF(ip.EQ.nsetp)              GOTO 190
-         CALL daxpy_sl(ip,-z(ip+1),a(1,jj),1,z,1)
+         CALL daxpy(ip,-z(ip+1),a(1,jj),1,z,1)
   190    jj=INDEX(ip)
   200    z(ip)=z(ip)/a(ip,jj)
       iter=iter+1
@@ -1265,15 +1265,15 @@ C STEP ELEVEN (DELETE COLUMN)
          i=INDEX(jj)
          IF(x(i).LE.ZERO)             GOTO 250
   270 CONTINUE
-      CALL dcopy_(m,b,1,z,1)
+      CALL dcopy(m,b,1,z,1)
                                       GOTO 180
 C STEP TWELVE (SOLUTION)
 
   280 k=MIN(npp1,m)
-      rnorm=dnrm2_(m-nsetp,b(k),1)
+      rnorm=dnrm2(m-nsetp,b(k),1)
       IF(npp1.GT.m) THEN
          w(1)=ZERO
-         CALL dcopy_(n,w(1),0,w,1)
+         CALL dcopy(n,w(1),0,w,1)
       ENDIF
 
 C END OF SUBROUTINE NNLS
@@ -1368,7 +1368,7 @@ C   DETERMINE PSEUDORANK
 C   NORM OF RESIDUALS
 
       DO 130 jb=1,nb
-  130     rnorm(jb)=dnrm2_(m-k,b(kp1,jb),1)
+  130     rnorm(jb)=dnrm2(m-k,b(kp1,jb),1)
       IF(k.GT.0)                      GOTO 160
       DO 150 jb=1,nb
           DO 150 i=1,n
@@ -1386,7 +1386,7 @@ C   SOLVE K*K TRIANGULAR SYSTEM
 
           DO 210 i=k,1,-1
               j=MIN(i+1,n)
-  210         b(i,jb)=(b(i,jb)-ddot_sl(k-i,a(i,j),mda,b(j,jb),1))/a(i,i)
+  210         b(i,jb)=(b(i,jb)-ddot(k-i,a(i,j),mda,b(j,jb),1))/a(i,i)
 
 C   COMPLETE SOLUTION VECTOR
 
@@ -1750,307 +1750,6 @@ C  END OF LINMIN
 
       END
 
-C## Following a selection from BLAS Level 1
-
-      SUBROUTINE daxpy_sl(n,da,dx,incx,dy,incy)
-
-C     CONSTANT TIMES A VECTOR PLUS A VECTOR.
-C     USES UNROLLED LOOPS FOR INCREMENTS EQUAL TO ONE.
-C     JACK DONGARRA, LINPACK, 3/11/78.
-
-      real (PREC) dx(*),dy(*),da
-      INTEGER i,incx,incy,ix,iy,m,mp1,n
-
-      IF(n.LE.0)RETURN
-      IF(da.EQ.0.0d0)RETURN
-      IF(incx.EQ.1.AND.incy.EQ.1)GO TO 20
-
-C        CODE FOR UNEQUAL INCREMENTS OR EQUAL INCREMENTS
-C        NOT EQUAL TO 1
-
-      ix = 1
-      iy = 1
-      IF(incx.LT.0)ix = (-n+1)*incx + 1
-      IF(incy.LT.0)iy = (-n+1)*incy + 1
-      DO 10 i = 1,n
-        dy(iy) = dy(iy) + da*dx(ix)
-        ix = ix + incx
-        iy = iy + incy
-   10 CONTINUE
-      RETURN
-
-C        CODE FOR BOTH INCREMENTS EQUAL TO 1
-
-C        CLEAN-UP LOOP
-
-   20 m = MOD(n,4)
-      IF( m .EQ. 0 ) GO TO 40
-      DO 30 i = 1,m
-        dy(i) = dy(i) + da*dx(i)
-   30 CONTINUE
-      IF( n .LT. 4 ) RETURN
-   40 mp1 = m + 1
-      DO 50 i = mp1,n,4
-        dy(i) = dy(i) + da*dx(i)
-        dy(i + 1) = dy(i + 1) + da*dx(i + 1)
-        dy(i + 2) = dy(i + 2) + da*dx(i + 2)
-        dy(i + 3) = dy(i + 3) + da*dx(i + 3)
-   50 CONTINUE
-      RETURN
-      END
-
-      SUBROUTINE  dcopy_(n,dx,incx,dy,incy)
-
-C     COPIES A VECTOR, X, TO A VECTOR, Y.
-C     USES UNROLLED LOOPS FOR INCREMENTS EQUAL TO ONE.
-C     JACK DONGARRA, LINPACK, 3/11/78.
-
-      real (PREC) dx(*),dy(*)
-      INTEGER i,incx,incy,ix,iy,m,mp1,n
-
-      IF(n.LE.0)RETURN
-      IF(incx.EQ.1.AND.incy.EQ.1)GO TO 20
-
-C        CODE FOR UNEQUAL INCREMENTS OR EQUAL INCREMENTS
-C        NOT EQUAL TO 1
-
-      ix = 1
-      iy = 1
-      IF(incx.LT.0)ix = (-n+1)*incx + 1
-      IF(incy.LT.0)iy = (-n+1)*incy + 1
-      DO 10 i = 1,n
-        dy(iy) = dx(ix)
-        ix = ix + incx
-        iy = iy + incy
-   10 CONTINUE
-      RETURN
-
-C        CODE FOR BOTH INCREMENTS EQUAL TO 1
-
-C        CLEAN-UP LOOP
-
-   20 m = MOD(n,7)
-      IF( m .EQ. 0 ) GO TO 40
-      DO 30 i = 1,m
-        dy(i) = dx(i)
-   30 CONTINUE
-      IF( n .LT. 7 ) RETURN
-   40 mp1 = m + 1
-      DO 50 i = mp1,n,7
-        dy(i) = dx(i)
-        dy(i + 1) = dx(i + 1)
-        dy(i + 2) = dx(i + 2)
-        dy(i + 3) = dx(i + 3)
-        dy(i + 4) = dx(i + 4)
-        dy(i + 5) = dx(i + 5)
-        dy(i + 6) = dx(i + 6)
-   50 CONTINUE
-      RETURN
-      END
-
-      real (PREC) FUNCTION ddot_sl(n,dx,incx,dy,incy)
-
-C     FORMS THE DOT PRODUCT OF TWO VECTORS.
-C     USES UNROLLED LOOPS FOR INCREMENTS EQUAL TO ONE.
-C     JACK DONGARRA, LINPACK, 3/11/78.
-
-      real (PREC) dx(*),dy(*),dtemp
-      INTEGER i,incx,incy,ix,iy,m,mp1,n
-
-      ddot_sl = 0.0d0
-      dtemp = 0.0d0
-      IF(n.LE.0)RETURN
-      IF(incx.EQ.1.AND.incy.EQ.1)GO TO 20
-
-C        CODE FOR UNEQUAL INCREMENTS OR EQUAL INCREMENTS
-C          NOT EQUAL TO 1
-
-      ix = 1
-      iy = 1
-      IF(incx.LT.0)ix = (-n+1)*incx + 1
-      IF(incy.LT.0)iy = (-n+1)*incy + 1
-      DO 10 i = 1,n
-        dtemp = dtemp + dx(ix)*dy(iy)
-        ix = ix + incx
-        iy = iy + incy
-   10 CONTINUE
-      ddot_sl = dtemp
-      RETURN
-
-C        CODE FOR BOTH INCREMENTS EQUAL TO 1
-
-C        CLEAN-UP LOOP
-
-   20 m = MOD(n,5)
-      IF( m .EQ. 0 ) GO TO 40
-      DO 30 i = 1,m
-        dtemp = dtemp + dx(i)*dy(i)
-   30 CONTINUE
-      IF( n .LT. 5 ) GO TO 60
-   40 mp1 = m + 1
-      DO 50 i = mp1,n,5
-        dtemp = dtemp + dx(i)*dy(i) + dx(i + 1)*dy(i + 1) +
-     *   dx(i + 2)*dy(i + 2) + dx(i + 3)*dy(i + 3) + dx(i + 4)*dy(i + 4)
-   50 CONTINUE
-   60 ddot_sl = dtemp
-      RETURN
-      END
-
-      real (PREC) FUNCTION dnrm1(n,x,i,j)
-      INTEGER n, i, j, k
-      real (PREC) snormx, sum, x(n), scale, temp
-
-C      DNRM1 - COMPUTES THE I-NORM OF A VECTOR
-C              BETWEEN THE ITH AND THE JTH ELEMENTS
-
-C      INPUT -
-C      N       LENGTH OF VECTOR
-C      X       VECTOR OF LENGTH N
-C      I       INITIAL ELEMENT OF VECTOR TO BE USED
-C      J       FINAL ELEMENT TO USE
-
-C      OUTPUT -
-C      DNRM1   NORM
-
-      snormx=ZERO
-      DO 10 k=i,j
- 10      snormx=MAX(snormx,ABS(x(k)))
-      dnrm1 = snormx
-      IF (snormx.EQ.ZERO) RETURN
-      scale = snormx
-      IF (snormx.GE.one) scale=SQRT(snormx)
-      sum=ZERO
-      DO 20 k=i,j
-         temp=ZERO
-         IF (ABS(x(k))+scale .NE. scale) temp = x(k)/snormx
-         IF (one+temp.NE.one) sum = sum+temp*temp
- 20      CONTINUE
-      sum=SQRT(sum)
-      dnrm1=snormx*sum
-      RETURN
-      END
-
-      real (PREC) FUNCTION dnrm2_ ( n, dx, incx)
-      INTEGER          n, i, j, nn, next, incx
-      real (PREC) dx(*), hitest, sum, xmax
-
-C     EUCLIDEAN NORM OF THE N-VECTOR STORED IN DX() WITH STORAGE
-C     INCREMENT INCX .
-C     IF    N .LE. 0 RETURN WITH RESULT = 0.
-C     IF N .GE. 1 THEN INCX MUST BE .GE. 1
-
-C           C.L.LAWSON, 1978 JAN 08
-
-C     FOUR PHASE METHOD     USING TWO BUILT-IN CONSTANTS THAT ARE
-C     HOPEFULLY APPLICABLE TO ALL MACHINES.
-C         CUTLO = MAXIMUM OF  SQRT(U/EPS)   OVER ALL KNOWN MACHINES.
-C         CUTHI = MINIMUM OF  SQRT(V)       OVER ALL KNOWN MACHINES.
-C     WHERE
-C         EPS = SMALLEST NO. SUCH THAT EPS + 1. .GT. 1.
-C         U   = SMALLEST POSITIVE NO.   (UNDERFLOW LIMIT)
-C         V   = LARGEST  NO.            (OVERFLOW  LIMIT)
-
-C     BRIEF OUTLINE OF ALGORITHM..
-
-C     PHASE 1    SCANS ZERO COMPONENTS.
-C     MOVE TO PHASE 2 WHEN A COMPONENT IS NONZERO AND .LE. CUTLO
-C     MOVE TO PHASE 3 WHEN A COMPONENT IS .GT. CUTLO
-C     MOVE TO PHASE 4 WHEN A COMPONENT IS .GE. CUTHI/M
-C     WHERE M = N FOR X() REAL AND M = 2*N FOR COMPLEX.
-
-C     VALUES FOR CUTLO AND CUTHI..
-C     FROM THE ENVIRONMENTAL PARAMETERS LISTED IN THE IMSL CONVERTER
-C     DOCUMENT THE LIMITING VALUES ARE AS FOLLOWS..
-C     CUTLO, S.P.   U/EPS = 2**(-102) FOR  HONEYWELL.  CLOSE SECONDS ARE
-C                   UNIVAC AND DEC AT 2**(-103)
-C                   THUS CUTLO = 2**(-51) = 4.44089E-16
-C     CUTHI, S.P.   V = 2**127 FOR UNIVAC, HONEYWELL, AND DEC.
-C                   THUS CUTHI = 2**(63.5) = 1.30438E19
-C     CUTLO, D.P.   U/EPS = 2**(-67) FOR HONEYWELL AND DEC.
-C                   THUS CUTLO = 2**(-33.5) = 8.23181D-11
-C     CUTHI, D.P.   SAME AS S.P.  CUTHI = 1.30438D19
-C     DATA CUTLO, CUTHI / 8.232D-11,  1.304D19 /
-C     DATA CUTLO, CUTHI / 4.441E-16,  1.304E19 /
-      real (PREC), parameter :: cutlo = 8.232d-11
-      real (PREC), parameter :: cuthi = 1.304d19
-
-      IF(n .GT. 0) GO TO 10
-         dnrm2_  = ZERO
-         GO TO 300
-
-   10 assign 30 to next
-      sum = ZERO
-      nn = n * incx
-C                       BEGIN MAIN LOOP
-      i = 1
-   20    GO TO next,(30, 50, 70, 110)
-   30 IF( ABS(dx(i)) .GT. cutlo) GO TO 85
-      assign 50 to next
-      xmax = ZERO
-
-C                        PHASE 1.  SUM IS ZERO
-
-   50 IF( dx(i) .EQ. ZERO) GO TO 200
-      IF( ABS(dx(i)) .GT. cutlo) GO TO 85
-
-C                        PREPARE FOR PHASE 2.
-
-      assign 70 to next
-      GO TO 105
-
-C                        PREPARE FOR PHASE 4.
-
-  100 i = j
-      assign 110 to next
-      sum = (sum / dx(i)) / dx(i)
-  105 xmax = ABS(dx(i))
-      GO TO 115
-
-C                   PHASE 2.  SUM IS SMALL.
-C                             SCALE TO AVOID DESTRUCTIVE UNDERFLOW.
-
-   70 IF( ABS(dx(i)) .GT. cutlo ) GO TO 75
-
-C                   COMMON CODE FOR PHASES 2 AND 4.
-C                   IN PHASE 4 SUM IS LARGE.  SCALE TO AVOID OVERFLOW.
-
-  110 IF( ABS(dx(i)) .LE. xmax ) GO TO 115
-         sum = one + sum * (xmax / dx(i))**2
-         xmax = ABS(dx(i))
-         GO TO 200
-
-  115 sum = sum + (dx(i)/xmax)**2
-      GO TO 200
-
-C                  PREPARE FOR PHASE 3.
-
-   75 sum = (sum * xmax) * xmax
-
-C     FOR REAL OR D.P. SET HITEST = CUTHI/N
-C     FOR COMPLEX      SET HITEST = CUTHI/(2*N)
-
-   85 hitest = cuthi/float( n )
-
-C                   PHASE 3.  SUM IS MID-RANGE.  NO SCALING.
-
-      DO 95 j =i,nn,incx
-      IF(ABS(dx(j)) .GE. hitest) GO TO 100
-   95    sum = sum + dx(j)**2
-      dnrm2_ = SQRT( sum )
-      GO TO 300
-
-  200 CONTINUE
-      i = i + incx
-      IF ( i .LE. nn ) GO TO 20
-
-C              END OF MAIN LOOP.
-
-C              COMPUTE SQUARE ROOT AND ADJUST FOR SCALING.
-
-      dnrm2_ = xmax * SQRT(sum)
-  300 CONTINUE
-      RETURN
-      END
 
       SUBROUTINE  dsrot (n,dx,incx,dy,incy,c,s)
 
@@ -2113,48 +1812,6 @@ C                    MODIFIED 9/27/86.
       IF( ABS(c) .GT. ZERO .AND. ABS(c) .LE. s ) z = one/c
       da = r
       db = z
-      RETURN
-      END
-
-      SUBROUTINE  dscal_sl(n,da,dx,incx)
-
-C     SCALES A VECTOR BY A CONSTANT.
-C     USES UNROLLED LOOPS FOR INCREMENT EQUAL TO ONE.
-C     JACK DONGARRA, LINPACK, 3/11/78.
-
-      real (PREC) da,dx(*)
-      INTEGER i,incx,m,mp1,n,nincx
-
-      IF(n.LE.0)RETURN
-      IF(incx.EQ.1)GO TO 20
-
-
-C        CODE FOR INCREMENT NOT EQUAL TO 1
-
-      nincx = n*incx
-      DO 10 i = 1,nincx,incx
-        dx(i) = da*dx(i)
-   10 CONTINUE
-      RETURN
-
-C        CODE FOR INCREMENT EQUAL TO 1
-
-C        CLEAN-UP LOOP
-
-   20 m = MOD(n,5)
-      IF( m .EQ. 0 ) GO TO 40
-      DO 30 i = 1,m
-        dx(i) = da*dx(i)
-   30 CONTINUE
-      IF( n .LT. 5 ) RETURN
-   40 mp1 = m + 1
-      DO 50 i = mp1,n,5
-        dx(i) = da*dx(i)
-        dx(i + 1) = da*dx(i + 1)
-        dx(i + 2) = da*dx(i + 2)
-        dx(i + 3) = da*dx(i + 3)
-        dx(i + 4) = da*dx(i + 4)
-   50 CONTINUE
       RETURN
       END
 

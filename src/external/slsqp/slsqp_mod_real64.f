@@ -9,6 +9,45 @@
 
         integer, parameter :: PREC = real64
 
+C       Interfaces for BLAS 1 routines used in SLSQP implementation
+        interface
+            function ddot (n, dx, incx, dy, incy)
+                import real64
+                integer, intent(in) :: n, incx, incy
+                real (real64), intent(in) :: dx(*), dy(*)
+                real (real64) :: ddot
+            end function
+
+            function dnrm2 (n, x, incx)
+                import real64
+                integer, intent(in) :: incx, n
+                real (real64), intent(in) :: x(*)
+                real (real64) :: dnrm2
+            end function
+
+            subroutine dcopy (n, dx, incx, dy, incy)
+                import real64
+                integer, intent(in) :: n, incx, incy
+                real (real64), intent(in) :: dx(*)
+                real (real64), intent(out) :: dy(*)
+            end subroutine
+
+            subroutine daxpy (n, da, dx, incx, dy, incy)
+                import real64
+                integer, intent(in) :: n, incx, incy
+                real (real64), intent(in) :: da, dx(*)
+                real (real64), intent(in out) :: dy(*)
+            end subroutine
+
+            subroutine dscal (n, da, dx, incx)
+                import real64
+                integer, intent(in) :: n, incx
+                real (real64), intent(in) :: da
+                real (real64), intent(in out) :: dx(*)
+            end subroutine
+        end interface
+
+
 C       Constants that are used throughout various subroutines
         real (PREC), parameter :: epmach = epsilon(1.0_PREC)
         real (PREC), parameter :: zero = 0.0_PREC
