@@ -17,8 +17,8 @@ subroutine __APPEND(root_brentq,__PREC) (f, a, b, xtol, rtol, maxiter, x0, res)
     type (status_t) :: status
 
     lmaxiter = 100
-    lrtol = 6.0 * epsilon(1.0_PREC)
-    lxtol = min(1.0e4 * epsilon(1.0_PREC), 1.0e-5_PREC)
+    lrtol = sqrt(epsilon(1.0_PREC))
+    lxtol = min(1.0e4_PREC * epsilon(1.0_PREC), 1.0e-5_PREC)
 
     if (present(maxiter)) lmaxiter = maxiter
     if (present(xtol)) lxtol = xtol
@@ -73,9 +73,13 @@ subroutine __APPEND(root_brentq_impl,__PREC) (f, a, b, xtol, rtol, maxiter, &
         return
     else if (fpre == 0.0_PREC) then
         status = NF_STATUS_OK
+        x0 = xpre
+        fx0 = fpre
         return
     else if (fcur == 0.0_PREC) then
         status = NF_STATUS_OK
+        x0 = xcur
+        fx0 = fcur
         return
     end if
 
