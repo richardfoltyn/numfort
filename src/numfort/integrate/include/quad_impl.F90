@@ -69,10 +69,9 @@ subroutine __APPEND(quad,__PREC) (fcn, a, b, res, epsabs, epsrel, nmax, work, ab
     labserr = 0.0_PREC
     lstatus = NF_STATUS_OK
 
-    ! Use Scipy's tolerance levels by default (halve machine epsilon exponent
-    ! for given precision).
-    lepsabs = 10.0 ** (log10(epsilon(0.0_PREC))/2.0)
-    lepsrel = 10.0 ** (log10(epsilon(0.0_PREC))/2.0)
+    ! Use Scipy's tolerance levels by default
+    lepsabs = sqrt(epsilon(0.0_PREC))
+    lepsrel = sqrt(epsilon(0.0_PREC))
     lnmax = 50
 
     if (present(epsabs)) lepsabs = epsabs
