@@ -48,9 +48,10 @@ pure subroutine __APPEND(update,__PREC) (res, x, fx, status, nit, nfev, msg)
     call alloc_assign (fx, res%fx)
 
     if (present(status)) then
-        res%success = (NF_STATUS_OK .in. status)
         res%status = status
     end if
+
+    res%success = (NF_STATUS_OK .in. res%status)
 
     if (present(msg)) res%msg = msg
 
