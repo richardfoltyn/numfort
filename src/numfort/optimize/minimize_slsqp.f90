@@ -49,21 +49,21 @@ subroutine slsqp_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
 
     integer, parameter :: PREC = real64
 
-    procedure (fvec_scalar_real64) :: fobj
+    procedure (fvs_jac_real64) :: fobj
     real (PREC), intent(in out), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), optional :: lbounds
     real (PREC), intent(in), dimension(:), optional :: ubounds
     integer, intent(in), optional :: m, meq
-    procedure (fvec_vec_real64), optional :: f_eqcons
-    procedure (fvec_vec_real64), optional :: f_ieqcons
+    procedure (fvv_jac_real64), optional :: f_eqcons
+    procedure (fvv_jac_real64), optional :: f_ieqcons
     integer, intent(in), optional :: maxiter
     integer (NF_ENUM_KIND), intent(in), optional :: linesearch
     real (PREC), intent(in), optional :: tol
     type (workspace_real64), intent(in out), optional :: work
     type (optim_result_real64), intent(in out), optional :: res
 
-    type (fwrapper_vec_scalar_real64) :: fobj_wrapper
-    type (fwrapper_vec_vec_real64) :: f_eqcons_wrapper, f_ieqcons_wrapper
+    type (fwrapper_vs_jac_real64) :: fobj_wrapper
+    type (fwrapper_vv_jac_real64) :: f_eqcons_wrapper, f_ieqcons_wrapper
 
     call wrap_procedure (fobj_wrapper, fobj)
     call wrap_procedure (f_eqcons_wrapper, f_eqcons)
@@ -80,13 +80,13 @@ subroutine slsqp_args_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
 
     integer, parameter :: PREC = real64
 
-    procedure (fvec_scalar_args_real64) :: fobj
+    procedure (fvs_jac_args_real64) :: fobj
     real (PREC), intent(in out), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), optional :: lbounds
     real (PREC), intent(in), dimension(:), optional :: ubounds
     integer, intent(in), optional :: m, meq
-    procedure (fvec_vec_args_real64), optional :: f_eqcons
-    procedure (fvec_vec_args_real64), optional :: f_ieqcons
+    procedure (fvv_jac_args_real64), optional :: f_eqcons
+    procedure (fvv_jac_args_real64), optional :: f_ieqcons
     real (PREC), intent(in), dimension(:) :: args
     integer, intent(in), optional :: maxiter
     integer (NF_ENUM_KIND), intent(in), optional :: linesearch
@@ -94,8 +94,8 @@ subroutine slsqp_args_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     type (workspace_real64), intent(in out), optional :: work
     type (optim_result_real64), intent(in out), optional :: res
 
-    type (fwrapper_vec_scalar_real64) :: fobj_wrapper
-    type (fwrapper_vec_vec_real64) :: f_eqcons_wrapper, f_ieqcons_wrapper
+    type (fwrapper_vs_jac_real64) :: fobj_wrapper
+    type (fwrapper_vv_jac_real64) :: f_eqcons_wrapper, f_ieqcons_wrapper
 
     call wrap_procedure (fobj_wrapper, fcn_args=fobj)
     call wrap_procedure (f_eqcons_wrapper, fcn_args=f_eqcons)
@@ -112,13 +112,13 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
 
     integer, parameter :: PREC = real64
 
-    type (fwrapper_vec_scalar_real64) :: fobj
+    type (fwrapper_vs_jac_real64) :: fobj
     real (PREC), intent(in out), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), optional :: lbounds
     real (PREC), intent(in), dimension(:), optional :: ubounds
     integer, intent(in), optional :: m, meq
-    type (fwrapper_vec_vec_real64) :: f_eqcons
-    type (fwrapper_vec_vec_real64) :: f_ieqcons
+    type (fwrapper_vv_jac_real64) :: f_eqcons
+    type (fwrapper_vv_jac_real64) :: f_ieqcons
     integer, intent(in), optional :: maxiter
     integer (NF_ENUM_KIND), intent(in), optional :: linesearch
     real (PREC), intent(in), optional :: tol
@@ -405,8 +405,8 @@ subroutine slsqp_check_input_real64 (x, lbounds, ubounds, m, meq, &
     real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(in), dimension(:), optional :: lbounds, ubounds
     integer, intent(in), optional :: m, meq
-    type (fwrapper_vec_vec_real64), intent(in) :: f_eqcons
-    type (fwrapper_vec_vec_real64), optional :: f_ieqcons
+    type (fwrapper_vv_jac_real64), intent(in) :: f_eqcons
+    type (fwrapper_vv_jac_real64), optional :: f_ieqcons
     integer, intent(in), optional :: maxiter
     integer (NF_ENUM_KIND), intent(in), optional :: linesearch
     real (PREC), intent(in), optional :: tol

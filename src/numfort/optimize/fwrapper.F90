@@ -10,8 +10,8 @@ module numfort_optimize_fwrapper
 
     private
     public :: dispatch, is_present, wrap_procedure
-    public :: fwrapper_vec_scalar_real32, fwrapper_vec_scalar_real64
-    public :: fwrapper_vec_vec_real32, fwrapper_vec_vec_real64
+    public :: fwrapper_vs_jac_real32, fwrapper_vs_jac_real64
+    public :: fwrapper_vv_jac_real32, fwrapper_vv_jac_real64
 
 #include <numfort_real32.h>
 #include "fwrapper_spec.F90"
