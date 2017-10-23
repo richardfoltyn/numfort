@@ -4,6 +4,19 @@
 !       2. Takes an (optional) Jacobian as dummy argument
 !       3. Takes (optional) ARGS array as dummy argument
 
+subroutine __APPEND(fss_args,__PREC) (x, fx, args)
+    import __PREC
+    real (__PREC), intent(in)  :: x
+    real (__PREC), intent(out) :: fx
+    real (__PREC), intent(in), dimension(:) :: args
+end subroutine
+
+subroutine __APPEND(fss,__PREC) (x, fx)
+    import __PREC
+    real (__PREC), intent(in)  :: x
+    real (__PREC), intent(out) :: fx
+end subroutine
+
 subroutine __APPEND(fvs_jac_args,__PREC) (x, fx, fpx, args)
     import __PREC
     real (__PREC), intent(in), dimension(:), contiguous :: x

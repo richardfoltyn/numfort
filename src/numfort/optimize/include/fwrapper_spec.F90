@@ -9,12 +9,35 @@
 !       2. Takes an (optional) Jacobian as dummy argument
 !       3. Takes (optional) ARGS array as dummy argument
 
+type :: __APPEND(fwrapper_ss,__PREC)
+    private
+    procedure (__APPEND(fss_args,__PREC)), pointer, nopass :: &
+        fcn_args => null()
+    procedure (__APPEND(fss,__PREC)), pointer, nopass :: &
+        fcn => null()
+    integer, public :: nfev = 0
+end type
+
+interface dispatch
+    module procedure __APPEND(fwrapper_ss_dispatch,__PREC)
+end interface
+
+interface is_present
+    module procedure __APPEND(fwrapper_ss_is_present,__PREC)
+end interface
+
+interface wrap_procedure
+    module procedure __APPEND(fwrapper_ss_wrap,__PREC)
+end interface
+
+
 type :: __APPEND(fwrapper_vs_jac,__PREC)
     private
     procedure (__APPEND(fvs_jac_args,__PREC)), pointer, nopass :: &
         fcn_args => null()
     procedure (__APPEND(fvs_jac,__PREC)), pointer, nopass :: &
         fcn => null()
+    integer, public :: nfev = 0
 end type
 
 interface dispatch
@@ -30,13 +53,13 @@ interface wrap_procedure
 end interface
 
 
-
 type :: __APPEND(fwrapper_vv_jac,__PREC)
     private
     procedure (__APPEND(fvv_jac_args,__PREC)), pointer, nopass :: &
         fcn_args => null()
     procedure (__APPEND(fvv_jac,__PREC)), pointer, nopass :: &
         fcn => null()
+    integer, public :: nfev = 0
 end type
 
 interface dispatch
