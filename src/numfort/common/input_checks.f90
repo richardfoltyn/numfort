@@ -11,7 +11,8 @@ module numfort_common_input_checks
     public :: check_positive, check_nonneg, check_enum
 
     interface check_positive
-        module procedure check_positive_real64, check_positive_int32
+        module procedure check_positive_real32, check_positive_real64, &
+            check_positive_int32
     end interface
 
     interface check_nonneg
@@ -25,6 +26,14 @@ contains
 
 pure subroutine check_positive_real64 (dummy, val, name, status, msg)
     integer, parameter :: PREC = real64
+    real (PREC), intent(in) :: dummy
+    real (PREC), intent(in), optional :: val
+
+    include "include/check_positive.f90"
+end subroutine
+
+pure subroutine check_positive_real32 (dummy, val, name, status, msg)
+    integer, parameter :: PREC = real32
     real (PREC), intent(in) :: dummy
     real (PREC), intent(in), optional :: val
 
