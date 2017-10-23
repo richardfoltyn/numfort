@@ -378,6 +378,8 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
             msg = "Iteration limit exceeded"
         end select
 
+        status%code_orig = mode
+
         ! Exit in all cases when there is an error or convergence was achieved.
         if (mode /= MODE_EVAL_FUNCS .and. mode /= MODE_EVAL_JAC) goto 100
     end do
@@ -491,13 +493,15 @@ subroutine slsqp_sanitize_bounds_real64 (xlb_in, xub_in, xlb, xub)
 
     ! Set to NaN by default, as this is the value for signaling that no
     ! lower/upper bound is present in the Scipy-modified code.
-    xlb = NAN
-    xub = NAN
+    xlb = POS_INF
+    xub = NEG_INF
 
     if (present(xlb_in)) then
         do i = 1, min(n, size(xlb_in))
             if (ieee_is_finite (xlb_in(i))) then
                 xlb(i) = xlb_in(i)
+            else
+                xlb(i) = NEG_INF
             end if
         end do
     end if
@@ -506,6 +510,8 @@ subroutine slsqp_sanitize_bounds_real64 (xlb_in, xub_in, xlb, xub)
         do i = 1, min(n, size(xub_in))
             if (ieee_is_finite (xub_in(i))) then
                 xub(i) = xub_in(i)
+            else
+                xub(i) = POS_INF
             end if
         end do
     end if

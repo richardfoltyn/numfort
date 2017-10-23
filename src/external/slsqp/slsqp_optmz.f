@@ -616,6 +616,11 @@ c     revised                        march 1989
       DIMENSION        a(la,n), b(la), g(n), l(nl),
      .                 w(*), x(n), xl(n), xu(n), y(m+n+n)
 
+      real (PREC) :: POSITIVE_INF, NEGATIVE_INF
+
+      POSITIVE_INF = ieee_value (0.0_PREC, IEEE_POSITIVE_INF)
+      NEGATIVE_INF = ieee_value (0.0_PREC, IEEE_NEGATIVE_INF)
+
       n1 = n + 1
       mineq = m - meq
       m1 = mineq + n + n
@@ -715,7 +720,7 @@ C  NaN value indicates no bound
       nancnt = 0
 
       DO 40 i=1,n
-         if (xl(i).eq.xl(i)) then
+         if (xl(i) > NEGATIVE_INF) then
             w(il) = xl(i)
             do 41 j=1,n
                w(ip + m1*(j-1)) = 0
@@ -729,7 +734,7 @@ C  NaN value indicates no bound
    40 CONTINUE
 
       DO 50 i=1,n
-         if (xu(i).eq.xu(i)) then
+         if (xu(i) < POSITIVE_INF) then
             w(il) = -xu(i)
             do 51 j=1,n
                w(ip + m1*(j-1)) = 0
@@ -1818,11 +1823,16 @@ C                    MODIFIED 9/27/86.
       subroutine bound(n, x, xl, xu)
       integer n, i
       real (PREC) x(n), xl(n), xu(n)
+      real (PREC) :: POSITIVE_INF, NEGATIVE_INF
+
+      POSITIVE_INF = ieee_value (0.0_PREC, IEEE_POSITIVE_INF)
+      NEGATIVE_INF = ieee_value (0.0_PREC, IEEE_NEGATIVE_INF)
+
       do i = 1, n
 C        Note that xl(i) and xu(i) may be NaN to indicate no bound
-         if(xl(i).eq.xl(i).and.x(i) < xl(i))then
+         if(xl(i) > NEGATIVE_INF .and. x(i) < xl(i))then
             x(i) = xl(i)
-         else if(xu(i).eq.xu(i).and.x(i) > xu(i))then
+         else if(xu(i) < POSITIVE_INF .and. x(i) > xu(i))then
             x(i) = xu(i)
          end if
       end do

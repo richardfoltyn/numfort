@@ -22,7 +22,7 @@ subroutine example1 ()
     real (PREC), dimension(:,:), allocatable :: xmin, xmin_p
     real (PREC), dimension(:), allocatable :: alpha, beta, fxmin, fxmin_p
 
-    real (PREC) :: NAN
+    real (PREC) :: NAN, POSITIVE_INF, NEGATIVE_INF
 
     real (PREC) :: diff_x, diff_fx
     integer, parameter :: n = 100000
@@ -30,6 +30,8 @@ subroutine example1 ()
     integer, parameter :: m = n/2
 
     NAN = ieee_value (0.0_PREC, IEEE_QUIET_NAN)
+    POSITIVE_INF = ieee_value (0.0_PREC, IEEE_POSITIVE_INF)
+    NEGATIVE_INF = ieee_value (0.0_PREC, IEEE_NEGATIVE_INF)
 
     allocate (alpha(n), beta(n))
     allocate (xlb(2, n), xub(2, n))
@@ -41,11 +43,11 @@ subroutine example1 ()
     call linspace (xlb(1, 1:m), -1.0d0, -0.75d0)
     call linspace (xlb(2, 1:m), -0.75d0, -0.1d0)
     ! Set other of problems to have no lower bound
-    xlb(:,m+1:) = NAN
+    xlb(:,m+1:) = NEGATIVE_INF
     ! Set first half of problem to have no upper bound
     call linspace (xub(1, 1:m), 0.75d0, 1.0d0)
     call linspace (xub(2, 1:m), 1.0d0, 0.75d0)
-    xub(:,m+1:) = NAN
+    xub(:,m+1:) = POSITIVE_INF
 
     call solve_serial (alpha, beta, xlb, xub, xmin, fxmin)
     call solve_parallel (alpha, beta, xlb, xub, xmin_p, fxmin_p)

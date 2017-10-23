@@ -1,4 +1,5 @@
       module slsqp_mod_real64
+        use, intrinsic :: ieee_arithmetic
         use, intrinsic :: iso_fortran_env
 
         implicit none
@@ -8,6 +9,7 @@
         public :: slsqp_data, linmin_data
 
         integer, parameter :: PREC = real64
+
 
 C       Interfaces for BLAS 1 routines used in SLSQP implementation
         interface
