@@ -1,15 +1,13 @@
 
 
-pure subroutine __APPEND(update_scalar_scalar,__PREC) (res, x, fx, status, nit, nfev, msg)
+pure subroutine __APPEND(update_ss,__PREC) (res, x, fx, status, nit, nfev, msg)
     integer, parameter :: PREC = __PREC
     type (__APPEND(optim_result,__PREC)), intent(in out) :: res
-    real (PREC) :: x, fx
-    integer :: nit, nfev
+    real (PREC), intent(in) :: x, fx
     type (status_t), intent(in), optional :: status
-    character (len=*) :: msg
-
-    intent (in) :: x, fx, nit, nfev, msg
-    optional :: nit, nfev, msg
+    integer, intent(in), optional :: nit
+    integer, intent(in), optional :: nfev
+    character (len=*), intent(in), optional :: msg
 
     real (PREC), dimension(1) :: x1, fx1
 
@@ -19,16 +17,15 @@ pure subroutine __APPEND(update_scalar_scalar,__PREC) (res, x, fx, status, nit, 
     call result_update (res, x1, fx1, status, nit, nfev, msg)
 end subroutine
 
-pure subroutine __APPEND(update_vec_scalar,__PREC) (res, x, fx, status, nit, nfev, msg)
+pure subroutine __APPEND(update_vs,__PREC) (res, x, fx, status, nit, nfev, msg)
     integer, parameter :: PREC = __PREC
     type (__APPEND(optim_result,__PREC)), intent(in out) :: res
-    real (PREC) :: x(:), fx
+    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in) :: fx
     type (status_t), intent(in), optional :: status
-    integer :: nit, nfev
-    character (len=*) :: msg
-
-    intent (in) :: x, fx, nit, nfev, msg
-    optional :: nit, nfev, msg
+    integer, intent(in), optional :: nit
+    integer, intent(in), optional :: nfev
+    character (len=*), intent(in), optional :: msg
 
     real (PREC), dimension(1) :: fx1
 
@@ -40,13 +37,12 @@ end subroutine
 pure subroutine __APPEND(update,__PREC) (res, x, fx, status, nit, nfev, msg)
     integer, parameter :: PREC = __PREC
     type (__APPEND(optim_result,__PREC)), intent(in out) :: res
-    real (PREC), dimension(:) :: x, fx
+    real (PREC), intent(in), dimension(:), optional :: x
+    real (PREC), intent(in), dimension(:), optional :: fx
     type (status_t), intent(in), optional :: status
-    integer :: nit, nfev
-    character (len=*) :: msg
-
-    intent (in) :: x, fx, nit, nfev, msg
-    optional :: x, fx, nit, nfev, msg
+    integer, intent(in), optional :: nit
+    integer, intent(in), optional :: nfev
+    character (len=*), intent(in), optional :: msg
 
     call alloc_assign (x, res%x)
     call alloc_assign (fx, res%fx)
@@ -74,4 +70,32 @@ pure subroutine __APPEND(reset,__PREC) (res)
     if (allocated(res%fx)) res%fx = 0.0_PREC
     res%status = NF_STATUS_UNDEFINED
     res%success = .false.
+end subroutine
+
+
+pure subroutine __APPEND(assert_alloc_ptr,__PREC) (res, ptr)
+    type (__APPEND(optim_result,__PREC)), intent(in out), target, optional :: res
+    type (__APPEND(optim_result,__PREC)), pointer, intent(in out) :: ptr
+
+    if (present(res)) then
+        ptr => res
+    else
+        allocate (ptr)
+    end if
+end subroutine
+
+
+pure subroutine __APPEND(assert_dealloc_ptr,__PREC) (res, ptr)
+    type (__APPEND(optim_result,__PREC)), intent(in out), target, optional :: res
+    type (__APPEND(optim_result,__PREC)), pointer, intent(in out) :: ptr
+
+    if (associated(ptr)) then
+        if (.not. present(res)) then
+            deallocate (ptr)
+            nullify (ptr)
+        else if (.not. associated(ptr,res)) then
+            deallocate (ptr)
+            nullify (ptr)
+        end if
+    end if
 end subroutine

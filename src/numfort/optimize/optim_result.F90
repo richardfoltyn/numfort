@@ -14,7 +14,8 @@ module numfort_optimize_result
     private
 
     public :: optim_result_real32, optim_result_real64
-    public :: result_update
+    public :: result_update, result_reset
+    public :: assert_alloc_ptr, assert_dealloc_ptr
 
     integer, parameter :: UNINITIALIZED_COUNTER = -1
 
@@ -35,11 +36,11 @@ module numfort_optimize_result
     end type
 
     interface result_update
-        module procedure update_scalar_scalar_real32, update_scalar_scalar_real64
+        module procedure update_ss_real32, update_ss_real64
     end interface
 
     interface result_update
-        module procedure update_vec_scalar_real32, update_vec_scalar_real64
+        module procedure update_vs_real32, update_vs_real64
     end interface
 
     interface result_update
@@ -48,6 +49,14 @@ module numfort_optimize_result
 
     interface result_reset
         module procedure reset_real32, reset_real64
+    end interface
+
+    interface assert_alloc_ptr
+        module procedure assert_alloc_ptr_real32, assert_alloc_ptr_real64
+    end interface
+
+    interface assert_dealloc_ptr
+        module procedure assert_dealloc_ptr_real32, assert_dealloc_ptr_real64
     end interface
 
 contains
