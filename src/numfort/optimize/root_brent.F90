@@ -38,11 +38,11 @@ module numfort_optimize_brent
 contains
 
 #define __PREC real32
-#include "brentq_impl.F90"
+#include "root_brent_impl.F90"
 #undef __PREC
 
 #define __PREC real64
-#include "brentq_impl.F90"
+#include "root_brent_impl.F90"
 #undef __PREC
 
 end module
