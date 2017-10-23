@@ -6,6 +6,7 @@ set(SOURCE_FILES
     interfaces.F90
     fwrapper.F90
     optim_result.F90
+    minimize_bounded.F90
     minimize_lbfgsb.f90
     minimize_simplex.f90
     minimize_slsqp.f90
