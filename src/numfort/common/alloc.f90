@@ -8,7 +8,7 @@ module numfort_common_alloc
 
     private
 
-    public :: assert_alloc_ptr, assert_dealloc_ptr, alloc_assign
+    public :: assert_alloc_ptr, assert_dealloc_ptr, copy_alloc
 
     interface assert_alloc_ptr
         module procedure assert_alloc_ptr_1d_real32, assert_alloc_ptr_1d_real64
@@ -18,8 +18,8 @@ module numfort_common_alloc
         module procedure assert_dealloc_ptr_1d_real32, assert_dealloc_ptr_1d_real64
     end interface
 
-    interface alloc_assign
-        module procedure alloc_assign_1d_real32, alloc_assign_1d_real64
+    interface copy_alloc
+        module procedure copy_alloc_1d_real32, copy_alloc_1d_real64
     end interface
 
 contains
@@ -108,20 +108,42 @@ pure subroutine assert_dealloc_ptr_1d_real64 (x, ptr_x)
 end subroutine
 
 ! ------------------------------------------------------------------------------
-! ALLOC_ASSIGN routines
+! COPY_ALLOC routines
 
-pure subroutine alloc_assign_1d_real64 (src, dst)
+pure subroutine copy_alloc_1d_real64 (src, dst)
+    !*  COPY_ALLOC implements a routine similar to MOVE_ALLOC, but leaves
+    !   the SRC argument unchanged.
+    !
+    !   Unlike MOVE_ALLOC, COPY_ALLOC does not (and cannot) modify any pointers
+    !   to SRC.
+    !
+    !   If SRC is either missing (or not allocated, which is interpreted as
+    !   not being present in Fortran 2008), DST becomes unallocated
+    !   on exit.
+
     integer, parameter :: PREC = real64
+
     real (PREC), intent(in), dimension(:), optional :: src
     real (PREC), intent(out), dimension(:), allocatable :: dst
-    include "include/alloc_assign_impl.f90"
+    include "include/copy_alloc_impl.f90"
 end subroutine
 
-pure subroutine alloc_assign_1d_real32 (src, dst)
+pure subroutine copy_alloc_1d_real32 (src, dst)
+    !*  COPY_ALLOC implements a routine similar to MOVE_ALLOC, but leaves
+    !   the SRC argument unchanged.
+    !
+    !   Unlike MOVE_ALLOC, COPY_ALLOC does not (and cannot) modify any pointers
+    !   to SRC.
+    !
+    !   If SRC is either missing (or not allocated, which is interpreted as
+    !   not being present in Fortran 2008), DST becomes unallocated
+    !   on exit.
+
     integer, parameter :: PREC = real32
+
     real (PREC), intent(in), dimension(:), optional :: src
     real (PREC), intent(out), dimension(:), allocatable :: dst
-    include "include/alloc_assign_impl.f90"
+    include "include/copy_alloc_impl.f90"
 end subroutine
 
 end module

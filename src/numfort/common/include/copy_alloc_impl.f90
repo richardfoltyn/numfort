@@ -13,4 +13,8 @@ if (present(src)) then
     else
         dst(1:n) = src
     end if
+else
+    if (allocated(dst)) then
+        deallocate (dst)
+    end if
 end if

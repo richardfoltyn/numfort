@@ -44,8 +44,8 @@ pure subroutine __APPEND(update,__PREC) (res, x, fx, status, nit, nfev, msg)
     integer, intent(in), optional :: nfev
     character (len=*), intent(in), optional :: msg
 
-    call alloc_assign (x, res%x)
-    call alloc_assign (fx, res%fx)
+    call copy_alloc (x, res%x)
+    call copy_alloc (fx, res%fx)
 
     if (present(status)) then
         res%status = status
