@@ -5,6 +5,7 @@ module numfort_optimize_newton
 
     use, intrinsic :: iso_fortran_env
     use numfort_common
+    use numfort_common_input_checks
     use numfort_optimize_result
     implicit none
     private
@@ -60,48 +61,15 @@ module numfort_optimize_newton
         module procedure root_newton_impl_real32, root_newton_impl_real64
     end interface
 
+    interface check_inputs
+        module procedure check_inputs_real32, check_inputs_real64
+    end interface
+
+    interface set_defaults
+        module procedure set_defaults_real32, set_defaults_real64
+    end interface
+
 contains
-
-pure subroutine newton_check_inputs (xtol, tol, maxiter, status, msg)
-    !*  NEWTON_CHECK_INPUTS performs input validation for both the
-    !   plain Newton and the Halley root-finding algorithms.
-    !   Used for both real32 and real64 precision.
-
-    integer, parameter :: PREC = real64
-    real (PREC), intent(in), optional :: xtol
-    real (PREC), intent(in), optional :: tol
-    integer, intent(in), optional :: maxiter
-    type (status_t), intent(out) :: status
-    character (*), intent(out) :: msg
-
-    status = NF_STATUS_OK
-
-    if (present(xtol)) then
-        if (xtol <= 0.0_PREC) then
-            msg = "Tolerance too small"
-            goto 100
-        end if
-    end if
-
-    if (present(tol)) then
-        if (tol <= 0.0_PREC) then
-            msg = "Tolerance too small"
-            goto 100
-        end if
-    end if
-
-    if (present(maxiter)) then
-        if (maxiter <= 0) then
-            msg = "maxiter too small"
-            goto 100
-        end if
-    end if
-
-    return
-
-100 continue
-    status = NF_STATUS_INVALID_ARG
-end subroutine
 
 #define __PREC real32
 #include "root_newton_impl.F90"
