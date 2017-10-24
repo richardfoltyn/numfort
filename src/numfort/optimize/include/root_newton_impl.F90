@@ -161,7 +161,7 @@ subroutine __APPEND(root_newton_impl,__PREC) (x, args, xtol, tol, maxiter, &
             if (discr < 0.0_PREC) then
                 x = x0 - fpx / fppx
             else
-                x = x0 - 2.0_PREC*fx / (fpx + sign(1.0_PREC, fpx) * sqrt(discr))
+                x = x0 - 2.0_PREC*fx / (fpx + signum(fpx) * sqrt(discr))
             end if
         end if
 
