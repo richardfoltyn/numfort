@@ -25,7 +25,7 @@ subroutine __APPEND(minimize_bounded,__PREC) (fcn, a, b, x, maxfun, xtol, res)
     real (PREC) :: lxtol
 
     call assert_alloc_ptr (res, ptr_res)
-    call result_reset (res)
+    call result_reset (ptr_res)
 
     call check_input (a, b, maxfun, xtol, ptr_res)
     if (ptr_res%status /= NF_STATUS_OK) goto 100
@@ -74,7 +74,7 @@ subroutine __APPEND(minimize_bounded_args,__PREC) (fcn, a, b, x, args, maxfun, x
     real (PREC) :: lxtol
 
     call assert_alloc_ptr (res, ptr_res)
-    call result_reset (res)
+    call result_reset (ptr_res)
 
     call check_input (a, b, maxfun, xtol, ptr_res)
     if (ptr_res%status /= NF_STATUS_OK) goto 100
