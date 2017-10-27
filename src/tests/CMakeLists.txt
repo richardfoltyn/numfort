@@ -45,6 +45,7 @@ list(APPEND COMPONENTS
     arrays
     integrate
     interpolate
+    optimize
     stats
 )
 

@@ -51,6 +51,35 @@ def f_eqcons_grad(x):
     return np.array([-2.0*x1, - 3.0*x2**2.0]).reshape((1, 2))
 
 
+def fobj3(x):
+    return np.sum(x ** 2.0)
+
+
+def fobj_grad3(x):
+    return 2.0 * x
+
+
+def f_ieqconstr3(x):
+    return np.sum(x[:3]**2.0) - 1.0
+
+
+def f_ieqconstr_grad3(x):
+    g = np.zeros_like(x)
+    g[:3] = 2.0 * x[:3]
+    return g
+
+
+def f_ieqconstr3_2(x):
+    return x[4]**2.0 + x[5] - 10
+
+
+def f_ieqconstr3_2_grad(x):
+    g = np.zeros_like(x)
+    g[4] = 2.0 * x[4]
+    g[5] = 1.0
+    return g
+
+
 def main():
 
     # Example 1 with inequality constraint
@@ -60,7 +89,7 @@ def main():
     res = minimize(fobj, x0, method='SLSQP', jac=fobj_grad, bounds=bounds,
                    constraints=constr, tol=1e-8)
 
-    s = 'Min: {}; f(xmin)={:.8f}'.format(res.x, res.fun)
+    s = 'Min: {}; f(xmin)={:.15f}'.format(np.array_str(res.x, precision=15), res.fun)
     print(s)
 
     s = 'Constr. value at xmin: {}'.format(f_ieqcons(res.x))
@@ -73,11 +102,24 @@ def main():
     res = minimize(fobj, x0, method='SLSQP', jac=fobj_grad, bounds=bounds,
                    constraints=constr, tol=1e-8)
 
-    s = 'Min: {}; f(xmin)={:.8f}'.format(res.x, res.fun)
+    s = 'Min: {}; f(xmin)={:.15f}'.format(np.array_str(res.x, precision=15), res.fun)
     print(s)
 
     s = 'Constr. value at xmin: {}'.format(f_eqcons(res.x))
     print(s)
+
+    # Example 3: Quadratic function with inequal. constr.
+    n = 11
+    x0 = np.ones(n) * 2
+    constr1 = {'type': 'ineq', 'fun': f_ieqconstr3, 'jac': f_ieqconstr_grad3}
+    constr2 = {'type': 'ineq', 'fun': f_ieqconstr3_2, 'jac': f_ieqconstr3_2_grad}
+    constr = (constr1, constr2)
+    res = minimize(fobj3, x0, method='SLSQP', jac=fobj_grad3, constraints=constr,
+                   tol=1e-8)
+
+    s = 'Min: {}'.format(np.array_str(res.x, precision=15))
+    print(s)
+    print('f(xmin)={:.15f}'.format(res.fun))
 
 
 if __name__ == '__main__':
