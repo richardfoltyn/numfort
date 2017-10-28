@@ -2,8 +2,8 @@
 
 program test_optimize_minimize_slsqp
 
-
-    use iso_fortran_env
+    use, intrinsic :: ieee_arithmetic
+    use, intrinsic :: iso_fortran_env
 
     use fcore_common, FC_status_t => status_t
     use fcore_testing
@@ -52,7 +52,7 @@ subroutine test_rosenbrock_scipy (tests)
         [0.826247374068299d0, 0.682072165838992d0]
     real (PREC), parameter :: fx2_scipy = 0.030227497664672d0
 
-    tc => tests%add_test ("Scipy wrapper")
+    tc => tests%add_test ("Rosenbrock function: Fortran vs. Scipy wrapper")
 
     ! Problem #1: Rosenbrock with inequality constr.
     x = 0.1d0
@@ -78,7 +78,7 @@ subroutine test_rosenbrock_scipy (tests)
     dfx = abs(res%fx(1)-fx2_scipy)
 
     call tc%assert_true (dx < tol .and. dfx < tol, &
-        "Problem 1: Rosenbrock with ineq. and box constraints")
+        "Problem 2: Rosenbrock with eq. and box constraints")
 
 end subroutine
 
@@ -92,27 +92,62 @@ subroutine test_quadratic_scipy (tests)
     real (PREC), parameter :: tol = 1d-10
     real (PREC), dimension(11) :: x, lbounds, ubounds
     real (PREC) :: dx, dfx
+    real (PREC) :: POS_INF, NEG_INF
 
-    ! Problem #3
-    real (PREC), parameter :: x_scipy(11) = [ &
-        5.773502691896936d-01, 5.773502691896940d-01, 5.773502691896936d-01, &
-        -9.765189259803117d-07, 3.082206907816453d0,   5.000005774156433d-01, &
-        -9.765189257569339d-07, -9.765189254581599d-07,  -9.765189250856281d-07, &
+    ! Scipy results for problem #3
+    real (PREC), parameter :: x1_scipy(11) = [ &
+         5.773502691896936d-01,  5.773502691896940d-01,  5.773502691896936d-01, &
+        -9.765189259803117d-07,  3.082206907816453d+00,  5.000005774156433d-01, &
+        -9.765189257569339d-07, -9.765189254581599d-07, -9.765189250856281d-07, &
         -9.765189253218452d-07, -9.765189256346833d-07 ]
-    real (PREC), parameter :: fx_scipy = 10.750000000013397d0
+    real (PREC), parameter :: fx1_scipy = 10.750000000013397d0
 
-    tc => tests%add_test ("Quadratic function vs. Scipy")
+    ! Scipy results for problem #4
+    real (PREC), parameter :: x2_scipy(11) = [ &
+         5.773502691897339d-01,  5.773502691897370d-01,  5.773502691897344d-01, &
+        -1.897200341762655d-07,  3.082206629424660d+00,  5.000022936265232d-01, &
+         5.000000000000284d+00, -1.897200340142180d-07, -1.897200341364482d-07, &
+        -1.897200340510266d-07, -5.000000000000293d+00 ]
+    real (PREC), parameter :: fx2_scipy = 60.750000000107406d0
 
+
+    tc => tests%add_test ("Quadratic function: Fortran vs. Scipy wrapper")
+
+    ! Problem 3
     x = 2.0d0
-    call minimize_slsqp (fobj, x, m=2, f_ieqcons=fconstr_ieq3, &
+    call minimize_slsqp (fobj3, x, m=2, f_ieqcons=fconstr_ieq3, &
         work=work, res=res, tol=1d-8)
 
-    dx = maxval(abs(x-x_scipy))
-    dfx = abs(res%fx(1)-fx_scipy)
+    dx = maxval(abs(x-x1_scipy))
+    dfx = abs(res%fx(1)-fx1_scipy)
 
     call tc%assert_true (dx < tol .and. dfx < tol, &
         "Problem 3: Quadratic obj. with ineq. constraints")
 
+    ! Problem 4: Same as problem 3, but impose additional box constraints
+    ! on some of the dimensions of x.
+    x = 2.0d0
+    x(7) = 7.0d0
+    x(11) = -7.0d0
+
+    POS_INF = ieee_value (0.0_PREC, IEEE_POSITIVE_INF)
+    NEG_INF = ieee_value (0.0_PREC, IEEE_NEGATIVE_INF)
+
+    lbounds = NEG_INF
+    ubounds = POS_INF
+    lbounds(7) = 5.0d0
+    ubounds(7) = 10.0d0
+    lbounds(11) = -10.0d0
+    ubounds(11) = -5.0d0
+
+    call minimize_slsqp (fobj3, x, lbounds=lbounds, ubounds=ubounds, m=2, &
+        f_ieqcons=fconstr_ieq3, work=work, res=res, tol=1d-8)
+
+    dx = maxval(abs(x-x2_scipy))
+    dfx = abs(res%fx(1)-fx2_scipy)
+
+    call tc%assert_true (dx < tol .and. dfx < tol, &
+        "Problem 4: Quadratic obj. with ineq. and partial box constraints")
 end subroutine
 
 

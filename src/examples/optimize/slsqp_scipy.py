@@ -121,6 +121,26 @@ def main():
     print(s)
     print('f(xmin)={:.15f}'.format(res.fun))
 
+    # Example 4: Quadratic function with inequal. and some box constr.
+    n = 11
+    x0 = np.ones(n) * 2
+    constr1 = {'type': 'ineq', 'fun': f_ieqconstr3, 'jac': f_ieqconstr_grad3}
+    constr2 = {'type': 'ineq', 'fun': f_ieqconstr3_2,
+               'jac': f_ieqconstr3_2_grad}
+    constr = (constr1, constr2)
+    bounds = [(None, None) for x in range(n)]
+    bounds[6] = (5, 10)
+    bounds[10] = (-10, -5)
+    x0[6] = 7
+    x0[10] = -7
+    res = minimize(fobj3, x0, method='SLSQP', jac=fobj_grad3,
+                   constraints=constr, bounds=bounds,
+                   tol=1e-8)
+
+    s = 'Min: {}'.format(np.array_str(res.x, precision=15))
+    print(s)
+    print('f(xmin)={:.15f}'.format(res.fun))
+
 
 if __name__ == '__main__':
     main()
