@@ -44,8 +44,8 @@ pure subroutine __APPEND(update,__PREC) (res, x, fx, status, nit, nfev, msg)
     integer, intent(in), optional :: nfev
     character (len=*), intent(in), optional :: msg
 
-    call copy_alloc (x, res%x)
-    call copy_alloc (fx, res%fx)
+    if (present(x)) call copy_alloc (x, res%x)
+    if (present(fx)) call copy_alloc (fx, res%fx)
 
     if (present(status)) then
         res%status = status
@@ -59,6 +59,32 @@ pure subroutine __APPEND(update,__PREC) (res, x, fx, status, nit, nfev, msg)
     if (present(nfev)) res%nfev = nfev
 
 end subroutine
+
+
+pure subroutine __APPEND(update_int_status,__PREC) (res, x, fx, status, nit, &
+        nfev, msg, istatus)
+    !*  UPDATE_INT_STATUS updates OPTIM_RESULT object attributes with given
+    !   values, accepting an integer status value instead of STATUS_T.
+    integer, parameter :: PREC = __PREC
+    type (__APPEND(optim_result,__PREC)), intent(in out) :: res
+    real (PREC), intent(in), dimension(:), optional :: x
+    real (PREC), intent(in), dimension(:), optional :: fx
+    integer (NF_ENUM_KIND), intent(in) :: status
+    integer, intent(in), optional :: nit
+    integer, intent(in), optional :: nfev
+    character (len=*), intent(in), optional :: msg
+    integer, intent(in), optional :: istatus
+        !*  Optional "original" integer status returned by the underlying
+        !   implementation.
+
+    type (status_t) :: lstatus
+
+    lstatus = status
+    if (present(istatus)) lstatus%code_orig = istatus
+
+    call result_update (res, x, fx, lstatus, nit, nfev, msg)
+end subroutine
+
 
 pure subroutine __APPEND(reset,__PREC) (res)
     integer, parameter :: PREC = __PREC

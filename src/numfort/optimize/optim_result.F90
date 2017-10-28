@@ -47,6 +47,10 @@ module numfort_optimize_result
         module procedure update_real32, update_real64
     end interface
 
+    interface result_update
+        module procedure update_int_status_real32, update_int_status_real64
+    end interface
+
     interface result_reset
         module procedure reset_real32, reset_real64
     end interface
