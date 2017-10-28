@@ -40,7 +40,37 @@ module numfort_optimize_slsqp
     integer, parameter :: MODE_EVAL_FUNCS = 1
     integer, parameter :: MODE_EVAL_JAC = -1
 
-contains
+    character (*), parameter :: SLSQP_MSG_MAP(0:9) = [ &
+            "Optimization terminated successfully               ", &
+            "                                                   ", &
+            "Move equality constraints than indepedent variables", &
+            "More than 3*n iterations in LSQ subproblem         ", &
+            "Incompatible inequality constraints                ", &
+            "Singular matrix E in LSQ subproblem                ", &
+            "Singular matrix C in LSQ subproblem                ", &
+            "Rank-deficient equality constraint in HFTI         ", &
+            "Positive directional derivative in line searc      ", &
+            "Iteration limit exceeded                           "  &
+        ]
+        !*  Mapping of SLSQP status codes to status messages. Note: no msg
+        !   for value 1 as this status code is not used on termination.
+
+    integer (NF_ENUM_KIND), parameter :: SLSQP_STATUS_MAP(0:9) = [ &
+            NF_STATUS_OK, &
+            NF_STATUS_UNDEFINED, &
+            NF_STATUS_INVALID_ARG, &
+            NF_STATUS_NOT_CONVERGED, &
+            NF_STATUS_INVALID_STATE, &
+            NF_STATUS_INVALID_STATE, &
+            NF_STATUS_INVALID_STATE, &
+            NF_STATUS_INVALID_STATE, &
+            NF_STATUS_INVALID_STATE, &
+            NF_STATUS_MAX_ITER &
+        ]
+        !*  Mapping of SLSQP to numfort status codes. Note: value 1
+        !   is never returned on termination.
+
+    contains
 
 
 
@@ -126,8 +156,9 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     type (optim_result_real64), intent(in out), optional :: res
     real (PREC), intent(in), dimension(:), optional :: args
 
-    type (status_t) :: status
-    character (100) :: msg
+    type (optim_result_real64), pointer :: ptr_res
+        !   Pointer to local or user-provided result object
+
     integer :: iter, nfeval, lmaxiter
     integer (NF_ENUM_KIND) :: llinesearch
     real (PREC) :: acc
@@ -152,16 +183,18 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     logical :: has_eq, has_ieq
     real (PREC) :: fx, ltol
 
-    status = NF_STATUS_INVALID_ARG
     nullify (ptr_work)
     nullify (ptr_xlb, ptr_xub)
     nullify (ptr_g, ptr_c, ptr_a, ptr_w)
     nullify (ptr_cx_eq, ptr_cx_ieq)
     nullify (ptr_cpx_eq, ptr_cpx_ieq)
 
+    call assert_alloc_ptr (res, ptr_res)
+    call result_reset (ptr_res)
+
     call slsqp_check_input (x, lbounds, ubounds, m ,meq, f_eqcons, f_ieqcons, &
-        maxiter, linesearch, tol, status, msg)
-    if (NF_STATUS_INVALID_ARG .in. status) goto 100
+        maxiter, linesearch, tol, ptr_res%status, ptr_res%msg)
+    if (NF_STATUS_INVALID_ARG .in. ptr_res%status) goto 100
 
     ! Determine if enough information is present for equality or inequality
     ! constraints.
@@ -236,8 +269,8 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     call workspace_get_ptr (ptr_work, n, ptr_xub)
 
     ! Assert that bounds values are as expected by underlying routine
-    call slsqp_sanitize_bounds (x, lbounds, ubounds, ptr_xlb, ptr_xub, status, msg)
-    if (NF_STATUS_INVALID_ARG .in. status) goto 100
+    call slsqp_sanitize_bounds (x, lbounds, ubounds, ptr_xlb, ptr_xub, ptr_res)
+    if (NF_STATUS_INVALID_ARG .in. ptr_res%status) goto 100
     ! Clip initial guess such that it satisfied any lower/upper bounds
     call slsqp_clip_init (x, ptr_xlb, ptr_xub)
 
@@ -349,50 +382,28 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
             ptr_c, ptr_g, ptr_a, acc, iter, mode, ptr_w, lw, &
             ptr_work%iwrk, mineq)
 
-        select case (mode)
-        case (0)
-            status = NF_STATUS_OK
-            msg = "Optimization terminated successfully"
-        case (2)
-            status = NF_STATUS_INVALID_ARG
-            msg = "Move equality constraints than indepedent variables"
-        case (3)
-            status = NF_STATUS_NOT_CONVERGED
-            msg = "More than 3*n iterations in LSQ subproblem"
-        case (4)
-            status = NF_STATUS_INVALID_STATE
-            msg = "Incompatible inequality constraints"
-        case (5)
-            status = NF_STATUS_INVALID_STATE
-            msg = "Singular matrix E in LSQ subproblem"
-        case (6)
-            status = NF_STATUS_INVALID_STATE
-            msg = "Singular matrix C in LSQ subproblem"
-        case (7)
-            status = NF_STATUS_INVALID_STATE
-            msg = "Rank-deficient equality constraint in HFTI"
-        case (8)
-            status = NF_STATUS_INVALID_STATE
-            msg = "Positive directional derivative in line searc"
-        case (9)
-            status = NF_STATUS_MAX_ITER
-            msg = "Iteration limit exceeded"
-        end select
-
-        status%code_orig = mode
-
         ! Exit in all cases when there is an error or convergence was achieved.
-        if (mode /= MODE_EVAL_FUNCS .and. mode /= MODE_EVAL_JAC) goto 100
+        if (mode /= MODE_EVAL_FUNCS .and. mode /= MODE_EVAL_JAC) then
+            ! Update status code and status message on termination
+            call result_update (ptr_res, status=SLSQP_STATUS_MAP(mode), &
+                msg=SLSQP_MSG_MAP(mode), istatus=mode)
+            goto 100
+        end if
     end do
 
 
 100 continue
 
+    ! Update result object only if we are returning to client code
     if (present(res)) then
-        call result_update (res, x, fx, status, iter, nfeval, msg)
+        call result_update (ptr_res, x, fx, nit=iter, nfev=nfeval)
     end if
 
+    ! Clean up local WORKSPACE object if none was passed by client code
     call assert_dealloc_ptr (work, ptr_work)
+
+    ! Clean up local OPTIM_RESULT object if none was passed by client code
+    call assert_dealloc_ptr (res, ptr_res)
 
 end subroutine
 
@@ -477,14 +488,13 @@ end subroutine
 
 
 
-subroutine slsqp_sanitize_bounds_real64 (x, xlb_in, xub_in, xlb, xub, status, msg)
+subroutine slsqp_sanitize_bounds_real64 (x, xlb_in, xub_in, xlb, xub, res)
     integer, parameter :: PREC = real64
 
     real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(in), dimension(:), optional :: xlb_in, xub_in
     real (PREC), intent(out), dimension(:) :: xlb, xub
-    type (status_t), intent(in out) :: status
-    character (*), intent(out) :: msg
+    type (optim_result_real64), intent(in out) :: res
 
     integer :: n, i
     real (PREC) :: POS_INF, NEG_INF
@@ -518,12 +528,10 @@ subroutine slsqp_sanitize_bounds_real64 (x, xlb_in, xub_in, xlb, xub, status, ms
     end if
 
     ! Check that xlb <= xub holds
-    status = NF_STATUS_OK
-    msg = ""
     do i = 1, n
         if (xub(i) < xlb(i)) then
-            msg = "Invalid lower and/or upper bound specified"
-            status = NF_STATUS_INVALID_ARG
+            call result_update (res, status=NF_STATUS_INVALID_ARG, &
+                msg="Invalid lower and/or upper bound specified")
             return
         end if
     end do
