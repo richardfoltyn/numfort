@@ -31,9 +31,9 @@ pure subroutine __APPEND(ws_assert_alloc_int64,__PREC) &
     if (present(nrwrk)) then
         if (nrwrk > 0) then
             if (.not. allocated(self%rwrk)) then
-                allocate (self%rwrk(nrwrk))
+                allocate (self%rwrk(nrwrk), source=0.0_PREC)
             else if (size(self%rwrk) < nrwrk) then
-                allocate (rtmp(nrwrk))
+                allocate (rtmp(nrwrk), source=0.0_PREC)
                 rtmp(1:size(self%rwrk)) = self%rwrk
                 call move_alloc (rtmp, self%rwrk)
             end if
@@ -45,9 +45,9 @@ pure subroutine __APPEND(ws_assert_alloc_int64,__PREC) &
     if (present(niwrk)) then
         if (niwrk > 0) then
             if (.not. allocated(self%iwrk)) then
-                allocate (self%iwrk(niwrk))
+                allocate (self%iwrk(niwrk), source=0)
             else if (size(self%iwrk) < niwrk) then
-                allocate (itmp(niwrk))
+                allocate (itmp(niwrk), source=0)
                 itmp(1:size(self%iwrk)) = self%iwrk
                 call move_alloc (itmp, self%iwrk)
             end if
@@ -59,9 +59,9 @@ pure subroutine __APPEND(ws_assert_alloc_int64,__PREC) &
     if (present(nlwrk)) then
         if (nlwrk > 0) then
             if (.not. allocated(self%lwrk)) then
-                allocate (self%lwrk(nlwrk))
+                allocate (self%lwrk(nlwrk), source=.false.)
             else if (size(self%lwrk) < nlwrk) then
-                allocate (ltmp(nlwrk))
+                allocate (ltmp(nlwrk), source=.false.)
                 ltmp(1:size(self%lwrk)) = self%lwrk
                 call move_alloc (ltmp, self%lwrk)
             end if
@@ -195,13 +195,13 @@ end subroutine
 
 
 pure subroutine __APPEND(ws_get_ptr_2d_int32,__PREC) (self, shp, ptr)
-    !*  WORKSPACE_GET_PTR maps a pointer to a 2d-array of given shape to 
+    !*  WORKSPACE_GET_PTR maps a pointer to a 2d-array of given shape to
     !   a subset of the 1-dimensional workspace array of appropriate length.
     !
     !   Note: Cannot be implemented as function returning 1d-pointer,
     !   as it won't compile with ifort (CONTIGUOUS attribute on function
     !   return values seems to be ignored).
-    
+
     integer, parameter :: PREC = __PREC
     integer, parameter :: INTSIZE = int32
 
