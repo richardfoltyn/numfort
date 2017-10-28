@@ -204,7 +204,7 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
 
     niwrk = mineq
     n1 = n + 1
-    ! Workspace used directly by SLSQP
+    ! Workspace used directly by SLSQP: Take calculations from implementation.
     lw = (3*n1+lm)*(n1+1)+(n1-lmeq+1)*(mineq+2) + 2*mineq+(n1+mineq)*(n1-lmeq) &
         + 2*lmeq + n1 + ((n+1)*n)/2 + 2*lm + 3*n + 3*n1 + 1
     nrwrk = lw
@@ -236,7 +236,8 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     call workspace_get_ptr (ptr_work, n, ptr_xub)
 
     ! Assert that bounds values are as expected by underlying routine
-    call slsqp_sanitize_bounds (lbounds, ubounds, ptr_xlb, ptr_xub)
+    call slsqp_sanitize_bounds (x, lbounds, ubounds, ptr_xlb, ptr_xub, status, msg)
+    if (NF_STATUS_INVALID_ARG .in. status) goto 100
     ! Clip initial guess such that it satisfied any lower/upper bounds
     call slsqp_clip_init (x, ptr_xlb, ptr_xub)
 
@@ -476,28 +477,28 @@ end subroutine
 
 
 
-subroutine slsqp_sanitize_bounds_real64 (xlb_in, xub_in, xlb, xub)
+subroutine slsqp_sanitize_bounds_real64 (x, xlb_in, xub_in, xlb, xub, status, msg)
     integer, parameter :: PREC = real64
 
+    real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(in), dimension(:), optional :: xlb_in, xub_in
     real (PREC), intent(out), dimension(:) :: xlb, xub
+    type (status_t), intent(in out) :: status
+    character (*), intent(out) :: msg
 
     integer :: n, i
-    real (PREC) :: NAN, POS_INF, NEG_INF
+    real (PREC) :: POS_INF, NEG_INF
 
-    n = size(xlb)
+    n = size(x)
 
-    NAN = ieee_value (0.0_PREC, IEEE_QUIET_NAN)
     POS_INF = ieee_value (0.0_PREC, IEEE_POSITIVE_INF)
     NEG_INF = ieee_value (0.0_PREC, IEEE_NEGATIVE_INF)
 
-    ! Set to NaN by default, as this is the value for signaling that no
-    ! lower/upper bound is present in the Scipy-modified code.
-    xlb = POS_INF
-    xub = NEG_INF
+    xlb = NEG_INF
+    xub = POS_INF
 
     if (present(xlb_in)) then
-        do i = 1, min(n, size(xlb_in))
+        do i = 1, n
             if (ieee_is_finite (xlb_in(i))) then
                 xlb(i) = xlb_in(i)
             else
@@ -507,7 +508,7 @@ subroutine slsqp_sanitize_bounds_real64 (xlb_in, xub_in, xlb, xub)
     end if
 
     if (present(xub_in)) then
-        do i = 1, min(n, size(xub_in))
+        do i = 1, n
             if (ieee_is_finite (xub_in(i))) then
                 xub(i) = xub_in(i)
             else
@@ -515,6 +516,17 @@ subroutine slsqp_sanitize_bounds_real64 (xlb_in, xub_in, xlb, xub)
             end if
         end do
     end if
+
+    ! Check that xlb <= xub holds
+    status = NF_STATUS_OK
+    msg = ""
+    do i = 1, n
+        if (xub(i) < xlb(i)) then
+            msg = "Invalid lower and/or upper bound specified"
+            status = NF_STATUS_INVALID_ARG
+            return
+        end if
+    end do
 
 end subroutine
 
