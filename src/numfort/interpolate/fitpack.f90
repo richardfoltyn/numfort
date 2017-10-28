@@ -224,7 +224,7 @@ end subroutine
 ! CURFIT fitting procedures
 
 pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
-        iopt, w, xb, xe, work, maxiter, ssr, status, info, msg)
+        iopt, w, xb, xe, work, maxiter, ssr, status, msg)
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: y
     integer, intent(in), optional :: k
@@ -240,7 +240,6 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
     integer, intent(in), optional :: maxiter
     real (PREC), intent(out), optional :: ssr
     type (status_t), intent(out), optional :: status
-    integer, intent(out), optional :: info
     character (*), intent(out), optional :: msg
 
     integer :: m, liopt, lk, nwrk, nwrk_tot, nest, ier, lmaxiter
@@ -344,20 +343,55 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
         lstatus = NF_STATUS_UNKNOWN
     end select
 
+    ! Store original status code
+    lstatus%code_orig = ier
+    ! Store status message
+    if (present(msg)) call curfit_get_msg (ier, msg)
     if (present(ssr)) ssr = lssr
-    if (present(info)) info = ier
 
-100 if(present(status)) status = lstatus
+100 continue
+
+    if(present(status)) status = lstatus
+
+    ! Clean up (local) workspace object
     call assert_dealloc_ptr (work, ptr_work)
 
 end subroutine
+
+
+pure subroutine curfit_get_msg (ier, msg)
+    integer, intent(in) :: ier
+    character (*), intent(out) :: msg
+
+    select case (ier)
+    case (-2)
+        msg = "Spline is a weighted LS polynomial of degree k" &
+            // " (SSR is upper bound for smoothing factor s)"
+    case (-1)
+        msg = "Spline is an interpolating spline (SSR=0)."
+    case (0)
+        msg = "Spline SSR satisfies (SSR-s)/s <= 0.001"
+    case (1)
+        msg = "Max. storage space exceeded (nest or smoothing parameter too small?)"
+    case (2)
+        msg = "Theoretically impossible result encountered (s too small?)"
+    case (3)
+        msg = "Max. number of iterations exceeded"
+    case (10)
+        msg = "Invalid input argument values"
+    case default
+        msg = "Unknown error code"
+    end select
+
+end subroutine
+
 
 !-------------------------------------------------------------------------------
 ! CONCON wrapper routine
 
 pure subroutine concon_real64 (x, y, v, s, &
         knots, coefs, n, iopt, w, maxtr, maxbin, work, ssr, sx, bind, &
-        status, info, msg)
+        status, msg)
 
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: y
@@ -375,7 +409,6 @@ pure subroutine concon_real64 (x, y, v, s, &
     real (PREC), intent(out), dimension(:), optional :: sx
     logical, intent(out), dimension(:), optional :: bind
     type (status_t), intent(out), optional :: status
-    integer, intent(out), optional :: info
     character (*), intent(out), optional :: msg
 
     target :: bind, sx
@@ -495,14 +528,50 @@ pure subroutine concon_real64 (x, y, v, s, &
         lstatus = NF_STATUS_UNKNOWN
     end if
 
+    ! Store original status code
+    lstatus%code_orig = ier
+    ! Store status message if present
+    if (present(msg)) call concon_get_msg (ier, msg)
     if (present(ssr)) ssr = lssr
-    if (present(info)) info = ier
 
 100 continue
     if(present(status)) status = lstatus
     call assert_dealloc_ptr (work, ptr_work)
 
 end subroutine
+
+
+pure subroutine concon_get_msg (ier, msg)
+    integer, intent(in) :: ier
+    character (*), intent(out) :: msg
+
+    select case (ier)
+    case (-3)
+        msg = "Available storage exceeded (nest too small?)"
+    case (-2)
+        msg = "Maximal number of knots reached (s too small?)"
+    case (-1)
+        msg = "Adding knots does not reduce SSR (s too small?)"
+    case (0)
+        msg = "Spline satisfies concavity/convexity constraints"
+    case (1)
+        msg = "Number of knots with s''(x)=0 exceeds maxbin (maxbin too small?)"
+    case (2)
+        msg = "Number of records in tree exceeds maxtr"
+    case (3)
+        msg = "No solution found for quadratic programming problem"
+    case (4)
+        msg = "Number of knots required to satisfy constraints exceeds nest (nest too small?)"
+    case (5)
+        msg = "Number of knots required to satisfy constraints exceeds m+4"
+    case (10)
+        msg = "Invalid input argument values"
+    case default
+        msg = "Unknown error flag"
+    end select
+
+end subroutine
+
 
 ! ******************************************************************************
 ! CURFIT evaluation
