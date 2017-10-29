@@ -23,7 +23,8 @@ subroutine __APPEND(quad_check_input,__PREC) (a, b, epsabs, epsrel, nmax, status
 end subroutine
 
 
-subroutine __APPEND(quad,__PREC) (fcn, a, b, res, epsabs, epsrel, nmax, work, abserr, status)
+subroutine __APPEND(quad,__PREC) (fcn, a, b, res, epsabs, epsrel, nmax, work, &
+        abserr, nfev, status)
     !*  Integrate function on interval [a,b] using QUADPACK routines.
 
     integer, parameter :: PREC = __PREC
@@ -47,6 +48,8 @@ subroutine __APPEND(quad,__PREC) (fcn, a, b, res, epsabs, epsrel, nmax, work, ab
         !   allocate required arrays.
     real (PREC), intent(out), optional :: abserr
         !*  If present, contains estimate of the absolute error in the result on exit.
+    integer, intent(out), optional :: nfev
+        !*  If present, contains number of integrand evaluations on exit.
     type (status_t), intent(out), optional :: status
         !*  If present, contains exit status.
 
@@ -107,5 +110,6 @@ subroutine __APPEND(quad,__PREC) (fcn, a, b, res, epsabs, epsrel, nmax, work, ab
     ! Set optional return values
     if (present(status)) status = lstatus
     if (present(abserr)) abserr = labserr
+    if (present(nfev)) nfev = neval
 
 end subroutine
