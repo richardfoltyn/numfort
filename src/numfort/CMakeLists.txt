@@ -20,7 +20,7 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
         set(_FFLAGS "/warn:all /standard-semantics /stand:f08")
         set(_FFLAGS_DEBUG "/Qsave-temps")
-        set(_FLAGS_RELEASE "/Qipo")
+        #        set(_FLAGS_RELEASE "/Qipo")
 
         # NOTE: When setting -standard-semantics, resets any previously
         # given -assume std_mod_proc_name, so we need to append it again!
@@ -32,7 +32,7 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     else ()
         set(_FFLAGS "-warn all -standard-semantics -std08")
         set(_FFLAGS_DEBUG "-save-temps")
-        set(_FFLAGS_RELEASE "-ipo")
+        #set(_FFLAGS_RELEASE "-ipo")
 
         if (NOT IFORT_STD_MOD_PROC_NAME)
             set(_FFLAGS "${_FFLAGS} -assume nostd_mod_proc_name")
@@ -46,7 +46,7 @@ set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS}")
 set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${_FFLAGS_DEBUG}")
 set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} ${_FFLAGS_RELEASE}")
 
-set_property(DIRECTORY PROPERTY INTERPROCEDURAL_OPTIMIZATION 1)
+#set_property(DIRECTORY PROPERTY INTERPROCEDURAL_OPTIMIZATION 1)
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" _CONFIG)
 message(STATUS "Flags for NUMFORT library: ${CMAKE_Fortran_FLAGS} ${CMAKE_Fortran_FLAGS_${_CONFIG}}")
