@@ -8,7 +8,7 @@ module numfort_common_alloc
 
     private
 
-    public :: assert_alloc_ptr, assert_dealloc_ptr, copy_alloc
+    public :: assert_alloc_ptr, assert_dealloc_ptr
 
     interface assert_alloc_ptr
         module procedure assert_alloc_ptr_1d_real32, assert_alloc_ptr_1d_real64
@@ -16,10 +16,6 @@ module numfort_common_alloc
 
     interface assert_dealloc_ptr
         module procedure assert_dealloc_ptr_1d_real32, assert_dealloc_ptr_1d_real64
-    end interface
-
-    interface copy_alloc
-        module procedure copy_alloc_1d_real32, copy_alloc_1d_real64
     end interface
 
 contains
@@ -105,45 +101,6 @@ pure subroutine assert_dealloc_ptr_1d_real64 (x, ptr_x)
             deallocate (ptr_x)
         end if
     end if
-end subroutine
-
-! ------------------------------------------------------------------------------
-! COPY_ALLOC routines
-
-pure subroutine copy_alloc_1d_real64 (src, dst)
-    !*  COPY_ALLOC implements a routine similar to MOVE_ALLOC, but leaves
-    !   the SRC argument unchanged.
-    !
-    !   Unlike MOVE_ALLOC, COPY_ALLOC does not (and cannot) modify any pointers
-    !   to SRC.
-    !
-    !   If SRC is either missing (or not allocated, which is interpreted as
-    !   not being present in Fortran 2008), DST becomes unallocated
-    !   on exit.
-
-    integer, parameter :: PREC = real64
-
-    real (PREC), intent(in), dimension(:), optional :: src
-    real (PREC), intent(out), dimension(:), allocatable :: dst
-    include "include/copy_alloc_impl.f90"
-end subroutine
-
-pure subroutine copy_alloc_1d_real32 (src, dst)
-    !*  COPY_ALLOC implements a routine similar to MOVE_ALLOC, but leaves
-    !   the SRC argument unchanged.
-    !
-    !   Unlike MOVE_ALLOC, COPY_ALLOC does not (and cannot) modify any pointers
-    !   to SRC.
-    !
-    !   If SRC is either missing (or not allocated, which is interpreted as
-    !   not being present in Fortran 2008), DST becomes unallocated
-    !   on exit.
-
-    integer, parameter :: PREC = real32
-
-    real (PREC), intent(in), dimension(:), optional :: src
-    real (PREC), intent(out), dimension(:), allocatable :: dst
-    include "include/copy_alloc_impl.f90"
 end subroutine
 
 end module
