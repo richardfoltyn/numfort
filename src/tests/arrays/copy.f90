@@ -42,29 +42,29 @@ subroutine test_missing_src (tests)
 
     ! 1. Unallocated SRC, unallocated DST argument
     call copy_alloc (src1, dst1)
-    call tc%assert_true (.not. allocated(dst1), & "1d: unallocated SRC/DST")
+    call tc%assert_true (.not. allocated(dst1), "1d: unallocated SRC/DST")
 
     call copy_alloc (src2, dst2)
-    call tc%assert_true (.not. allocated(dst2), & "2d: unallocated SRC/DST")
+    call tc%assert_true (.not. allocated(dst2), "2d: unallocated SRC/DST")
 
     call copy_alloc (src3, dst3)
-    call tc%assert_true (.not. allocated(dst3), & "3d: unallocated SRC/DST")
+    call tc%assert_true (.not. allocated(dst3), "3d: unallocated SRC/DST")
 
     call copy_alloc (src4, dst4)
-    call tc%assert_true (.not. allocated(dst4), & "4d: unallocated SRC/DST")
+    call tc%assert_true (.not. allocated(dst4), "4d: unallocated SRC/DST")
 
     ! 2. Missing SRC argument
     call copy_alloc (dst=dst1)
-    call tc%assert_true (.not. allocated(dst1), & "1d: missing SRC, unallocated DST")
+    call tc%assert_true (.not. allocated(dst1), "1d: missing SRC, unallocated DST")
 
     call copy_alloc (dst=dst2)
-    call tc%assert_true (.not. allocated(dst2), & "2d: missing SRC, unallocated DST")
+    call tc%assert_true (.not. allocated(dst2), "2d: missing SRC, unallocated DST")
 
     call copy_alloc (dst=dst3)
-    call tc%assert_true (.not. allocated(dst3), & "3d: missing SRC, unallocated DST")
+    call tc%assert_true (.not. allocated(dst3), "3d: missing SRC, unallocated DST")
 
     call copy_alloc (dst=dst4)
-    call tc%assert_true (.not. allocated(dst4), & "4d: missing SRC, unallocated DST")
+    call tc%assert_true (.not. allocated(dst4), "4d: missing SRC, unallocated DST")
 
 end subroutine
 
