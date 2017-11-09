@@ -18,7 +18,7 @@ set(SOURCE_FILES
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
-add_dependencies(${COMPONENT_NAME} common)
+add_dependencies(${COMPONENT_NAME} common arrays)
 # external libraries
 add_dependencies(${COMPONENT_NAME}
     interfaces
