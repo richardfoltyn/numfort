@@ -4,6 +4,7 @@ program rosenbrock_slsqp_openmp
 
     use, intrinsic :: ieee_arithmetic
     use, intrinsic :: iso_fortran_env
+    use omp_lib
     use numfort_arrays, only: linspace
     use numfort_optimize, optim_result => optim_result_real64, &
         workspace => workspace_real64
@@ -55,7 +56,8 @@ subroutine example1 ()
     diff_x = maxval(abs(xmin-xmin_p))
     diff_fx = maxval(abs(fxmin-fxmin_p))
 
-    print '("Max. diff in xmin: ", e10.2, "; max. diff in f(xmin): ", e10.2)', &
+    print *, "Comparing serial to parallel results"
+    print '(tr3, "Max. diff in xmin: ", e10.2, "; max. diff in f(xmin): ", e10.2)', &
         diff_x, diff_fx
 end subroutine
 
@@ -73,7 +75,11 @@ subroutine solve_serial (alpha, beta, xlb, xub, xmin, fxmin)
     type (optim_result) :: res
     type (workspace) :: work
 
+    real :: tic, toc
+
     n = size(alpha)
+
+    call cpu_time (tic)
 
     do i = 1, n
         args(1) = alpha(i)
@@ -86,6 +92,11 @@ subroutine solve_serial (alpha, beta, xlb, xub, xmin, fxmin)
         xmin(:,i) = res%x(1:2)
         fxmin(i) = res%fx(1)
     end do
+
+    call cpu_time (toc)
+
+    print *, "Serial execution"
+    print '(tr3, "Time elapsed: ", f0.2, " seconds")', toc-tic
 end subroutine
 
 
@@ -102,13 +113,22 @@ subroutine solve_parallel (alpha, beta, xlb, xub, xmin, fxmin)
     real (PREC), parameter :: tol = 1d-8
     type (optim_result) :: res
     type (workspace) :: work
+    integer :: ncpus
+
+    real (PREC) :: tic, toc
 
     n = size(alpha)
+
+    ! Use OMP timing functions instead of CPU_TIME, as the latter returns
+    ! CPU time summed across all CPUs.
+    tic = omp_get_wtime ()
 
     !$omp parallel default(none) &
     !$omp private(x0, args, i, res, work) &
     !$omp shared(alpha, beta, xlb, xub, xmin, fxmin) &
-    !$omp shared(n)
+    !$omp shared(n, ncpus)
+
+    ncpus = omp_get_num_threads ()
 
     !$omp do schedule (auto)
     do i = 1, n
@@ -127,6 +147,11 @@ subroutine solve_parallel (alpha, beta, xlb, xub, xmin, fxmin)
     call workspace_finalize (work)
     !$omp end parallel
 
+    toc = omp_get_wtime ()
+
+    print *, "Parallel execution"
+    print '(tr3, "Number of cores: ", i0)', ncpus
+    print '(tr3, "Time elapsed: ", f0.2, " seconds")', toc-tic
 end subroutine
 
 
