@@ -5,5 +5,6 @@ set(${COMPONENT_NAME}_FILES
     copy.f90
     indexing.f90
     setops.f90
+    vander.f90
     PARENT_SCOPE
 )
