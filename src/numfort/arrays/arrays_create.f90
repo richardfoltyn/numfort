@@ -1,6 +1,7 @@
 module numfort_arrays_create
 
     use, intrinsic :: iso_fortran_env
+    use numfort_core
     implicit none
     private
 
@@ -31,12 +32,12 @@ contains
 
 ! ******************************************************************************
 ! LINSPACE procedures
-subroutine linspace_real64(x, xfrom, xto)
+subroutine linspace_real64(x, xfrom, xto, step, res_n, res_step)
     integer, parameter :: PREC = real64
     include "include/linspace_impl.f90"
 end subroutine
 
-subroutine linspace_real32(x, xfrom, xto)
+subroutine linspace_real32(x, xfrom, xto, step, res_n, res_step)
     integer, parameter :: PREC = real32
     include "include/linspace_impl.f90"
 end subroutine

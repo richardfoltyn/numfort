@@ -19,4 +19,4 @@ include_directories(
 )
 
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
-add_dependencies(${COMPONENT_NAME} common orderpack)
+add_dependencies(${COMPONENT_NAME} core common orderpack)
