@@ -58,8 +58,12 @@ module numfort_common_workspace
     end interface
 
     interface workspace_get_ptr
-        module procedure ws_get_ptr_1d_int32_real32, ws_get_ptr_2d_int32_real32, &
-            ws_get_ptr_1d_int32_real64, ws_get_ptr_2d_int32_real64
+        procedure ws_get_rptr_1d_int32_real32, ws_get_rptr_2d_int32_real32, &
+            ws_get_rptr_1d_int32_real64, ws_get_rptr_2d_int32_real64
+    end interface
+
+    interface workspace_get_ptr
+        procedure ws_get_iptr_1d_int32_real32, ws_get_iptr_1d_int32_real64
     end interface
 
     interface workspace_reset
