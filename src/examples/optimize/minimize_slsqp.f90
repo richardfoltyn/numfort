@@ -1,5 +1,6 @@
 program rosenbrock_slsqp
 
+    use, intrinsic :: ieee_arithmetic
     use, intrinsic :: iso_fortran_env
     use numfort_optimize, optim_result => optim_result_real64
 
@@ -9,6 +10,7 @@ program rosenbrock_slsqp
 
     call example1 ()
     call example2 ()
+    call example3 ()
 
 contains
 
@@ -67,6 +69,39 @@ subroutine example2 ()
     print '(tr1, "Min. at x=", 2(f0.8,:,", "), "; fx=", f0.8, "; iter=", i0, "; nfev=", i0)', &
         res%x, res%fx, res%nit, res%nfev
 
+
+end subroutine
+
+subroutine example3 ()
+    !*  Same as example 1, but without upper bounds
+
+    real (PREC), parameter :: xlb(2) = [-1.0, -1.0]
+    real (PREC), dimension(2) :: x0, xub
+    type (optim_result) :: res
+    real (PREC), parameter :: tol = 1.0d-8
+    real (PREC) :: POS_INF
+
+    integer :: m
+
+    m = 1
+
+    POS_INF = ieee_value (0.0_PREC, IEEE_POSITIVE_INF)
+    xub = POS_INF
+
+    x0 = xlb + 0.1
+    call minimize_slsqp (fobj, x0, xlb, xub, m, f_ieqcons=fconstr, tol=tol, &
+        res=res)
+
+    print '(tr1, "Min. at x=", 2(f0.8,:,", "), "; fx=", f0.8, "; iter=", i0, "; nfev=", i0)', &
+        res%x, res%fx, res%nit, res%nfev
+
+    ! Repeat with exact line search
+    x0 = xlb + 0.1
+    call minimize_slsqp (fobj, x0, xlb, xub, m, f_ieqcons=fconstr, tol=tol, &
+        res=res, linesearch=NF_LINESEARCH_EXACT)
+
+    print '(tr1, "Min. at x=", 2(f0.8,:,", "), "; fx=", f0.8, "; iter=", i0, "; nfev=", i0)', &
+        res%x, res%fx, res%nit, res%nfev
 
 end subroutine
 
