@@ -132,7 +132,7 @@ pure subroutine fit (x, y, k, s, knots, coefs, nknots, ws, ssr, status, yhat, &
        iopt=iopt, work=ws, w=w, ssr=ssr, status=status)
 
     if (.not. (NF_STATUS_INVALID_ARG .in. status)) then
-       call splev (knots, coefs, nknots, k, x, yhat, ext=ext)
+       call splev (knots(1:nknots), coefs(1:nknots), k, x, yhat, ext=ext)
     end if
 end subroutine
 

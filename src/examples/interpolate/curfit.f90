@@ -71,7 +71,7 @@ subroutine example1 ()
         call curfit (x, y, k, s, knots, coefs, n, iopt, ssr=ssr, &
             work=ws, status=status)
 
-        call splev (knots, coefs, n, k, x, yhat, ext, status)
+        call splev (knots(1:n), coefs(1:n), k, x, yhat, ext, status)
         call print_report (iopt, s, k, ssr, status, n, knots, coefs, x, y, yhat)
     end do
 
@@ -127,7 +127,7 @@ subroutine example2 ()
         stat_ok = .not. (NF_STATUS_INVALID_ARG .in. status)
 
         if (stat_ok) then
-            call splev (knots, coefs, n, k, x, yhat, ext)
+            call splev (knots(1:n), coefs(1:n), k, x, yhat, ext)
         end if
 
         if (i == 1) then

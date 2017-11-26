@@ -136,57 +136,19 @@ pure subroutine check_input (x, y, w, k, knots, coefs, maxiter, v, sx, bind, sta
 
 end subroutine
 
-pure subroutine check_eval_input (knots, coefs, n, k, x, y, order, ext, status, msg)
+pure subroutine check_eval_input (knots, coefs, k, x, y, status)
     real (PREC), intent(in), dimension(:) :: x, y, knots, coefs
-    integer, intent(in), optional :: n
-    integer, intent(in), optional :: k
-    integer, intent(in), optional :: order
-    integer, intent(in), optional :: ext
-
+    integer, intent(in) :: k
     type (status_t), intent(out) :: status
-    character (len=*), intent(out), optional :: msg
-
-    integer :: lk
 
     status = NF_STATUS_OK
 
-    lk = DEFAULT_SPLINE_DEGREE
-    if (present(k)) lk = k
-
-    if (size(knots) /= size(coefs)) then
-        if (present(msg)) msg = 'knots and coefs array lengths differ'
-        goto 100
-    end if
-
-    if (present(n)) then
-        if (size(knots) < n) then
-            if (present(msg)) &
-                msg = "Length n too large for given knots/coefs arrays"
-            goto 100
-        end if
-    end if
+    if (size(knots) /= size(coefs)) goto 100
 
     ! check for supported spline degree
-    if (lk < MIN_SPLINE_DEGREE .or. lk > MAX_SPLINE_DEGREE) then
-        if (present(msg)) msg = "Unsupported spline degree k"
-        goto 100
-    end if
+    if (k < MIN_SPLINE_DEGREE .or. k > MAX_SPLINE_DEGREE) goto 100
 
-    if (size(x) /= size(y)) then
-        if (present(msg)) msg = "x and y arrays must be of same length"
-        goto 100
-    end if
-
-    if (present(order)) then
-        if (order < 0 .or. order > lk) then
-            if (present(msg)) msg = "Derivative order must satisfy 0<=order<=k"
-        end if
-    end if
-
-    if (present(ext)) then
-        call check_input_ext (ext, status, msg)
-        if (status /= NF_STATUS_OK) goto 100
-    end if
+    if (size(x) /= size(y)) goto 100
 
     return
 
@@ -576,10 +538,9 @@ end subroutine
 ! ******************************************************************************
 ! CURFIT evaluation
 
-pure subroutine splev_real64 (knots, coefs, n, k, x, y, ext, status)
+pure subroutine splev_real64 (knots, coefs, k, x, y, ext, status)
     real (PREC), intent(in), dimension(:), contiguous :: knots
     real (PREC), intent(in), dimension(:), contiguous :: coefs
-    integer, intent(in), optional :: n
     integer, intent(in), optional :: k
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(out), dimension(:), contiguous :: y
@@ -589,21 +550,33 @@ pure subroutine splev_real64 (knots, coefs, n, k, x, y, ext, status)
     integer :: m, ln, lier, lext, lk
     type (status_t) :: lstatus
 
-    call check_eval_input (knots, coefs, n, k, x, y, ext=ext, status=lstatus)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
-
     m = size(x)
-    ! by default assume that all elements in knots/coefs array are valid
     ln = size(knots)
     ! assume cubic splines by default
     lk = DEFAULT_SPLINE_DEGREE
     ! by default set function values outside of domain to boundary values
     lext = NF_INTERP_EVAL_EXTRAPOLATE
 
-    ! If n is present, cap number of knots/coefs
-    if (present(n)) ln = n
     if (present(k)) lk = k
     if (present(ext)) lext = ext
+
+    call check_eval_input (knots, coefs, lk, x, y, status=lstatus)
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+
+    ! Map NUMFORT extrapolation constants to values used by FITPACK
+    select case (lext)
+    case (NF_INTERP_EVAL_EXTRAPOLATE)
+        lext = 0
+    case (NF_INTERP_EVAL_ZERO)
+        lext = 1
+    case (NF_INTERP_EVAL_BOUNDARY)
+        lext = 3
+    case (NF_INTERP_EVAL_ERROR)
+        lext = 2
+    case default
+        lstatus = NF_STATUS_INVALID_ARG
+        goto 100
+    end select
 
     call fitpack_splev_real64 (knots, ln, coefs, lk, x, y, m, lext, lier)
 
@@ -624,10 +597,9 @@ pure subroutine splev_real64 (knots, coefs, n, k, x, y, ext, status)
 
 end subroutine
 
-pure subroutine splev_scalar_real64 (knots, coefs, n, k, x, y, ext, status)
+pure subroutine splev_scalar_real64 (knots, coefs, k, x, y, ext, status)
     real (PREC), intent(in), dimension(:), contiguous :: knots
     real (PREC), intent(in), dimension(:), contiguous :: coefs
-    integer, intent(in), optional :: n
     integer, intent(in), optional :: k
     real (PREC), intent(in) :: x
     real (PREC), intent(out) :: y
@@ -638,7 +610,7 @@ pure subroutine splev_scalar_real64 (knots, coefs, n, k, x, y, ext, status)
 
     lx(1) = x
 
-    call splev_real64 (knots, coefs, n, k, lx, ly, ext, status)
+    call splev_real64 (knots, coefs, k, lx, ly, ext, status)
 
     ! write back result
     y = ly(1)
@@ -647,10 +619,9 @@ end subroutine
 ! ******************************************************************************
 ! Evaluation of derivatives
 
-pure subroutine splder_real64 (knots, coefs, n, k, order, x, y, ext, work, status)
+pure subroutine splder_real64 (knots, coefs, k, order, x, y, ext, work, status)
     real (PREC), intent(in), dimension(:), contiguous :: knots
     real (PREC), intent(in), dimension(:), contiguous :: coefs
-    integer, intent(in), optional :: n
     integer, intent(in), optional :: k
     integer, intent(in), optional :: order
     real (PREC), intent(in), dimension(:), contiguous :: x
@@ -663,9 +634,8 @@ pure subroutine splder_real64 (knots, coefs, n, k, order, x, y, ext, work, statu
 
     integer :: lext, lorder, lier, lk, ln, m
     type (status_t) :: lstatus
-
-    call check_eval_input (knots, coefs, n, k, x, y, order, ext, status=lstatus)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    
+    nullify (ptr_work)
 
     lk = DEFAULT_SPLINE_DEGREE
     lorder = 1
@@ -673,10 +643,26 @@ pure subroutine splder_real64 (knots, coefs, n, k, order, x, y, ext, work, statu
     ln = size(knots)
     m = size(x)
 
-    if (present(n)) ln = n
     if (present(k)) lk = k
     if (present(ext)) lext = ext
     if (present(order)) lorder = order
+
+    ! Do not bother to check for derivative order since this is performed
+    ! by SPLDER.
+    call check_eval_input (knots, coefs, lk, x, y, status=lstatus)
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+
+    select case (lext)
+    case (NF_INTERP_EVAL_EXTRAPOLATE)
+        lext = 0
+    case (NF_INTERP_EVAL_ZERO)
+        lext = 1
+    case (NF_INTERP_EVAL_ERROR)
+        lext = 2
+    case default
+        lstatus = NF_STATUS_INVALID_ARG
+        goto 100
+    end select
 
     call assert_alloc_ptr (work, ptr_work)
     call assert_alloc (ptr_work, nrwrk=ln)
@@ -704,10 +690,9 @@ end subroutine
 ! splder_scalar_real64 evaluates the derivate of a spline at a single scalar point
 ! x and stores the result in scalar y.
 ! Implemented as a wrapper for SPLDER_WRAPPER that creates local size-1 arrays.
-pure subroutine splder_scalar_real64 (knots, coefs, n, k, order, x, y, ext, work, status)
+pure subroutine splder_scalar_real64 (knots, coefs, k, order, x, y, ext, work, status)
     real (PREC), intent(in), dimension(:), contiguous :: knots
     real (PREC), intent(in), dimension(:), contiguous :: coefs
-    integer, intent(in), optional :: n
     integer, intent(in), optional :: k
     integer, intent(in), optional :: order
     real (PREC), intent(in) :: x
@@ -721,7 +706,7 @@ pure subroutine splder_scalar_real64 (knots, coefs, n, k, order, x, y, ext, work
     lx(1) = x
     ly(1) = y
 
-    call splder_real64 (knots, coefs, n, k, order, lx, ly, ext, work, status)
+    call splder_real64 (knots, coefs, k, order, lx, ly, ext, work, status)
 
     y = ly(1)
 end subroutine

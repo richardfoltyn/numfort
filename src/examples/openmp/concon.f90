@@ -60,7 +60,7 @@ subroutine example1 ()
     iopt = 0
     w = 1/abs(eps)
     ! evaluate spline at original x points
-    ext = NF_INTERP_EVAL_BOUNDARY
+    ext = NF_INTERP_EVAL_EXTRAPOLATE
     ! fit concave spline
     v = 1.0_PREC
 
@@ -141,8 +141,8 @@ pure subroutine fit (x, y, v, s, knots, coefs, nknots, ws, ssr, status, &
     stat_ok = any ([NF_STATUS_OK, NF_STATUS_APPROX] .in. status)
 
     if (stat_ok) then
-       call splder (knots, coefs, nknots, 3, 1, x, sp1, work=ws, ext=ext)
-       call splder (knots, coefs, nknots, 3, 2, x, sp2, work=ws, ext=ext)
+       call splder (knots(1:nknots), coefs(1:nknots), 3, 1, x, sp1, work=ws, ext=ext)
+       call splder (knots(1:nknots), coefs(1:nknots), 3, 2, x, sp2, work=ws, ext=ext)
     end if
 end subroutine
 

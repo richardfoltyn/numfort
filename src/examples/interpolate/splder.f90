@@ -64,7 +64,7 @@ subroutine example1 ()
         ! evaluate spline derivates
         do i = 1, k+1
             nu = i - 1
-            call splder (knots, coefs, n, k, nu, x, y(:, i), &
+            call splder (knots(1:n), coefs(1:n), k, nu, x, y(:, i), &
                 ext=ext, work=ws, status=status)
         end do
 

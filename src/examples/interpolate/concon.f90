@@ -67,14 +67,14 @@ subroutine example1 ()
         ! Evaluate spline and derivatives only if at least approximate spline
         ! representation was found.
         if (stat_ok) then
-            call splev (knots, coefs, n, 3, x, sx2)
+            call splev (knots(1:n), coefs(1:n), 3, x, sx2)
             if (any(abs(sx-sx2) > 1d-10)) then
                 write (ERROR_UNIT, *) "s(x) returned from CONCON and SPLEV differ"
             end if
 
             ! evaluate first- and second-order derivatives
             call splder (knots(1:n), coefs(1:n), k=k, order=1, x=x, y=s1, ext=ext)
-            call splder (knots, coefs, n, k, 2, x, s2, ext=ext)
+            call splder (knots(1:n), coefs(1:n), k, 2, x, s2, ext=ext)
         end if
 
         call print_report (iopt, s(is), ssr, status, n, knots, coefs, x, y, &
