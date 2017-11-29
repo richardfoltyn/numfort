@@ -1,5 +1,9 @@
 
-integer :: ni, nv, no, ifrom, ito
+! Note on implementation: We could first copy ARR into OUT and then
+! call the in-place INSERT routine, but then all the elements in ARR
+! that will end up after the inserted VAL array will have to be copied twice.
+
+integer :: ni, nv, no, ifrom, ito, n
 
 ni = size(arr)
 no = size(out)
@@ -27,5 +31,6 @@ out(ifrom:ito) = val(1:ito-ifrom+1)
 
 ! Insert remaining elements from ARR
 ifrom = ito + 1
-ito = min(ifrom + (ni-idx+1), no)
-out(ifrom:ito) = arr(idx+1:idx+ito-ifrom+1)
+n = min(ni-idx, no-ifrom) + 1
+ito = ifrom + n - 1
+out(ifrom:ito) = arr(idx:idx+n-1)
