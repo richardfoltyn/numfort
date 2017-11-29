@@ -1,7 +1,7 @@
 
 module numfort_common
 
-    use numfort_common_alloc, only: cond_alloc
+    use numfort_common_cond_alloc
     use numfort_common_copy_alloc
     use numfort_common_kinds
     use numfort_common_enums
