@@ -12,25 +12,25 @@ module numfort_common_shape
 
     interface shape_equal
         module procedure shape_equal_1d_real32, shape_equal_1d_real64, &
-            shape_equal_1d_int32, shape_equal_1d_int64
+            shape_equal_1d_int32, shape_equal_1d_int64, shape_equal_1d_logical
     end interface
 
     ! 2d-array routines
     interface shape_equal
         module procedure shape_equal_2d_real32, shape_equal_2d_real64, &
-            shape_equal_2d_int32, shape_equal_2d_int64
+            shape_equal_2d_int32, shape_equal_2d_int64, shape_equal_2d_logical
     end interface
 
     ! 3d-array routines
     interface shape_equal
         module procedure shape_equal_3d_real32, shape_equal_3d_real64, &
-            shape_equal_3d_int32, shape_equal_3d_int64
+            shape_equal_3d_int32, shape_equal_3d_int64, shape_equal_3d_logical
     end interface
 
     ! 4d-array routines
     interface shape_equal
         module procedure shape_equal_4d_real32, shape_equal_4d_real64, &
-            shape_equal_4d_int32, shape_equal_4d_int64
+            shape_equal_4d_int32, shape_equal_4d_int64, shape_equal_4d_logical
     end interface
 
     ! 1d-array routines
@@ -104,6 +104,15 @@ pure function shape_equal_1d_int64 (arr1, arr2) result(res)
     include "include/shape_equal_impl.f90"
 end function
 
+pure function shape_equal_1d_logical (arr1, arr2) result(res)
+    integer, parameter :: ND = 1
+    logical, intent(in), dimension(:) :: arr1
+    logical, intent(in), dimension(:), optional :: arr2
+
+    include "include/shape_equal_impl.f90"
+end function
+
+
 pure function shape_equal_2d_real32 (arr1, arr2) result(res)
     integer, parameter :: PREC = real32
     integer, parameter :: ND = 2
@@ -139,6 +148,15 @@ pure function shape_equal_2d_int64 (arr1, arr2) result(res)
 
     include "include/shape_equal_impl.f90"
 end function
+
+pure function shape_equal_2d_logical (arr1, arr2) result(res)
+    integer, parameter :: ND = 2
+    logical, intent(in), dimension(:,:) :: arr1
+    logical, intent(in), dimension(:,:), optional :: arr2
+
+    include "include/shape_equal_impl.f90"
+end function
+
 
 pure function shape_equal_3d_real32 (arr1, arr2) result(res)
     integer, parameter :: PREC = real32
@@ -176,6 +194,15 @@ pure function shape_equal_3d_int64 (arr1, arr2) result(res)
     include "include/shape_equal_impl.f90"
 end function
 
+pure function shape_equal_3d_logical (arr1, arr2) result(res)
+    integer, parameter :: ND = 3
+    logical, intent(in), dimension(:,:,:) :: arr1
+    logical, intent(in), dimension(:,:,:), optional :: arr2
+
+    include "include/shape_equal_impl.f90"
+end function
+
+
 pure function shape_equal_4d_real32 (arr1, arr2) result(res)
     integer, parameter :: PREC = real32
     integer, parameter :: ND = 4
@@ -211,6 +238,15 @@ pure function shape_equal_4d_int64 (arr1, arr2) result(res)
 
     include "include/shape_equal_impl.f90"
 end function
+
+pure function shape_equal_4d_logical (arr1, arr2) result(res)
+    integer, parameter :: ND = 4
+    logical, intent(in), dimension(:,:,:,:) :: arr1
+    logical, intent(in), dimension(:,:,:,:), optional :: arr2
+
+    include "include/shape_equal_impl.f90"
+end function
+
 
 !-------------------------------------------------------------------------------
 ! HAS_SHAPE routines
