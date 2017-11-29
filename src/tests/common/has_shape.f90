@@ -78,7 +78,7 @@ subroutine test_2d (tests)
     integer :: i, j, k, l
     type (str) :: msg
 
-    tc => tests%add_test ("1d-array tests")
+    tc => tests%add_test ("2d-array tests")
 
     do i = 0, n+1
         do j = 0, n+1
