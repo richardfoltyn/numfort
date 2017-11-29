@@ -7,7 +7,6 @@
 module numfort_optimize_result
 
     use, intrinsic :: iso_fortran_env, only: real32, real64, int32
-    use numfort_arrays_copy
     use numfort_common
     use numfort_common_alloc
 

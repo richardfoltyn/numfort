@@ -1,8 +1,8 @@
-program array_copy_test
+program numfort_common_copy_alloc
+    !*  Unit tests for COPY_ALLOC routine
 
     use, intrinsic :: iso_fortran_env
-    use numfort_arrays
-    use numfort_common, only: shape_equal
+    use numfort_common, only: shape_equal, copy_alloc
 
     use fcore_testing
 
@@ -20,7 +20,7 @@ subroutine test_all ()
 
     type (test_suite) :: tests
 
-    call tests%set_label ("numfort_arrays_copy unit tests")
+    call tests%set_label ("numfort_common COPY_ALLOC unit tests")
 
     call test_missing_src (tests)
     call test_unalloc_dst (tests)

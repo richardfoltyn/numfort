@@ -1,4 +1,4 @@
-module numfort_arrays_copy
+module numfort_common_copy_alloc
 
     use, intrinsic :: iso_fortran_env
 
