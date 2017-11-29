@@ -10,6 +10,7 @@ set(SOURCE_FILES
     status.f90
     workspace.F90
     input_checks.f90
+    shape.f90
     strings.F90
     testing.F90
 )

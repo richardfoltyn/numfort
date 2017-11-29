@@ -4,7 +4,7 @@
 module numfort_arrays_norms
 
     use, intrinsic :: iso_fortran_env
-    use numfort_arrays_shape, only: shape_equal
+    use numfort_common_shape, only: shape_equal
     implicit none
     private
 

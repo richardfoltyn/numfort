@@ -1,5 +1,5 @@
 
-module numfort_arrays_shape
+module numfort_common_shape
 
     use, intrinsic :: iso_fortran_env
 

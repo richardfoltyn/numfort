@@ -2,7 +2,7 @@ module numfort_arrays_copy
 
     use, intrinsic :: iso_fortran_env
 
-    use numfort_arrays_shape
+    use numfort_common_shape
 
     implicit none
 

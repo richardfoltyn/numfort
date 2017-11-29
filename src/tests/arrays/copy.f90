@@ -2,6 +2,7 @@ program array_copy_test
 
     use, intrinsic :: iso_fortran_env
     use numfort_arrays
+    use numfort_common, only: shape_equal
 
     use fcore_testing
 

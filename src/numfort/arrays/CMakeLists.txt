@@ -11,7 +11,6 @@ set(SOURCE_FILES
     arrays_manipulate.f90
     arrays_norms.F90
     arrays_setops.F90
-    arrays_shape.f90
 )
 
 include_directories(
