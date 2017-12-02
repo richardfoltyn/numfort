@@ -21,6 +21,11 @@
     logical :: lsorted
     type (status_t) :: lstatus
 
+    nullify (uidx)
+
+    lsorted = .false.
+    if (present(sorted)) lsorted = sorted
+
     lstatus = NF_STATUS_INVALID_ARG
     ! Offset on OUT array
     ioffset = 0
@@ -28,9 +33,6 @@
     ! Ignore the DIM argument in the 1d-implementation, but exit if it has
     ! an invalid value.
     if (dim < 1 .or. dim > 2) goto 100
-
-    lsorted = .false.
-    if (present(sorted)) lsorted = sorted
 
     nidx = size(idx)
     ! If required, sort index array and retain only unique elements

@@ -21,6 +21,11 @@
     logical :: lsorted
     type (status_t) :: lstatus
 
+    nullify (uidx)
+
+    lsorted = .false.
+    if (present(sorted)) lsorted = sorted
+
     lstatus = NF_STATUS_INVALID_ARG
     ! Offset on OUT array
     ioffset = 0
@@ -30,9 +35,6 @@
     if (present(dim)) then
         if (dim /= 1) goto 100
     end if
-
-    lsorted = .false.
-    if (present(sorted)) lsorted = sorted
 
     narr = size(arr)
     nout = size(out)
