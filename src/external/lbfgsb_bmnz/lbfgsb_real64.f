@@ -7,5 +7,4 @@
       contains
         include "lbfgsb.f"
         include "linpack.f"
-        include "timer.f"
       end module
