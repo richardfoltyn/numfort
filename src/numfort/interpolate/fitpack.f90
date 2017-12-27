@@ -452,16 +452,6 @@ pure subroutine concon_real64 (x, y, v, s, &
         ptr_bind => ptr_work%lwrk(1:nest)
     end if
 
-    ! initialize to zero as this is going to be used to store a tree where
-    ! 0 denotes no node
-    if (liopt /= 1) then
-        ptr_work%iwrk = 0
-        ! prevent knots / coefs that are not needed to achieve desired smoothness
-        ! from containing garbage.
-        knots = 1.0_PREC
-        coefs = 1.0_PREC
-    end if
-
     ! call fitpack routine wrapper
     if (present(w)) then
         call fitpack_concon_real64 (liopt, m, x, y, w, ptr_v, ls, nest, lmaxtr, &
