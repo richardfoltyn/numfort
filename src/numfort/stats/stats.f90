@@ -17,6 +17,8 @@ module numfort_stats
 
     use numfort_stats_qrng
 
+    use numfort_stats_markov
+
     implicit none
 
 end module
