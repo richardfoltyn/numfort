@@ -18,6 +18,7 @@ module numfort_stats_markov
     public :: tauchen
     public :: ergodic_dist
     public :: moments
+    public :: simulate
 
     interface rouwenhorst
         procedure rouwenhorst_real64
@@ -41,6 +42,10 @@ module numfort_stats_markov
 
     interface simulate
         procedure simulate_real64_int8, simulate_real64_int32
+    end interface
+    
+    interface markov_approx_input_checks
+        procedure markov_approx_input_checks_real64
     end interface
 
     contains

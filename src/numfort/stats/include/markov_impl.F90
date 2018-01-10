@@ -92,7 +92,7 @@ subroutine __APPEND(rouwenhorst,__PREC) (rho, sigma, states, tm, status)
     tm(2,2) = p
 
     do m = 2, n-1
-        call rouwenhosrt_pad_matrix (tm(1:m,1:m), work)
+        call rouwenhorst_pad_matrix (tm(1:m,1:m), work)
 
         do j = 1, m+1
             do i = 1, m+1
@@ -253,7 +253,7 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, status)
     ! Working arrays
     real (PREC), dimension(:,:), allocatable :: tm_inv, tm_T
     real (PREC), dimension(:), allocatable, target :: mu1, mu2
-    real (PREC), dimension(:), pointer :: ptr1, ptr2, ptr3
+    real (PREC), dimension(:), pointer, contiguous :: ptr1, ptr2, ptr3
 
     integer :: i, lmaxiter, n
     logical :: linverse
@@ -304,9 +304,7 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, status)
             ptr2 = matmul(tm, ptr1)
 
             ! check whether convergence in mu was achieved
-            if (all(abs(ptr1 - ptr2) < 1d-12)) then
-                exit
-            end if
+            if (all(abs(ptr1 - ptr2) < 1d-12)) exit
 
             ptr3 => ptr1
             ptr1 => ptr2
