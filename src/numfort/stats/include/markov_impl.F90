@@ -1,5 +1,39 @@
 
 
+
+pure function __APPEND(is_trans_matrix,__PREC) (mat, tol, transposed) result(res)
+    !*  IS_TRANS_MATRIX checks whether argument is a valid transition matrix
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in), dimension(:,:) :: mat
+        !*  Transition matrix to check
+    real (PREC), intent(in), optional :: tol
+        !*  Tolerance on row sums (default: 1e-12)
+    logical, intent(in), optional :: transposed
+        !*  If true, assume that transition matrix is transposed, ie. columns
+        !   sum to 1.0 instead of rows.
+    logical :: res
+
+    real (PREC) :: ltol
+    integer :: dim
+    logical :: ltransposed
+
+    ltol = 1e-12_PREC
+    ltransposed = .false.
+
+    if (present(tol)) ltol = tol
+    if (present(transposed)) ltransposed = transposed
+
+    ! Dimension across which elements should sum to 1.0
+    dim = 2
+    if (ltransposed) dim = 1
+
+    ! Check that all elements are non-negative and that rows (or columns if
+    ! transposed=.true.) approximately sum to 1.0
+    res = all(mat >= 0.0_PREC) .and. all(abs(sum(mat, dim=dim) - 1.0_PREC) < ltol)
+
+end function
+
+
 subroutine __APPEND(markov_approx_input_checks,__PREC) (rho, sigma, states, &
         tm, status)
     !*  MARKOV_APPROX_INPUT_CHECKS validates inputs for the ROUWENHORST
@@ -382,7 +416,7 @@ subroutine __APPEND(moments,__PREC) (states, tm, acorr, sigma, sigma_e, &
     call assert_alloc_ptr (edist, n, ptr_pmf)
 
     if (.not. present(edist)) then
-        call ergodic_dist (tm, ptr_pmf, inverse=linverse, status=lstatus)
+        call markov_ergodic_dist (tm, ptr_pmf, inverse=linverse, status=lstatus)
         if (lstatus /= NF_STATUS_OK) goto 100
     end if
 

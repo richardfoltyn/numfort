@@ -16,9 +16,10 @@ module numfort_stats_markov
     private
     public :: rouwenhorst
     public :: tauchen
-    public :: ergodic_dist
-    public :: moments
-    public :: simulate
+    public :: markov_ergodic_dist
+    public :: markov_moments
+    public :: markov_simulate
+    public :: is_trans_matrix
 
     interface rouwenhorst
         procedure rouwenhorst_real64
@@ -32,16 +33,20 @@ module numfort_stats_markov
         procedure tauchen_real64
     end interface
 
-    interface ergodic_dist
+    interface markov_ergodic_dist
         procedure ergodic_dist_real64
     end interface
 
-    interface moments
+    interface markov_moments
         procedure moments_real64
     end interface
 
-    interface simulate
+    interface markov_simulate
         procedure simulate_real64_int8, simulate_real64_int32
+    end interface
+
+    interface is_trans_matrix
+        procedure is_trans_matrix_real64
     end interface
     
     interface markov_approx_input_checks
