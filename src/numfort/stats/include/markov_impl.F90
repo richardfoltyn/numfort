@@ -72,7 +72,7 @@ subroutine __APPEND(markov_approx_input_checks,__PREC) (rho, sigma, states, &
 
 end subroutine
 
-subroutine __APPEND(rouwenhorst,__PREC) (rho, sigma, states, tm, status)
+subroutine __APPEND(rouwenhorst,__PREC) (rho, sigma, states, tm, sigma_cond, status)
     !*  ROUWENHORST returns the discretized approximation of an AR(1) process
     !   using the Rouwenhorst method.
     integer, parameter :: PREC = __PREC
@@ -80,18 +80,23 @@ subroutine __APPEND(rouwenhorst,__PREC) (rho, sigma, states, tm, status)
     real (PREC), intent(in) :: rho
         !*  Autocorrelation coefficient
     real (PREC), intent(in) :: sigma
-        !*  Unconditional standard deviation
+        !*  Conditional or unconditional standard deviation
+        !   (depending on SIGMA_COND)
     real (PREC), intent(out), dimension(:) :: states
         !*  Contains discretized state vector on successful exit.
     real (PREC), intent(out), dimension(:,:) :: tm
         !*  Contains transition matrix on successful exit.
+    logical, intent(in), optional :: sigma_cond
+        !*  If present and true, argument SIGMA is interpreted as the
+        !   conditional standard deviation (default: true).
     type (status_t), intent(out), optional :: status
         !*  Exit status (optional)
 
     type (status_t) :: lstatus
     integer :: n, i, j, m
     real (PREC), dimension(:,:), allocatable :: work
-    real (PREC) :: eps, p
+    real (PREC) :: eps, p, sigma_z
+    logical :: lsigma_cond
 
     lstatus = NF_STATUS_OK
 
@@ -104,8 +109,17 @@ subroutine __APPEND(rouwenhorst,__PREC) (rho, sigma, states, tm, status)
     ! Permit calling routine with size-0 arrays, do nothing in that case
     if (n == 0) goto 100
 
+    lsigma_cond = .true.
+    if (present(sigma_cond)) lsigma_cond = sigma_cond
+
+    if (lsigma_cond) then
+        sigma_z = sigma / sqrt(1.0_PREC - rho ** 2.0_PREC)
+    else
+        sigma_z = sigma
+    end if
+
     ! Construct discretized state space
-    eps = sqrt(n-1.0_PREC) * sigma / sqrt(1.0_PREC-rho**2.0_PREC)
+    eps = sqrt(n-1.0_PREC) * sigma_z
     call linspace (states, -eps, eps)
 
     ! Treat degenerate case with one state separately
@@ -164,9 +178,9 @@ subroutine __APPEND(rouwenhorst_pad_matrix,__PREC) (mat, res)
 
     n = size(mat, 1)
 
-    res(1:n+2,1:n+2) = 1.0_PREC
+    res(1:n+2,1:n+2) = 0.0_PREC
     do i = 1, n
-        res(2:n,i+1) = mat(1:n,i)
+        res(2:n+1,i+1) = mat(1:n,i)
     end do
 end subroutine
 
@@ -231,7 +245,7 @@ subroutine __APPEND(tauchen,__PREC) (rho, sigma, states, tm, m, sigma_cond, &
     if (present(m)) lm = m
 
     if (lsigma_cond) then
-        sigma_z = sqrt(sigma ** 2.0_PREC / (1.0_PREC - rho ** 2.0_PREC))
+        sigma_z = sigma / sqrt(1.0_PREC - rho ** 2.0_PREC)
         sigma_e = sigma
     else
         sigma_z = sigma
@@ -307,7 +321,6 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, status)
     lmaxiter = 10000
     if (present(maxiter)) lmaxiter = maxiter
 
-
     allocate (tm_T(n, n))
 
     tm_T(:,:) = transpose(tm)
@@ -322,7 +335,7 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, status)
         allocate (tm_inv(n,n))
 
         call inv(tm_T, tm_inv, status=lstatus)
-        if (status /= NF_STATUS_OK) goto 100
+        if (lstatus /= NF_STATUS_OK) goto 100
 
         edist = tm_inv(:, n)
     else
@@ -335,7 +348,7 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, status)
         ptr2 => mu2
 
         do i = 1, lmaxiter
-            ptr2 = matmul(tm, ptr1)
+            ptr2 = matmul(tm_T, ptr1)
 
             ! check whether convergence in mu was achieved
             if (all(abs(ptr1 - ptr2) < 1d-12)) exit
@@ -373,7 +386,7 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, status)
 end subroutine
 
 
-subroutine __APPEND(moments,__PREC) (states, tm, acorr, sigma, sigma_e, &
+subroutine __APPEND(moments,__PREC) (states, tm, mean, acorr, sigma, sigma_e, &
         edist, inverse, status)
     !*  MOMENTS computes selected moments implied by a Markov
     !   process with given state space and transition matrix.
@@ -385,6 +398,8 @@ subroutine __APPEND(moments,__PREC) (states, tm, acorr, sigma, sigma_e, &
     real (PREC), intent(in), dimension(:,:) :: tm
         !*  Transition matrix with element (i,j) being the transition
         !   probability Prob[x_t=s_j|x_{t-1}=s_i]
+    real (PREC), intent(out), optional :: mean
+        !*  If present, contains unconditional mean on successful exit.
     real (PREC), intent(out), optional :: acorr
         !*  On exit, contains implied autocorrelation coefficient
     real (PREC), intent(out), optional :: sigma
@@ -441,8 +456,15 @@ subroutine __APPEND(moments,__PREC) (states, tm, acorr, sigma, sigma_e, &
         end do
     end do
 
-    acorr_x = covar_x / var_x
+    if (var_x > 0.0_PREC) then
+        acorr_x = covar_x / var_x
+    else
+        ! If var_x == 0 we have a degenerate distribution with only one
+        ! state, hence there is perfect correlation.
+        acorr_x = 1.0_PREC
+    end if
 
+    if (present(mean)) mean = mean_x
     if (present(sigma_e)) sigma_e = sqrt((1.0_PREC-acorr_x**2.0_PREC) * var_x)
     if (present(sigma)) sigma = sqrt(var_x)
     if (present(acorr)) acorr = acorr_x
