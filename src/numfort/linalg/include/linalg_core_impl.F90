@@ -17,7 +17,7 @@ subroutine __APPEND(inv,__PREC) (A, Ainv, work, status)
 
     ! Arguments to LAPACK routines
     integer, dimension(:), pointer, contiguous :: ptr_ipiv
-    integer, dimension(:), pointer, contiguous :: ptr_work
+    real (PREC), dimension(:), pointer, contiguous :: ptr_work
     integer :: info
     integer :: n, lwork, lda, m
 
@@ -33,7 +33,7 @@ subroutine __APPEND(inv,__PREC) (A, Ainv, work, status)
     n = size(A,1)
     lwork = n
 
-    call assert_alloc_pointer (work, ptr_ws)
+    call assert_alloc_ptr (work, ptr_ws)
     call workspace_reset (ptr_ws)
 
     call assert_alloc (ptr_ws, nrwrk=lwork, niwrk=n)
@@ -61,7 +61,7 @@ subroutine __APPEND(inv,__PREC) (A, Ainv, work, status)
 
     ! DGETRI computes the inverse of a matrix using the LU factorization
     ! computed by DGETRF.
-    call LACPACK_GETRI (n, Ainv, lda, ptr_ipiv, ptr_work, lwork, info)
+    call LAPACK_GETRI (n, Ainv, lda, ptr_ipiv, ptr_work, lwork, info)
 
     if (info < 0) then
         lstatus = NF_STATUS_INVALID_ARG
@@ -111,7 +111,7 @@ subroutine __APPEND(det,__PREC) (A, d, work, status)
     nrwrk = m*n
     niwrk = min(m,n)
 
-    call assert_alloc_pointer (work, ptr_ws)
+    call assert_alloc_ptr (work, ptr_ws)
     call workspace_reset (ptr_ws)
 
     call assert_alloc (ptr_ws, nrwrk=nrwrk, niwrk=niwrk)
