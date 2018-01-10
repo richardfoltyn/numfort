@@ -1,5 +1,5 @@
 
-type, public :: __APPEND(dnorm,__PREC)
+type :: __APPEND(dnorm,__PREC)
     !*  Type representing Normal distribution.
 
     real (__PREC) :: loc = 0.0

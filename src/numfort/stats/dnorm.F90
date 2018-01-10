@@ -14,7 +14,7 @@ module numfort_stats_dnorm
     private
 
     public :: pdf, cdf, rvs
-    public :: norm 
+    public :: norm, dnorm_real64
 
     real (real64), parameter :: NORM_CONST = 1/sqrt(2 * PI)
 
