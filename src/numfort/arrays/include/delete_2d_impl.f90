@@ -111,7 +111,7 @@
             ioffset = ioffset + k
         end do
 
-        ! Copy last segment that with element indices uidx(nidx),...,narr
+        ! Copy last segment that with element indices uidx(nidx)+1,...,narr
         ioffset_a = uidx(nidx)
         k = narr - ioffset_a
         forall (i=1:k) out(1:m,ioffset+i) = arr(1:m,ioffset_a+i)
@@ -121,7 +121,7 @@
 10  continue
 
     ! At this point all elements from ARR that should be retained were copied
-    ! over to OUT to the extend possible.
+    ! over to OUT to the extent possible.
     lstatus = NF_STATUS_OK
 
 100 continue

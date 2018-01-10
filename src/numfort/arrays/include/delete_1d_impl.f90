@@ -85,7 +85,7 @@
         ioffset = ioffset + k
     end do
 
-    ! Copy last segment that with element indices uidx(nidx),...,narr
+    ! Copy last segment that with element indices uidx(nidx)+1,...,narr
     ifrom = uidx(nidx) + 1
     k = min(narr-ifrom+1, nout-ioffset)
     ito = ifrom + k - 1
@@ -95,7 +95,7 @@
 10  continue
 
     ! At this point all elements from ARR that should be retained were copied
-    ! over to OUT to the extend possible.
+    ! over to OUT
     lstatus = NF_STATUS_OK
 
 100 continue
