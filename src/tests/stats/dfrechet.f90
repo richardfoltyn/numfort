@@ -73,16 +73,14 @@ subroutine test_cdf (tests)
     type (str) :: msg
     
     integer, parameter :: NX = 11
-    integer :: i, j, k
     real (PREC), dimension(100) :: m, s, alpha
     real (PREC) :: diff
-    real (PREC), dimension(NX) :: xx, fxx, xx2, z, diff_x
+    real (PREC), dimension(NX) :: z
     real (PREC) :: x, fx
     real (PREC), parameter :: tol = 1d-10
     real (PREC) :: desired, shp
     real (PREC), dimension(100) :: power_grid
     real (PREC), dimension(NX) :: power_grid2
-    logical, dimension(NX) :: mask
     logical :: res
     
     type (dfrechet) :: frechet

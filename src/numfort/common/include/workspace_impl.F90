@@ -233,7 +233,6 @@ pure subroutine __APPEND(ws_get_iptr_1d_int32,__PREC) (self, n, ptr)
     !   as it won't compile with ifort (CONTIGUOUS attribute on function
     !   return values seems to be ignored).
 
-    integer, parameter :: PREC = __PREC
     integer, parameter :: INTSIZE = int32
 
     type (__APPEND(workspace,__PREC)), intent(in out), target :: self
