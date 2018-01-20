@@ -668,17 +668,18 @@ pure subroutine __APPEND(pcr_pca_get_dims,__PREC) (lhs, rhs, coefs, add_const, &
 end subroutine
 
 
-pure subroutine __APPEND(pcr_pca_check_input,__PREC) (lhs, rhs, ncomp, coefs, &
-        add_const, trans_rhs, status)
+pure subroutine __APPEND(pcr_pca_check_input,__PREC) (lhs, rhs, ncomp_min, &
+        coefs, add_const, trans_rhs, var_share, status)
 
     integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in), dimension(:,:) :: lhs
     real (PREC), intent(in), dimension(:,:) :: rhs
-    integer, intent(in) :: ncomp
+    integer, intent(in), optional :: ncomp_min
     real (PREC), intent(in), dimension(:,:) :: coefs
     logical, intent(in) :: add_const
     logical, intent(in) :: trans_rhs
+    real (PREC), intent(in), optional :: var_share
     type (status_t), intent(out) :: status
 
     integer :: nobs, nvars, nlhs, nconst, ncoefs
@@ -688,39 +689,64 @@ pure subroutine __APPEND(pcr_pca_check_input,__PREC) (lhs, rhs, ncomp, coefs, &
     call pcr_pca_get_dims (lhs, rhs, coefs, add_const, trans_rhs, &
         nobs, nvars, nlhs, ncoefs, nconst)
 
-    if (ncomp < 1) return
-    if (ncomp > nvars + nconst) return
-    if (nobs < ncomp) return
+    if (present(ncomp_min)) then
+        if (ncomp_min < 1) return
+        if (ncomp_min > nvars + nconst) return
+        if (nobs < ncomp_min) return
+    end if
+    
     if (size(lhs,1) /= nobs .or. size(lhs,2) /= nlhs) return
     ! Check that coefficient array can hold coefs for all components
     ! Allow for more columns to be present, but not for more rows.
     if (size(coefs, 2) < nlhs) return
     if (ncoefs /= (nvars + nconst)) return
+    if (present(var_share)) then
+        if (var_share < 0.0_PREC .or. var_share > 1.0_PREC) return
+    end if
 
     status = NF_STATUS_OK
 
 end subroutine
 
 
-subroutine __APPEND(pcr_pca_2d,__PREC) (lhs, rhs, ncomp, coefs, add_const, &
-        center, trans_rhs, status)
+subroutine __APPEND(pcr_pca_2d,__PREC) (lhs, rhs, coefs, ncomp_min, add_const, &
+        center, trans_rhs, var_share, ncomp, status)
 
     integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in), dimension(:,:) :: lhs
     real (PREC), intent(in), dimension(:,:) :: rhs
-    integer, intent(in) :: ncomp
     real (PREC), intent(out), dimension(:,:) :: coefs
+    integer, intent(in), optional :: ncomp_min
+        !*  If present, specifies the min. number of principal components to
+        !   use (default: all). If VAR_SHARE is not given, NCOMP_MIN will
+        !   also be the actual number of components used.
     logical, intent(in), optional :: add_const
+        !*  If present and true, an intercept will be automatically added
+        !   to the RHS variables (default: true).
     logical, intent(in), optional :: center
+        !*  If present and true, variables will be centered before running PCR
+        !   (default: true).
     logical, intent(in), optional :: trans_rhs
+        !*  If present and true, array of RHS variables will be transposed
+        !   prior to running PCR (default: false).
+    real (PREC), intent(in), optional :: var_share
+        !*  If present, specifies the min. share of variance in the RHS
+        !   variables that the (automatically) selected number of principal
+        !   components should explain.
+    integer, intent(out), optional :: ncomp
+        !*  If present, contains the actual number of principal components
+        !   used for regression (differs from NCOMP_MIN only if number is
+        !   determined by routine).
     type (status_t), intent(out), optional :: status
 
     type (status_t) :: lstatus
     real (PREC), dimension(:,:), allocatable :: scores, loadings
-    real (PREC), dimension(:), allocatable :: sval, mean_x, std_x
-    integer :: nvars, nconst, nobs, ncoefs, nlhs
+    real (PREC), dimension(:), allocatable :: sval, mean_x, std_x, propvar
+    integer :: nvars, nconst, nobs, ncoefs, nlhs, lncomp
     logical :: ltrans_rhs, lcenter, ladd_const
+    real (PREC) :: var_expl
+    integer :: k
 
     lstatus = NF_STATUS_OK
 
@@ -731,46 +757,79 @@ subroutine __APPEND(pcr_pca_2d,__PREC) (lhs, rhs, ncomp, coefs, add_const, &
     if (present(center)) lcenter = center
     if (present(trans_rhs)) ltrans_rhs = trans_rhs
 
-    call pcr_pca_check_input (lhs, rhs, ncomp, coefs, ladd_const, ltrans_rhs, lstatus)
+    call pcr_pca_check_input (lhs, rhs, ncomp_min, coefs, ladd_const, &
+        ltrans_rhs, var_share, lstatus)
     if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
     call pcr_pca_get_dims (lhs, rhs, coefs, ladd_const, ltrans_rhs, &
         nobs, nvars, nlhs, ncoefs, nconst)
 
+    if (.not. present(var_share) .and. present(ncomp_min)) then
+        lncomp = ncomp_min
+    else
+        lncomp = nvars
+    end if
+
     ! Allocate working arrays
-    allocate (scores(nobs, ncomp))
-    allocate (loadings(nvars, ncomp))
-    allocate (sval(ncomp))
+    allocate (scores(nobs, lncomp))
+    allocate (loadings(nvars, lncomp))
+    allocate (sval(lncomp))
     allocate (mean_x(nvars), std_x(nvars))
+    allocate (propvar(nvars), source=0.0_PREC)
 
     ! Perform principal component analysis
-    call pca (rhs, scores, ncomp, center=.true., scale=.true., trans_x=ltrans_rhs, &
-        sval=sval, loadings=loadings, mean_x=mean_x, std_x=std_x, status=lstatus)
+    call pca (rhs, scores, lncomp, center=.true., scale=.true., trans_x=ltrans_rhs, &
+        sval=sval, loadings=loadings, mean_x=mean_x, std_x=std_x, &
+        propvar=propvar, status=lstatus)
     if (.not. (NF_STATUS_OK .in. lstatus)) goto 100
 
+    ! Select number of principal components to use, if applicable
+    if (present(var_share)) then
+        var_expl = 0.0
+        do k = 1, nvars
+            var_expl = var_expl + propvar(k)
+            if (var_expl >= var_share) exit
+        end do
+        lncomp = min(k, nvars)
+        if (present(ncomp_min)) then
+            lncomp = max(ncomp_min, lncomp)
+        end if
+    end if
+
     ! Run principal component regression
-    call pcr (lhs, scores, sval, loadings, coefs, mean_x, std_x, &
-        lcenter, ladd_const, lstatus)
+    call pcr (lhs, scores(:,1:lncomp), sval(1:lncomp), loadings(:,1:lncomp), &
+        coefs, mean_x, std_x, lcenter, ladd_const, lstatus)
     if (.not. (NF_STATUS_OK .in. lstatus)) goto 100
 
 100 continue
+
+    if (allocated(scores)) deallocate (scores)
+    if (allocated(loadings)) deallocate (loadings)
+    if (allocated(sval)) deallocate (sval)
+    if (allocated(mean_x)) deallocate (mean_x)
+    if (allocated(std_x)) deallocate (std_x)
+    if (allocated(propvar)) deallocate (propvar)
+
     if (present(status)) status = lstatus
+    if (present(ncomp)) ncomp = lncomp
 
 end subroutine
 
 
-subroutine __APPEND(pcr_pca_1d,__PREC) (lhs, rhs, ncomp, coefs, add_const, &
-        center, trans_rhs, status)
+subroutine __APPEND(pcr_pca_1d,__PREC) (lhs, rhs, coefs, ncomp_min, add_const, &
+        center, trans_rhs, var_share, ncomp, status)
 
     integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in), dimension(:), contiguous, target :: lhs
     real (PREC), intent(in), dimension(:,:) :: rhs
-    integer, intent(in) :: ncomp
     real (PREC), intent(out), dimension(:), contiguous, target :: coefs
+    integer, intent(in), optional :: ncomp_min
     logical, intent(in), optional :: add_const
     logical, intent(in), optional :: center
     logical, intent(in), optional :: trans_rhs
+    real (PREC), intent(in), optional :: var_share
+    integer, intent(out), optional :: ncomp
     type (status_t), intent(out), optional :: status
 
     real (PREC), dimension(:,:), pointer, contiguous :: ptr_lhs, ptr_coefs
@@ -783,6 +842,7 @@ subroutine __APPEND(pcr_pca_1d,__PREC) (lhs, rhs, ncomp, coefs, add_const, &
     ptr_lhs(1:nobs,1:1) => lhs
     ptr_coefs(1:ncoefs,1:1) => coefs
 
-    call pcr (ptr_lhs, rhs, ncomp, ptr_coefs, add_const, center, trans_rhs, status)
+    call pcr (ptr_lhs, rhs, ptr_coefs, ncomp_min, add_const, center, &
+        trans_rhs, var_share, ncomp, status)
 
 end subroutine
