@@ -1,6 +1,7 @@
 set(COMPONENT_NAME interfaces)
 
 set(SOURCE_FILES
+    blas.f90
     lapack.f90
 )
 
