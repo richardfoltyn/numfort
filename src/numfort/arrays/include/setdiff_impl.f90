@@ -49,23 +49,45 @@ if (nidx1 > 0 .and. nidx2 > 0) then
     end do
 
     if (offset2 <= nidx2) then
-        do i = offset2, nidx2
+        loop_arr2: do i = offset2, nidx2
             val = arr2(idx2(i))
             do j = offset1, nidx1
                 k = idx1(j)
                 if (arr1(k) == val) then
+                    ! If we find a matching element we need not consider
+                    ! elements in ARR1 below index J+1 next time as they are
+                    ! guaranteed to be smaller than the next element in ARR2.
                     offset1 = j + 1
-                    exit
+                    
+                    if (j == nidx1) then
+                        ! Exit if this was the last element in ARR1 as all
+                        ! remaining elements in ARR2 are guaranteed to be
+                        ! larger.
+                        exit loop_arr2
+                    else
+                        cycle loop_arr2
+                    end if
+                    
+                else if (arr1(k) < val) then
+                    n = n + 1
+                    if (n <= ndiff_max) diff(n) = arr1(k)
+                    if (n <= nidx_max) idx(n) = k
+                    offset1 = j + 1
+                    
+                    if (j == nidx1) then
+                        ! Exit if this was the last element in ARR1 as all
+                        ! remaining elements in ARR2 are guaranteed to be
+                        ! larger.
+                        exit loop_arr2
+                    end if
+                    
+                else if (arr1(k) > val) then
+                    cycle loop_arr2
                 end if
-
-                n = n + 1
-                if (n <= ndiff_max) diff(n) = arr1(k)
-                if (n <= nidx_max) idx(n) = k
             end do
-        end do
+        end do loop_arr2
     end if
 
-    ! Append all remaining elements in arr1 that
     ! offset1 now points to element right before the first
     ! of the remaining elements that need to be inserted into result.
     offset1 = offset1 - 1

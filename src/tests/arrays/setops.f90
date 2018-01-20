@@ -139,8 +139,20 @@ subroutine test_setdiff (tests)
     call tc%assert_true (n == 2 .and. all(diff(1:2)==[1,2]) .and. &
         all(idx(1:2)==[1,2]), &
         "B strict subset of A; B contains last elemts of A")
-
-
+    deallocate (diff, idx, set_a, set_b)
+    
+    ! Test with A, B disjoint
+    allocate (set_a(3), set_b(5), idx(3), diff(3))
+    diff = 0
+    idx = 0
+    n = 0
+    set_b = [1,3,5,7,9]
+    set_a = [0,2,4]
+    call setdiff (set_a, set_b, n, diff, idx)
+    call tc%assert_true (n == size(set_a) .and. all(diff == set_a) &
+        .and. all(idx==[1,2,3]), &
+        "A, B disjoint")
+    deallocate (set_a, set_b, diff, idx)
 
 end subroutine
 
