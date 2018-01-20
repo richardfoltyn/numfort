@@ -639,21 +639,20 @@ subroutine __APPEND(pcr_1d,__PREC) (lhs, scores, sval, loadings, coefs, &
 end subroutine
 
 
-pure subroutine __APPEND(pcr_pca_get_dims,__PREC) (lhs, rhs, coefs, add_const, &
+pure subroutine __APPEND(pcr_pca_get_dims,__PREC) (lhs, rhs, add_const, &
         trans_rhs, nobs, nvars, nlhs, ncoefs, nconst)
     !*  PCR_GET_DIMS returns the number of various dimensions of the PCR
     !   problem, depending on input data arrays and whether an intercept
     !   shoud be added, etc.
 
     integer, parameter :: PREC = __PREC
-    real (PREC), intent(in), dimension(:,:) :: lhs, rhs, coefs
+    real (PREC), intent(in), dimension(:,:) :: lhs, rhs
     logical, intent(in) :: add_const
     logical, intent(in) :: trans_rhs
     integer, intent(out) :: nobs, nvars, nlhs, ncoefs, nconst
 
     nconst = 0
     if (add_const) nconst = 1
-    ncoefs = size(coefs, 1)
 
     if (trans_rhs) then
         nobs = size(rhs, 2)
@@ -664,12 +663,13 @@ pure subroutine __APPEND(pcr_pca_get_dims,__PREC) (lhs, rhs, coefs, add_const, &
     end if
 
     nlhs = size(lhs, 2)
+    ncoefs = nvars + nconst
 
 end subroutine
 
 
 pure subroutine __APPEND(pcr_pca_check_input,__PREC) (lhs, rhs, ncomp_min, &
-        coefs, add_const, trans_rhs, var_share, status)
+        coefs, add_const, trans_rhs, var_min, res, status)
 
     integer, parameter :: PREC = __PREC
 
@@ -679,14 +679,15 @@ pure subroutine __APPEND(pcr_pca_check_input,__PREC) (lhs, rhs, ncomp_min, &
     real (PREC), intent(in), dimension(:,:) :: coefs
     logical, intent(in) :: add_const
     logical, intent(in) :: trans_rhs
-    real (PREC), intent(in), optional :: var_share
+    real (PREC), intent(in), optional :: var_min
+    type (__APPEND(lm_data,__PREC)), intent(in), dimension(:), optional :: res
     type (status_t), intent(out) :: status
 
     integer :: nobs, nvars, nlhs, nconst, ncoefs
 
     status = NF_STATUS_INVALID_ARG
 
-    call pcr_pca_get_dims (lhs, rhs, coefs, add_const, trans_rhs, &
+    call pcr_pca_get_dims (lhs, rhs, add_const, trans_rhs, &
         nobs, nvars, nlhs, ncoefs, nconst)
 
     if (present(ncomp_min)) then
@@ -700,8 +701,13 @@ pure subroutine __APPEND(pcr_pca_check_input,__PREC) (lhs, rhs, ncomp_min, &
     ! Allow for more columns to be present, but not for more rows.
     if (size(coefs, 2) < nlhs) return
     if (ncoefs /= (nvars + nconst)) return
-    if (present(var_share)) then
-        if (var_share < 0.0_PREC .or. var_share > 1.0_PREC) return
+    if (present(var_min)) then
+        if (var_min < 0.0_PREC .or. var_min > 1.0_PREC) return
+    end if
+    
+    ! Make sure there is a LM_DATA object for each LHS variable
+    if (present(res)) then
+        if (size(res) /= nlhs) return
     end if
 
     status = NF_STATUS_OK
@@ -710,7 +716,7 @@ end subroutine
 
 
 subroutine __APPEND(pcr_pca_2d,__PREC) (lhs, rhs, coefs, ncomp_min, add_const, &
-        center, trans_rhs, var_share, ncomp, status)
+        center, trans_rhs, var_min, res, status)
 
     integer, parameter :: PREC = __PREC
 
@@ -730,20 +736,17 @@ subroutine __APPEND(pcr_pca_2d,__PREC) (lhs, rhs, coefs, ncomp_min, add_const, &
     logical, intent(in), optional :: trans_rhs
         !*  If present and true, array of RHS variables will be transposed
         !   prior to running PCR (default: false).
-    real (PREC), intent(in), optional :: var_share
+    real (PREC), intent(in), optional :: var_min
         !*  If present, specifies the min. share of variance in the RHS
         !   variables that the (automatically) selected number of principal
         !   components should explain.
-    integer, intent(out), optional :: ncomp
-        !*  If present, contains the actual number of principal components
-        !   used for regression (differs from NCOMP_MIN only if number is
-        !   determined by routine).
+    type (__APPEND(lm_data,__PREC)), dimension(:), optional :: res
     type (status_t), intent(out), optional :: status
 
     type (status_t) :: lstatus
     real (PREC), dimension(:,:), allocatable :: scores, loadings
     real (PREC), dimension(:), allocatable :: sval, mean_x, std_x, propvar
-    integer :: nvars, nconst, nobs, ncoefs, nlhs, lncomp
+    integer :: nvars, nconst, nobs, ncoefs, nlhs, ncomp
     logical :: ltrans_rhs, lcenter, ladd_const
     real (PREC) :: var_expl
     integer :: k
@@ -758,49 +761,59 @@ subroutine __APPEND(pcr_pca_2d,__PREC) (lhs, rhs, coefs, ncomp_min, add_const, &
     if (present(trans_rhs)) ltrans_rhs = trans_rhs
 
     call pcr_pca_check_input (lhs, rhs, ncomp_min, coefs, ladd_const, &
-        ltrans_rhs, var_share, lstatus)
+        ltrans_rhs, var_min, res, lstatus)
     if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
-    call pcr_pca_get_dims (lhs, rhs, coefs, ladd_const, ltrans_rhs, &
+    call pcr_pca_get_dims (lhs, rhs, ladd_const, ltrans_rhs, &
         nobs, nvars, nlhs, ncoefs, nconst)
 
-    if (.not. present(var_share) .and. present(ncomp_min)) then
-        lncomp = ncomp_min
+    if (.not. present(var_min) .and. present(ncomp_min)) then
+        ncomp = ncomp_min
     else
-        lncomp = nvars
+        ncomp = nvars
     end if
 
     ! Allocate working arrays
-    allocate (scores(nobs, lncomp))
-    allocate (loadings(nvars, lncomp))
-    allocate (sval(lncomp))
+    allocate (scores(nobs, ncomp))
+    allocate (loadings(nvars, ncomp))
+    allocate (sval(ncomp))
     allocate (mean_x(nvars), std_x(nvars))
     allocate (propvar(nvars), source=0.0_PREC)
 
     ! Perform principal component analysis
-    call pca (rhs, scores, lncomp, center=.true., scale=.true., trans_x=ltrans_rhs, &
+    call pca (rhs, scores, ncomp, center=.true., scale=.true., trans_x=ltrans_rhs, &
         sval=sval, loadings=loadings, mean_x=mean_x, std_x=std_x, &
         propvar=propvar, status=lstatus)
     if (.not. (NF_STATUS_OK .in. lstatus)) goto 100
 
     ! Select number of principal components to use, if applicable
-    if (present(var_share)) then
+    if (present(var_min)) then
         var_expl = 0.0
         do k = 1, nvars
             var_expl = var_expl + propvar(k)
-            if (var_expl >= var_share) exit
+            if (var_expl >= var_min) exit
         end do
-        lncomp = min(k, nvars)
+        ncomp = min(k, nvars)
         if (present(ncomp_min)) then
-            lncomp = max(ncomp_min, lncomp)
+            ncomp = max(ncomp_min, ncomp)
         end if
     end if
 
     ! Run principal component regression
-    call pcr (lhs, scores(:,1:lncomp), sval(1:lncomp), loadings(:,1:lncomp), &
+    call pcr (lhs, scores(:,1:ncomp), sval(1:ncomp), loadings(:,1:ncomp), &
         coefs, mean_x, std_x, lcenter, ladd_const, lstatus)
     if (.not. (NF_STATUS_OK .in. lstatus)) goto 100
 
+    if (present(res)) then
+        var_expl = sum(propvar(1:ncomp))
+        ! Update one LM_DATA object for each LHS
+        do k = 1, size(res)
+            call lm_data_update (res(k), model=NF_STATS_LM_PCR, coefs=coefs(:,k), &
+                nobs=nobs, nvars=nvars, ncomp=ncomp, var_expl=var_expl, &
+                add_const=ladd_const, trans_rhs=ltrans_rhs)
+        end do
+    end if
+    
 100 continue
 
     if (allocated(scores)) deallocate (scores)
@@ -811,38 +824,154 @@ subroutine __APPEND(pcr_pca_2d,__PREC) (lhs, rhs, coefs, ncomp_min, add_const, &
     if (allocated(propvar)) deallocate (propvar)
 
     if (present(status)) status = lstatus
-    if (present(ncomp)) ncomp = lncomp
 
 end subroutine
 
 
 subroutine __APPEND(pcr_pca_1d,__PREC) (lhs, rhs, coefs, ncomp_min, add_const, &
-        center, trans_rhs, var_share, ncomp, status)
+        center, trans_rhs, var_min, res, status)
 
     integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in), dimension(:), contiguous, target :: lhs
     real (PREC), intent(in), dimension(:,:) :: rhs
-    real (PREC), intent(out), dimension(:), contiguous, target :: coefs
+    real (PREC), intent(out), dimension(:), optional :: coefs
     integer, intent(in), optional :: ncomp_min
     logical, intent(in), optional :: add_const
     logical, intent(in), optional :: center
     logical, intent(in), optional :: trans_rhs
-    real (PREC), intent(in), optional :: var_share
-    integer, intent(out), optional :: ncomp
+    real (PREC), intent(in), optional :: var_min
+    type (__APPEND(lm_data,__PREC)), intent(in out), optional :: res
     type (status_t), intent(out), optional :: status
 
-    real (PREC), dimension(:,:), pointer, contiguous :: ptr_lhs, ptr_coefs
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_lhs
+    real (PREC), dimension(:,:), allocatable :: coefs2d
+    type (__APPEND(lm_data,__PREC)), dimension(1) :: res1d
 
-    integer :: nobs, ncoefs
-
+    integer :: nobs, ncoefs, nconst, nvars, nlhs
+    logical :: ladd_const, ltrans_rhs
+    
+    ladd_const = .false.
+    ltrans_rhs = .false.
+    if (present(add_const)) ladd_const = add_const
+    if (present(trans_rhs)) ltrans_rhs = trans_rhs
+    
     nobs = size(lhs)
-    ncoefs = size(coefs)
-
     ptr_lhs(1:nobs,1:1) => lhs
-    ptr_coefs(1:ncoefs,1:1) => coefs
+    
+    call pcr_pca_get_dims (ptr_lhs, rhs, ladd_const, ltrans_rhs, &
+        nobs, nvars, nlhs, ncoefs, nconst)
 
-    call pcr (ptr_lhs, rhs, ptr_coefs, ncomp_min, add_const, center, &
-        trans_rhs, var_share, ncomp, status)
+    allocate (coefs2d(ncoefs,1))
+
+    if (present(res)) then
+        call pcr (ptr_lhs, rhs, coefs2d, ncomp_min, add_const, center, &
+            trans_rhs, var_min, res1d, status)
+        res = res1d(1)
+    else
+        call pcr (ptr_lhs, rhs, coefs2d, ncomp_min, add_const, center, &
+            trans_rhs, var_min, status=status)
+    end if
+    
+    if (present(coefs)) coefs = coefs2d(:,1)
+
+end subroutine
+
+
+subroutine __APPEND(lm_post_estim,__PREC) (model, lhs, rhs, rsq, status)
+    !*  LM_POST_ESTIM computes common post-estimation statistics such as 
+    !   R^2 for a given linear model. The model must have been estimated 
+    !   using before invoking this routine.
+    integer, parameter :: PREC = __PREC
+    type (__APPEND(lm_data,__PREC)), intent(in) :: model
+        !*  Estimated model
+    real (PREC), intent(in), dimension(:) :: lhs
+        !*  Vector of observations of the dependent variable used to estimate
+        !   model.
+    real (PREC), intent(in), dimension(:,:), contiguous :: rhs
+        !*  Array of explanatory (RHS) variables used to estimate model.
+        !   Array is assumed to have shape [NOBS, NVARS], unless 
+        !   TRANS_RHS is present and has value .TRUE.
+    real (PREC), intent(out), optional :: rsq
+        !*  If present, contains the model's R^2 on exit.
+    type (status_t), intent(out), optional :: status
+
+    logical :: need_resid
+    real (PREC), dimension(:), allocatable :: resid
+    
+    type (status_t) :: lstatus
+    real (PREC) :: var_u, var_y
+    real (PREC), dimension(:), allocatable :: coefs
+    integer :: ncoefs
+    
+    ! Variables used for BLAS routines
+    integer, parameter :: incx = 1, incy = 1
+    character (1) :: trans 
+    real (PREC) :: alpha, beta
+    integer :: m, n, lda
+    
+    lstatus = NF_STATUS_OK
+    
+    ! List of outputs that require predicted values to compute
+    need_resid = present(rsq)
+    
+    ! Check whether model has been estimated
+    if (.not. allocated(model%coefs)) then
+        lstatus = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+    
+    ncoefs = size(model%coefs)
+    
+    if (need_resid) then
+        ! Compute YHAT using GEMV BLAS routine
+        allocate (resid(model%nobs), source=lhs)
+        
+        if (model%add_const) then
+            ! Constant was added during estimation process but is not present 
+            ! in RHS array
+            allocate (coefs(model%nvars), source=model%coefs(2:ncoefs))
+            ! Adjust LHS variable to compensate for "lacking" intercept in YHAT
+            ! Note: At this point RESID contains just Y
+            ! We want resid = y - yhat = y - (alpha + x'b) = (y-alpha) - x'b
+            resid(:) = resid - model%coefs(1)
+        else
+            allocate (coefs(model%nvars), source=model%coefs)
+        end if
+    
+        if (model%trans_rhs) then
+            trans = 'T'
+            m = model%nvars
+            n = model%nobs
+        else
+            trans = 'N'
+            m = model%nobs
+            n = model%nvars
+        end if
+        
+        lda = m
+        ! Set up ALPHA, BETA such that result of GEMV will be resid = -yhat + y
+        alpha = -1.0_PREC
+        beta = 1.0_PREC
+        call BLAS_GEMV (trans, m, n, alpha, rhs, lda, coefs, incx, beta, resid, incy)
+        deallocate (coefs)
+    end if
+    
+    if (present(rsq)) then
+        ! Compute variance of residuals
+        var_u = BLAS_DOT (model%nobs, resid, incx, resid, incy) / model%nobs
+        
+        ! Compute variable of LHS variable Y
+        call std (lhs, s=var_y, dof=0)
+        var_y = var_y ** 2.0_PREC
+        
+        rsq = 1.0_PREC - var_u / var_y
+    end if
+
+    
+100 continue 
+
+    if (allocated(resid)) deallocate (resid)
+    if (present(status)) status  = lstatus
 
 end subroutine

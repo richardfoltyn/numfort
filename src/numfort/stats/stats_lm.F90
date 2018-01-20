@@ -1,74 +1,41 @@
 
-#include "numfort.h"
+#include <numfort.h>
 
 module numfort_stats_lm
 
     use, intrinsic :: iso_fortran_env
     use numfort_common
     use numfort_common_alloc
-    use numfort_stats_core, only: normalize
+    use numfort_stats_core, only: normalize, mean, std
+    
+    use blas_interfaces, only: BLAS_DOT => DOT, BLAS_GEMV => GEMV
 
     implicit none
     private
-
-    interface ols
-        module procedure ols_1d_real32, ols_1d_real64, ols_2d_real32, ols_2d_real64
-    end interface
-
-    interface ols_check_input
-        module procedure ols_check_input_real32, ols_check_input_real64
-    end interface
-
-    interface ols_get_dims
-        module procedure ols_get_dims_real32, ols_get_dims_real64
-    end interface
-
-    interface pca
-        module procedure pca_real32, pca_real64
-    end interface
-
-    interface pca_check_input
-        module procedure pca_check_input_real32, pca_check_input_real64
-    end interface
-
-    interface pca_get_dims
-        module procedure pca_get_dims_real32, pca_get_dims_real64
-    end interface
-
-    interface pcr
-        module procedure pcr_1d_real32, pcr_1d_real64, pcr_2d_real32, &
-            pcr_2d_real64
-    end interface
-
-    interface pcr_check_input
-        module procedure pcr_check_input_real32, pcr_check_input_real64
-    end interface
-
-    interface pcr_get_dims
-        module procedure pcr_get_dims_real32, pcr_get_dims_real64
-    end interface
-
-    interface pcr_pca_get_dims
-        module procedure pcr_pca_get_dims_real32, pcr_pca_get_dims_real64
-    end interface
-
-    interface pcr_pca_check_input
-        module procedure pcr_pca_check_input_real32, pcr_pca_check_input_real64
-    end interface
-
-    interface pcr
-        module procedure pcr_pca_1d_real32, pcr_pca_1d_real64, &
-            pcr_pca_2d_real32, pcr_pca_2d_real64
-    end interface
+    
+    integer, public, parameter :: NF_STATS_LM_OLS = 1
+    integer, public, parameter :: NF_STATS_LM_PCR = 2
 
     public :: ols, pca, pcr
+    public :: finalize
+    public :: post_estim
 
-contains
+#include <numfort_real64.h>
+#include "lm_data_spec.F90"
+#include "stats_lm_spec.F90"
 
-#include "numfort_real32.h"
+#include <numfort_real32.h>
+#include "lm_data_spec.F90"
+#include "stats_lm_spec.F90"
+
+    contains
+
+#include <numfort_real32.h>
+#include "lm_data_impl.F90"
 #include "stats_lm_impl.F90"
 
-#include "numfort_real64.h"
+#include <numfort_real64.h>
+#include "lm_data_impl.F90"
 #include "stats_lm_impl.F90"
 
 end module
