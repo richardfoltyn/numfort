@@ -12,23 +12,38 @@ module blas_interfaces
     
     ! Exported BLAS 1 routines
     public :: DOT
+    public :: AXPY
+    public :: SCAL
     
     ! Exported BLAS 2 routines
     public :: GEMV
+    public :: GER
     
     ! Exported BLAS 3 routines
     public :: GEMM
+    
+    interface AXPY
+        procedure SAXPY, DAXPY, CAXPY, ZAXPY
+    end interface
     
     interface DOT
         procedure SDOT, DDOT
     end interface
     
-    interface GEMM
-        procedure SGEMM, DGEMM, CGEMM, ZGEMM
+    interface SCAL
+        procedure SSCAL, DSCAL, CSCAL, ZSCAL
     end interface
     
     interface GEMV
         procedure SGEMV, DGEMV, CGEMV, ZGEMV
+    end interface
+    
+    interface GER
+        procedure SGER, DGER
+    end interface
+    
+    interface GEMM
+        procedure SGEMM, DGEMM, CGEMM, ZGEMM
     end interface
     
     interface
@@ -113,5 +128,107 @@ module blas_interfaces
             real (DP)       :: x(*), y(*)
             real (DP)       :: res
         end function
+    end interface
+    
+   
+    ! --------------------------------------------------------------------------
+    ! BLAS 1: SCAL
+    interface
+        subroutine SSCAL (n, a, x, incx)
+            import SP
+            integer         :: n, incx
+            real (SP)       :: a
+            real (SP)       :: x(*)
+        end subroutine
+    
+        subroutine DSCAL (n, a, x, incx)
+            import DP
+            integer         :: n, incx
+            real (DP)       :: a
+            real (DP)       :: x(*)
+        end subroutine
+    
+        subroutine CSCAL (n, a, x, incx)
+            import COMPLEX_SP
+            integer                 :: n, incx
+            complex (COMPLEX_SP)    :: a
+            complex (COMPLEX_SP)    :: x(*)
+        end subroutine
+        
+        subroutine CSSCAL (n, a, x, incx)
+            import SP
+            import COMPLEX_SP
+            integer                 :: n, incx
+            real (SP)               :: a
+            complex (COMPLEX_SP)    :: x(*)
+        end subroutine
+    
+        subroutine ZSCAL (n, a, x, incx)
+            import COMPLEX_DP
+            integer                 :: n, incx
+            complex (COMPLEX_DP)    :: a
+            complex (COMPLEX_DP)    :: x(*)
+        end subroutine
+        
+        subroutine ZDSCAL (n, a, x, incx)
+            import DP
+            import COMPLEX_DP
+            integer                 :: n, incx
+            real (DP)               :: a
+            complex (COMPLEX_DP)    :: x(*)
+        end subroutine
+    end interface
+    
+    ! -------------------------------------------------------------------------- 
+    ! BLAS 1: AXPY
+    
+    interface
+        subroutine SAXPY (n, a, x, incx, y, incy)
+            import SP
+            integer     :: n, incx, incy
+            real (SP)   :: a
+            real (SP)   :: x(*), y(*)
+        end subroutine
+    
+        subroutine DAXPY (n, a, x, incx, y, incy)
+            import DP
+            integer     :: n, incx, incy
+            real (DP)   :: a
+            real (DP)   :: x(*), y(*)
+        end subroutine
+    
+        subroutine CAXPY (n, a, x, incx, y, incy)
+            import COMPLEX_SP
+            integer                 :: n, incx, incy
+            complex (COMPLEX_SP)    :: a
+            complex (COMPLEX_SP)    :: x(*), y(*)
+        end subroutine
+    
+        subroutine ZAXPY (n, a, x, incx, y, incy)
+            import COMPLEX_DP
+            integer                 :: n, incx, incy
+            complex (COMPLEX_DP)    :: a
+            complex (COMPLEX_DP)    :: x(*), y(*)
+        end subroutine
+    end interface
+    
+    ! -------------------------------------------------------------------------- 
+    ! BLAS 2: GER
+    
+    interface 
+    
+        subroutine SGER (m, n, alpha, x, incx, y, incy, a, lda)
+            import SP
+            integer             :: m, n, incx, incy, lda
+            real (SP)           :: alpha
+            real (SP)           :: x(*), y(*), a(lda,*)
+        end subroutine
+    
+        subroutine DGER (m, n, alpha, x, incx, y, incy, a, lda)
+            import DP
+            integer             :: m, n, incx, incy, lda
+            real (DP)           :: alpha
+            real (DP)           :: x(*), y(*), a(lda,*)
+        end subroutine
     end interface
 end module
