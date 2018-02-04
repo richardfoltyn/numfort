@@ -185,7 +185,7 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     set(_FFLAGS_DEBUG "-fcheck=all -Og")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
-        set(_FFLAGS_FP "/fp:precise /fp:source")
+#         set(_FFLAGS_FP "/fp:precise /fp:source")
         set(_FFLAGS "/warn:all /auto ${_FFLAGS_FP}")
         set(_FFLAGS_DEBUG "/check:all")
 
@@ -195,7 +195,7 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
             set(_FFLAGS "${_FFLAGS} /assume:std_mod_proc_name")
         endif ()
     else ()
-        set(_FFLAGS_FP "-fp-model precise -fp-model source")
+#         set(_FFLAGS_FP "-fp-model precise -fp-model source")
         set(_FFLAGS " -warn all -auto ${_FFLAGS_FP}")
         set(_FFLAGS_DEBUG "-check all")
 
@@ -360,6 +360,11 @@ install(DIRECTORY "${${PROJECT_NAME}_MODDIR}/"
     FILES_MATCHING PATTERN "numfort*.mod"
 )
 
+install(FILES
+        "${${PROJECT_NAME}_MODDIR}/blas_interfaces.mod"
+        "${${PROJECT_NAME}_MODDIR}/lapack_interfaces.mod"
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${NUMFORT_INSTALL_DIR}"
+)
 
 
 
