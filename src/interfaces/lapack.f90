@@ -10,7 +10,20 @@ module lapack_interfaces
 
     public :: GETRF
     public :: GETRI
+    public :: GETRS
 
+    interface GETRF
+        procedure sgetrf, dgetrf, cgetrf, zgetrf
+    end interface
+
+    interface GETRI
+        procedure SGETRI, DGETRI, CGETRI, ZGETRI
+    end interface
+    
+    interface GETRS
+        procedure SGETRS, DGETRS, CGETRS, ZGETRS
+    end interface
+    
     interface
         subroutine sgetrf (m, n, a, lda, ipiv, info)
             import SP
@@ -72,13 +85,40 @@ module lapack_interfaces
 
     end interface
 
-    interface GETRF
-        procedure sgetrf, dgetrf, cgetrf, zgetrf
-    end interface
 
-    interface GETRI
-        procedure SGETRI, DGETRI, CGETRI, ZGETRI
+    interface 
+        subroutine SGETRS (trans, n, nrhs, a, lda, ipiv, b, ldb, info)
+            import SP
+            character   :: trans
+            integer     :: info, lda, ldb, n, nrhs
+            integer     :: ipiv (*)
+            real (SP)   :: a(lda,*), b(ldb,*)
+        end subroutine
+    
+        subroutine DGETRS (trans, n, nrhs, a, lda, ipiv, b, ldb, info)
+            import DP
+            character   :: trans
+            integer     :: info, lda, ldb, n, nrhs
+            integer     :: ipiv (*)
+            real (DP)   :: a(lda,*), b(ldb,*)
+        end subroutine
+    
+        subroutine CGETRS (trans, n, nrhs, a, lda, ipiv, b, ldb, info)
+            import COMPLEX_SP
+            character               :: trans
+            integer                 :: info, lda, ldb, n, nrhs
+            integer                 :: ipiv (*)
+            complex (COMPLEX_SP)    :: a(lda,*), b(ldb,*)
+        end subroutine
+    
+        subroutine ZGETRS (trans, n, nrhs, a, lda, ipiv, b, ldb, info)
+            import COMPLEX_DP
+            character               :: trans
+            integer                 :: info, lda, ldb, n, nrhs
+            integer                 :: ipiv (*)
+            complex (COMPLEX_DP)    :: a(lda,*), b(ldb,*)
+        end subroutine
+    
     end interface
-
 
 end module
