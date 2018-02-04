@@ -53,12 +53,12 @@ subroutine __APPEND(markov_approx_input_checks,__PREC) (rho, sigma, states, &
     n = size(states)
 
     ! Input checks
-    if (abs(rho) >= 1.0_PREC) then
+    if ((abs(rho) >= 1.0_PREC) .and. (n > 1)) then
         status = NF_STATUS_INVALID_ARG
         goto 100
     end if
 
-    if (sigma < 0.0_PREC) then
+    if ((sigma < 0.0_PREC) .and. (n > 1)) then
         status = NF_STATUS_INVALID_ARG
         goto 100
     end if
@@ -112,6 +112,13 @@ subroutine __APPEND(rouwenhorst,__PREC) (rho, sigma, states, tm, sigma_cond, sta
     lsigma_cond = .true.
     if (present(sigma_cond)) lsigma_cond = sigma_cond
 
+    ! Treat degenerate case with one state separately
+    if (n == 1) then
+        tm(1,1) = 1.0_PREC
+        states(1) = 0.0_PREC
+        goto 100
+    end if
+
     if (lsigma_cond) then
         sigma_z = sigma / sqrt(1.0_PREC - rho ** 2.0_PREC)
     else
@@ -121,12 +128,6 @@ subroutine __APPEND(rouwenhorst,__PREC) (rho, sigma, states, tm, sigma_cond, sta
     ! Construct discretized state space
     eps = sqrt(n-1.0_PREC) * sigma_z
     call linspace (states, -eps, eps)
-
-    ! Treat degenerate case with one state separately
-    if (n == 1) then
-        tm(1,1) = 1.0_PREC
-        goto 100
-    end if
 
     ! At this point the state space has at least N=2
     allocate (work(n+1,n+1), source=0.0_PREC)
@@ -281,7 +282,8 @@ subroutine __APPEND(tauchen,__PREC) (rho, sigma, states, tm, m, sigma_cond, &
 end subroutine
 
 
-subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, status)
+subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
+        is_transposed, status)
     !*  ERGODIC_DIST returns the ergodic distribution implied by a given
     !   Markov transition matrix using one of two methods (see argument INVERSE).
     integer, parameter :: PREC = __PREC
@@ -295,6 +297,9 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, status)
         !   transition matrix until element-wise convergence.
     integer, intent(in), optional :: maxiter
         !*  Maximum number of iterations if INVERSE is .FALSE.
+    logical, intent(in), optional :: is_transposed
+        !*  If present and true, assume that TM is a transposed transition
+        !   matrix, ie TM(i,j) = Prob(x'=i|x=j). (default: false)
     type (status_t), intent(out), optional :: status
         !*  Exit code.
 
@@ -304,7 +309,7 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, status)
     real (PREC), dimension(:), pointer, contiguous :: ptr1, ptr2, ptr3
 
     integer :: i, lmaxiter, n
-    logical :: linverse
+    logical :: linverse, lis_transposed
     type (status_t) :: lstatus
 
     lstatus = NF_STATUS_OK
@@ -317,13 +322,18 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, status)
     end if
 
     linverse = .true.
-    if (present(inverse)) linverse = inverse
     lmaxiter = 10000
+    lis_transposed = .false.
+    if (present(inverse)) linverse = inverse
     if (present(maxiter)) lmaxiter = maxiter
+    if (present(is_transposed)) lis_transposed = is_transposed
 
-    allocate (tm_T(n, n))
-
-    tm_T(:,:) = transpose(tm)
+    if (lis_transposed) then
+        allocate (tm_T(n,n), source=tm)
+    else
+        allocate (tm_T(n, n))
+        tm_T(:,:) = transpose(tm)
+    end if
 
     ! compute ergodic distribution using "inverse" method
     if (linverse) then
