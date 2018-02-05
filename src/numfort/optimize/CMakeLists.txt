@@ -3,6 +3,7 @@ set(COMPONENT_NAME optimize)
 
 set(SOURCE_FILES
     optimize.f90
+    diff_helpers.F90
     interfaces.F90
     fwrapper.F90
     optim_result.F90

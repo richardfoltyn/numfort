@@ -17,6 +17,12 @@ subroutine __APPEND(fss,__PREC) (x, fx)
     real (__PREC), intent(out) :: fx
 end subroutine
 
+subroutine __APPEND(fvv,__PREC) (x, fx)
+    import __PREC
+    real (__PREC), intent(in), dimension(:) :: x
+    real (__PREC), intent(out), dimension(:) :: fx
+end subroutine
+
 subroutine __APPEND(fvs_jac_args,__PREC) (x, fx, fpx, args)
     import __PREC
     real (__PREC), intent(in), dimension(:), contiguous :: x
