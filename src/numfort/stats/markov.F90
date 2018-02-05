@@ -8,8 +8,11 @@ module numfort_stats_markov
     use numfort_arrays_create, only: linspace
     use numfort_common_status
     use numfort_common_alloc
+    use numfort_common_swap
     use numfort_stats_dnorm, only: cdf, dnorm_real64
     use numfort_linalg, only: inv
+
+    use blas_interfaces, only: GEMV, COPY, AXPY
 
     implicit none
 

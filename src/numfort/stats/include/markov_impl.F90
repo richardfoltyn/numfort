@@ -283,7 +283,7 @@ end subroutine
 
 
 subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
-        is_transposed, status)
+        is_transposed, tol, status)
     !*  ERGODIC_DIST returns the ergodic distribution implied by a given
     !   Markov transition matrix using one of two methods (see argument INVERSE).
     integer, parameter :: PREC = __PREC
@@ -300,17 +300,31 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
     logical, intent(in), optional :: is_transposed
         !*  If present and true, assume that TM is a transposed transition
         !   matrix, ie TM(i,j) = Prob(x'=i|x=j). (default: false)
+    real (PREC), intent(in), optional :: tol
+        !*  Convergence tolerance, only used for iterative method.
+        !   (default: 1e-12)
     type (status_t), intent(out), optional :: status
         !*  Exit code.
 
     ! Working arrays
     real (PREC), dimension(:,:), allocatable :: tm_inv, tm_T
-    real (PREC), dimension(:), allocatable, target :: mu1, mu2
-    real (PREC), dimension(:), pointer, contiguous :: ptr1, ptr2, ptr3
+    real (PREC), dimension(:), allocatable, target :: mu1, mu2, diff_mu
+    real (PREC), dimension(:), pointer, contiguous :: ptr1, ptr2
 
-    integer :: i, lmaxiter, n
+    integer, parameter :: NITER = 100
+        !*  Number of iterations to perform before checking for convergence
+        !   when iterative method is used.
+    integer :: i, j, lmaxiter, n, NBATCH
     logical :: linverse, lis_transposed
+    real (PREC) :: ltol
     type (status_t) :: lstatus
+
+    ! Arguments for BLAS routines
+    character (1), parameter :: trans = 'N'
+    integer :: m, lda
+    integer, parameter :: incx = 1, incy = 1
+    real (PREC), parameter :: beta = 0.0_PREC
+    real (PREC) :: alpha
 
     lstatus = NF_STATUS_OK
 
@@ -324,9 +338,11 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
     linverse = .true.
     lmaxiter = 10000
     lis_transposed = .false.
+    ltol = 1.0e-12_PREC
     if (present(inverse)) linverse = inverse
     if (present(maxiter)) lmaxiter = maxiter
     if (present(is_transposed)) lis_transposed = is_transposed
+    if (present(tol)) ltol = tol
 
     if (lis_transposed) then
         allocate (tm_T(n,n), source=tm)
@@ -344,31 +360,51 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
 
         allocate (tm_inv(n,n))
 
-        call inv(tm_T, tm_inv, status=lstatus)
+        call inv (tm_T, tm_inv, status=lstatus)
         if (lstatus /= NF_STATUS_OK) goto 100
 
         edist = tm_inv(:, n)
     else
+        ! Check for convergence every NBATCH iterations
+        NBATCH = int(ceiling(real(lmaxiter,real64)/NITER))
+
+        ! Set GEMV arguments that do not change during iteration
+        lda = n
+        m = n
+
         ! compute ergodic distribution by iteration
-        allocate (mu1(n), mu2(n))
+        allocate (mu1(n), mu2(n), diff_mu(n))
         ! initialize with uniform distribution over states
         mu1 = 1.0_PREC / n
 
         ptr1 => mu1
         ptr2 => mu2
 
-        do i = 1, lmaxiter
-            ptr2 = matmul(tm_T, ptr1)
+        do i = 1, NBATCH
+            do j = 1, NITER
+                alpha = 1.0_PREC
+                call GEMV (trans, m, n, alpha, tm_T, lda, ptr1, incx, &
+                    beta, ptr2, incy)
+
+                call swap (ptr1, ptr2)
+            end do
+
+            ! Check for convergence
+            call COPY (n, mu1, incx, diff_mu, incy)
+            ! obtain DIFF_MU = MU1 - MU2
+            alpha = -1.0_PREC
+            call AXPY (n, alpha, mu2, incx, diff_mu, incy)
 
             ! check whether convergence in mu was achieved
-            if (all(abs(ptr1 - ptr2) < 1d-12)) exit
-
-            ptr3 => ptr1
-            ptr1 => ptr2
-            ptr2 => ptr3
+            if (all(abs(diff_mu) < ltol)) exit
         end do
 
-        edist = ptr2
+        if (i <= NBATCH) then
+            edist = ptr2
+        else
+            lstatus = NF_STATUS_NOT_CONVERGED
+            goto 100
+        end if
     end if
 
     ! normalize to 1
@@ -392,6 +428,7 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
     if (allocated(tm_inv)) deallocate (tm_inv)
     if (allocated(mu1)) deallocate (mu1)
     if (allocated(mu2)) deallocate (mu2)
+    if (allocated(diff_mu)) deallocate (diff_mu)
 
 end subroutine
 
