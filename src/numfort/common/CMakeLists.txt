@@ -14,6 +14,7 @@ set(SOURCE_FILES
     input_checks.f90
     shape.f90
     strings.F90
+    swap.F90
     testing.F90
 )
 

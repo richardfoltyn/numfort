@@ -8,6 +8,7 @@ module numfort_common
     use numfort_common_shape
     use numfort_common_status
     use numfort_common_strings
+    use numfort_common_swap
     use numfort_common_workspace, only: workspace_real32, workspace_real64, &
         workspace_finalize
 
