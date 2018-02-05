@@ -11,8 +11,9 @@ module blas_interfaces
     integer, parameter :: COMPLEX_DP = kind((1.0d0, 1.0d0))
     
     ! Exported BLAS 1 routines
-    public :: DOT
     public :: AXPY
+    public :: COPY
+    public :: DOT
     public :: SCAL
     
     ! Exported BLAS 2 routines
@@ -24,6 +25,10 @@ module blas_interfaces
     
     interface AXPY
         procedure SAXPY, DAXPY, CAXPY, ZAXPY
+    end interface
+
+    interface COPY
+        procedure SCOPY, DCOPY, CCOPY, ZCOPY
     end interface
     
     interface DOT
@@ -44,6 +49,32 @@ module blas_interfaces
     
     interface GEMM
         procedure SGEMM, DGEMM, CGEMM, ZGEMM
+    end interface
+
+    interface
+        subroutine SCOPY (n, x, incx, y, incy)
+            import SP
+            integer     :: n, incx, incy
+            real (SP)   :: x(*), y(*)
+        end subroutine
+
+        subroutine DCOPY (n, x, incx, y, incy)
+            import DP
+            integer     :: n, incx, incy
+            real (DP)   :: x(*), y(*)
+        end subroutine
+
+        subroutine CCOPY (n, x, incx, y, incy)
+            import COMPLEX_SP
+            integer                 :: n, incx, incy
+            complex (COMPLEX_SP)    :: x(*), y(*)
+        end subroutine
+
+        subroutine ZCOPY (n, x, incx, y, incy)
+            import COMPLEX_DP
+            integer                 :: n, incx, incy
+            complex (COMPLEX_DP)    :: x(*), y(*)
+        end subroutine
     end interface
     
     interface
