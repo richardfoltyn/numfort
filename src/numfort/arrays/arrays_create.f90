@@ -5,28 +5,33 @@ module numfort_arrays_create
     implicit none
     private
 
-    public :: arange, linspace
+    public :: arange, linspace, powerspace
     public :: diag, diag_matrix, identity
     public :: vander
 
     interface arange
-        module procedure arange_impl_int32, arange_impl_int64, arange_int32, arange_int64
+        procedure arange_impl_int32, arange_impl_int64, arange_int32, arange_int64
     end interface
 
     interface linspace
-        module procedure linspace_real32, linspace_real64
+        procedure linspace_real32, linspace_real64
+    end interface
+
+    interface powerspace
+        procedure powerspace_real32, powerspace_real64, &
+            powerspace_real32_int32, powerspace_real64_int32
     end interface
 
     interface diag
-        module procedure diag_real32, diag_real64
+        procedure diag_real32, diag_real64
     end interface
 
     interface diag_matrix
-        module procedure diag_matrix_real32, diag_matrix_real64
+        procedure diag_matrix_real32, diag_matrix_real64
     end interface
 
     interface identity
-        module procedure identity_real32, identity_real64
+        procedure identity_real32, identity_real64
     end interface
 
     interface vander
@@ -74,6 +79,80 @@ pure subroutine arange_impl_int64 (x, ifrom, step)
     integer, parameter :: INTSIZE = int64
     include "include/arange_impl.f90"
 end subroutine
+
+! ------------------------------------------------------------------------------
+! POWERSPACE routines
+
+pure subroutine powerspace_real32 (x, xmin, xmax, pow)
+    !*  POWERSPACE returns a sequence of points obtained by taking the power
+    !   of a sequence of uniformly spaced points on [0,1] and applying
+    !   an affine transformation to match the given start and end point.
+    !
+    !   More specifically, each element in X is computed as
+    !       x(i) = xmin + (xmax-xmin) * u(i) ** pow
+    !   where u(i) is the corresponding element on a uniformly-spaced
+    !   sequence on [0,1].
+    integer, parameter :: PREC = real32
+    include "include/powerspace_impl.f90"
+end subroutine
+
+pure subroutine powerspace_real64 (x, xmin, xmax, pow)
+    !*  POWERSPACE returns a sequence of points obtained by taking the power
+    !   of a sequence of uniformly spaced points on [0,1] and applying
+    !   an affine transformation to match the given start and end point.
+    !
+    !   More specifically, each element in X is computed as
+    !       x(i) = xmin + (xmax-xmin) * u(i) ** pow
+    !   where u(i) is the corresponding element on a uniformly-spaced
+    !   sequence on [0,1].
+    integer, parameter :: PREC = real64
+    include "include/powerspace_impl.f90"
+end subroutine
+
+pure subroutine powerspace_real32_int32 (x, xmin, xmax, pow)
+    !*  POWERSPACE returns a sequence of points obtained by taking the power
+    !   of a sequence of uniformly spaced points on [0,1] and applying
+    !   an affine transformation to match the given start and end point.
+    !
+    !   More specifically, each element in X is computed as
+    !       x(i) = xmin + (xmax-xmin) * u(i) ** pow
+    !   where u(i) is the corresponding element on a uniformly-spaced
+    !   sequence on [0,1].
+    integer, parameter :: PREC = real32
+    real (PREC), intent(out), dimension(:) :: x
+        !*  Array to store "power-spaced" sequence of points
+    real (PREC), intent(in) :: xmin
+        !*  Starting value
+    real (PREC), intent(in) :: xmax
+        !*  Endpoint value
+    integer, intent(in) :: pow
+        !*  Exponent used to create power-spaced sequence
+
+    call powerspace (x, xmin, xmax, real(pow, PREC))
+end subroutine
+
+pure subroutine powerspace_real64_int32 (x, xmin, xmax, pow)
+    !*  POWERSPACE returns a sequence of points obtained by taking the power
+    !   of a sequence of uniformly spaced points on [0,1] and applying
+    !   an affine transformation to match the given start and end point.
+    !
+    !   More specifically, each element in X is computed as
+    !       x(i) = xmin + (xmax-xmin) * u(i) ** pow
+    !   where u(i) is the corresponding element on a uniformly-spaced
+    !   sequence on [0,1].
+    integer, parameter :: PREC = real64
+    real (PREC), intent(out), dimension(:) :: x
+        !*  Array to store "power-spaced" sequence of points
+    real (PREC), intent(in) :: xmin
+        !*  Starting value
+    real (PREC), intent(in) :: xmax
+        !*  Endpoint value
+    integer, intent(in) :: pow
+        !*  Exponent used to create power-spaced sequence
+
+    call powerspace (x, xmin, xmax, real(pow, PREC))
+end subroutine
+
 
 ! ******************************************************************************
 ! IDENTITY matrix creation
