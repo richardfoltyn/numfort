@@ -283,13 +283,13 @@ end subroutine
 
 
 subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
-        is_transposed, tol, status)
+        is_transposed, tol, initial, status)
     !*  ERGODIC_DIST returns the ergodic distribution implied by a given
     !   Markov transition matrix using one of two methods (see argument INVERSE).
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:,:) :: tm
         !*  Markov transition matrix.
-    real (PREC), intent(out), dimension(:) :: edist
+    real (PREC), intent(in out), dimension(:) :: edist
         !*  Contains ergodic distribution on successful exit
     logical, intent(in), optional :: inverse
         !*  If present and true, compute ergodic distribution using the
@@ -303,6 +303,10 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
     real (PREC), intent(in), optional :: tol
         !*  Convergence tolerance, only used for iterative method.
         !   (default: 1e-12)
+    logical, intent(in), optional :: initial
+        !*  If present and true, use the values in EDIST as the initial
+        !   guess for the ergodic distribution (default: false).
+        !   Only used for iterative method.
     type (status_t), intent(out), optional :: status
         !*  Exit code.
 
@@ -315,7 +319,7 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
         !*  Number of iterations to perform before checking for convergence
         !   when iterative method is used.
     integer :: i, j, lmaxiter, n, NBATCH
-    logical :: linverse, lis_transposed
+    logical :: linverse, lis_transposed, linitial
     real (PREC) :: ltol
     type (status_t) :: lstatus
 
@@ -335,6 +339,7 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
         goto 100
     end if
 
+    linitial = .false.
     linverse = .true.
     lmaxiter = 10000
     lis_transposed = .false.
@@ -343,6 +348,7 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
     if (present(maxiter)) lmaxiter = maxiter
     if (present(is_transposed)) lis_transposed = is_transposed
     if (present(tol)) ltol = tol
+    if (present(initial)) linitial = initial
 
     if (lis_transposed) then
         allocate (tm_T(n,n), source=tm)
@@ -373,9 +379,15 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
         m = n
 
         ! compute ergodic distribution by iteration
-        allocate (mu1(n), mu2(n), diff_mu(n))
-        ! initialize with uniform distribution over states
-        mu1 = 1.0_PREC / n
+        allocate (mu2(n), diff_mu(n))
+        if (linitial) then
+            ! Use EDIST as initial distribution if requested by caller.
+            allocate (mu1(n), source=edist)
+        else
+            ! No initial distribution provided, initialize with uniform
+            ! distribution over states.
+            allocate (mu1(n), source=1.0_PREC/n)
+        end if
 
         ptr1 => mu1
         ptr2 => mu2
