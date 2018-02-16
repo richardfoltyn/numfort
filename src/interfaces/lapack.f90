@@ -11,6 +11,7 @@ module lapack_interfaces
     public :: GETRF
     public :: GETRI
     public :: GETRS
+    public :: GESV
 
     interface GETRF
         procedure sgetrf, dgetrf, cgetrf, zgetrf
@@ -22,6 +23,14 @@ module lapack_interfaces
     
     interface GETRS
         procedure SGETRS, DGETRS, CGETRS, ZGETRS
+    end interface
+
+    interface GESV
+        procedure SGESV, DGESV, CGESV, ZGESV, DSGESV, ZCGESV
+    end interface
+
+    interface GELSD
+        procedure SGELSD, DGELSD, CGELSD, ZGELSD
     end interface
     
     interface
@@ -119,6 +128,96 @@ module lapack_interfaces
             complex (COMPLEX_DP)    :: a(lda,*), b(ldb,*)
         end subroutine
     
+    end interface
+
+
+    interface
+        subroutine SGESV (n, nrhs, a, lda, ipiv, b, ldb, info)
+            import SP
+            integer     :: info, lda, ldb, n, nrhs
+            integer     :: ipiv(*)
+            real (SP)   :: a(lda,*), b(ldb,*)
+        end subroutine
+
+        subroutine DGESV (n, nrhs, a, lda, ipiv, b, ldb, info)
+            import DP
+            integer     :: info, lda, ldb, n, nrhs
+            integer     :: ipiv(*)
+            real (DP)   :: a(lda,*), b(ldb,*)
+        end subroutine
+
+        subroutine CGESV (n, nrhs, a, lda, ipiv, b, ldb, info)
+            import COMPLEX_SP
+            integer                 :: info, lda, ldb, n, nrhs
+            integer                 :: ipiv(*)
+            complex (COMPLEX_SP)    :: a(lda,*), b(ldb,*)
+        end subroutine
+
+        subroutine ZGESV (n, nrhs, a, lda, ipiv, b, ldb, info)
+            import COMPLEX_DP
+            integer                 :: info, lda, ldb, n, nrhs
+            integer                 :: ipiv(*)
+            complex (COMPLEX_DP)    :: a(lda,*), b(ldb,*)
+        end subroutine
+
+        subroutine DSGESV (n, nrhs, a, lda, ipiv, b, ldb, x, ldx, work, swork, iter, info)
+            import DP
+            import SP
+            integer     :: info, iter, lda, ldb, ldx, n, nrhs
+            integer     :: ipiv(*)
+            real (SP)   :: swork(*)
+            real (DP)   :: a(lda,*), b(ldb,*), work(n,*), x(ldx,*)
+        end subroutine
+
+        subroutine ZCGESV (n, nrhs, a, lda, ipiv, b, ldb, x, ldx, work, swork, rwork, iter, info)
+            import DP
+            import COMPLEX_SP
+            import COMPLEX_DP
+            integer                 :: info, iter, lda, ldb, ldx, n, nrhs
+            integer                 :: ipiv(*)
+            real (DP)               :: rwork(*)
+            complex (COMPLEX_SP)    :: swork(*)
+            complex (COMPLEX_DP)    :: a(lda,*), b(ldb,*), work(n,*), x(ldx,*)
+        end subroutine
+    end interface
+
+
+    interface
+        subroutine SGELSD (m, n, nrhs, a, lda, b, ldb, s, rcond, rank, work, lwork, iwork, info)
+            import SP
+            integer     :: info, lda, ldb, lwork, m, n, nrhs, rank
+            real (SP)   :: rcond
+            integer     :: iwork(*)
+            real (SP)   :: a(lda,*), b(ldb,*), s(*), work(*)
+        end subroutine
+
+        subroutine DGELSD (m, n, nrhs, a, lda, b, ldb, s, rcond, rank, work, lwork, iwork, info)
+            import DP
+            integer     :: info, lda, ldb, lwork, m, n, nrhs, rank
+            real (DP)   :: rcond
+            integer     :: iwork(*)
+            real (DP)   :: a(lda,*), b(ldb,*), s(*), work(*)
+        end subroutine
+
+        subroutine CGELSD (m, n, nrhs, a, lda, b, ldb, s, rcond, rank, work, lwork, rwork, iwork, info)
+            import COMPLEX_SP
+            import SP
+            integer                 :: info, lda, ldb, lwork, m, n, nrhs, rank
+            real (SP)               :: rcond
+            integer                 :: iwork(*)
+            real (SP)               :: rwork(*), s(*)
+            complex (COMPLEX_SP)    :: a(lda,*), b(ldb,*), work(*)
+        end subroutine
+
+        subroutine ZGELSD (m, n, nrhs, a, lda, b, ldb, s, rcond, rank, work, lwork, rwork, iwork, info)
+            import COMPLEX_DP
+            import DP
+            integer                 :: info, lda, ldb, lwork, m, n, nrhs, rank
+            real (DP)               :: rcond
+            integer                 :: iwork(*)
+            real (DP)               :: rwork(*), s(*)
+            complex (COMPLEX_DP)    :: a(lda,*), b(ldb,*), work(*)
+        end subroutine
     end interface
 
 end module
