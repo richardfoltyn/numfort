@@ -4,7 +4,8 @@ get_filename_component(COMPONENT_NAME "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
 set(SOURCE_FILES
     polynomial.f90
     polyfit.F90
-    polyroot.F90
+    polyroots.F90
+    polyval.F90
 )
 
 include_directories(
