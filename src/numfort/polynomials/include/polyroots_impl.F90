@@ -1,6 +1,6 @@
 
 
-subroutine __APPEND(polyroot_check_input,__PREC) (coefs, roots, status)
+pure subroutine __APPEND(polyroots_check_input,__PREC) (coefs, roots, status)
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:) :: coefs
     real (PREC), intent(in), dimension(:) :: roots
@@ -17,7 +17,7 @@ subroutine __APPEND(polyroot_check_input,__PREC) (coefs, roots, status)
 end subroutine
 
 
-subroutine __APPEND(polyroot,__PREC) (coefs, roots, n, status)
+pure subroutine __APPEND(polyroots,__PREC) (coefs, roots, n, status)
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:) :: coefs
         !*  Polynomial coefficients in increasing order, ie.
@@ -33,14 +33,14 @@ subroutine __APPEND(polyroot,__PREC) (coefs, roots, n, status)
     type (status_t) :: lstatus
     integer :: deg
 
-    call polyroot_check_input (coefs, roots, lstatus)
+    call polyroots_check_input (coefs, roots, lstatus)
     if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
     deg = size(coefs) - 1
 
     select case (deg)
     case (2)
-        call polyroot_quad (coefs, roots, n, lstatus)
+        call polyroots_quad (coefs, roots, n, lstatus)
         goto 100
     case default
         status = NF_STATUS_UNSUPPORTED_OP
@@ -53,7 +53,7 @@ end subroutine
 
 
 
-subroutine __APPEND(polyroot_quad,__PREC) (coefs, roots, n, status)
+pure subroutine __APPEND(polyroots_quad,__PREC) (coefs, roots, n, status)
     !*  POLYROOT_QUAD computes the (unique) real roots of a quadratic
     !   polynomial.
     integer, parameter :: PREC = __PREC

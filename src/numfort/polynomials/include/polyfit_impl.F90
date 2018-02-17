@@ -1,6 +1,6 @@
 
 
-subroutine __APPEND(polyfit_check_input,__PREC) (x, y, deg, coefs, status)
+pure subroutine __APPEND(polyfit_check_input,__PREC) (x, y, deg, coefs, status)
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(in), dimension(:,:) :: y
@@ -132,7 +132,7 @@ subroutine __APPEND(polyfit_exact,__PREC) (x, y, deg, work, coefs, status)
 end subroutine
 
 
-subroutine __APPEND(polyfit_deriv_check_input,__PREC) (y, coefs, status)
+pure subroutine __APPEND(polyfit_deriv_check_input,__PREC) (y, coefs, status)
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:) :: y
     real (PREC), intent(in), dimension(:) :: coefs
@@ -146,7 +146,7 @@ subroutine __APPEND(polyfit_deriv_check_input,__PREC) (y, coefs, status)
 end subroutine
 
 
-subroutine __APPEND(polyfit_deriv_1d,__PREC) (x, y, coefs, work, status)
+pure subroutine __APPEND(polyfit_deriv_scalar,__PREC) (x, y, coefs, work, status)
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: x
     real (PREC), intent(in), dimension(0:) :: y
@@ -155,7 +155,7 @@ subroutine __APPEND(polyfit_deriv_1d,__PREC) (x, y, coefs, work, status)
     type (status_t), intent(out), optional :: status
     
     type (__APPEND(workspace,__PREC)), pointer :: ptr_work
-    real (PREC), dimension(:), pointer, contiguous :: xp, nn
+    real (PREC), dimension(:), pointer, contiguous :: xp, fact
     type (status_t) :: lstatus
     integer :: deg, n, i, j, k, nrwrk
     real (PREC) :: z
@@ -166,29 +166,30 @@ subroutine __APPEND(polyfit_deriv_1d,__PREC) (x, y, coefs, work, status)
     
     call assert_alloc_ptr (work, ptr_work)
     
+    deg = size(y) - 1
     n = deg
     nrwrk = 2 * (n + 1)
     
     call assert_alloc (ptr_work, nrwrk=nrwrk)
     
-    nn(0:n) => ptr_work%rwrk(1:n+1)
+    fact(0:n) => ptr_work%rwrk(1:n+1)
     xp(0:n) => ptr_work%rwrk(n+2:2*(n+1))
     
-    nn(0) = 1.0_PREC
+    fact(0) = 1.0_PREC
     xp(0) = 1.0_PREC
     do i = 1, n
-        nn(i) = nn(i-1) * i
+        fact(i) = fact(i-1) * i
         xp(i) = xp(i-1) * x
     end do
     
     do i = n, 0, -1
         z = y(i)
         do j = n, i+1, -1
-            k = j - i + 1 
-            z = z - nn(j) / nn(k) * coefs(j) * xp(k)
+            k = j - i
+            z = z - fact(j) / fact(k) * coefs(j) * xp(k)
         end do
         
-        coefs(i) = z / nn(i)
+        coefs(i) = z / fact(i)
     end do
     
     
