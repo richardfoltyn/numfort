@@ -7,6 +7,7 @@ module numfort_core
     private
 
     public :: cumsum, comb, signum
+    public :: factorial
     public :: PI, PI_real32, PI_real64
 
     interface cumsum
