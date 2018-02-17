@@ -15,10 +15,15 @@ module numfort_polynomial_polyfit
     private
 
     public :: polyfit
+    public :: polyfit_deriv
 
     interface polyfit
         procedure polyfit_real32, polyfit_1d_real32, &
             polyfit_real64, polyfit_1d_real64
+    end interface
+    
+    interface polyfit_deriv
+        procedure polyfit_deriv_1d_real32, polyfit_deriv_1d_real64
     end interface
 
     interface polyfit_exact

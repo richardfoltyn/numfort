@@ -5,6 +5,7 @@ set(SOURCE_FILES
     polynomial.f90
     polyfit.F90
     polyroot.F90
+    polyval.F90
 )
 
 include_directories(

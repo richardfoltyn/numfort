@@ -47,6 +47,7 @@ list(APPEND COMPONENTS
     integrate
     interpolate
     optimize
+    polynomial
     stats
 )
 

@@ -132,3 +132,70 @@ subroutine __APPEND(polyfit_exact,__PREC) (x, y, deg, work, coefs, status)
 end subroutine
 
 
+subroutine __APPEND(polyfit_deriv_check_input,__PREC) (y, coefs, status)
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in), dimension(:) :: y
+    real (PREC), intent(in), dimension(:) :: coefs
+    type (status_t), intent(out) :: status
+
+    status = NF_STATUS_INVALID_ARG
+    
+    if (size(coefs) < size(y)) return
+    
+    status = NF_STATUS_OK
+end subroutine
+
+
+subroutine __APPEND(polyfit_deriv_1d,__PREC) (x, y, coefs, work, status)
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in) :: x
+    real (PREC), intent(in), dimension(0:) :: y
+    real (PREC), intent(in out), dimension(0:) :: coefs
+    type (__APPEND(workspace,__PREC)), intent(in out), optional :: work
+    type (status_t), intent(out), optional :: status
+    
+    type (__APPEND(workspace,__PREC)), pointer :: ptr_work
+    real (PREC), dimension(:), pointer, contiguous :: xp, nn
+    type (status_t) :: lstatus
+    integer :: deg, n, i, j, k, nrwrk
+    real (PREC) :: z
+    
+    lstatus = NF_STATUS_OK
+    call polyfit_deriv_check_input (y, coefs, lstatus)
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    
+    call assert_alloc_ptr (work, ptr_work)
+    
+    n = deg
+    nrwrk = 2 * (n + 1)
+    
+    call assert_alloc (ptr_work, nrwrk=nrwrk)
+    
+    nn(0:n) => ptr_work%rwrk(1:n+1)
+    xp(0:n) => ptr_work%rwrk(n+2:2*(n+1))
+    
+    nn(0) = 1.0_PREC
+    xp(0) = 1.0_PREC
+    do i = 1, n
+        nn(i) = nn(i-1) * i
+        xp(i) = xp(i-1) * x
+    end do
+    
+    do i = n, 0, -1
+        z = y(i)
+        do j = n, i+1, -1
+            k = j - i + 1 
+            z = z - nn(j) / nn(k) * coefs(j) * xp(k)
+        end do
+        
+        coefs(i) = z / nn(i)
+    end do
+    
+    
+100 continue
+
+    call assert_dealloc_ptr (work, ptr_work)
+    if (present(status)) status = lstatus
+
+end subroutine
+
