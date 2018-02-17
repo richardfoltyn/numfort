@@ -35,7 +35,8 @@ subroutine __APPEND(polyfit_1d,__PREC) (x, y, deg, coefs, work, status)
     type (__APPEND(workspace,__PREC)), optional :: work
     type (status_t), intent(out), optional :: status
 
-    real (PREC), dimension(:,:), pointer :: ptr_y, ptr_coefs
+    real (PREC), dimension(:,:), pointer :: ptr_y
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_coefs
 
     ptr_y(1:size(y),1:1) => y
     ptr_coefs(1:size(coefs),1:1) => coefs
@@ -97,7 +98,7 @@ subroutine __APPEND(polyfit_exact,__PREC) (x, y, deg, work, coefs, status)
     ! Arguments for calling GESV
     integer :: n, info, nrhs, lda, ldb
     real (PREC), dimension(:,:), pointer, contiguous :: ptr_a
-    integer, dimension(:), pointer :: ptr_ipiv
+    integer, dimension(:), pointer, contiguous :: ptr_ipiv
 
     integer, dimension(2) :: shp
 
