@@ -14,4 +14,4 @@ include_directories(
 )
 
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
-add_dependencies(${COMPONENT_NAME} common core linalg)
+add_dependencies(${COMPONENT_NAME} arrays common core linalg)
