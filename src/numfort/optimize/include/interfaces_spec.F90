@@ -4,23 +4,52 @@
 !       2. Takes an (optional) Jacobian as dummy argument
 !       3. Takes (optional) ARGS array as dummy argument
 
-subroutine __APPEND(fss_args,__PREC) (x, fx, args)
+subroutine __APPEND(fss_args,__PREC) (x, args, fx)
+    !*  Abstract interface for a scalar-valued function f:R->R
+    !   that takes additional arguments.
     import __PREC
     real (__PREC), intent(in)  :: x
+    real (__PREC), intent(in out), dimension(:) :: args
     real (__PREC), intent(out) :: fx
-    real (__PREC), intent(in), dimension(:) :: args
 end subroutine
 
 subroutine __APPEND(fss,__PREC) (x, fx)
+    !*  Abstract interface for a scalar-valued function f:R->R.
     import __PREC
     real (__PREC), intent(in)  :: x
     real (__PREC), intent(out) :: fx
+end subroutine
+
+subroutine __APPEND(fss_jac,__PREC) (x, fx, fpx)
+    !*  Abstract interface for a scalar-valued function f:R->R
+    !   which also returns the first derivative.
+    import __PREC
+    real (__PREC), intent(in) :: x
+    real (__PREC), intent(out) :: fx
+    real (__PREC), intent(out) :: fpx
+end subroutine
+
+subroutine __APPEND(fss_jac_args,__PREC) (x, args, fx, fpx)
+    !*  Abstract interface for a scalar-valued function f:R->R
+    !   that takes additional arguments and also returns the first derivative.
+    import __PREC
+    real (__PREC), intent(in) :: x
+    real (__PREC), intent(in out), dimension(:) :: args
+    real (__PREC), intent(out) :: fx
+    real (__PREC), intent(out) :: fpx
 end subroutine
 
 subroutine __APPEND(fvv,__PREC) (x, fx)
     import __PREC
     real (__PREC), intent(in), dimension(:) :: x
     real (__PREC), intent(out), dimension(:) :: fx
+end subroutine
+
+subroutine __APPEND(fvv_args,__PREC) (x, fx, args)
+    import __PREC
+    real (__PREC), intent(in), dimension(:) :: x
+    real (__PREC), intent(out), dimension(:) :: fx
+    real (__PREC), intent(in out), dimension(:) :: args
 end subroutine
 
 subroutine __APPEND(fvs_jac_args,__PREC) (x, fx, fpx, args)
