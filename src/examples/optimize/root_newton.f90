@@ -33,24 +33,22 @@ subroutine example1 ()
 
 end subroutine
 
-subroutine func1 (x, fx, fpx, args)
+subroutine func1 (x, fx, fpx)
     !   Wrapper for func2 that returns only f(x) and f'(x), but not the
     !   second derivative.
     real (PREC), intent(in) :: x
     real (PREC), intent(out) :: fx, fpx
-    real (PREC), intent(in out), dimension(:), optional :: args
 
     real (PREC) :: fppx
 
-    call func2 (x, fx, fpx, fppx, args)
+    call func2 (x, fx, fpx, fppx)
 end subroutine
 
-subroutine func2 (x, fx, fpx, fppx, args)
+subroutine func2 (x, fx, fpx, fppx)
     ! Objective function: 3rd-degree polynomial with roots at (-3-sqrt(5))/2,
     ! (-3+sqrt(5))/2 and 2
     real (PREC), intent(in) :: x
     real (PREC), intent(out) :: fx, fpx, fppx
-    real (PREC), intent(in out), dimension(:), optional :: args
 
     ! use 3rd-degree polynomial with roots at (-3-sqrt(5))/2,
     ! (-3+sqrt(5))/2 and 2
