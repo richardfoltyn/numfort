@@ -14,9 +14,12 @@ module numfort_optimize_diff
     private
     public :: num_diff
 
-    interface num_diff
-        procedure jacobian_real32, jacobian_real64
-    end interface
+#include <numfort_real32.h>
+#include "diff_helpers_spec.F90"
+
+#include <numfort_real64.h>
+#include "diff_helpers_spec.F90"
+
 
     contains
 
