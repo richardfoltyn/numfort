@@ -35,7 +35,7 @@ subroutine __APPEND(minimize_bounded,__PREC) (fcn, a, b, x, maxfun, xtol, res)
     if (present(xtol)) lxtol = xtol
     if (present(maxfun)) lmaxfun = maxfun
 
-    call wrap_procedure (fcn_wrapper, fcn)
+    call wrap_procedure (fcn_wrapper, fcn=fcn)
 
     call minimize_bounded_impl (fcn_wrapper, a, b, lmaxfun, lxtol, res=ptr_res)
     x = res%x(1)
@@ -59,7 +59,7 @@ subroutine __APPEND(minimize_bounded_args,__PREC) (fcn, a, b, x, args, maxfun, x
     real (PREC), intent(out) :: x
         !*  Minimizer on interval [a,b], if one is found. Otherwise, contains
         !   the last guess before terminating.
-    real (PREC), intent(in), dimension(:) :: args
+    real (PREC), intent(in out), dimension(:) :: args
         !*  Array of additional arguments passed to objective function.
     integer, intent(in), optional :: maxfun
         !*  Max. number of function evaluations.
@@ -84,9 +84,9 @@ subroutine __APPEND(minimize_bounded_args,__PREC) (fcn, a, b, x, args, maxfun, x
     if (present(xtol)) lxtol = xtol
     if (present(maxfun)) lmaxfun = maxfun
 
-    call wrap_procedure (fcn_wrapper, fcn_args=fcn)
+    call wrap_procedure (fcn_wrapper, fcn_args=fcn, args=args)
 
-    call minimize_bounded_impl (fcn_wrapper, a, b, lmaxfun, lxtol, ptr_res, args)
+    call minimize_bounded_impl (fcn_wrapper, a, b, lmaxfun, lxtol, ptr_res)
     x = res%x(1)
 
 100 continue
@@ -125,7 +125,7 @@ end subroutine
 
 
 subroutine __APPEND(minimize_bounded_impl,__PREC) (fcn, xlb, xub, maxfun, &
-        xtol, res, args)
+        xtol, res)
     !*  MINIMIZE_BOUNDED_IMPL minimizes a scalar function on a bounded interval.
     !   Fortran port of Scipy's fminbound/_minimize_scalar_bounded.
 
@@ -135,7 +135,6 @@ subroutine __APPEND(minimize_bounded_impl,__PREC) (fcn, xlb, xub, maxfun, &
     integer, intent(in) :: maxfun
     real (PREC), intent(in) :: xtol
     type (__APPEND(optim_result,__PREC)), intent(in out) :: res
-    real (PREC), intent(in), dimension(:), optional :: args
 
     real (PREC) :: a, b, e, golden_mean, nfc, xf, x, xm, sqrt_eps, rat
     real (PREC) :: fulc, ffulc, fnfc, fx, fu
@@ -158,7 +157,7 @@ subroutine __APPEND(minimize_bounded_impl,__PREC) (fcn, xlb, xub, maxfun, &
     rat = 0.0_PREC
     e = 0.0_PREC
     x = xf
-    call dispatch (fcn, x, fx, args)
+    call dispatch (fcn, x, fx)
 
     ffulc = fx
     fnfc = fx
@@ -214,7 +213,7 @@ subroutine __APPEND(minimize_bounded_impl,__PREC) (fcn, xlb, xub, maxfun, &
         end if
 
         x = xf + max(abs(rat), tol1) * sign(1.0_PREC, rat)
-        call dispatch (fcn, x, fu, args)
+        call dispatch (fcn, x, fu)
 
         if (fu <= fx) then
             if (x >= xf) then

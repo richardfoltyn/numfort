@@ -71,10 +71,10 @@ subroutine fobj (x, fx)
     fx = (x - 2) ** 2
 end subroutine
 
-subroutine fobj_args (x, fx, args)
+subroutine fobj_args (x, args, fx)
     real (PREC), intent(in) :: x
+    real (PREC), intent(in out), dimension(:) :: args
     real (PREC), intent(out) :: fx
-    real (PREC), intent(in), dimension(:) :: args
 
     fx = (x - args(1)) ** 2 + args(2)
 end subroutine
