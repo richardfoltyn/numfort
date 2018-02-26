@@ -60,12 +60,24 @@ subroutine __APPEND(fss_dispatch_fcn,__PREC) (self, x, fx)
     real (PREC), intent(in) :: x
     real (PREC), intent(out) :: fx
 
-    if (associated(self%fcn_args)) then
-        call self%fcn_args (x, self%ptr_args, fx)
-        self%nfev = self%nfev + 1
-    else if (associated(self%fcn)) then
-        call self%fcn (x, fx)
-        self%nfev = self%nfev + 1
+    real (PREC) :: fpx
+
+    if (associated(self%ptr_args)) then
+        if (associated(self%fcn_args)) then
+            call self%fcn_args (x, self%ptr_args, fx)
+            self%nfev = self%nfev + 1
+        else if (associated(self%fcn_jac_args)) then
+            call self%fcn_jac_args (x, self%ptr_args, fx, fpx)
+            self%nfev = self%nfev + 1
+        end if
+    else
+        if (associated(self%fcn)) then
+            call self%fcn (x, fx)
+            self%nfev = self%nfev + 1
+        else if (associated(self%fcn_jac)) then
+            call self%fcn_jac (x, fx, fpx)
+            self%nfev = self%nfev + 1
+        end if
     end if
 
 end subroutine
