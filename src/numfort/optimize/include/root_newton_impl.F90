@@ -1,6 +1,6 @@
 
 
-pure subroutine __APPEND(check_inputs,__PREC) (xtol, tol, maxiter, res)
+pure subroutine __APPEND(check_inputs,__PREC) (xtol, tol, maxiter, xtol2, res)
     !*  CHECK_INPUTS performs input validation for both the
     !   plain Newton and the Halley root-finding algorithms.
 
@@ -8,11 +8,15 @@ pure subroutine __APPEND(check_inputs,__PREC) (xtol, tol, maxiter, res)
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
+    real (PREC), intent(in), optional :: xtol2
     type (__APPEND(optim_result,__PREC)), intent(in out) :: res
 
     res%status = NF_STATUS_OK
 
     call check_positive (0.0_PREC, xtol, "xtol", res%status, res%msg)
+    if (res%status /= NF_STATUS_OK) goto 100
+
+    call check_positive (0.0_PREC, xtol2, "xtol2", res%status, res%msg)
     if (res%status /= NF_STATUS_OK) goto 100
 
     call check_positive (0.0_PREC, tol, "tol", res%status, res%msg)
@@ -50,7 +54,7 @@ end subroutine
 
 
 subroutine __APPEND(root_newton_args,__PREC) (fcn, x, args, ndiff, xtol, tol, &
-        maxiter, dstep, res)
+        maxiter, xtol2, dstep, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fss_args,__PREC)) :: fcn
     real (PREC), intent(in out) :: x
@@ -59,6 +63,10 @@ subroutine __APPEND(root_newton_args,__PREC) (fcn, x, args, ndiff, xtol, tol, &
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
+    real (PREC), intent(in), optional :: xtol2
+        !*  If present, identify period-2 cycles if |X(n)-X(n-2)| < XTOL2
+        !   and take the midpoint of [X(n), X(n-1)] as the next candidate root
+        !   whenever such cycles occur.
     real (PREC), intent(in), optional :: dstep
     type (__APPEND(optim_result,__PREC)), intent(in out), optional :: res
 
@@ -74,12 +82,12 @@ subroutine __APPEND(root_newton_args,__PREC) (fcn, x, args, ndiff, xtol, tol, &
 
     call wrap_procedure (fwrapper, fcn_args=fcn, args=args, eps=dstep)
 
-    call root_newton_impl (fwrapper, x, xtol, tol, maxiter, res)
+    call root_newton_impl (fwrapper, x, xtol, tol, maxiter, xtol2, res)
 
 end subroutine
 
 subroutine __APPEND(root_newton_jac_args,__PREC) (fcn, jac, x, args, xtol, &
-        tol, maxiter, res)
+        tol, maxiter, xtol2, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fss_args,__PREC)) :: fcn
     procedure (__APPEND(fss_args,__PREC)) :: jac
@@ -88,18 +96,22 @@ subroutine __APPEND(root_newton_jac_args,__PREC) (fcn, jac, x, args, xtol, &
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
+    real (PREC), intent(in), optional :: xtol2
+        !*  If present, identify period-2 cycles if |X(n)-X(n-2)| < XTOL2
+        !   and take the midpoint of [X(n), X(n-1)] as the next candidate root
+        !   whenever such cycles occur.
     type (__APPEND(optim_result,__PREC)), intent(in out), optional :: res
 
     type (__APPEND(fwrapper_ss,__PREC)) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn_args=fcn, jac_args=jac, args=args)
 
-    call root_newton_impl (fwrapper, x, xtol, tol, maxiter, res)
+    call root_newton_impl (fwrapper, x, xtol, tol, maxiter, xtol2, res)
 
 end subroutine
 
 subroutine __APPEND(root_newton_fcn_jac_args,__PREC) (fcn, x, args, xtol, &
-        tol, maxiter, res)
+        tol, maxiter, xtol2, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fss_jac_args,__PREC)) :: fcn
     real (PREC), intent(in out) :: x
@@ -107,19 +119,23 @@ subroutine __APPEND(root_newton_fcn_jac_args,__PREC) (fcn, x, args, xtol, &
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
+    real (PREC), intent(in), optional :: xtol2
+        !*  If present, identify period-2 cycles if |X(n)-X(n-2)| < XTOL2
+        !   and take the midpoint of [X(n), X(n-1)] as the next candidate root
+        !   whenever such cycles occur.
     type (__APPEND(optim_result,__PREC)), intent(in out), optional :: res
 
     type (__APPEND(fwrapper_ss,__PREC)) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn_jac_args=fcn, args=args)
 
-    call root_newton_impl (fwrapper, x, xtol, tol, maxiter, res)
+    call root_newton_impl (fwrapper, x, xtol, tol, maxiter, xtol2, res)
 
 end subroutine
 
 
 subroutine __APPEND(root_newton,__PREC) (fcn, x, ndiff, xtol, tol, &
-        maxiter, dstep, res)
+        maxiter, xtol2, dstep, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fss,__PREC)) :: fcn
     real (PREC), intent(in out) :: x
@@ -127,6 +143,10 @@ subroutine __APPEND(root_newton,__PREC) (fcn, x, ndiff, xtol, tol, &
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
+    real (PREC), intent(in), optional :: xtol2
+        !*  If present, identify period-2 cycles if |X(n)-X(n-2)| < XTOL2
+        !   and take the midpoint of [X(n), X(n-1)] as the next candidate root
+        !   whenever such cycles occur.
     real (PREC), intent(in), optional :: dstep
     type (__APPEND(optim_result,__PREC)), intent(in out), optional :: res
 
@@ -143,12 +163,12 @@ subroutine __APPEND(root_newton,__PREC) (fcn, x, ndiff, xtol, tol, &
 
     call wrap_procedure (fwrapper, fcn=fcn, eps=dstep)
 
-    call root_newton_impl (fwrapper, x, xtol, tol, maxiter, res)
+    call root_newton_impl (fwrapper, x, xtol, tol, maxiter, xtol2, res)
 
 end subroutine
 
 subroutine __APPEND(root_newton_jac,__PREC) (fcn, jac, x, xtol, &
-        tol, maxiter, res)
+        tol, maxiter, xtol2, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fss,__PREC)) :: fcn
     procedure (__APPEND(fss,__PREC)) :: jac
@@ -156,63 +176,83 @@ subroutine __APPEND(root_newton_jac,__PREC) (fcn, jac, x, xtol, &
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
+    real (PREC), intent(in), optional :: xtol2
+        !*  If present, identify period-2 cycles if |X(n)-X(n-2)| < XTOL2
+        !   and take the midpoint of [X(n), X(n-1)] as the next candidate root
+        !   whenever such cycles occur.
     type (__APPEND(optim_result,__PREC)), intent(in out), optional :: res
 
     type (__APPEND(fwrapper_ss,__PREC)) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn=fcn, jac=jac)
 
-    call root_newton_impl (fwrapper, x, xtol, tol, maxiter, res)
+    call root_newton_impl (fwrapper, x, xtol, tol, maxiter, xtol2, res)
 
 end subroutine
 
 subroutine __APPEND(root_newton_fcn_jac,__PREC) (fcn, x, xtol, &
-        tol, maxiter, res)
+        tol, maxiter, xtol2, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fss_jac,__PREC)) :: fcn
     real (PREC), intent(in out) :: x
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
+    real (PREC), intent(in), optional :: xtol2
+        !*  If present, identify period-2 cycles if |X(n)-X(n-2)| < XTOL2
+        !   and take the midpoint of [X(n), X(n-1)] as the next candidate root
+        !   whenever such cycles occur.
     type (__APPEND(optim_result,__PREC)), intent(in out), optional :: res
 
     type (__APPEND(fwrapper_ss,__PREC)) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn_jac=fcn)
 
-    call root_newton_impl (fwrapper, x, xtol, tol, maxiter, res)
+    call root_newton_impl (fwrapper, x, xtol, tol, maxiter, xtol2, res)
 
 end subroutine
 
 
 
 subroutine __APPEND(root_newton_impl,__PREC) (fcn, x, xtol, tol, maxiter, &
-        res)
+        xtol2, res)
     integer, parameter :: PREC = __PREC
     type (__APPEND(fwrapper_ss,__PREC)), intent(in out) :: fcn
     real (PREC), intent(in out) :: x
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
+    real (PREC), intent(in), optional :: xtol2
+        !*  If present, identify period-2 cycles if |X(n)-X(n-2)| < XTOL2
+        !   and take the midpoint of [X(n), X(n-1)] as the next candidate root
+        !   whenever such cycles occur.
     type (__APPEND(optim_result,__PREC)), intent(in out), optional, target :: res
 
     real (PREC) :: fx, fpx, x0
+    real (PREC) :: x2
     integer :: iter
 
     type (__APPEND(optim_result,__PREC)), pointer :: ptr_res
     real (PREC) :: lxtol, ltol
     integer :: lmaxiter
+    logical :: do_xtol, check_cycle
 
     call assert_alloc_ptr (res, ptr_res)
     call result_reset (ptr_res)
 
-    call check_inputs (xtol, tol, maxiter, ptr_res)
+    call check_inputs (xtol, tol, maxiter, xtol2, ptr_res)
     if (ptr_res%status /= NF_STATUS_OK) goto 100
 
     call set_defaults (xtol, tol, maxiter, lxtol, ltol, lmaxiter)
 
     x0 = x
+
+    x2 = x
+
     do iter = 1, lmaxiter
+        ! Turn ON checking for convergence in terms of XTOL
+        do_xtol = .true.
+
         call dispatch_fcn_jac (fcn, x0, fx, fpx)
 
         if (abs(fx) < ltol) then
@@ -230,8 +270,21 @@ subroutine __APPEND(root_newton_impl,__PREC) (fcn, x, xtol, tol, maxiter, &
         ! Newton step
         x = x0 - fx / fpx
 
+        ! Check for period-2 cycles
+        check_cycle = (modulo(iter-3,2) == 0) .and. iter >= 3 .and. present(xtol2)
+        if (check_cycle) then
+            if (abs(x-x2) < xtol2) then
+                x = (x + x0) / 2.0_PREC
+                ! Skip checking convergence in terms of XTOL in this iteration
+                do_xtol = .false.
+            end if
+
+            ! Store for next cycle check
+            x2 = x
+        end if
+
         ! Exit if tolerance level achieved
-        if (abs(x - x0) < lxtol) then
+        if (do_xtol .and. abs(x - x0) < lxtol) then
             ptr_res%status = NF_STATUS_OK
             ptr_res%msg = "Convergence achieved: abs(x(n)-x(n-1)) < lxtol"
             goto 100
@@ -304,7 +357,7 @@ subroutine __APPEND(root_halley_impl,__PREC) (x, xtol, tol, &
     call assert_alloc_ptr (res, ptr_res)
     call result_reset (ptr_res)
 
-    call check_inputs (xtol, tol, maxiter, ptr_res)
+    call check_inputs (xtol, tol, maxiter, res=ptr_res)
     if (ptr_res%status /= NF_STATUS_OK) goto 100
 
     call set_defaults (xtol, tol, maxiter, lxtol, ltol, lmaxiter)

@@ -35,6 +35,7 @@ subroutine test_all ()
 
     call test_linear (tests)
     call test_quad (tests)
+    call test_cycles (tests)
     call test_halley (tests)
 
     call tests%print ()
@@ -308,5 +309,41 @@ subroutine fcn_halley_args (x, args, fx, fpx, fppx)
     fppx = 2.0
 end subroutine
 
+
+subroutine test_cycles (tests)
+    type (test_suite), intent(in out) :: tests
+
+    class (test_case), pointer :: tc
+
+    real (PREC) :: x, fx
+    type (optim_result) :: res
+    real (PREC), parameter :: atol = 1.0d-7, rtol = 0.0
+    real (PREC), parameter :: root_exact = -1.76929235d0, zero = 0.0
+        !   True root and function value at root
+    real (PREC), parameter :: x0 = 0.99d0
+
+    tc => tests%add_test ("ROOT_NEWTON: period-2 cycles")
+
+    ! Check objective function from wikipedia that is known to produce
+    ! cycles if x0 is close to 1.0 or 0.0.
+
+    x = x0
+    call root_newton (fcn_jac_cycles, x, xtol2=1.0e-8_PREC, maxiter=100, res=res)
+    fx = res%fx(1)
+    call tc%assert_true (all_close (x, root_exact, atol=atol, rtol=rtol) .and. &
+        all_close (fx, zero, atol=atol, rtol=rtol) .and. res%success, &
+        "f(x) = x**3.0 - 2*x + 2; x(0)=" // str(x0, 'f0.6'))
+
+end subroutine
+
+
+
+subroutine fcn_jac_cycles (x, fx, fpx)
+    real (PREC), intent(in) :: x
+    real (PREC), intent(out) :: fx, fpx
+
+    fx = x**3.0 - 2.0 * x + 2
+    fpx = 3.0 * x**2.0 - 2.0
+end subroutine
 
 end program
