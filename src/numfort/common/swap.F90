@@ -14,6 +14,10 @@ module numfort_common_swap
         procedure swap_1d_real32, swap_1d_real64, swap_1d_int32, swap_1d_int64
     end interface
 
+    interface swap
+        procedure swap_real32, swap_real64
+    end interface
+
     contains
 
 subroutine swap_1d_real32 (ptr1, ptr2)
@@ -62,6 +66,26 @@ subroutine swap_1d_int64 (ptr1, ptr2)
     ptr_tmp => ptr1
     ptr1 => ptr2
     ptr2 => ptr_tmp
+end subroutine
+
+subroutine swap_real32 (x1, x2)
+    integer, parameter :: PREC = real32
+    real (PREC), intent(in out) :: x1, x2
+    real (PREC) :: tmp
+
+    tmp = x1
+    x1 = x2
+    x2 = tmp
+end subroutine
+
+subroutine swap_real64 (x1, x2)
+    integer, parameter :: PREC = real64
+    real (PREC), intent(in out) :: x1, x2
+    real (PREC) :: tmp
+
+    tmp = x1
+    x1 = x2
+    x2 = tmp
 end subroutine
 
 end module
