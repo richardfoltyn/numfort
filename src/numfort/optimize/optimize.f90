@@ -16,7 +16,7 @@ module numfort_optimize
     use numfort_optimize_simplex, only: minimize_simplex
 
     use numfort_optimize_brent, only: root_brentq
-    use numfort_optimize_newton, only: root_newton, root_halley
+    use numfort_optimize_newton, only: root_newton, root_halley, root_newton_bisect
 
     use numfort_optimize_minpack
 

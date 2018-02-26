@@ -19,6 +19,7 @@ module numfort_optimize_newton
 
     public :: root_newton
     public :: root_halley
+    public :: root_newton_bisect
 
     integer, parameter :: MSG_LEN = 100
 

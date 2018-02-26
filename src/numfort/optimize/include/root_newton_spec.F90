@@ -64,3 +64,36 @@ end interface
 interface set_defaults
     procedure __APPEND(set_defaults,__PREC)
 end interface
+
+interface root_newton_bisect
+    procedure __APPEND(newton_bisect,__PREC)
+end interface
+
+interface root_newton_bisect
+    procedure __APPEND(newton_bisect_jac,__PREC)
+end interface
+
+interface root_newton_bisect
+    procedure __APPEND(newton_bisect_fcn_jac,__PREC)
+end interface
+
+interface root_newton_bisect
+    procedure __APPEND(newton_bisect_args,__PREC)
+end interface
+
+interface root_newton_bisect
+    procedure __APPEND(newton_bisect_jac_args,__PREC)
+end interface
+
+interface root_newton_bisect
+    procedure __APPEND(newton_bisect_fcn_jac_args,__PREC)
+end interface
+
+interface newton_bisect_impl
+    procedure __APPEND(newton_bisect_impl,__PREC)
+end interface
+
+interface check_bracket
+    procedure __APPEND(check_bracket,__PREC)
+end interface
+
