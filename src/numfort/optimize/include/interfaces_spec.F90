@@ -25,8 +25,8 @@ subroutine __APPEND(fss_jac,__PREC) (x, fx, fpx)
     !   which also returns the first derivative.
     import __PREC
     real (__PREC), intent(in) :: x
-    real (__PREC), intent(out) :: fx
-    real (__PREC), intent(out) :: fpx
+    real (__PREC), intent(out), optional :: fx
+    real (__PREC), intent(out), optional :: fpx
 end subroutine
 
 subroutine __APPEND(fss_jac_args,__PREC) (x, args, fx, fpx)
@@ -35,8 +35,8 @@ subroutine __APPEND(fss_jac_args,__PREC) (x, args, fx, fpx)
     import __PREC
     real (__PREC), intent(in) :: x
     real (__PREC), intent(in out), dimension(:) :: args
-    real (__PREC), intent(out) :: fx
-    real (__PREC), intent(out) :: fpx
+    real (__PREC), intent(out), optional :: fx
+    real (__PREC), intent(out), optional :: fpx
 end subroutine
 
 subroutine __APPEND(fvv,__PREC) (x, fx)

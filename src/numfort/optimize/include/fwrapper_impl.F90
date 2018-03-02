@@ -60,14 +60,12 @@ subroutine __APPEND(fss_dispatch_fcn,__PREC) (self, x, fx)
     real (PREC), intent(in) :: x
     real (PREC), intent(out) :: fx
 
-    real (PREC) :: fpx
-
     if (associated(self%ptr_args)) then
         if (associated(self%fcn_args)) then
             call self%fcn_args (x, self%ptr_args, fx)
             self%nfev = self%nfev + 1
         else if (associated(self%fcn_jac_args)) then
-            call self%fcn_jac_args (x, self%ptr_args, fx, fpx)
+            call self%fcn_jac_args (x, self%ptr_args, fx)
             self%nfev = self%nfev + 1
         end if
     else
@@ -75,7 +73,7 @@ subroutine __APPEND(fss_dispatch_fcn,__PREC) (self, x, fx)
             call self%fcn (x, fx)
             self%nfev = self%nfev + 1
         else if (associated(self%fcn_jac)) then
-            call self%fcn_jac (x, fx, fpx)
+            call self%fcn_jac (x, fx)
             self%nfev = self%nfev + 1
         end if
     end if
@@ -95,6 +93,9 @@ subroutine __APPEND(fss_dispatch_jac,__PREC) (self, x, fpx)
         if (associated(self%jac_args)) then
             call self%jac_args (x, self%ptr_args, fpx)
             self%nfev = self%nfev + 1
+        else if (associated(self%fcn_jac_args)) then
+            call self%fcn_jac_args (x, self%ptr_args, fpx=fpx)
+            self%nfev = self%nfev + 1
         else if (associated(self%fcn_args)) then
             call num_diff (self%fcn_args, x, self%ptr_args, fpx, eps=self%eps)
             self%nfev = self%nfev + 2
@@ -102,6 +103,9 @@ subroutine __APPEND(fss_dispatch_jac,__PREC) (self, x, fpx)
     else
         if (associated(self%jac)) then
             call self%jac (x, fpx)
+            self%nfev = self%nfev + 1
+        else if (associated(self%fcn_jac)) then
+            call self%fcn_jac (x, fpx=fpx)
             self%nfev = self%nfev + 1
         else if (associated(self%fcn)) then
             call num_diff (self%fcn, x, fpx, eps=self%eps)
