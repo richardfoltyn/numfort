@@ -1,6 +1,6 @@
 
 
-subroutine __APPEND(inv,__PREC) (A, Ainv, work, status)
+subroutine __APPEND(inv,__PREC) (A, Ainv, work, rwork, iwork, status)
     !*  INV computes the inverse of a matrix using the LAPACK routines
     !   GETRF and GETRI.
     integer, parameter :: PREC = __PREC
@@ -10,6 +10,10 @@ subroutine __APPEND(inv,__PREC) (A, Ainv, work, status)
         !*  On exit, contains inverse of A if routine exits without errors.
     type (__APPEND(workspace,__PREC)), intent(in out), optional, target :: work
         !*  Workspace object (optional)
+    real (PREC), intent(in out), dimension(:), optional, contiguous, target :: rwork
+        !*  Working array for reals. If present, takes precedence over WORK.
+    integer, intent(in out), dimension(:), optional, contiguous, target :: iwork
+        !*  Working array for integers. If present, takes precedence over WORK.
     type (status_t), intent(out), optional :: status
         !*  Exit status (optoinal)
 
@@ -23,6 +27,8 @@ subroutine __APPEND(inv,__PREC) (A, Ainv, work, status)
 
     type (status_t) :: lstatus
 
+    nullify (ptr_work, ptr_ipiv, ptr_ws)
+    
     lstatus = NF_STATUS_OK
 
     if (.not. shape_equal (A, Ainv) .or. size(A,1) /= size(A,2)) then
@@ -31,15 +37,35 @@ subroutine __APPEND(inv,__PREC) (A, Ainv, work, status)
     end if
 
     n = size(A,1)
-    lwork = n
 
-    call assert_alloc_ptr (work, ptr_ws)
-    call workspace_reset (ptr_ws)
+    if (present(rwork)) then
+        if (size(rwork) < n) then
+            lstatus = NF_STATUS_INVALID_ARG
+            goto 100
+        end if
+    end if
 
-    call assert_alloc (ptr_ws, nrwrk=lwork, niwrk=n)
+    if (present(iwork)) then
+        if (size(iwork) < n) then
+            lstatus = NF_STATUS_INVALID_ARG
+            goto 100
+        end if
+    end if
 
-    call workspace_get_ptr (ptr_ws, n, ptr_work)
-    call workspace_get_ptr (ptr_ws, n, ptr_ipiv)
+    if (present(rwork) .and. present(iwork)) then
+        lwork = size(rwork)
+        ptr_work(1:lwork) => rwork
+        ptr_ipiv(1:n) => iwork
+    else
+        lwork = n
+        call assert_alloc_ptr (work, ptr_ws)
+        call workspace_reset (ptr_ws)
+
+        call assert_alloc (ptr_ws, nrwrk=lwork, niwrk=n)
+
+        call workspace_get_ptr (ptr_ws, n, ptr_work)
+        call workspace_get_ptr (ptr_ws, n, ptr_ipiv)
+    end if
 
     ! Store A in Ainv to prevent it from being overwritten by LAPACK
     Ainv = A
