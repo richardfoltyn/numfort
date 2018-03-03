@@ -121,13 +121,13 @@ end subroutine
 
 subroutine __APPEND(fvv_fcn,__PREC) (x, fx)
     import __PREC
-    real (__PREC), intent(in), dimension(:) :: x
-    real (__PREC), intent(out), dimension(:) :: fx
+    real (__PREC), intent(in), dimension(:), contiguous :: x
+    real (__PREC), intent(out), dimension(:), contiguous :: fx
 end subroutine
 
 subroutine __APPEND(fvv_jac,__PREC) (x, fpx)
     import __PREC
-    real (__PREC), intent(in), dimension(:) :: x
+    real (__PREC), intent(in), dimension(:), contiguous :: x
     real (__PREC), intent(out), dimension(:,:), contiguous :: fpx
 end subroutine
 
@@ -147,9 +147,9 @@ end subroutine
 
 subroutine __APPEND(fvv_fcn_args,__PREC) (x, args, fx)
     import __PREC
-    real (__PREC), intent(in), dimension(:) :: x
+    real (__PREC), intent(in), dimension(:), contiguous :: x
     real (__PREC), intent(in out), dimension(:) :: args
-    real (__PREC), intent(out), dimension(:) :: fx
+    real (__PREC), intent(out), dimension(:), contiguous :: fx
 end subroutine
 
 subroutine __APPEND(fvv_jac_args,__PREC) (x, args, fpx)

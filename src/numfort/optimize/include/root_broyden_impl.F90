@@ -352,8 +352,7 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
         ! for each element.
         dx(:) = dx_scale * dx
 
-        fx(:) = fxlast
-        call dumb_line_search (fcn, x, x_ls, fx_ls, dx, fx)
+        call dumb_line_search (fcn, x, nrm, x_ls, fx_ls, dx, fx)
 
         ! Check if x_k and x_{k-1} are sufficiently close to each other to
         ! terminate algorithm
@@ -400,7 +399,7 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
         call GER (m, n, alpha, vec1, incx, vec2, incy, jac_inv, lda)
 
         ! Update for next iteration
-        fxlast(:) = fx
+        call DCOPY (n, fx, 1, fxlast, 1)
     end do
 
     ptr_res%msg = 'Max. number of iterations exceeded'
@@ -422,7 +421,7 @@ end subroutine
 
 
 
-subroutine __APPEND(dumb_line_search,__PREC) (fcn, x, x_ls, fx_ls, dx, fx)
+subroutine __APPEND(dumb_line_search,__PREC) (fcn, x, nrm, x_ls, fx_ls, dx, fx)
     !*  DUMB_LINE_SEARCH uses backtracking to identify the step size in a
     !   given direction that yields a lower Euclidean norm of the objective
     !   function than at a given point X.
@@ -432,6 +431,8 @@ subroutine __APPEND(dumb_line_search,__PREC) (fcn, x, x_ls, fx_ls, dx, fx)
     integer, parameter :: PREC = __PREC
     type (__APPEND(fwrapper_vv,__PREC)), intent(in out) :: fcn
     real (PREC), intent(in), dimension(:), contiguous :: x
+    real (PREC), intent(in) :: nrm
+        !*  Euclidean norm of the last function value, |FX|_2
     real (PREC), intent(in out), dimension(:), contiguous :: x_ls, fx_ls
         !*  Working arrays to store X, FX evaluated during line search
     real (PREC), intent(in out), dimension(:) :: dx
@@ -444,10 +445,9 @@ subroutine __APPEND(dumb_line_search,__PREC) (fcn, x, x_ls, fx_ls, dx, fx)
 
     integer :: i, n
     integer, parameter :: NSEARCH = 4
-    real (PREC) :: factr, nrm, nrm_ls, nrm_ls_best, factr_best
+    real (PREC) :: factr, nrm_ls, nrm_ls_best, factr_best
 
     n = size(x)
-    nrm = norm2(fx)
 
     ! Line search
     nrm_ls_best = huge(1.0_PREC)

@@ -77,7 +77,7 @@ subroutine __APPEND(fvs_deriv,__PREC) (fcn, x, fpx, fx, eps)
     !   and returns its m-by-n Jacobian.
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvs_fcn,__PREC)) :: fcn
-    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: x
         !*  Point X at which gradient should be evaluated
     real (PREC), intent(out), dimension(:) :: fpx
         !*  Function gradient
@@ -126,7 +126,7 @@ subroutine __APPEND(fvs_args_deriv,__PREC) (fcn, x, args, fpx, fx, eps)
     !   and returns its m-by-n Jacobian.
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvs_fcn_args,__PREC)) :: fcn
-    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: x
         !*  Point X at which gradient should be evaluated
     real (PREC), intent(in out), dimension(:) :: args
     real (PREC), intent(out), dimension(:) :: fpx
@@ -181,7 +181,7 @@ subroutine __APPEND(fvv_deriv,__PREC) (fcn, x, fpx, fx, eps)
     !   and returns its m-by-n Jacobian.
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn,__PREC)) :: fcn
-    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: x
         !*  Point X at this Jacobian should be evaluated
     real (PREC), intent(out), dimension(:,:) :: fpx
         !*  Contains m-by-n Jacobian on exit where N=SIZE(X) and M
@@ -236,7 +236,7 @@ subroutine __APPEND(fvv_args_deriv,__PREC) (fcn, x, args, fpx, fx, eps)
     !   and returns its m-by-n Jacobian.
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn_args,__PREC)) :: fcn
-    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: x
         !*  Point X at this Jacobian should be evaluated
     real (PREC), intent(in out), dimension(:) :: args
     real (PREC), intent(out), dimension(:,:) :: fpx
