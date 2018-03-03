@@ -150,7 +150,7 @@ end subroutine
 subroutine __APPEND(root_newton_fcn_jac_args,__PREC) (fcn, x, args, xtol, &
         tol, maxiter, xtol2, res)
     integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss_jac_args,__PREC)) :: fcn
+    procedure (__APPEND(fss_fcn_jac_args,__PREC)) :: fcn
     real (PREC), intent(in out) :: x
     real (PREC), intent(in out), dimension(:) :: args
     real (PREC), intent(in), optional :: xtol
@@ -230,7 +230,7 @@ end subroutine
 subroutine __APPEND(root_newton_fcn_jac,__PREC) (fcn, x, xtol, &
         tol, maxiter, xtol2, res)
     integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss_jac,__PREC)) :: fcn
+    procedure (__APPEND(fss_fcn_jac,__PREC)) :: fcn
     real (PREC), intent(in out) :: x
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
@@ -450,7 +450,7 @@ end subroutine
 subroutine __APPEND(newton_bisect_fcn_jac_args,__PREC) (fcn, x, a, b, xtol, &
         tol, maxiter, res)
     integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss_jac,__PREC)) :: fcn
+    procedure (__APPEND(fss_fcn_jac,__PREC)) :: fcn
     real (PREC), intent(in out) :: x
     real (PREC), intent(in), optional :: a, b
     real (PREC), intent(in), optional :: xtol
@@ -471,7 +471,7 @@ end subroutine
 subroutine __APPEND(newton_bisect_fcn_jac,__PREC) (fcn, x, args, a, b, xtol, &
         tol, maxiter, res)
     integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss_jac_args,__PREC)) :: fcn
+    procedure (__APPEND(fss_fcn_jac_args,__PREC)) :: fcn
     real (PREC), intent(in out) :: x
     real (PREC), intent(in), optional :: a, b
     real (PREC), intent(in out), dimension(:) :: args

@@ -341,15 +341,10 @@ end subroutine
 
 subroutine fcn_jac_linear (x, fx, fpx)
     real (PREC), intent(in) :: x
-    real (PREC), intent(out), optional :: fx, fpx
+    real (PREC), intent(out) :: fx, fpx
     
-    if (present(fx)) then
-        call fcn_linear (x, fx)
-    end if
-    
-    if (present(fpx)) then
-        call jac_linear (x, fpx)
-    end if
+    call fcn_linear (x, fx)
+    call jac_linear (x, fpx)
 end subroutine
 
 subroutine fcn_linear_args (x, args, fx)
@@ -369,15 +364,10 @@ end subroutine
 subroutine fcn_jac_linear_args (x, args, fx, fpx)
     real (PREC), intent(in) :: x
     real (PREC), intent(in out), dimension(:) :: args
-    real (PREC), intent(out), optional :: fx, fpx
+    real (PREC), intent(out) :: fx, fpx
     
-    if (present(fx)) then
-        call fcn_linear_args (x, args, fx)
-    end if
-    
-    if (present(fx)) then
-        call jac_linear_args (x, args, fpx)
-    end if
+    call fcn_linear_args (x, args, fx)
+    call jac_linear_args (x, args, fpx)
 end subroutine
 
 
@@ -396,15 +386,10 @@ end subroutine
 
 subroutine fcn_jac_quad (x, fx, fpx)
     real (PREC), intent(in) :: x
-    real (PREC), intent(out), optional :: fx, fpx
+    real (PREC), intent(out) :: fx, fpx
     
-    if (present(fx)) then
-        call fcn_quad (x, fx)
-    end if
-    
-    if (present(fpx)) then
-        call jac_quad (x, fpx)
-    end if
+    call fcn_quad (x, fx)
+    call jac_quad (x, fpx)
 end subroutine
 
 subroutine fcn_quad_args (x, args, fx)
@@ -424,15 +409,10 @@ end subroutine
 subroutine fcn_jac_quad_args (x, args, fx, fpx)
     real (PREC), intent(in) :: x
     real (PREC), intent(in out), dimension(:) :: args
-    real (PREC), intent(out), optional :: fx, fpx
+    real (PREC), intent(out) :: fx, fpx
     
-    if (present(fx)) then
-        call fcn_quad_args (x, args, fx)
-    end if
-    
-    if (present(fpx)) then
-        call jac_quad_args (x, args, fpx)
-    end if
+    call fcn_quad_args (x, args, fx)
+    call jac_quad_args (x, args, fpx)
 end subroutine
 
 
@@ -458,15 +438,10 @@ end subroutine
 
 subroutine fcn_jac_cycles (x, fx, fpx)
     real (PREC), intent(in) :: x
-    real (PREC), intent(out), optional :: fx, fpx
+    real (PREC), intent(out) :: fx, fpx
 
-    if (present(fx)) then
-        fx = x**3.0 - 2.0 * x + 2
-    end if
-    
-    if (present(fpx)) then
-        fpx = 3.0 * x**2.0 - 2.0
-    end if
+    fx = x**3.0 - 2.0 * x + 2
+    fpx = 3.0 * x**2.0 - 2.0
 end subroutine
 
 
@@ -474,33 +449,23 @@ end subroutine
 subroutine fcn_jac_logistic (x, fx, fpx)
     !*  Modified logistic CDF
     real (PREC), intent(in) :: x
-    real (PREC), intent(out), optional :: fx, fpx
+    real (PREC), intent(out) :: fx, fpx
 
     real (PREC) :: ex1
 
     ex1 = exp(-x) + 1.0_PREC
 
-    if (present(fx)) then
-        fx = 1.0_PREC/ex1 - 0.5_PREC
-    end if
-    
-    if (present(fpx)) then
-        fpx = exp(-x) / ex1**2.0_PREC
-    end if
+    fx = 1.0_PREC/ex1 - 0.5_PREC
+    fpx = exp(-x) / ex1**2.0_PREC
 end subroutine
 
 
 subroutine fcn_jac_cosxx (x, fx, fpx)
     real (PREC), intent(in) :: x
-    real (PREC), intent(out), optional :: fx, fpx
+    real (PREC), intent(out) :: fx, fpx
 
-    if (present(fx)) then
-        fx = cos(x) + x
-    end if
-    
-    if (present(fpx)) then
-        fpx = -sin(x) + 1.0_PREC
-    end if
+    fx = cos(x) + x
+    fpx = -sin(x) + 1.0_PREC
 end subroutine
 
 
@@ -510,17 +475,11 @@ subroutine fcn_jac_abs_sqrt (x, args, fx, fpx)
     !   Newton method.
     real (PREC), intent(in) :: x
     real (PREC), intent(in out), dimension(:) :: args
-    real (PREC), intent(out), optional :: fx, fpx
+    real (PREC), intent(out) :: fx, fpx
 
-    if (present(fx)) then
-        fx = abs(x) ** args(1) - 0.2
-    end if
-    
+    fx = abs(x) ** args(1) - 0.2
     ! Ignore non-differentiable point x = 0
-    if (present(fpx)) then
-        fpx = signum (x) * args(1) * abs(x) ** (args(1) - 1.0_PREC)
-    end if
-
+    fpx = signum (x) * args(1) * abs(x) ** (args(1) - 1.0_PREC)
 end subroutine
 
 end program

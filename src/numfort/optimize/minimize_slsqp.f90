@@ -79,13 +79,13 @@ subroutine slsqp_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
 
     integer, parameter :: PREC = real64
 
-    procedure (fvs_fcn_jac_real64) :: fobj
+    procedure (fvs_fcn_jac_opt_real64) :: fobj
     real (PREC), intent(in out), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), optional :: lbounds
     real (PREC), intent(in), dimension(:), optional :: ubounds
     integer, intent(in), optional :: m, meq
-    procedure (fvv_fcn_jac_real64), optional :: f_eqcons
-    procedure (fvv_fcn_jac_real64), optional :: f_ieqcons
+    procedure (fvv_fcn_jac_opt_real64), optional :: f_eqcons
+    procedure (fvv_fcn_jac_opt_real64), optional :: f_ieqcons
     integer, intent(in), optional :: maxiter
     integer (NF_ENUM_KIND), intent(in), optional :: linesearch
     real (PREC), intent(in), optional :: tol
@@ -95,9 +95,9 @@ subroutine slsqp_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     type (fwrapper_vs_real64) :: fobj_wrapper
     type (fwrapper_vv_real64) :: f_eqcons_wrapper, f_ieqcons_wrapper
 
-    call wrap_procedure (fobj_wrapper, fcn_jac=fobj)
-    call wrap_procedure (f_eqcons_wrapper, fcn_jac=f_eqcons)
-    call wrap_procedure (f_ieqcons_wrapper, fcn_jac=f_ieqcons)
+    call wrap_procedure (fobj_wrapper, fcn_jac_opt=fobj)
+    call wrap_procedure (f_eqcons_wrapper, fcn_jac_opt=f_eqcons)
+    call wrap_procedure (f_ieqcons_wrapper, fcn_jac_opt=f_ieqcons)
 
     call slsqp_impl (fobj_wrapper, x, lbounds, ubounds, m, meq, &
         f_eqcons_wrapper, f_ieqcons_wrapper, maxiter, linesearch, tol, work, res)
@@ -110,14 +110,14 @@ subroutine slsqp_args_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
 
     integer, parameter :: PREC = real64
 
-    procedure (fvs_fcn_jac_args_real64) :: fobj
+    procedure (fvs_fcn_jac_opt_args_real64) :: fobj
     real (PREC), intent(in out), dimension(:), contiguous :: x
     real (PREC), intent(in out), dimension(:) :: args
     real (PREC), intent(in), dimension(:), optional :: lbounds
     real (PREC), intent(in), dimension(:), optional :: ubounds
     integer, intent(in), optional :: m, meq
-    procedure (fvv_fcn_jac_args_real64), optional :: f_eqcons
-    procedure (fvv_fcn_jac_args_real64), optional :: f_ieqcons
+    procedure (fvv_fcn_jac_opt_args_real64), optional :: f_eqcons
+    procedure (fvv_fcn_jac_opt_args_real64), optional :: f_ieqcons
     integer, intent(in), optional :: maxiter
     integer (NF_ENUM_KIND), intent(in), optional :: linesearch
     real (PREC), intent(in), optional :: tol
@@ -127,9 +127,9 @@ subroutine slsqp_args_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     type (fwrapper_vs_real64) :: fobj_wrapper
     type (fwrapper_vv_real64) :: f_eqcons_wrapper, f_ieqcons_wrapper
 
-    call wrap_procedure (fobj_wrapper, fcn_jac_args=fobj, args=args)
-    call wrap_procedure (f_eqcons_wrapper, fcn_jac_args=f_eqcons, args=args)
-    call wrap_procedure (f_ieqcons_wrapper, fcn_jac_args=f_ieqcons, args=args)
+    call wrap_procedure (fobj_wrapper, fcn_jac_opt_args=fobj, args=args)
+    call wrap_procedure (f_eqcons_wrapper, fcn_jac_opt_args=f_eqcons, args=args)
+    call wrap_procedure (f_ieqcons_wrapper, fcn_jac_opt_args=f_ieqcons, args=args)
 
     call slsqp_impl (fobj_wrapper, x, lbounds, ubounds, m, meq, &
         f_eqcons_wrapper, f_ieqcons_wrapper, maxiter, linesearch, tol, work, res)

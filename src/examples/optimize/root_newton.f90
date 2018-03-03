@@ -37,7 +37,7 @@ subroutine func_newton (x, fx, fpx)
     !   Wrapper for func2 that returns only f(x) and f'(x), but not the
     !   second derivative.
     real (PREC), intent(in) :: x
-    real (PREC), intent(out), optional :: fx, fpx
+    real (PREC), intent(out) :: fx, fpx
 
     real (PREC) :: fppx
 
@@ -59,13 +59,13 @@ subroutine func_impl (x, fx, fpx, fppx)
     ! Objective function: 3rd-degree polynomial with roots at (-3-sqrt(5))/2,
     ! (-3+sqrt(5))/2 and 2
     real (PREC), intent(in) :: x
-    real (PREC), intent(out), optional :: fx, fpx, fppx
+    real (PREC), intent(out) :: fx, fpx, fppx
 
     ! use 3rd-degree polynomial with roots at (-3-sqrt(5))/2,
     ! (-3+sqrt(5))/2 and 2
-    if (present(fx)) fx = (x+3) * (x-1)**2 - 5
-    if (present(fpx)) fpx = 3 * x ** 2 + 2 * x
-    if (present(fppx)) fppx = 6 * x + 2
+    fx = (x+3) * (x-1)**2 - 5
+    fpx = 3 * x ** 2 + 2 * x
+    fppx = 6 * x + 2
 end subroutine
 
 subroutine print_report (res, exact_root)
