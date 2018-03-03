@@ -23,38 +23,49 @@ subroutine example1 ()
     ! Newton's method
     x = -10.0
     x_true = (-3.0 - sqrt(5.0d0)) / 2.0
-    call root_newton (func1, x, xtol=xtol, tol=tol, res=res)
+    call root_newton (func_newton, x, xtol=xtol, tol=tol, res=res)
     call print_report (res, x_true)
 
     ! Halley's method using second derivatives
     x = -10.0
-    call root_halley (func2, x, xtoL=xtol, tol=tol, res=res)
+    call root_halley (func_halley, x, xtoL=xtol, tol=tol, res=res)
     call print_report (res, x_true)
 
 end subroutine
 
-subroutine func1 (x, fx, fpx)
+subroutine func_newton (x, fx, fpx)
     !   Wrapper for func2 that returns only f(x) and f'(x), but not the
     !   second derivative.
     real (PREC), intent(in) :: x
-    real (PREC), intent(out) :: fx, fpx
+    real (PREC), intent(out), optional :: fx, fpx
 
     real (PREC) :: fppx
 
-    call func2 (x, fx, fpx, fppx)
+    call func_impl (x, fx, fpx, fppx)
 end subroutine
 
-subroutine func2 (x, fx, fpx, fppx)
+
+subroutine func_halley (x, fx, fpx, fppx)
     ! Objective function: 3rd-degree polynomial with roots at (-3-sqrt(5))/2,
     ! (-3+sqrt(5))/2 and 2
     real (PREC), intent(in) :: x
     real (PREC), intent(out) :: fx, fpx, fppx
+    
+    call func_impl (x, fx, fpx, fppx)
+
+end subroutine
+
+subroutine func_impl (x, fx, fpx, fppx)
+    ! Objective function: 3rd-degree polynomial with roots at (-3-sqrt(5))/2,
+    ! (-3+sqrt(5))/2 and 2
+    real (PREC), intent(in) :: x
+    real (PREC), intent(out), optional :: fx, fpx, fppx
 
     ! use 3rd-degree polynomial with roots at (-3-sqrt(5))/2,
     ! (-3+sqrt(5))/2 and 2
-    fx = (x+3) * (x-1)**2 - 5
-    fpx = 3 * x ** 2 + 2 * x
-    fppx = 6 * x + 2
+    if (present(fx)) fx = (x+3) * (x-1)**2 - 5
+    if (present(fpx)) fpx = 3 * x ** 2 + 2 * x
+    if (present(fppx)) fppx = 6 * x + 2
 end subroutine
 
 subroutine print_report (res, exact_root)

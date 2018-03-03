@@ -8,5 +8,17 @@ interface num_diff
 end interface
 
 interface num_diff
+    procedure __APPEND(fvs_deriv,__PREC)
+end interface
+
+interface num_diff
+    procedure __APPEND(fvs_args_deriv,__PREC)
+end interface
+
+interface num_diff
     procedure __APPEND(fvv_deriv,__PREC)
+end interface
+
+interface num_diff
+    procedure __APPEND(fvv_args_deriv,__PREC)
 end interface

@@ -10,9 +10,10 @@ module numfort_optimize_fwrapper
     implicit none
 
     private
-    public :: dispatch
-    public :: is_present
     public :: wrap_procedure
+    public :: is_associated
+    public :: dispatch
+    public :: dispatch_jac
     public :: dispatch_fcn_jac
 
 #include <numfort_real32.h>

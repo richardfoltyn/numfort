@@ -156,20 +156,16 @@ end subroutine
 
 
 
-pure subroutine fobj (x, fx, fpx, args)
+pure subroutine fobj (x, args, fx, fpx)
     real (PREC), intent(in), dimension(:), contiguous :: x
+    real (PREC), intent(in out), dimension(:) :: args
     real (PREC), intent(out), optional :: fx
     real (PREC), intent(out), dimension(:), contiguous, optional :: fpx
-    real (PREC), intent(in), dimension(:), optional :: args
 
     real (PREC) :: alpha, beta
 
-    alpha = 1.0
-    beta = 1.0
-    if (present(args)) then
-        alpha = args(1)
-        beta = args(2)
-    end if
+    alpha = args(1)
+    beta = args(2)
 
     if (present(fx)) then
         ! Compute objective
@@ -184,22 +180,18 @@ end subroutine
 
 
 
-pure subroutine fconstr (x, fx, fpx, args)
+pure subroutine fconstr (x, args, fx, fpx)
     !*  Function evaluating inequality constraints
     !   Constraints needs to be formulated such that C(x) >= 0
     real (real64), intent(in), dimension(:), contiguous :: x
+    real (real64), intent(in out), dimension(:) :: args
     real (real64), intent(out), dimension(:), contiguous, optional :: fx
     real (real64), intent(out), dimension(:,:), contiguous, optional :: fpx
-    real (real64), intent(in), dimension(:), optional :: args
 
     real (PREC) :: alpha, beta
 
-    alpha = 1.0
-    beta = 1.0
-    if (present(args)) then
-        alpha = args(1)
-        beta = args(2)
-    end if
+    alpha = args(1)
+    beta = args(2)
 
     if (present(fx)) then
         fx = - alpha * x(1)**2.0d0 - beta * x(2) ** 2.0d0 + 1.0d0

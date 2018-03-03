@@ -79,25 +79,25 @@ subroutine slsqp_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
 
     integer, parameter :: PREC = real64
 
-    procedure (fvs_jac_real64) :: fobj
+    procedure (fvs_fcn_jac_real64) :: fobj
     real (PREC), intent(in out), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), optional :: lbounds
     real (PREC), intent(in), dimension(:), optional :: ubounds
     integer, intent(in), optional :: m, meq
-    procedure (fvv_jac_real64), optional :: f_eqcons
-    procedure (fvv_jac_real64), optional :: f_ieqcons
+    procedure (fvv_fcn_jac_real64), optional :: f_eqcons
+    procedure (fvv_fcn_jac_real64), optional :: f_ieqcons
     integer, intent(in), optional :: maxiter
     integer (NF_ENUM_KIND), intent(in), optional :: linesearch
     real (PREC), intent(in), optional :: tol
     type (workspace_real64), intent(in out), optional :: work
     type (optim_result_real64), intent(in out), optional :: res
 
-    type (fwrapper_vs_jac_real64) :: fobj_wrapper
-    type (fwrapper_vv_jac_real64) :: f_eqcons_wrapper, f_ieqcons_wrapper
+    type (fwrapper_vs_real64) :: fobj_wrapper
+    type (fwrapper_vv_real64) :: f_eqcons_wrapper, f_ieqcons_wrapper
 
-    call wrap_procedure (fobj_wrapper, fobj)
-    call wrap_procedure (f_eqcons_wrapper, f_eqcons)
-    call wrap_procedure (f_ieqcons_wrapper, f_ieqcons)
+    call wrap_procedure (fobj_wrapper, fcn_jac=fobj)
+    call wrap_procedure (f_eqcons_wrapper, fcn_jac=f_eqcons)
+    call wrap_procedure (f_ieqcons_wrapper, fcn_jac=f_ieqcons)
 
     call slsqp_impl (fobj_wrapper, x, lbounds, ubounds, m, meq, &
         f_eqcons_wrapper, f_ieqcons_wrapper, maxiter, linesearch, tol, work, res)
@@ -110,56 +110,55 @@ subroutine slsqp_args_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
 
     integer, parameter :: PREC = real64
 
-    procedure (fvs_jac_args_real64) :: fobj
+    procedure (fvs_fcn_jac_args_real64) :: fobj
     real (PREC), intent(in out), dimension(:), contiguous :: x
+    real (PREC), intent(in out), dimension(:) :: args
     real (PREC), intent(in), dimension(:), optional :: lbounds
     real (PREC), intent(in), dimension(:), optional :: ubounds
     integer, intent(in), optional :: m, meq
-    procedure (fvv_jac_args_real64), optional :: f_eqcons
-    procedure (fvv_jac_args_real64), optional :: f_ieqcons
-    real (PREC), intent(in), dimension(:) :: args
+    procedure (fvv_fcn_jac_args_real64), optional :: f_eqcons
+    procedure (fvv_fcn_jac_args_real64), optional :: f_ieqcons
     integer, intent(in), optional :: maxiter
     integer (NF_ENUM_KIND), intent(in), optional :: linesearch
     real (PREC), intent(in), optional :: tol
     type (workspace_real64), intent(in out), optional :: work
     type (optim_result_real64), intent(in out), optional :: res
 
-    type (fwrapper_vs_jac_real64) :: fobj_wrapper
-    type (fwrapper_vv_jac_real64) :: f_eqcons_wrapper, f_ieqcons_wrapper
+    type (fwrapper_vs_real64) :: fobj_wrapper
+    type (fwrapper_vv_real64) :: f_eqcons_wrapper, f_ieqcons_wrapper
 
-    call wrap_procedure (fobj_wrapper, fcn_args=fobj)
-    call wrap_procedure (f_eqcons_wrapper, fcn_args=f_eqcons)
-    call wrap_procedure (f_ieqcons_wrapper, fcn_args=f_ieqcons)
+    call wrap_procedure (fobj_wrapper, fcn_jac_args=fobj, args=args)
+    call wrap_procedure (f_eqcons_wrapper, fcn_jac_args=f_eqcons, args=args)
+    call wrap_procedure (f_ieqcons_wrapper, fcn_jac_args=f_ieqcons, args=args)
 
     call slsqp_impl (fobj_wrapper, x, lbounds, ubounds, m, meq, &
-        f_eqcons_wrapper, f_ieqcons_wrapper, maxiter, linesearch, tol, work, res, args)
+        f_eqcons_wrapper, f_ieqcons_wrapper, maxiter, linesearch, tol, work, res)
 
 end subroutine
 
 
 subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
-        f_ieqcons, maxiter, linesearch, tol, work, res, args)
+        f_ieqcons, maxiter, linesearch, tol, work, res)
 
     integer, parameter :: PREC = real64
 
-    type (fwrapper_vs_jac_real64) :: fobj
+    type (fwrapper_vs_real64) :: fobj
     real (PREC), intent(in out), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), optional :: lbounds
     real (PREC), intent(in), dimension(:), optional :: ubounds
     integer, intent(in), optional :: m, meq
-    type (fwrapper_vv_jac_real64) :: f_eqcons
-    type (fwrapper_vv_jac_real64) :: f_ieqcons
+    type (fwrapper_vv_real64) :: f_eqcons
+    type (fwrapper_vv_real64) :: f_ieqcons
     integer, intent(in), optional :: maxiter
     integer (NF_ENUM_KIND), intent(in), optional :: linesearch
     real (PREC), intent(in), optional :: tol
     type (workspace_real64), intent(in out), optional :: work
     type (optim_result_real64), intent(in out), optional :: res
-    real (PREC), intent(in), dimension(:), optional :: args
 
     type (optim_result_real64), pointer :: ptr_res
         !   Pointer to local or user-provided result object
 
-    integer :: iter, nfeval, lmaxiter
+    integer :: iter, lmaxiter
     integer (NF_ENUM_KIND) :: llinesearch
     real (PREC) :: acc
 
@@ -198,11 +197,11 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
 
     ! Determine if enough information is present for equality or inequality
     ! constraints.
-    has_eq = is_present(f_eqcons) .and. (present(meq) .or. &
-        (.not. is_present(f_ieqcons) .and. present(m)))
+    has_eq = is_associated(f_eqcons) .and. (present(meq) .or. &
+        (.not. is_associated(f_ieqcons) .and. present(m)))
 
-    has_ieq = (is_present(f_ieqcons) .and. present(m)) .and. &
-        (.not. is_present(f_eqcons) .or. present(meq))
+    has_ieq = (is_associated(f_ieqcons) .and. present(m)) .and. &
+        (.not. is_associated(f_eqcons) .or. present(meq))
 
     lmaxiter = 100
     ltol = 1.0d-6
@@ -217,7 +216,7 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
 
     ! if equality constraint specified, but no inequality constraint,
     ! m = meq and allow for missing meq if m is present.
-    if (has_eq .and. .not. is_present(f_ieqcons)) then
+    if (has_eq .and. .not. is_associated(f_ieqcons)) then
         if (present(meq) .and. .not. present(m)) then
             lm = lmeq
         else if (present(m) .and. .not. present(meq)) then
@@ -227,7 +226,7 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
 
     ! if inequality constraint specified, but no equality constraint,
     ! meq = 0 and mieq = m, thus allow for missing meq
-    if (has_ieq .and. .not. is_present(f_eqcons)) lmeq = 0
+    if (has_ieq .and. .not. is_associated(f_eqcons)) lmeq = 0
 
     ! implied number of inequality constraints
     mieq = lm - lmeq
@@ -331,7 +330,6 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     ptr_g(:) = 0.0_PREC
     ptr_a(:,:) = 0.0_PREC
 
-    nfeval = 0
     ! Initial value passed into SLSQP determines max. iterations, but
     ! value is subsequently reset and incremented as new iteration starts.
     ! SLSQP aborts by itself with the appropriate exit code when max. iter.
@@ -341,36 +339,34 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     do while (.true.)
         if (mode == MODE_INIT .or. mode == MODE_EVAL_FUNCS) then
             ! Compute objective function fx
-            call dispatch (fobj, x, fx, args=args)
-            ! Increment function evaluation counter
-            nfeval = nfeval + 1
+            call dispatch (fobj, x, fx)
 
             ! Compute equality constraints
             if (has_eq) then
-                call dispatch (f_eqcons, x, ptr_cx_eq, args=args)
+                call dispatch (f_eqcons, x, ptr_cx_eq)
             end if
 
             ! Compute inequality constraints
             if (has_ieq) then
-                call dispatch (f_ieqcons, x, ptr_cx_ieq, args=args)
+                call dispatch (f_ieqcons, x, ptr_cx_ieq)
             end if
         end if
 
         if (mode == MODE_INIT .or. mode == MODE_EVAL_JAC) then
             ! Compute gradient of objective function
-            call dispatch (fobj, x, fpx=ptr_g(1:n), args=args)
+            call dispatch_jac (fobj, x, fpx=ptr_g(1:n))
 
             ioffset = 0
             if (has_eq) then
                 ! Compute n-by-meq Jacobian of equality constraints
-                call dispatch (f_eqcons, x, fpx=ptr_cpx_eq, args=args)
+                call dispatch_jac (f_eqcons, x, fpx=ptr_cpx_eq)
                 ! Copy Jacobian into array A using a loop, otherwise
                 ! (at least) gfortran allocates a temporary array.
                 forall (k=1:lmeq) ptr_a(k,1:n) = ptr_cpx_eq(k,:)
             end if
 
             if (has_ieq) then
-                call dispatch (f_ieqcons, x, fpx=ptr_cpx_ieq, args=args)
+                call dispatch_jac (f_ieqcons, x, fpx=ptr_cpx_ieq)
                 ! Concatenate Jacobian into array A, taking into account
                 ! whether Jacobian of eq. constr. is already present
                 forall (k=1:mieq) ptr_a(ioffset+k,1:n) = ptr_cpx_ieq(k,:)
@@ -396,7 +392,7 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
 
     ! Update result object only if we are returning to client code
     if (present(res)) then
-        call result_update (ptr_res, x, fx, nit=iter, nfev=nfeval)
+        call result_update (ptr_res, x, fx, nit=iter, nfev=fobj%nfev)
     end if
 
     ! Clean up local WORKSPACE object if none was passed by client code
@@ -417,8 +413,8 @@ subroutine slsqp_check_input_real64 (x, lbounds, ubounds, m, meq, &
     real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(in), dimension(:), optional :: lbounds, ubounds
     integer, intent(in), optional :: m, meq
-    type (fwrapper_vv_jac_real64), intent(in) :: f_eqcons
-    type (fwrapper_vv_jac_real64), optional :: f_ieqcons
+    type (fwrapper_vv_real64), intent(in) :: f_eqcons
+    type (fwrapper_vv_real64), optional :: f_ieqcons
     integer, intent(in), optional :: maxiter
     integer (NF_ENUM_KIND), intent(in), optional :: linesearch
     real (PREC), intent(in), optional :: tol
@@ -448,18 +444,18 @@ subroutine slsqp_check_input_real64 (x, lbounds, ubounds, m, meq, &
         end if
     end if
 
-    has_eq = is_present(f_eqcons) .and. (present(meq) .or. &
-        (.not. is_present(f_ieqcons) .and. present(m)))
+    has_eq = is_associated(f_eqcons) .and. (present(meq) .or. &
+        (.not. is_associated(f_ieqcons) .and. present(m)))
 
-    has_ieq = (is_present(f_ieqcons) .and. present(m)) .and. &
-        (.not. is_present(f_eqcons) .or. present(meq))
+    has_ieq = (is_associated(f_ieqcons) .and. present(m)) .and. &
+        (.not. is_associated(f_eqcons) .or. present(meq))
 
-    if (is_present(f_eqcons) .and. .not. has_eq) then
+    if (is_associated(f_eqcons) .and. .not. has_eq) then
         msg = "Number of equality constraints not specified"
         goto 100
     end if
 
-    if (is_present(f_ieqcons) .and. .not. has_ieq) then
+    if (is_associated(f_ieqcons) .and. .not. has_ieq) then
         msg = "Number of inequality constraints not specified"
         goto 100
     end if

@@ -39,45 +39,97 @@ subroutine __APPEND(fss_jac_args,__PREC) (x, args, fx, fpx)
     real (__PREC), intent(out), optional :: fpx
 end subroutine
 
-subroutine __APPEND(fvv,__PREC) (x, fx)
+! ------------------------------------------------------------------------------
+! Interfaces for functions mapping vectors into vectors
+
+subroutine __APPEND(fvv_fcn,__PREC) (x, fx)
     import __PREC
     real (__PREC), intent(in), dimension(:) :: x
     real (__PREC), intent(out), dimension(:) :: fx
 end subroutine
 
-subroutine __APPEND(fvv_args,__PREC) (x, fx, args)
+subroutine __APPEND(fvv_jac,__PREC) (x, fpx)
     import __PREC
     real (__PREC), intent(in), dimension(:) :: x
-    real (__PREC), intent(out), dimension(:) :: fx
+    real (__PREC), intent(out), dimension(:,:), contiguous :: fpx
+end subroutine
+
+
+subroutine __APPEND(fvv_fcn_jac,__PREC) (x, fx, fpx)
+    import __PREC
+    real (__PREC), intent(in), dimension(:), contiguous :: x
+    real (__PREC), intent(out), dimension(:), contiguous, optional :: fx
+    real (__PREC), intent(out), dimension(:,:), contiguous, optional :: fpx
+end subroutine
+
+
+subroutine __APPEND(fvv_fcn_args,__PREC) (x, args, fx)
+    import __PREC
+    real (__PREC), intent(in), dimension(:) :: x
     real (__PREC), intent(in out), dimension(:) :: args
+    real (__PREC), intent(out), dimension(:) :: fx
 end subroutine
 
-subroutine __APPEND(fvs_jac_args,__PREC) (x, fx, fpx, args)
+subroutine __APPEND(fvv_jac_args,__PREC) (x, args, fpx)
+    import __PREC
+    real (__PREC), intent(in), dimension(:), contiguous :: x
+    real (__PREC), intent(in out), dimension(:) :: args
+    real (__PREC), intent(out), dimension(:,:), contiguous, optional :: fpx
+end subroutine
+
+subroutine __APPEND(fvv_fcn_jac_args,__PREC) (x, args, fx, fpx)
+    import __PREC
+    real (__PREC), intent(in), dimension(:), contiguous :: x
+    real (__PREC), intent(in out), dimension(:) :: args
+    real (__PREC), intent(out), dimension(:), contiguous, optional :: fx
+    real (__PREC), intent(out), dimension(:,:), contiguous, optional :: fpx
+end subroutine
+
+! ------------------------------------------------------------------------------
+! Interfaces for function mapping vectors into scalars
+
+
+subroutine __APPEND(fvs_fcn,__PREC) (x, fx)
+    import __PREC
+    real (__PREC), intent(in), dimension(:) :: x
+    real (__PREC), intent(out) :: fx
+end subroutine
+
+subroutine __APPEND(fvs_jac,__PREC) (x, fpx)
+    import __PREC
+    real (__PREC), intent(in), dimension(:) :: x
+    real (__PREC), intent(out), dimension(:), contiguous :: fpx
+end subroutine
+
+
+subroutine __APPEND(fvs_fcn_jac,__PREC) (x, fx, fpx)
     import __PREC
     real (__PREC), intent(in), dimension(:), contiguous :: x
     real (__PREC), intent(out), optional :: fx
     real (__PREC), intent(out), dimension(:), contiguous, optional :: fpx
-    real (__PREC), intent(in), dimension(:), optional :: args
 end subroutine
 
-subroutine __APPEND(fvv_jac_args,__PREC) (x, fx, fpx, args)
+
+subroutine __APPEND(fvs_fcn_args,__PREC) (x, args, fx)
     import __PREC
-    real (__PREC), intent(in), dimension(:), contiguous :: x
-    real (__PREC), intent(out), dimension(:), contiguous, optional :: fx
-    real (__PREC), intent(out), dimension(:,:), contiguous, optional :: fpx
-    real (__PREC), intent(in), dimension(:), optional :: args
+    real (__PREC), intent(in), dimension(:) :: x
+    real (__PREC), intent(in out), dimension(:) :: args
+    real (__PREC), intent(out) :: fx
 end subroutine
 
-subroutine __APPEND(fvs_jac,__PREC) (x, fx, fpx)
+subroutine __APPEND(fvs_jac_args,__PREC) (x, args, fpx)
     import __PREC
     real (__PREC), intent(in), dimension(:), contiguous :: x
+    real (__PREC), intent(in out), dimension(:) :: args
+    real (__PREC), intent(out), dimension(:), contiguous, optional :: fpx
+end subroutine
+
+subroutine __APPEND(fvs_fcn_jac_args,__PREC) (x, args, fx, fpx)
+    import __PREC
+    real (__PREC), intent(in), dimension(:), contiguous :: x
+    real (__PREC), intent(in out), dimension(:) :: args
     real (__PREC), intent(out), optional :: fx
     real (__PREC), intent(out), dimension(:), contiguous, optional :: fpx
 end subroutine
 
-subroutine __APPEND(fvv_jac,__PREC) (x, fx, fpx)
-    import __PREC
-    real (__PREC), intent(in), dimension(:), contiguous :: x
-    real (__PREC), intent(out), dimension(:), contiguous, optional :: fx
-    real (__PREC), intent(out), dimension(:,:), contiguous, optional :: fpx
-end subroutine
+
