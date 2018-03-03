@@ -13,6 +13,7 @@ set(SOURCE_FILES
     minimize_slsqp.f90
     minpack.f90
     root_brent.F90
+    root_broyden.F90
     root_newton.F90
 )
 
