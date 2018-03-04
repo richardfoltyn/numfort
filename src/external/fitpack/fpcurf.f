@@ -56,6 +56,11 @@ c  set constants
       con9 = 0.9d0
       con4 = 0.4d-01
       half = 0.5d0
+c   RF: Set to something, otherwise uninitialized variables causes trouble
+c       in debug mode.
+      fp0 = 0.0
+      fpold = 0.0
+      nplus = 0
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c  part 1: determination of the number of knots and their position     c
 c  **************************************************************      c
