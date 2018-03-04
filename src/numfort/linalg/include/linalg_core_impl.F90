@@ -24,6 +24,8 @@ subroutine __APPEND(inv,__PREC) (A, Ainv, work, rwork, iwork, status)
     real (PREC), dimension(:), pointer, contiguous :: ptr_work
     integer :: info
     integer :: n, lwork, lda, m
+    real (PREC), dimension(1) :: rwork1
+    integer, dimension(1) :: iwork1
 
     type (status_t) :: lstatus
 
@@ -52,12 +54,29 @@ subroutine __APPEND(inv,__PREC) (A, Ainv, work, rwork, iwork, status)
         end if
     end if
 
+    ! Store A in Ainv to prevent it from being overwritten by LAPACK
+    Ainv = A
+
+    ! Workspace query for GETRI
+    lda = n
+    lwork = -1
+    call LAPACK_GETRI (n, Ainv, lda, iwork1, rwork1, lwork, info)
+    if (info /= 0) then
+        lstatus = NF_STATUS_INVALID_STATE
+        goto 100
+    end if
+
+    ! Optimal array size stored in first element of RWORK1
+    lwork = int(rwork1(1))
+
     if (present(rwork) .and. present(iwork)) then
-        lwork = size(rwork)
+        if (lwork < size(rwork)) then
+            lstatus = NF_STATUS_INVALID_ARG
+            goto 100
+        end if
         ptr_work(1:lwork) => rwork
         ptr_ipiv(1:n) => iwork
     else
-        lwork = n
         call assert_alloc_ptr (work, ptr_ws)
         call workspace_reset (ptr_ws)
 
@@ -67,13 +86,10 @@ subroutine __APPEND(inv,__PREC) (A, Ainv, work, rwork, iwork, status)
         call workspace_get_ptr (ptr_ws, n, ptr_ipiv)
     end if
 
-    ! Store A in Ainv to prevent it from being overwritten by LAPACK
-    Ainv = A
-
     ! DGETRF computes an LU factorization of a general M-by-N matrix A
     ! using partial pivoting with row interchanges.
-    lda = n
     m = n
+
     call LAPACK_GETRF (m, n, Ainv, lda, ptr_ipiv, info)
 
     if (info < 0) then
