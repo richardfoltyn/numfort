@@ -322,6 +322,8 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
     logical :: linverse, lis_transposed, linitial
     real (PREC) :: ltol
     type (status_t) :: lstatus
+    real (PREC) :: mass
+    real (PREC), parameter :: zero_trunc = 1.0d-15
 
     ! Arguments for BLAS routines
     character (1), parameter :: trans = 'N'
@@ -420,17 +422,19 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
     end if
 
     ! normalize to 1
-    edist = edist / sum(edist)
+    do i = 1, n
+        if (edist(i) < 0.0_PREC) then
+            if (abs(edist(i)) < zero_trunc) then
+                edist(i) = 0.0_PREC
+            else
+                lstatus = NF_STATUS_INVALID_STATE
+                goto 100
+            end if
+        end if
+    end do
 
-    if (abs(sum(edist) - 1.0_PREC) > 1e-12_PREC) then
-        lstatus = NF_STATUS_INVALID_STATE
-        goto 100
-    end if
-
-    if (any(edist < 0.0_PREC)) then
-        lstatus = NF_STATUS_INVALID_STATE
-        goto 100
-    end if
+    mass = sum(edist)
+    edist = edist / mass
 
 100 continue
 
