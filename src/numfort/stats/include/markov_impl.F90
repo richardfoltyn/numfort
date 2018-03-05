@@ -448,14 +448,12 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
             if (all(abs(diff_mu) < ltol)) exit
         end do
 
-        nullify (mu2, diff_mu, tm_T)
+        edist = mu1
 
-        if (i <= NBATCH) then
-            edist = mu1
-            nullify (mu1)
-        else
+        nullify (mu1, mu2, diff_mu, tm_T)
+
+        if (i > NBATCH) then
             lstatus = NF_STATUS_NOT_CONVERGED
-            nullify (mu1)
             goto 100
         end if
     end if
