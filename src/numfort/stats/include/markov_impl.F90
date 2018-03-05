@@ -403,10 +403,10 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
 
         call inv (tm_T, tm_inv, rwork=rwork_inv, iwork=iwork_inv, status=lstatus)
         if (lstatus /= NF_STATUS_OK) goto 100
+        
+        edist = tm_inv(:, n)
 
         nullify (tm_inv, rwork_inv, iwork_inv, tm_T)
-
-        edist = tm_inv(:, n)
     else
         ! Check for convergence every NBATCH iterations
         NBATCH = int(ceiling(real(lmaxiter,real64)/NITER))
