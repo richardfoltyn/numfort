@@ -283,7 +283,7 @@ end subroutine
 
 
 subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
-        is_transposed, tol, initial, status)
+        is_transposed, tol, initial, work, status)
     !*  ERGODIC_DIST returns the ergodic distribution implied by a given
     !   Markov transition matrix using one of two methods (see argument INVERSE).
     integer, parameter :: PREC = __PREC
@@ -307,13 +307,22 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
         !*  If present and true, use the values in EDIST as the initial
         !   guess for the ergodic distribution (default: false).
         !   Only used for iterative method.
+    type (__APPEND(workspace,__PREC)), intent(in out), optional, target :: work
     type (status_t), intent(out), optional :: status
         !*  Exit code.
 
     ! Working arrays
-    real (PREC), dimension(:,:), allocatable :: tm_inv, tm_T
-    real (PREC), dimension(:), allocatable, target :: mu1, mu2, diff_mu
-    real (PREC), dimension(:), pointer, contiguous :: ptr1, ptr2
+    real (PREC), dimension(:,:), pointer, contiguous :: tm_inv, tm_T
+    real (PREC), dimension(:), pointer, contiguous :: mu1, mu2, diff_mu
+    real (PREC), dimension(:), pointer, contiguous :: rwork_inv
+    integer, dimension(:), pointer, contiguous :: iwork_inv
+
+    type (__APPEND(workspace,__PREC)), pointer :: ptr_work
+
+    integer :: nrwrk, niwrk
+    integer, dimension(2) :: shp2d
+    integer, parameter :: GETRI_BLOCKSIZE = 64
+        !   Scaling parameter work workspace size used by GETRI in INV
 
     integer, parameter :: NITER = 100
         !*  Number of iterations to perform before checking for convergence
@@ -334,6 +343,10 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
 
     lstatus = NF_STATUS_OK
 
+    nullify (ptr_work)
+    nullify (tm_T, tm_inv)
+    nullify (mu1, mu2, diff_mu)
+
     n = size(tm, 1)
 
     if (size(edist) /= n) then
@@ -352,24 +365,46 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
     if (present(tol)) ltol = tol
     if (present(initial)) linitial = initial
 
-    if (lis_transposed) then
-        allocate (tm_T(n,n), source=tm)
+    ! Allocate workspace arrays
+    call assert_alloc_ptr (work, ptr_work)
+    ! Clear any internal state in workspace object, in particular index offsets
+    ! (this does not deallocate working arrays)
+    call workspace_reset (ptr_work)
+
+    if (linverse) then
+        nrwrk = 2*n*n + GETRI_BLOCKSIZE * n
+        niwrk = n
     else
-        allocate (tm_T(n, n))
+        nrwrk = n*n + 3*n
+        niwrk = n
+    end if
+
+    call assert_alloc (ptr_work, nrwrk=nrwrk, niwrk=niwrk)
+
+    shp2d = n
+    call workspace_get_ptr (ptr_work, shp2d, tm_T)
+
+    if (lis_transposed) then
+        tm_T(:,:) = tm
+    else
         tm_T(:,:) = transpose(tm)
     end if
 
     ! compute ergodic distribution using "inverse" method
     if (linverse) then
 
-        forall (i=1:n) tm_T(i,i) = tm_T(i,i) - 1
+        forall (i=1:n) tm_T(i,i) = tm_T(i,i) - 1.0_PREC
 
-        tm_T(n, :) = 1
+        tm_T(n, :) = 1.0_PREC
 
-        allocate (tm_inv(n,n))
+        call workspace_get_ptr (ptr_work, shp2d, tm_inv)
+        call workspace_get_ptr (ptr_work, n*GETRI_BLOCKSIZE, rwork_inv)
+        call workspace_get_ptr (ptr_work, n, iwork_inv)
 
-        call inv (tm_T, tm_inv, status=lstatus)
+        call inv (tm_T, tm_inv, rwork=rwork_inv, iwork=iwork_inv, status=lstatus)
         if (lstatus /= NF_STATUS_OK) goto 100
+
+        nullify (tm_inv, rwork_inv, iwork_inv, tm_T)
 
         edist = tm_inv(:, n)
     else
@@ -380,27 +415,27 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
         lda = n
         m = n
 
+        call workspace_get_ptr (ptr_work, n, mu1)
+        call workspace_get_ptr (ptr_work, n, mu2)
+        call workspace_get_ptr (ptr_work, n, diff_mu)
+
         ! compute ergodic distribution by iteration
-        allocate (mu2(n), diff_mu(n))
         if (linitial) then
             ! Use EDIST as initial distribution if requested by caller.
-            allocate (mu1(n), source=edist)
+            mu1(1:n) = edist
         else
             ! No initial distribution provided, initialize with uniform
             ! distribution over states.
-            allocate (mu1(n), source=1.0_PREC/n)
+            mu1(1:n) = 1.0_PREC / n
         end if
-
-        ptr1 => mu1
-        ptr2 => mu2
 
         do i = 1, NBATCH
             do j = 1, NITER
                 alpha = 1.0_PREC
-                call GEMV (trans, m, n, alpha, tm_T, lda, ptr1, incx, &
-                    beta, ptr2, incy)
+                call GEMV (trans, m, n, alpha, tm_T, lda, mu1, incx, &
+                    beta, mu2, incy)
 
-                call swap (ptr1, ptr2)
+                call swap (mu1, mu2)
             end do
 
             ! Check for convergence
@@ -413,10 +448,14 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
             if (all(abs(diff_mu) < ltol)) exit
         end do
 
+        nullify (mu2, diff_mu, tm_T)
+
         if (i <= NBATCH) then
-            edist = ptr2
+            edist = mu1
+            nullify (mu1)
         else
             lstatus = NF_STATUS_NOT_CONVERGED
+            nullify (mu1)
             goto 100
         end if
     end if
@@ -440,11 +479,8 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
 
     if (present(status)) status = lstatus
 
-    if (allocated(tm_T)) deallocate (tm_T)
-    if (allocated(tm_inv)) deallocate (tm_inv)
-    if (allocated(mu1)) deallocate (mu1)
-    if (allocated(mu2)) deallocate (mu2)
-    if (allocated(diff_mu)) deallocate (diff_mu)
+    ! Clean up local WORKSPACE object if none was passed by client code
+    call assert_dealloc_ptr (work, ptr_work)
 
 end subroutine
 
