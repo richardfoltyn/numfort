@@ -70,12 +70,19 @@ subroutine __APPEND(inv,__PREC) (A, Ainv, work, rwork, iwork, status)
     lwork = int(rwork1(1))
 
     if (present(rwork) .and. present(iwork)) then
-        if (lwork < size(rwork)) then
+        if (lwork > size(rwork)) then
             lstatus = NF_STATUS_INVALID_ARG
             goto 100
         end if
+
+        if (n > size(iwork)) then
+            lstatus = NF_STATUS_INVALID_ARG
+            goto 100
+        end if
+
+        lwork = size(rwork)
         ptr_work(1:lwork) => rwork
-        ptr_ipiv(1:n) => iwork
+        ptr_ipiv(1:n) => iwork(1:n)
     else
         call assert_alloc_ptr (work, ptr_ws)
         call workspace_reset (ptr_ws)
