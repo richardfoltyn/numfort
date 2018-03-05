@@ -7,16 +7,20 @@ module numfort_common_testing
 
     use, intrinsic :: iso_fortran_env
 
+    use numfort_common_shape
+
     implicit none
 
     private
 
     public :: all_close
+    public :: is_close
 
-    interface all_close
-        module procedure all_close_real32, all_close_real64, &
-            all_close_1d_real32, all_close_1d_real64
-    end interface
+#include <numfort_real32.h>
+#include "include/testing_spec.F90"
+
+#include <numfort_real64.h>
+#include "include/testing_spec.F90"
 
     contains
 
