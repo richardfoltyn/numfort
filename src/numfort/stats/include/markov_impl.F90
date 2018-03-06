@@ -319,10 +319,8 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
 
     type (__APPEND(workspace,__PREC)), pointer :: ptr_work
 
-    integer :: nrwrk, niwrk
+    integer :: nrwrk, niwrk, nrwrk_inv, niwrk_inv
     integer, dimension(2) :: shp2d
-    integer, parameter :: GETRI_BLOCKSIZE = 64
-        !   Scaling parameter work workspace size used by GETRI in INV
 
     integer, parameter :: NITER = 100
         !*  Number of iterations to perform before checking for convergence
@@ -372,8 +370,12 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
     call workspace_reset (ptr_work)
 
     if (linverse) then
-        nrwrk = 2*n*n + GETRI_BLOCKSIZE * n
-        niwrk = n
+        ! Query workspace requirements for INV
+        call inv_work_query (tm, nrwrk_inv, niwrk_inv, lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+
+        nrwrk = 2*n*n + nrwrk_inv
+        niwrk = niwrk_inv
     else
         nrwrk = n*n + 3*n
         niwrk = n
@@ -398,8 +400,8 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
         tm_T(n, :) = 1.0_PREC
 
         call workspace_get_ptr (ptr_work, shp2d, tm_inv)
-        call workspace_get_ptr (ptr_work, n*GETRI_BLOCKSIZE, rwork_inv)
-        call workspace_get_ptr (ptr_work, n, iwork_inv)
+        call workspace_get_ptr (ptr_work, nrwrk_inv, rwork_inv)
+        call workspace_get_ptr (ptr_work, niwrk_inv, iwork_inv)
 
         call inv (tm_T, tm_inv, rwork=rwork_inv, iwork=iwork_inv, status=lstatus)
         if (lstatus /= NF_STATUS_OK) goto 100

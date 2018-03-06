@@ -11,7 +11,7 @@ module numfort_stats_markov
     use numfort_common_swap
     use numfort_common_workspace
     use numfort_stats_dnorm, only: cdf, dnorm_real64
-    use numfort_linalg, only: inv
+    use numfort_linalg, only: inv, inv_work_query
 
     use blas_interfaces, only: GEMV, COPY, AXPY
 
