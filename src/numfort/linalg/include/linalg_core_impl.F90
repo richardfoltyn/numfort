@@ -1,5 +1,49 @@
 
 
+subroutine __APPEND(inv_work_query,__PREC) (A, lwork, liwork, status)
+    !*  INV_WORK_QUERY returns the optimal workspace sizes for real and
+    !   integer working arrays needed by the INV routine.
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in), dimension(:,:) :: A
+        !*  Matrix that should be inverted.
+    integer, intent(out) :: lwork
+        !*  Optimal REAL working array size
+    integer, intent(out) :: liwork
+        !*  INTEGER working array size
+    type (status_t), intent(out), optional :: status
+        !*  Exit status.
+
+    type (status_t) :: lstatus
+    integer :: n, lda, info
+    integer, dimension(1) :: idummy1d
+    real (PREC), dimension(1) :: rdummy1d
+    real (PREC), dimension(1,1) :: rdummy2d
+
+    n = size(A,1)
+    lstatus = NF_STATUS_OK
+
+    liwork = -1
+
+    ! Workspace query for GETRI
+    lda = n
+    lwork = -1
+    call LAPACK_GETRI (n, rdummy2d, lda, idummy1d, rdummy1d, lwork, info)
+    if (info /= 0) then
+        lstatus = NF_STATUS_INVALID_STATE
+        goto 100
+    end if
+
+    ! Optimal array size stored in first element of RWORK1
+    lwork = int(rdummy1d(1))
+    liwork = n
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
 subroutine __APPEND(inv,__PREC) (A, Ainv, work, rwork, iwork, status)
     !*  INV computes the inverse of a matrix using the LAPACK routines
     !   GETRF and GETRI.
@@ -24,8 +68,6 @@ subroutine __APPEND(inv,__PREC) (A, Ainv, work, rwork, iwork, status)
     real (PREC), dimension(:), pointer, contiguous :: ptr_work
     integer :: info
     integer :: n, lwork, lda, m
-    real (PREC), dimension(1) :: rwork1
-    integer, dimension(1) :: iwork1
 
     type (status_t) :: lstatus
 
@@ -40,37 +82,9 @@ subroutine __APPEND(inv,__PREC) (A, Ainv, work, rwork, iwork, status)
 
     n = size(A,1)
 
-    if (present(rwork)) then
-        if (size(rwork) < n) then
-            lstatus = NF_STATUS_INVALID_ARG
-            goto 100
-        end if
-    end if
-
-    if (present(iwork)) then
-        if (size(iwork) < n) then
-            lstatus = NF_STATUS_INVALID_ARG
-            goto 100
-        end if
-    end if
-
-    ! Store A in Ainv to prevent it from being overwritten by LAPACK
-    Ainv = A
-
-    ! Workspace query for GETRI
-    lda = n
-    lwork = -1
-    call LAPACK_GETRI (n, Ainv, lda, iwork1, rwork1, lwork, info)
-    if (info /= 0) then
-        lstatus = NF_STATUS_INVALID_STATE
-        goto 100
-    end if
-
-    ! Optimal array size stored in first element of RWORK1
-    lwork = int(rwork1(1))
-
     if (present(rwork) .and. present(iwork)) then
-        if (lwork > size(rwork)) then
+        ! Enforce minimum size requirements
+        if (n > size(rwork)) then
             lstatus = NF_STATUS_INVALID_ARG
             goto 100
         end if
@@ -92,6 +106,10 @@ subroutine __APPEND(inv,__PREC) (A, Ainv, work, rwork, iwork, status)
         call workspace_get_ptr (ptr_ws, n, ptr_work)
         call workspace_get_ptr (ptr_ws, n, ptr_ipiv)
     end if
+
+    ! Store A in Ainv to prevent it from being overwritten by LAPACK
+    Ainv = A
+    lda = n
 
     ! DGETRF computes an LU factorization of a general M-by-N matrix A
     ! using partial pivoting with row interchanges.

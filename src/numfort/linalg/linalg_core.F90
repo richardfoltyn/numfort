@@ -16,15 +16,14 @@ module numfort_linalg_core
 
     private
     public :: inv
+    public :: inv_work_query
     public :: det
 
-    interface inv
-        procedure inv_real32, inv_real64
-    end interface
+#include <numfort_real32.h>
+#include "linalg_core_spec.F90"
 
-    interface det
-        procedure det_real32, det_real64
-    end interface
+#include <numfort_real64.h>
+#include "linalg_core_spec.F90"
 
     contains
 
