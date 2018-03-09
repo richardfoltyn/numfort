@@ -46,6 +46,8 @@ set(SOURCE_FILES
     arpack_mod.f
 )
 
+include_directories(src)
+
 set(_name ${${PROJECT_NAME}_LIBRARY_NAME})
 add_library(${_name} OBJECT ${SOURCE_FILES})
 if (BUILD_SHARED_LIBS)

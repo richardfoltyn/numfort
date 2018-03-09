@@ -136,7 +136,7 @@ c     | Local Scalars & Arrays |
 c     %------------------------%
 c
       logical    select(1)
-      integer    i, iconj, msglvl
+      integer    i, j, iconj, msglvl
       Double precision     
      &           temp, vl(1)
 c

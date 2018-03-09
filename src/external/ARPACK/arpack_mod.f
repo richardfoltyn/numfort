@@ -1,5 +1,6 @@
       module arpack_mod
       
+      implicit none
       private
       
       public :: neupd
@@ -10,6 +11,7 @@
       
       contains 
       
+      include "src/arscnd.f"
       include "src/cgetv0.f"
       include "src/cnaitr.f"
       include "src/cnapps.f"
