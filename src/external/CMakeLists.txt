@@ -29,7 +29,7 @@ message(STATUS "Flags for EXTERNAL code: ${CMAKE_Fortran_FLAGS} ${CMAKE_Fortran_
 
 ################################################################################
 
-add_subdirectory(ARPACK)
+# add_subdirectory(ARPACK)
 add_subdirectory(fitpack)
 add_subdirectory(lbfgsb_bmnz)
 add_subdirectory(simplex_csiro)
