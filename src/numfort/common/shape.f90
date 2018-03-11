@@ -53,6 +53,17 @@ module numfort_common_shape
             shape_equal_4d_logical
     end interface
 
+    ! 5d-array routines
+    interface shape_equal
+        procedure &
+            shape_equal_5d_real32, &
+            shape_equal_5d_real64, &
+            shape_equal_5d_int8, &
+            shape_equal_5d_int32, &
+            shape_equal_5d_int64, &
+            shape_equal_5d_logical
+    end interface
+
     ! 1d-array routines
     interface has_shape
         procedure &
@@ -330,6 +341,63 @@ pure function shape_equal_4d_logical (arr1, arr2) result(res)
     integer, parameter :: ND = 4
     logical, intent(in), dimension(:,:,:,:) :: arr1
     logical, intent(in), dimension(:,:,:,:), optional :: arr2
+
+    include "include/shape_equal_impl.f90"
+end function
+
+
+!-------------------------------------------------------------------------------
+! SHAPE_EQUAL for 5d-arrays
+
+pure function shape_equal_5d_real32 (arr1, arr2) result(res)
+    integer, parameter :: PREC = real32
+    integer, parameter :: ND = 5
+    real (PREC), intent(in), dimension(:,:,:,:,:) :: arr1
+    real (PREC), intent(in), dimension(:,:,:,:,:), optional :: arr2
+
+    include "include/shape_equal_impl.f90"
+end function
+
+pure function shape_equal_5d_real64 (arr1, arr2) result(res)
+    integer, parameter :: PREC = real64
+    integer, parameter :: ND = 5
+    real (PREC), intent(in), dimension(:,:,:,:,:) :: arr1
+    real (PREC), intent(in), dimension(:,:,:,:,:), optional :: arr2
+
+    include "include/shape_equal_impl.f90"
+end function
+
+pure function shape_equal_5d_int8 (arr1, arr2) result(res)
+    integer, parameter :: INTSIZE = int8
+    integer, parameter :: ND = 5
+    integer (INTSIZE), intent(in), dimension(:,:,:,:,:) :: arr1
+    integer (INTSIZE), intent(in), dimension(:,:,:,:,:), optional :: arr2
+
+    include "include/shape_equal_impl.f90"
+end function
+
+pure function shape_equal_5d_int32 (arr1, arr2) result(res)
+    integer, parameter :: INTSIZE = int32
+    integer, parameter :: ND = 5
+    integer (INTSIZE), intent(in), dimension(:,:,:,:,:) :: arr1
+    integer (INTSIZE), intent(in), dimension(:,:,:,:,:), optional :: arr2
+
+    include "include/shape_equal_impl.f90"
+end function
+
+pure function shape_equal_5d_int64 (arr1, arr2) result(res)
+    integer, parameter :: INTSIZE = int64
+    integer, parameter :: ND = 5
+    integer (INTSIZE), intent(in), dimension(:,:,:,:,:) :: arr1
+    integer (INTSIZE), intent(in), dimension(:,:,:,:,:), optional :: arr2
+
+    include "include/shape_equal_impl.f90"
+end function
+
+pure function shape_equal_5d_logical (arr1, arr2) result(res)
+    integer, parameter :: ND = 5
+    logical, intent(in), dimension(:,:,:,:,:) :: arr1
+    logical, intent(in), dimension(:,:,:,:,:), optional :: arr2
 
     include "include/shape_equal_impl.f90"
 end function
