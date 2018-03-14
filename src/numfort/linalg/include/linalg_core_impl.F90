@@ -67,7 +67,7 @@ subroutine __APPEND(inv,__PREC) (A, Ainv, work, rwork, iwork, status)
     integer, dimension(:), pointer, contiguous :: ptr_ipiv
     real (PREC), dimension(:), pointer, contiguous :: ptr_work
     integer :: info
-    integer :: n, lwork, lda, m
+    integer :: n, lwork, lda, m, liwork
 
     type (status_t) :: lstatus
 
@@ -100,11 +100,13 @@ subroutine __APPEND(inv,__PREC) (A, Ainv, work, rwork, iwork, status)
     else
         call assert_alloc_ptr (work, ptr_ws)
         call workspace_reset (ptr_ws)
+        
+        call inv_work_query (A, lwork, liwork)
 
-        call assert_alloc (ptr_ws, nrwrk=lwork, niwrk=n)
+        call assert_alloc (ptr_ws, nrwrk=lwork, niwrk=liwork)
 
-        call workspace_get_ptr (ptr_ws, n, ptr_work)
-        call workspace_get_ptr (ptr_ws, n, ptr_ipiv)
+        call workspace_get_ptr (ptr_ws, lwork, ptr_work)
+        call workspace_get_ptr (ptr_ws, liwork, ptr_ipiv)
     end if
 
     ! Store A in Ainv to prevent it from being overwritten by LAPACK
