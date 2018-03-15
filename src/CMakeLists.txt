@@ -89,7 +89,7 @@ endif()
 # MKL
 if (USE_MKL)
     # find_package(MKL REQUIRED)
-    find_package(MKL REQUIRED SEQUENTIAL LAPACK95 BLAS95)
+    find_package(MKL REQUIRED SEQUENTIAL)
     set(${PROJECT_NAME}_BLA_LIBRARIES ${MKL_LIBRARIES})
 else ()
     find_package(LAPACK REQUIRED)
