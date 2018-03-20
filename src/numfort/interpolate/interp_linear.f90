@@ -45,7 +45,6 @@ pure subroutine interp_scalar_real32 (x, xp, fp, fx, ext, left, right)
     !   values at discrete data points.
 
     integer, parameter :: PREC = real32
-    integer, parameter :: INTSIZE = int32
 
     include "include/interp_linear_scalar.f90"
 end subroutine
@@ -55,7 +54,6 @@ pure subroutine interp_scalar_real64 (x, xp, fp, fx, ext, left, right)
     !   values at discrete data points.
 
     integer, parameter :: PREC = real64
-    integer, parameter :: INTSIZE = int32
 
     include "include/interp_linear_scalar.f90"
 end subroutine
