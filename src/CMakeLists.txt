@@ -182,7 +182,7 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     # By default set -Wall, but disable warnings when comparing reals
     # and -Wsurpsiring, as this generates numerous warnings about finalizers.
     set(_FFLAGS "${_FFLAGS} -Wall -Wno-compare-reals -Wno-surprising")
-    set(_FFLAGS_DEBUG "-fcheck=all -Og")
+    set(_FFLAGS_DEBUG "-fcheck=all -O0")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
 #         set(_FFLAGS_FP "/fp:precise /fp:source")
@@ -250,9 +250,13 @@ foreach (_comp IN LISTS _TARGETS)
 endforeach ()
 
 add_library(${NUMFORT_LIBRARY_NAME} ${SOURCE_FILES} ${COMPONENT_OBJECTS})
-if (BUILD_SHARED_LIBS)
-    target_link_libraries(${NUMFORT_LIBRARY_NAME} ${${PROJECT_NAME}_BLA_LIBRARIES})
-endif ()
+target_link_libraries(${NUMFORT_LIBRARY_NAME} PUBLIC
+    ${${PROJECT_NAME}_BLA_LIBRARIES}
+)
+
+target_include_directories(${NUMFORT_LIBRARY_NAME} PRIVATE
+    ${${PROJECT_NAME}_INCLUDE_DIRS}
+)
 
 set_target_properties(${NUMFORT_LIBRARY_NAME} PROPERTIES
     Fortran_MODULE_DIRECTORY "${${PROJECT_NAME}_MODDIR}"
