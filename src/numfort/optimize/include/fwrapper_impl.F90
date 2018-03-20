@@ -6,7 +6,7 @@ subroutine __APPEND(fss_init,__PREC) (self, fcn, jac, fcn_jac, fcn_jac_opt, &
         fcn_args, jac_args, fcn_jac_args, fcn_jac_opt_args, args, eps)
     !*  FSS_INIT intializes a wrapper found a scalar-valued function f:R->R.
     integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_ss,__PREC)), intent(in out) :: self
+    type (__APPEND(fwrapper_ss,__PREC)), intent(inout) :: self
     procedure (__APPEND(fss,__PREC)), optional :: fcn
         !*  Pointer to function that returns the function value
     procedure (__APPEND(fss,__PREC)), optional :: jac
@@ -60,10 +60,10 @@ subroutine __APPEND(fss_init,__PREC) (self, fcn, jac, fcn_jac, fcn_jac_opt, &
 
 end subroutine
 
-subroutine __APPEND(fss_dispatch_fcn,__PREC) (self, x, fx)
+recursive subroutine __APPEND(fss_dispatch_fcn,__PREC) (self, x, fx)
     !*  DISPATCH_FCN returns the value of the wrapped function at a given point.
     integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_ss,__PREC)), intent(in out) :: self
+    type (__APPEND(fwrapper_ss,__PREC)), intent(inout) :: self
     real (PREC), intent(in) :: x
     real (PREC), intent(out) :: fx
 
@@ -97,11 +97,11 @@ subroutine __APPEND(fss_dispatch_fcn,__PREC) (self, x, fx)
 end subroutine
 
 
-subroutine __APPEND(fss_dispatch_jac,__PREC) (self, x, fpx)
+recursive subroutine __APPEND(fss_dispatch_jac,__PREC) (self, x, fpx)
     !*  DISPATH_JAC returns the first derivative of the wrapped function
     !   at a given point.
     integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_ss,__PREC)), intent(in out) :: self
+    type (__APPEND(fwrapper_ss,__PREC)), intent(inout) :: self
     real (PREC), intent(in) :: x
     real (PREC), intent(out) :: fpx
 
@@ -141,11 +141,11 @@ subroutine __APPEND(fss_dispatch_jac,__PREC) (self, x, fpx)
 end subroutine
 
 
-subroutine __APPEND(fss_dispatch_fcn_jac,__PREC) (self, x, fx, fpx)
+recursive subroutine __APPEND(fss_dispatch_fcn_jac,__PREC) (self, x, fx, fpx)
     !*  DISPATCH_FCN_JAC returns the function value and first derivative
     !   of the wrapped function at a given point.
     integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_ss,__PREC)), intent(in out) :: self
+    type (__APPEND(fwrapper_ss,__PREC)), intent(inout) :: self
     real (PREC), intent(in) :: x
     real (PREC), intent(out) :: fx
     real (PREC), intent(out) :: fpx
@@ -213,7 +213,7 @@ end function
 subroutine __APPEND(fvs_init,__PREC) (self, fcn, jac, fcn_jac, fcn_jac_opt, &
         fcn_args, jac_args, fcn_jac_args, fcn_jac_opt_args, args, eps)
     integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_vs,__PREC)), intent(in out) :: self
+    type (__APPEND(fwrapper_vs,__PREC)), intent(inout) :: self
     procedure (__APPEND(fvs_fcn,__PREC)), optional :: fcn
         !*  Pointer to function that returns the function value
     procedure (__APPEND(fvs_jac,__PREC)), optional :: jac
@@ -268,10 +268,10 @@ end subroutine
 
 
 
-subroutine __APPEND(fvs_dispatch_fcn,__PREC) (self, x, fx)
+recursive subroutine __APPEND(fvs_dispatch_fcn,__PREC) (self, x, fx)
     !*  DISPATCH_FCN returns the value of the wrapped function at a given point.
     integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_vs,__PREC)), intent(in out) :: self
+    type (__APPEND(fwrapper_vs,__PREC)), intent(inout) :: self
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(out) :: fx
 
@@ -309,11 +309,11 @@ subroutine __APPEND(fvs_dispatch_fcn,__PREC) (self, x, fx)
 end subroutine
 
 
-subroutine __APPEND(fvs_dispatch_jac,__PREC) (self, x, fpx)
+recursive subroutine __APPEND(fvs_dispatch_jac,__PREC) (self, x, fpx)
     !*  DISPATH_JAC returns the first derivative of the wrapped function
     !   at a given point.
     integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_vs,__PREC)), intent(in out) :: self
+    type (__APPEND(fwrapper_vs,__PREC)), intent(inout) :: self
     real (PREC), intent(in), dimension(:), contiguous  :: x
     real (PREC), intent(out), dimension(:), contiguous :: fpx
 
@@ -353,11 +353,11 @@ subroutine __APPEND(fvs_dispatch_jac,__PREC) (self, x, fpx)
 end subroutine
 
 
-subroutine __APPEND(fvs_dispatch_fcn_jac,__PREC) (self, x, fx, fpx)
+recursive subroutine __APPEND(fvs_dispatch_fcn_jac,__PREC) (self, x, fx, fpx)
     !*  DISPATCH_FCN_JAC returns the function value and first derivative
     !   of the wrapped function at a given point.
     integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_vs,__PREC)), intent(in out) :: self
+    type (__APPEND(fwrapper_vs,__PREC)), intent(inout) :: self
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(out) :: fx
     real (PREC), intent(out), dimension(:), contiguous :: fpx
@@ -422,7 +422,7 @@ end function
 subroutine __APPEND(fvv_init,__PREC) (self, fcn, jac, fcn_jac, fcn_jac_opt, &
         fcn_args, jac_args, fcn_jac_args, fcn_jac_opt_args, args, eps)
     integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_vv,__PREC)), intent(in out) :: self
+    type (__APPEND(fwrapper_vv,__PREC)), intent(inout) :: self
     procedure (__APPEND(fvv_fcn,__PREC)), optional :: fcn
         !*  Pointer to function that returns the function value
     procedure (__APPEND(fvv_jac,__PREC)), optional :: jac
@@ -477,10 +477,10 @@ end subroutine
 
 
 
-subroutine __APPEND(fvv_dispatch_fcn,__PREC) (self, x, fx)
+recursive subroutine __APPEND(fvv_dispatch_fcn,__PREC) (self, x, fx)
     !*  DISPATCH_FCN returns the value of the wrapped function at a given point.
     integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_vv,__PREC)), intent(in out) :: self
+    type (__APPEND(fwrapper_vv,__PREC)), intent(inout) :: self
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(out), dimension(:), contiguous :: fx
 
@@ -518,11 +518,11 @@ subroutine __APPEND(fvv_dispatch_fcn,__PREC) (self, x, fx)
 end subroutine
 
 
-subroutine __APPEND(fvv_dispatch_jac,__PREC) (self, x, fpx)
+recursive subroutine __APPEND(fvv_dispatch_jac,__PREC) (self, x, fpx)
     !*  DISPATH_JAC returns the first derivative of the wrapped function
     !   at a given point.
     integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_vv,__PREC)), intent(in out) :: self
+    type (__APPEND(fwrapper_vv,__PREC)), intent(inout) :: self
     real (PREC), intent(in), dimension(:), contiguous  :: x
     real (PREC), intent(out), dimension(:,:), contiguous :: fpx
 
@@ -566,11 +566,11 @@ subroutine __APPEND(fvv_dispatch_jac,__PREC) (self, x, fpx)
 end subroutine
 
 
-subroutine __APPEND(fvv_dispatch_fcn_jac,__PREC) (self, x, fx, fpx)
+recursive subroutine __APPEND(fvv_dispatch_fcn_jac,__PREC) (self, x, fx, fpx)
     !*  DISPATCH_FCN_JAC returns the function value and first derivative
     !   of the wrapped function at a given point.
     integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_vv,__PREC)), intent(in out) :: self
+    type (__APPEND(fwrapper_vv,__PREC)), intent(inout) :: self
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(out), dimension(:), contiguous :: fx
     real (PREC), intent(out), dimension(:,:), contiguous :: fpx
