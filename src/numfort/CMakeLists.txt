@@ -15,13 +15,15 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     # explicitly add -cpp to run C preprocessor if required
     set(GNU_WARN "-Wextra -Warray-temporaries -Wrealloc-lhs -pedantic -Wsurprising")
     set(_FFLAGS "${GNU_WARN} -std=f2008")
-    set(_FFLAGS_DEBUG "-save-temps")
+
+    # Disable "surprising" warnings for older GFORTRAN version as this
+    # produces endless warnings about array finalizers
+    if (CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 7)
+        set(_FFLAGS "${_FFLAGS} -Wno-surprising")
+    endif()
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
         set(_FFLAGS "/warn:all /standard-semantics /stand:f08")
-        set(_FFLAGS_DEBUG "/Qsave-temps")
-        #        set(_FLAGS_RELEASE "/Qipo")
-
         # NOTE: When setting -standard-semantics, resets any previously
         # given -assume std_mod_proc_name, so we need to append it again!
         if (NOT IFORT_STD_MOD_PROC_NAME)
@@ -31,9 +33,6 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
         endif ()
     else ()
         set(_FFLAGS "-warn all -standard-semantics -std08")
-        set(_FFLAGS_DEBUG "-save-temps")
-        #set(_FFLAGS_RELEASE "-ipo")
-
         if (NOT IFORT_STD_MOD_PROC_NAME)
             set(_FFLAGS "${_FFLAGS} -assume nostd_mod_proc_name")
         else ()
