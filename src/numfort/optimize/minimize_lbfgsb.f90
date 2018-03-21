@@ -127,7 +127,7 @@ recursive subroutine lbfgsb_args_real64 (fcn, x, args, ndiff, lbounds, ubounds, 
         maxiter, maxfun, m, factr, pgtol, iprint, dstep, work, res)
 
     integer, parameter :: PREC = real64
-    procedure (fvs_fcn_real64) :: fcn
+    procedure (fvs_fcn_args_real64) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
     class (args_data), intent(inout) :: args
     logical, intent(in) :: ndiff
@@ -155,7 +155,7 @@ recursive subroutine lbfgsb_args_real64 (fcn, x, args, ndiff, lbounds, ubounds, 
         end if
     end if
 
-    call wrap_procedure (fwrapper, fcn=fcn, args=args, eps=dstep)
+    call wrap_procedure (fwrapper, fcn_args=fcn, args=args, eps=dstep)
 
     call lbfgsb_impl_real64 (fwrapper, x, lbounds, ubounds, maxiter, maxfun, &
         m, factr, pgtol, iprint, work, res)
@@ -193,8 +193,8 @@ recursive subroutine lbfgsb_jac_args_real64 (fcn, fjac, x, args, &
         lbounds, ubounds, maxiter, maxfun, m, factr, pgtol, iprint, work, res)
 
     integer, parameter :: PREC = real64
-    procedure (fvs_fcn_real64) :: fcn
-    procedure (fvs_jac_real64) :: fjac
+    procedure (fvs_fcn_args_real64) :: fcn
+    procedure (fvs_jac_args_real64) :: fjac
     real (PREC), intent(inout), dimension(:), contiguous :: x
     class (args_data), intent(inout) :: args
     real (PREC), intent(in), dimension(:), optional :: lbounds
@@ -210,7 +210,7 @@ recursive subroutine lbfgsb_jac_args_real64 (fcn, fjac, x, args, &
 
     type (fwrapper_vs_real64) :: fwrapper
 
-    call wrap_procedure (fwrapper, fcn=fcn, jac=fjac, args=args)
+    call wrap_procedure (fwrapper, fcn_args=fcn, jac_args=fjac, args=args)
 
     call lbfgsb_impl_real64 (fwrapper, x, lbounds, ubounds, maxiter, maxfun, &
         m, factr, pgtol, iprint, work, res)
@@ -246,7 +246,7 @@ recursive subroutine lbfgsb_fcn_jac_args_real64 (fcn, x, args, lbounds, ubounds,
         maxiter, maxfun, m, factr, pgtol, iprint, work, res)
 
     integer, parameter :: PREC = real64
-    procedure (fvs_fcn_jac_real64) :: fcn
+    procedure (fvs_fcn_jac_args_real64) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
     class (args_data), intent(inout) :: args
     real (PREC), intent(in), dimension(:), optional :: lbounds
@@ -262,7 +262,7 @@ recursive subroutine lbfgsb_fcn_jac_args_real64 (fcn, x, args, lbounds, ubounds,
 
     type (fwrapper_vs_real64) :: fwrapper
 
-    call wrap_procedure (fwrapper, fcn_jac=fcn, args=args)
+    call wrap_procedure (fwrapper, fcn_jac_args=fcn, args=args)
 
     call lbfgsb_impl_real64 (fwrapper, x, lbounds, ubounds, maxiter, maxfun, &
         m, factr, pgtol, iprint, work, res)
