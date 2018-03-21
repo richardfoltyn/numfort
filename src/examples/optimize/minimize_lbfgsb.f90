@@ -30,7 +30,7 @@ subroutine example1 ()
     lbnd(2:n:2) = -100_PREC
     ubnd(2:n:2) = 100_PREC
 
-    call minimize_lbfgsb (fobj1, x, grad1, m=m, lbounds=lbnd, ubounds=ubnd, &
+    call minimize_lbfgsb (fobj1, grad1, x, m=m, lbounds=lbnd, ubounds=ubnd, &
         iprint=iprint, work=ws, res=res)
     call print_report (res)
 end subroutine
@@ -38,9 +38,8 @@ end subroutine
 ! fobj1 corresponds to the objective function used in the example in
 ! driver1.f90 in the original L-BGFS-B package
 pure subroutine fobj1 (x, fx)
-    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(out) :: fx
-    contiguous :: x
 
     integer :: i, n
 
@@ -55,9 +54,8 @@ end subroutine
 
 ! gradient of fobj1
 pure subroutine grad1 (x, g)
-    real (PREC), intent(in), dimension(:) :: x
-    real (PREC), intent(out), dimension(:) :: g
-    contiguous :: x, g
+    real (PREC), intent(in), dimension(:), contiguous :: x
+    real (PREC), intent(out), dimension(:), contiguous :: g
 
     real (PREC) :: t1, t2
     integer :: i, n
@@ -100,9 +98,9 @@ subroutine example2 ()
 end subroutine
 
 subroutine fobj_grad (x, fx, g)
-    real (PREC), intent(in), dimension(:) :: x
-    real (PREC), intent(out) :: fx, g(:)
-    contiguous :: x, g
+    real (PREC), intent(in), dimension(:), contiguous :: x
+    real (PREC), intent(out) :: fx
+    real (PREC), intent(out), dimension(:), contiguous ::  g
 
     call fobj1 (x, fx)
     call grad1 (x, g)
@@ -115,7 +113,7 @@ subroutine print_report(res)
 
     print "('#', t3, 'Example ', i0)", ii
     print "(t3, 'Exit status: ', a)", char(res%status)
-    print "(t3, 'Function value at minimum: ', en22.15e2)", res%fx(1)
+    print "(t3, 'Function value at minimum: ', es10.2e3)", res%fx(1)
     print "(t3, 'Number of iterations: ', i0)", res%nit
     print "(t3, 'Number of function evaluations: ', i0)", res%nfev
     write (OUTPUT_UNIT, advance='no', &

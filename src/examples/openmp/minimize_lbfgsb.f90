@@ -42,31 +42,31 @@ subroutine solve_savings (a_at, beta, work, sav)
 
     x(1) = sav
     call minimize_lbfgsb (fobj_grad, x, lbounds=lbnd, ubounds=ubnd, &
-        iprint=iprint, work=work, args=args, res=res)
+        iprint=iprint, work=work, res=res)
     sav = x(1)
 
-end subroutine
+    contains
 
-subroutine fobj_grad (x, fx, g, args)
-    real (PREC), intent(in), dimension(:) :: x
-    real (PREC), intent(out) :: fx, g(:)
-    contiguous :: x, g
-    real (PREC), intent(in), dimension(:) :: args
+    subroutine fobj_grad (x, fx, g)
+        real (PREC), intent(in), dimension(:), contiguous :: x
+        real (PREC), intent(out) :: fx
+        real (PREC), intent(out), dimension(:), contiguous :: g
 
-    real (PREC) :: cons, vcont, ap, a, beta, sav
+        real (PREC) :: cons, vcont, ap, a, sav
 
-    sav = x(1)
-    a = args(1)
-    beta = args(2)
+        sav = x(1)
+        a = a_at
 
-    cons = a - sav
-    ! Assume that interest rate is given by r = 1/beta - 1
-    ap = sav / beta
-    ! Assume that continuation value is given by u(a') / (1-beta)
-    vcont = util (ap) / (1.0d0 - beta)
-    ! Objective is formulated in terms of minimization
-    fx = - (util(cons) + beta * vcont)
-    g(1) = util_c(cons) - util_c(ap) / (1.0d0 - beta)
+        cons = a - sav
+        ! Assume that interest rate is given by r = 1/beta - 1
+        ap = sav / beta
+        ! Assume that continuation value is given by u(a') / (1-beta)
+        vcont = util (ap) / (1.0d0 - beta)
+        ! Objective is formulated in terms of minimization
+        fx = - (util(cons) + beta * vcont)
+        g(1) = util_c(cons) - util_c(ap) / (1.0d0 - beta)
+    end subroutine
+
 end subroutine
 
 pure function util (c) result(res)
@@ -121,7 +121,7 @@ subroutine example1 ()
     real (PREC), dimension(:), allocatable :: sav_opt
 
     ! Variables private to threads
-    type (workspace), pointer :: ws
+    type (workspace) :: ws
     real (PREC) :: s, a_at
     integer :: i
 
@@ -134,8 +134,6 @@ subroutine example1 ()
     !$omp private(i, ws, s, a_at) &
     !$omp shared(agrid, sav_opt)
 
-    allocate (ws)
-
     !$omp do schedule(auto)
     do i = 1, m
         a_at = agrid(i)
@@ -144,7 +142,6 @@ subroutine example1 ()
     end do
     !$omp end do
 
-    deallocate (ws)
     !$omp end parallel
 
     ! report results
