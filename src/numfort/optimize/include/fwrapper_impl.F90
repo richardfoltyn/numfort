@@ -210,8 +210,9 @@ end function
 !-------------------------------------------------------------------------------
 ! Routines for FWRAPPER_VS
 
-subroutine __APPEND(fvs_init,__PREC) (self, fcn, jac, fcn_jac, fcn_jac_opt, &
-        fcn_args, jac_args, fcn_jac_args, fcn_jac_opt_args, args, eps)
+subroutine __APPEND(fvs_init,__PREC) (self, fcn, jac, fcn_jac, &
+        fcn_jac_opt, fcn_args, jac_args, fcn_jac_args, fcn_jac_opt_args, &
+        args, eps)
     integer, parameter :: PREC = __PREC
     type (__APPEND(fwrapper_vs,__PREC)), intent(inout) :: self
     procedure (__APPEND(fvs_fcn,__PREC)), optional :: fcn
