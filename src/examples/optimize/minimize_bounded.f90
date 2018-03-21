@@ -3,7 +3,8 @@
 program minimize_bounded_example
 
     use, intrinsic :: iso_fortran_env
-    use numfort_optimize, optim_result => optim_result_real64
+    use numfort_optimize, optim_result => optim_result_real64, &
+        args_default => args_default_real64
 
     implicit none
 
@@ -42,10 +43,12 @@ subroutine example2 ()
 
     real (PREC) :: a, b, x, fx
     type (optim_result) :: res
-    real (PREC), dimension(2) :: args
+    type (args_default) :: args
 
-    args(1) = 2.0
-    args(2) = 1.0
+    call cond_alloc (args, 2)
+
+    args%rdata(1) = 2.0
+    args%rdata(2) = 1.0
 
     ! Test with interior minimium
     a = 0
@@ -73,10 +76,13 @@ end subroutine
 
 subroutine fobj_args (x, args, fx)
     real (PREC), intent(in) :: x
-    real (PREC), intent(in out), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (PREC), intent(out) :: fx
 
-    fx = (x - args(1)) ** 2 + args(2)
+    type (args_default), pointer :: largs
+    call dynamic_cast (args, largs)
+
+    fx = (x - largs%rdata(1)) ** 2 + largs%rdata(2)
 end subroutine
 
 end program

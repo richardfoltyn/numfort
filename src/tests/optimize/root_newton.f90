@@ -8,7 +8,8 @@ program test_optimize_root_newton
     use numfort_common
     use numfort_common_testing
     use numfort_optimize, only: root_newton, root_halley, root_newton_bisect, &
-        optim_result => optim_result_real64, args_data
+        optim_result => optim_result_real64, args_data, &
+        args_default => args_default_real64, dynamic_cast, cond_alloc
 
     use fcore_testing, only: test_suite, test_case
     use fcore_strings
@@ -23,13 +24,13 @@ program test_optimize_root_newton
     real (PREC), parameter :: QUAD_ROOT1 = -1.0
     real (PREC), parameter :: QUAD_ROOT2 = 1.0
 
-    type, extends(args_data) :: args1
-        real (PREC) :: alpha
-    end type
-
     type, extends(args_data) :: args_quad
         real (PREC) :: root1, root2
     end type
+
+    interface dynamic_cast
+        procedure cast_to_args_quad
+    end interface
 
     call test_all ()
 
@@ -58,7 +59,7 @@ subroutine test_linear (tests)
     class (test_case), pointer :: tc
 
     real (PREC) :: x, fx
-    real (PREC), dimension(2) :: args
+    type (args_default) :: args
     logical, parameter :: NDIFF = .true.
     type (optim_result) :: res
     real (PREC), parameter :: atol = 1.0d-12, rtol = 0.0
@@ -68,8 +69,9 @@ subroutine test_linear (tests)
 
     tc => tests%add_test ("ROOT_NEWTON: Linear function")
 
-    args(1) = LINEAR_CONST
-    args(2) = LINEAR_SLOPE
+    allocate (args%rdata(2))
+    args%rdata(1) = LINEAR_CONST
+    args%rdata(2) = LINEAR_SLOPE
 
     x = x0
     call root_newton (fcn_linear, x, NDIFF, res=res)
@@ -119,7 +121,7 @@ end subroutine
 
 
 subroutine test_quad (tests)
-    type (test_suite), intent(in out) :: tests
+    type (test_suite), intent(inout) :: tests
 
     class (test_case), pointer :: tc
 
@@ -190,7 +192,7 @@ subroutine test_newton_bisect (tests)
 
     real (PREC) :: x, fx
     type (optim_result) :: res
-    type (args1) :: args
+    type (args_default) :: args
     real (PREC), parameter :: atol = 1.0d-7, rtol = 0.0
     real (PREC), parameter :: zero = 0.0
     real (PREC) :: root_exact
@@ -256,7 +258,8 @@ subroutine test_newton_bisect (tests)
     x0 = -20.0d0
     root_exact = - 1.0 / (25 * sqrt(5.0_PREC))
     ! Pass alpha in ARGS
-    args%alpha = 0.4d0
+    call cond_alloc (args, 1)
+    args%rdata(1) = 0.4d0
     x = x0
     call root_newton (fcn_jac_abs_sqrt, x, args, res=res)
 
@@ -356,21 +359,30 @@ end subroutine
 
 subroutine fcn_linear_args (x, args, fx)
     real (PREC), intent(in) :: x
-    real (PREC), intent(in out), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (PREC), intent(out) :: fx
-    fx = args(1) + args(2) * x
+
+    type (args_default), pointer :: largs
+
+    call dynamic_cast (args, largs)
+    fx =  largs%rdata(1) + largs%rdata(2) * x
 end subroutine
 
 subroutine jac_linear_args (x, args, fx)
     real (PREC), intent(in) :: x
-    real (PREC), intent(in out), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (PREC), intent(out) :: fx
-    fx = args(2)
+
+    type (args_default), pointer :: largs
+
+    call dynamic_cast (args, largs)
+
+    fx = largs%rdata(2)
 end subroutine
 
 subroutine fcn_jac_linear_args (x, args, fx, fpx)
     real (PREC), intent(in) :: x
-    real (PREC), intent(in out), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (PREC), intent(out) :: fx, fpx
     
     call fcn_linear_args (x, args, fx)
@@ -401,37 +413,31 @@ end subroutine
 
 subroutine fcn_quad_args (x, args, fx)
     real (PREC), intent(in) :: x
-    class (args_data), intent(inout), target :: args
+    class (args_data), intent(inout) :: args
     real (PREC), intent(out) :: fx
 
     type (args_quad), pointer :: ptr_args
 
-    select type (args)
-    type is (args_quad)
-        ptr_args => args
-    end select
+    call dynamic_cast (args, ptr_args)
 
     fx = (x-ptr_args%root1) * (x-ptr_args%root2)
 end subroutine
 
 subroutine jac_quad_args (x, args, fx)
     real (PREC), intent(in) :: x
-    class (args_data), intent(inout), target :: args
+    class (args_data), intent(inout) :: args
     real (PREC), intent(out) :: fx
 
     type (args_quad), pointer :: ptr_args
 
-    select type (args)
-    type is (args_quad)
-        ptr_args => args
-    end select
+    call dynamic_cast (args, ptr_args)
 
     fx = 2.0 * x - (ptr_args%root1 + ptr_args%root2)
 end subroutine
 
 subroutine fcn_jac_quad_args (x, args, fx, fpx)
     real (PREC), intent(in) :: x
-    class (args_data), intent(inout), target :: args
+    class (args_data), intent(inout) :: args
     real (PREC), intent(out) :: fx, fpx
 
     call fcn_quad_args (x, args, fx)
@@ -500,19 +506,28 @@ subroutine fcn_jac_abs_sqrt (x, args, fx, fpx)
     class (args_data), intent(inout) :: args
     real (PREC), intent(out) :: fx, fpx
 
-    type (args1), pointer :: ptr_args
+    type (args_default), pointer :: ptr_args
     real (PREC) :: alpha
 
-    select type (args)
-    type is (args1)
-        ptr_args => args
-    end select
+    call dynamic_cast (args, ptr_args)
 
-    alpha = ptr_args%alpha
+    alpha = ptr_args%rdata(1)
 
     fx = abs(x) ** alpha - 0.2
     ! Ignore non-differentiable point x = 0
     fpx = signum (x) * alpha * abs(x) ** (alpha - 1.0_PREC)
+end subroutine
+
+
+subroutine cast_to_args_quad (tgt, ptr)
+    class (args_data), intent(in), target :: tgt
+    type (args_quad), intent(inout), pointer :: ptr
+
+    nullify (ptr)
+    select type (tgt)
+    type is (args_quad)
+        ptr => tgt
+    end select
 end subroutine
 
 end program

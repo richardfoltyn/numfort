@@ -13,6 +13,14 @@ program rosenbrock_slsqp_openmp
 
     integer, parameter :: PREC = real64
 
+    type, extends(args_data) :: args_t
+       real (PREC) :: alpha, beta
+    end type
+
+    interface dynamic_cast
+        procedure cast_to_args
+    end interface
+
     call example1 ()
 
 contains
@@ -68,12 +76,13 @@ subroutine solve_serial (alpha, beta, xlb, xub, xmin, fxmin)
     real (PREC), intent(out), dimension(:,:) :: xmin
     real (PREC), intent(out), dimension(:) :: fxmin
 
-    real (PREC), dimension(2) :: args, x0
+    real (PREC), dimension(2) :: x0
     integer :: i, n
     integer, parameter :: m = 1
     real (PREC), parameter :: tol = 1d-8
     type (optim_result) :: res
     type (workspace) :: work
+    type (args_t) :: args
 
     real :: tic, toc
 
@@ -82,12 +91,12 @@ subroutine solve_serial (alpha, beta, xlb, xub, xmin, fxmin)
     call cpu_time (tic)
 
     do i = 1, n
-        args(1) = alpha(i)
-        args(2) = beta(i)
+        args%alpha = alpha(i)
+        args%beta = beta(i)
 
         x0 = [1.0d-1, 1.0d-1]
-        call minimize_slsqp (fobj, x0, xlb(:,i), xub(:,i), m, f_ieqcons=fconstr, &
-            res=res, work=work, tol=tol, args=args)
+        call minimize_slsqp (fobj, x0, args, xlb(:,i), xub(:,i), m, f_ieqcons=fconstr, &
+            res=res, work=work, tol=tol)
 
         xmin(:,i) = res%x(1:2)
         fxmin(i) = res%fx(1)
@@ -107,13 +116,14 @@ subroutine solve_parallel (alpha, beta, xlb, xub, xmin, fxmin)
     real (PREC), intent(out), dimension(:,:) :: xmin
     real (PREC), intent(out), dimension(:) :: fxmin
 
-    real (PREC), dimension(2) :: args, x0
+    real (PREC), dimension(2) :: x0
     integer :: i, n
     integer, parameter :: m = 1
     real (PREC), parameter :: tol = 1d-8
     type (optim_result) :: res
     type (workspace) :: work
     integer :: ncpus
+    type (args_t) :: args
 
     real (PREC) :: tic, toc
 
@@ -132,12 +142,12 @@ subroutine solve_parallel (alpha, beta, xlb, xub, xmin, fxmin)
 
     !$omp do schedule (auto)
     do i = 1, n
-        args(1) = alpha(i)
-        args(2) = beta(i)
+        args%alpha = alpha(i)
+        args%beta = beta(i)
 
         x0 = [1.0d-1, 1.0d-1]
-        call minimize_slsqp (fobj, x0, xlb(:,i), xub(:,i), m, f_ieqcons=fconstr, &
-            res=res, work=work, tol=tol, args=args)
+        call minimize_slsqp (fobj, x0, args, xlb(:,i), xub(:,i), m, f_ieqcons=fconstr, &
+            res=res, work=work, tol=tol)
 
         xmin(:,i) = res%x(1:2)
         fxmin(i) = res%fx(1)
@@ -156,16 +166,19 @@ end subroutine
 
 
 
-pure subroutine fobj (x, args, fx, fpx)
+subroutine fobj (x, args, fx, fpx)
     real (PREC), intent(in), dimension(:), contiguous :: x
-    real (PREC), intent(in out), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (PREC), intent(out), optional :: fx
     real (PREC), intent(out), dimension(:), contiguous, optional :: fpx
 
     real (PREC) :: alpha, beta
+    type (args_t), pointer :: largs
 
-    alpha = args(1)
-    beta = args(2)
+    call dynamic_cast (args, largs)
+
+    alpha = largs%alpha
+    beta = largs%beta
 
     if (present(fx)) then
         ! Compute objective
@@ -180,18 +193,21 @@ end subroutine
 
 
 
-pure subroutine fconstr (x, args, fx, fpx)
+subroutine fconstr (x, args, fx, fpx)
     !*  Function evaluating inequality constraints
     !   Constraints needs to be formulated such that C(x) >= 0
-    real (real64), intent(in), dimension(:), contiguous :: x
-    real (real64), intent(in out), dimension(:) :: args
-    real (real64), intent(out), dimension(:), contiguous, optional :: fx
-    real (real64), intent(out), dimension(:,:), contiguous, optional :: fpx
+    real (PREC), intent(in), dimension(:), contiguous :: x
+    class (args_data), intent(inout) :: args
+    real (PREC), intent(out), dimension(:), contiguous, optional :: fx
+    real (PREC), intent(out), dimension(:,:), contiguous, optional :: fpx
 
     real (PREC) :: alpha, beta
+    type (args_t), pointer :: largs
 
-    alpha = args(1)
-    beta = args(2)
+    call dynamic_cast (args, largs)
+
+    alpha = largs%alpha
+    beta = largs%beta
 
     if (present(fx)) then
         fx = - alpha * x(1)**2.0d0 - beta * x(2) ** 2.0d0 + 1.0d0
@@ -204,6 +220,18 @@ pure subroutine fconstr (x, args, fx, fpx)
     end if
 end subroutine
 
+
+subroutine cast_to_args (tgt, ptr)
+    class (args_data), intent(in), target :: tgt
+    type (args_t), intent(inout), pointer :: ptr
+
+    nullify (ptr)
+
+    select type (tgt)
+    type is (args_t)
+        ptr => tgt
+    end select
+end subroutine
 
 
 end program

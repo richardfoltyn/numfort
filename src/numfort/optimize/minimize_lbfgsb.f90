@@ -25,7 +25,9 @@ module numfort_optimize_lbfgsb
     integer (NF_ENUM_KIND), parameter :: BOUNDS_UPPER = 3
 
     interface minimize_lbfgsb
-        procedure lbfgsb_real64, lbfgsb_jac_real64, lbfgsb_fcn_jac_real64
+        procedure lbfgsb_real64, lbfgsb_args_real64, &
+            lbfgsb_jac_real64, lbfgsb_jac_args_real64, &
+            lbfgsb_fcn_jac_real64, lbfgsb_fcn_jac_args_real64
     end interface
 
     interface set_bounds_flags
@@ -84,7 +86,7 @@ end subroutine
 ! Wrappers for various ways to invoke the minimizer
 
 recursive subroutine lbfgsb_real64 (fcn, x, ndiff, lbounds, ubounds, maxiter, &
-        maxfun, m, factr, pgtol, iprint, work, res)
+        maxfun, m, factr, pgtol, iprint, dstep, work, res)
 
     integer, parameter :: PREC = real64
     procedure (fvs_fcn_real64) :: fcn
@@ -98,6 +100,8 @@ recursive subroutine lbfgsb_real64 (fcn, x, ndiff, lbounds, ubounds, maxiter, &
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
     real (PREC), intent(in), optional :: factr
     real (PREC), intent(in), optional :: pgtol
+    real (PREC), intent(in), optional :: dstep
+        !*  If present, sets the step size for numerical differentiation.
     type (workspace_real64), intent(inout), optional :: work
     type (optim_result_real64), intent(inout), optional :: res
 
@@ -112,7 +116,46 @@ recursive subroutine lbfgsb_real64 (fcn, x, ndiff, lbounds, ubounds, maxiter, &
         end if
     end if
 
-    call wrap_procedure (fwrapper, fcn=fcn)
+    call wrap_procedure (fwrapper, fcn=fcn, eps=dstep)
+
+    call lbfgsb_impl_real64 (fwrapper, x, lbounds, ubounds, maxiter, maxfun, &
+        m, factr, pgtol, iprint, work, res)
+end subroutine
+
+
+recursive subroutine lbfgsb_args_real64 (fcn, x, args, ndiff, lbounds, ubounds, &
+        maxiter, maxfun, m, factr, pgtol, iprint, dstep, work, res)
+
+    integer, parameter :: PREC = real64
+    procedure (fvs_fcn_real64) :: fcn
+    real (PREC), intent(inout), dimension(:), contiguous :: x
+    class (args_data), intent(inout) :: args
+    logical, intent(in) :: ndiff
+    real (PREC), intent(in), dimension(:), optional :: lbounds
+    real (PREC), intent(in), dimension(:), optional :: ubounds
+    integer, intent(in), optional :: maxiter
+    integer, intent(in), optional :: maxfun
+    integer, intent(in), optional :: m
+    integer (NF_ENUM_KIND), intent(in), optional :: iprint
+    real (PREC), intent(in), optional :: factr
+    real (PREC), intent(in), optional :: pgtol
+    real (PREC), intent(in), optional :: dstep
+    !*  If present, sets the step size for numerical differentiation.
+    type (workspace_real64), intent(inout), optional :: work
+    type (optim_result_real64), intent(inout), optional :: res
+
+    type (fwrapper_vs_real64) :: fwrapper
+
+    ! Force NDIFF argument to be TRUE
+    if (.not. ndiff) then
+        if (present(res)) then
+            call result_reset (res)
+            res%status = NF_STATUS_INVALID_ARG
+            return
+        end if
+    end if
+
+    call wrap_procedure (fwrapper, fcn=fcn, args=args, eps=dstep)
 
     call lbfgsb_impl_real64 (fwrapper, x, lbounds, ubounds, maxiter, maxfun, &
         m, factr, pgtol, iprint, work, res)
@@ -146,6 +189,34 @@ recursive subroutine lbfgsb_jac_real64 (fcn, fjac, x, lbounds, ubounds, &
 end subroutine
 
 
+recursive subroutine lbfgsb_jac_args_real64 (fcn, fjac, x, args, &
+        lbounds, ubounds, maxiter, maxfun, m, factr, pgtol, iprint, work, res)
+
+    integer, parameter :: PREC = real64
+    procedure (fvs_fcn_real64) :: fcn
+    procedure (fvs_jac_real64) :: fjac
+    real (PREC), intent(inout), dimension(:), contiguous :: x
+    class (args_data), intent(inout) :: args
+    real (PREC), intent(in), dimension(:), optional :: lbounds
+    real (PREC), intent(in), dimension(:), optional :: ubounds
+    integer, intent(in), optional :: maxiter
+    integer, intent(in), optional :: maxfun
+    integer, intent(in), optional :: m
+    integer (NF_ENUM_KIND), intent(in), optional :: iprint
+    real (PREC), intent(in), optional :: factr
+    real (PREC), intent(in), optional :: pgtol
+    type (workspace_real64), intent(inout), optional :: work
+    type (optim_result_real64), intent(inout), optional :: res
+
+    type (fwrapper_vs_real64) :: fwrapper
+
+    call wrap_procedure (fwrapper, fcn=fcn, jac=fjac, args=args)
+
+    call lbfgsb_impl_real64 (fwrapper, x, lbounds, ubounds, maxiter, maxfun, &
+        m, factr, pgtol, iprint, work, res)
+end subroutine
+
+
 recursive subroutine lbfgsb_fcn_jac_real64 (fcn, x, lbounds, ubounds, maxiter, maxfun, &
         m, factr, pgtol, iprint, work, res)
 
@@ -166,6 +237,32 @@ recursive subroutine lbfgsb_fcn_jac_real64 (fcn, x, lbounds, ubounds, maxiter, m
     type (fwrapper_vs_real64) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn_jac=fcn)
+
+    call lbfgsb_impl_real64 (fwrapper, x, lbounds, ubounds, maxiter, maxfun, &
+        m, factr, pgtol, iprint, work, res)
+end subroutine
+
+recursive subroutine lbfgsb_fcn_jac_args_real64 (fcn, x, args, lbounds, ubounds,&
+        maxiter, maxfun, m, factr, pgtol, iprint, work, res)
+
+    integer, parameter :: PREC = real64
+    procedure (fvs_fcn_jac_real64) :: fcn
+    real (PREC), intent(inout), dimension(:), contiguous :: x
+    class (args_data), intent(inout) :: args
+    real (PREC), intent(in), dimension(:), optional :: lbounds
+    real (PREC), intent(in), dimension(:), optional :: ubounds
+    integer, intent(in), optional :: maxiter
+    integer, intent(in), optional :: maxfun
+    integer, intent(in), optional :: m
+    integer (NF_ENUM_KIND), intent(in), optional :: iprint
+    real (PREC), intent(in), optional :: factr
+    real (PREC), intent(in), optional :: pgtol
+    type (workspace_real64), intent(inout), optional :: work
+    type (optim_result_real64), intent(inout), optional :: res
+
+    type (fwrapper_vs_real64) :: fwrapper
+
+    call wrap_procedure (fwrapper, fcn_jac=fcn, args=args)
 
     call lbfgsb_impl_real64 (fwrapper, x, lbounds, ubounds, maxiter, maxfun, &
         m, factr, pgtol, iprint, work, res)
