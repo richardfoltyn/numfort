@@ -19,8 +19,8 @@ type, public :: __APPEND(fwrapper_ss,__PREC)
     procedure (__APPEND(fss_fcn_jac_opt_args,__PREC)), pointer, nopass :: fcn_jac_opt_args => null()
     integer, public :: nfev = 0
         !*  Function evaluation counter
-    real (__PREC), dimension(:), pointer :: ptr_args => null()
-        !*  Pointer to (optional) additional argument array
+    class (args_data), pointer :: ptr_args => null()
+        !*  Pointer to (optional) additional arguments
     real (__PREC) :: eps = sqrt(epsilon(__APPEND(0.0,__PREC)))
         !*  Step size to use for numerical differentiation
 end type
@@ -61,8 +61,8 @@ type, public :: __APPEND(fwrapper_vs,__PREC)
     procedure (__APPEND(fvs_fcn_jac_opt_args,__PREC)), pointer, nopass :: fcn_jac_opt_args => null()
     integer, public :: nfev = 0
         !*  Function evaluation counter
-    real (__PREC), dimension(:), pointer :: ptr_args => null()
-        !*  Pointer to (optional) additional argument array
+    class (args_data), pointer :: ptr_args => null()
+        !*  Pointer to (optional) additional arguments
     real (__PREC) :: eps = sqrt(epsilon(__APPEND(0.0,__PREC)))
         !*  Step size to use for numerical differentiation
 end type
@@ -102,8 +102,8 @@ type, public :: __APPEND(fwrapper_vv,__PREC)
     procedure (__APPEND(fvv_fcn_jac_opt_args,__PREC)), pointer, nopass :: fcn_jac_opt_args => null()
     integer, public :: nfev = 0
         !*  Function evaluation counter
-    real (__PREC), dimension(:), pointer :: ptr_args => null()
-        !*  Pointer to (optional) additional argument array
+    class (args_data), pointer :: ptr_args => null()
+        !*  Pointer to (optional) additional arguments
     real (__PREC) :: eps = sqrt(epsilon(__APPEND(0.0,__PREC)))
         !*  Step size to use for numerical differentiation
 end type

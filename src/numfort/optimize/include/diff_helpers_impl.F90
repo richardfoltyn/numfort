@@ -41,7 +41,7 @@ subroutine __APPEND(fss_deriv_args,__PREC) (fcn, x, args, fpx, fx, eps)
     procedure (__APPEND(fss_args,__PREC)) :: fcn
     real (PREC), intent(in) :: x
         !*  Point X at which derivative should be evaluated
-    real (PREC), intent(in out), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (PREC), intent(out) :: fpx
         !*  Function derivative at point X
     real (PREC), intent(in), optional :: fx
@@ -128,7 +128,7 @@ subroutine __APPEND(fvs_args_deriv,__PREC) (fcn, x, args, fpx, fx, eps)
     procedure (__APPEND(fvs_fcn_args,__PREC)) :: fcn
     real (PREC), intent(in), dimension(:), contiguous :: x
         !*  Point X at which gradient should be evaluated
-    real (PREC), intent(in out), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (PREC), intent(out), dimension(:) :: fpx
         !*  Function gradient
     real (PREC), intent(in), optional :: fx
@@ -238,7 +238,7 @@ subroutine __APPEND(fvv_args_deriv,__PREC) (fcn, x, args, fpx, fx, eps)
     procedure (__APPEND(fvv_fcn_args,__PREC)) :: fcn
     real (PREC), intent(in), dimension(:), contiguous :: x
         !*  Point X at this Jacobian should be evaluated
-    real (PREC), intent(in out), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (PREC), intent(out), dimension(:,:) :: fpx
         !*  Contains m-by-n Jacobian on exit where N=SIZE(X) and M
         !   is the dimension of the function's range.

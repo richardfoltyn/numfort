@@ -59,8 +59,8 @@ subroutine __APPEND(minimize_bounded_args,__PREC) (fcn, a, b, x, args, maxfun, x
     real (PREC), intent(out) :: x
         !*  Minimizer on interval [a,b], if one is found. Otherwise, contains
         !   the last guess before terminating.
-    real (PREC), intent(in out), dimension(:) :: args
         !*  Array of additional arguments passed to objective function.
+    class (args_data), intent(inout) :: args
     integer, intent(in), optional :: maxfun
         !*  Max. number of function evaluations.
     real (PREC), intent(in), optional :: xtol

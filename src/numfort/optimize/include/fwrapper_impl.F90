@@ -29,7 +29,7 @@ subroutine __APPEND(fss_init,__PREC) (self, fcn, jac, fcn_jac, fcn_jac_opt, &
     procedure (__APPEND(fss_fcn_jac_opt_args,__PREC)), optional :: fcn_jac_opt_args
         !*  Pointer to function that returns the function value and/or the
         !   first derivative in a single call and accepts additional arguments.
-    real (PREC), intent(in), dimension(:), optional, target :: args
+    class (args_data), intent(in), optional, target :: args
         !*  Additional arguments that need to be passed to function.
     real (PREC), intent(in), optional :: eps
         !*  If present, sets the step size used when computing numerical
@@ -237,7 +237,7 @@ subroutine __APPEND(fvs_init,__PREC) (self, fcn, jac, fcn_jac, &
     procedure (__APPEND(fvs_fcn_jac_opt_args,__PREC)), optional :: fcn_jac_opt_args
         !*  Pointer to function that returns the function value and/or the
         !   first derivative in a single call and accepts additional arguments.
-    real (PREC), intent(in), dimension(:), optional, target :: args
+    class (args_data), intent(in), optional, target :: args
         !*  Additional arguments that need to be passed to function.
     real (PREC), intent(in), optional :: eps
         !*  If present, sets the step size used when computing numerical
@@ -446,7 +446,7 @@ subroutine __APPEND(fvv_init,__PREC) (self, fcn, jac, fcn_jac, fcn_jac_opt, &
     procedure (__APPEND(fvv_fcn_jac_opt_args,__PREC)), optional :: fcn_jac_opt_args
         !*  Pointer to function that returns the function value and/or the
         !   first derivative in a single call and accepts additional arguments.
-    real (PREC), intent(in), dimension(:), optional, target :: args
+    class (args_data), intent(in), optional, target :: args
         !*  Additional arguments that need to be passed to function.
     real (PREC), intent(in), optional :: eps
         !*  If present, sets the step size used when computing numerical

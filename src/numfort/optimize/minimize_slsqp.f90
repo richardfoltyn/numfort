@@ -105,14 +105,14 @@ subroutine slsqp_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
 end subroutine
 
 
-subroutine slsqp_args_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
-        f_ieqcons, args, maxiter, linesearch, tol, work, res)
+subroutine slsqp_args_real64 (fobj, x, args, lbounds, ubounds, m, meq, f_eqcons, &
+        f_ieqcons, maxiter, linesearch, tol, work, res)
 
     integer, parameter :: PREC = real64
 
     procedure (fvs_fcn_jac_opt_args_real64) :: fobj
     real (PREC), intent(in out), dimension(:), contiguous :: x
-    real (PREC), intent(in out), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (PREC), intent(in), dimension(:), optional :: lbounds
     real (PREC), intent(in), dimension(:), optional :: ubounds
     integer, intent(in), optional :: m, meq

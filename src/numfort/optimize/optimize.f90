@@ -9,6 +9,9 @@ module numfort_optimize
 
     use numfort_optimize_result, only: optim_result_real32, optim_result_real64
 
+    use numfort_optimize_interfaces, only: args_data, args_default_real32, &
+        args_default_real64
+
     use numfort_optimize_diff
 
     use numfort_optimize_fminbound

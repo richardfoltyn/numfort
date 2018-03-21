@@ -8,7 +8,7 @@ program test_optimize_root_newton
     use numfort_common
     use numfort_common_testing
     use numfort_optimize, only: root_newton, root_halley, root_newton_bisect, &
-        optim_result => optim_result_real64
+        optim_result => optim_result_real64, args_data
 
     use fcore_testing, only: test_suite, test_case
     use fcore_strings
@@ -22,6 +22,14 @@ program test_optimize_root_newton
 
     real (PREC), parameter :: QUAD_ROOT1 = -1.0
     real (PREC), parameter :: QUAD_ROOT2 = 1.0
+
+    type, extends(args_data) :: args1
+        real (PREC) :: alpha
+    end type
+
+    type, extends(args_data) :: args_quad
+        real (PREC) :: root1, root2
+    end type
 
     call test_all ()
 
@@ -116,7 +124,7 @@ subroutine test_quad (tests)
     class (test_case), pointer :: tc
 
     real (PREC) :: x, fx
-    real (PREC), dimension(2) :: args
+    type (args_quad) :: args
     logical, parameter :: NDIFF = .true.
     type (optim_result) :: res
     real (PREC), parameter :: atol = 1.0d-12, rtol = 0.0
@@ -126,8 +134,8 @@ subroutine test_quad (tests)
 
     tc => tests%add_test ("ROOT_NEWTON: Quadratic function")
 
-    args(1) = QUAD_ROOT1
-    args(2) = QUAD_ROOT2
+    args%root1 = QUAD_ROOT1
+    args%root2 = QUAD_ROOT2
 
     x = x0
     call root_newton (fcn_quad, x, NDIFF, res=res)
@@ -182,7 +190,7 @@ subroutine test_newton_bisect (tests)
 
     real (PREC) :: x, fx
     type (optim_result) :: res
-    real (PREC), dimension(1) :: args
+    type (args1) :: args
     real (PREC), parameter :: atol = 1.0d-7, rtol = 0.0
     real (PREC), parameter :: zero = 0.0
     real (PREC) :: root_exact
@@ -247,9 +255,8 @@ subroutine test_newton_bisect (tests)
     ! Standard ROOT_NEWTON will diverge
     x0 = -20.0d0
     root_exact = - 1.0 / (25 * sqrt(5.0_PREC))
-    ! Pass alpha in ARGS array
-    args(1) = 0.4d0
-
+    ! Pass alpha in ARGS
+    args%alpha = 0.4d0
     x = x0
     call root_newton (fcn_jac_abs_sqrt, x, args, res=res)
 
@@ -394,23 +401,39 @@ end subroutine
 
 subroutine fcn_quad_args (x, args, fx)
     real (PREC), intent(in) :: x
-    real (PREC), intent(in out), dimension(:) :: args
+    class (args_data), intent(inout), target :: args
     real (PREC), intent(out) :: fx
-    fx = (x-args(1)) * (x-args(2))
+
+    type (args_quad), pointer :: ptr_args
+
+    select type (args)
+    type is (args_quad)
+        ptr_args => args
+    end select
+
+    fx = (x-ptr_args%root1) * (x-ptr_args%root2)
 end subroutine
 
 subroutine jac_quad_args (x, args, fx)
     real (PREC), intent(in) :: x
-    real (PREC), intent(in out), dimension(:) :: args
+    class (args_data), intent(inout), target :: args
     real (PREC), intent(out) :: fx
-    fx = 2.0 * x - (sum(args))
+
+    type (args_quad), pointer :: ptr_args
+
+    select type (args)
+    type is (args_quad)
+        ptr_args => args
+    end select
+
+    fx = 2.0 * x - (ptr_args%root1 + ptr_args%root2)
 end subroutine
 
 subroutine fcn_jac_quad_args (x, args, fx, fpx)
     real (PREC), intent(in) :: x
-    real (PREC), intent(in out), dimension(:) :: args
+    class (args_data), intent(inout), target :: args
     real (PREC), intent(out) :: fx, fpx
-    
+
     call fcn_quad_args (x, args, fx)
     call jac_quad_args (x, args, fpx)
 end subroutine
@@ -474,12 +497,22 @@ subroutine fcn_jac_abs_sqrt (x, args, fx, fpx)
     !   Alpha should be (0,1/2) for overshooting and divergence with regular
     !   Newton method.
     real (PREC), intent(in) :: x
-    real (PREC), intent(in out), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (PREC), intent(out) :: fx, fpx
 
-    fx = abs(x) ** args(1) - 0.2
+    type (args1), pointer :: ptr_args
+    real (PREC) :: alpha
+
+    select type (args)
+    type is (args1)
+        ptr_args => args
+    end select
+
+    alpha = ptr_args%alpha
+
+    fx = abs(x) ** alpha - 0.2
     ! Ignore non-differentiable point x = 0
-    fpx = signum (x) * args(1) * abs(x) ** (args(1) - 1.0_PREC)
+    fpx = signum (x) * alpha * abs(x) ** (alpha - 1.0_PREC)
 end subroutine
 
 end program

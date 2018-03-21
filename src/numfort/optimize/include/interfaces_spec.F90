@@ -3,8 +3,9 @@ subroutine __APPEND(fss_args,__PREC) (x, args, fx)
     !*  Abstract interface for a scalar-valued function f:R->R
     !   that takes additional arguments.
     import __PREC
+    import args_data
     real (__PREC), intent(in)  :: x
-    real (__PREC), intent(inout), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (__PREC), intent(out) :: fx
 end subroutine
 
@@ -28,8 +29,9 @@ subroutine __APPEND(fss_fcn_jac_args,__PREC) (x, args, fx, fpx)
     !*  Abstract interface for a scalar-valued function f:R->R
     !   that takes additional arguments and also returns the first derivative.
     import __PREC
+    import args_data
     real (__PREC), intent(in) :: x
-    real (__PREC), intent(inout), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (__PREC), intent(out) :: fx
     real (__PREC), intent(out) :: fpx
 end subroutine
@@ -49,8 +51,9 @@ subroutine __APPEND(fss_fcn_jac_opt_args,__PREC) (x, args, fx, fpx)
     !   which (optionally) returns returns the function value and/or
     !   first derivative and takes additional arguments.
     import __PREC
+    import args_data
     real (__PREC), intent(in) :: x
-    real (__PREC), intent(inout), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (__PREC), intent(out), optional :: fx
     real (__PREC), intent(out), optional :: fpx
 end subroutine
@@ -87,30 +90,34 @@ end subroutine
 
 subroutine __APPEND(fvs_fcn_args,__PREC) (x, args, fx)
     import __PREC
+    import args_data
     real (__PREC), intent(in), dimension(:), contiguous :: x
-    real (__PREC), intent(inout), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (__PREC), intent(out) :: fx
 end subroutine
 
 subroutine __APPEND(fvs_jac_args,__PREC) (x, args, fpx)
     import __PREC
+    import args_data
     real (__PREC), intent(in), dimension(:), contiguous :: x
-    real (__PREC), intent(inout), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (__PREC), intent(out), dimension(:), contiguous, optional :: fpx
 end subroutine
 
 subroutine __APPEND(fvs_fcn_jac_args,__PREC) (x, args, fx, fpx)
     import __PREC
+    import args_data
     real (__PREC), intent(in), dimension(:), contiguous :: x
-    real (__PREC), intent(inout), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (__PREC), intent(out) :: fx
     real (__PREC), intent(out), dimension(:), contiguous :: fpx
 end subroutine
 
 subroutine __APPEND(fvs_fcn_jac_opt_args,__PREC) (x, args, fx, fpx)
     import __PREC
+    import args_data
     real (__PREC), intent(in), dimension(:), contiguous :: x
-    real (__PREC), intent(inout), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (__PREC), intent(out), optional :: fx
     real (__PREC), intent(out), dimension(:), contiguous, optional :: fpx
 end subroutine
@@ -147,30 +154,34 @@ end subroutine
 
 subroutine __APPEND(fvv_fcn_args,__PREC) (x, args, fx)
     import __PREC
+    import args_data
     real (__PREC), intent(in), dimension(:), contiguous :: x
-    real (__PREC), intent(inout), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (__PREC), intent(out), dimension(:), contiguous :: fx
 end subroutine
 
 subroutine __APPEND(fvv_jac_args,__PREC) (x, args, fpx)
     import __PREC
+    import args_data
     real (__PREC), intent(in), dimension(:), contiguous :: x
-    real (__PREC), intent(inout), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (__PREC), intent(out), dimension(:,:), contiguous, optional :: fpx
 end subroutine
 
 subroutine __APPEND(fvv_fcn_jac_args,__PREC) (x, args, fx, fpx)
     import __PREC
+    import args_data
     real (__PREC), intent(in), dimension(:), contiguous :: x
-    real (__PREC), intent(inout), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (__PREC), intent(out), dimension(:), contiguous :: fx
     real (__PREC), intent(out), dimension(:,:), contiguous :: fpx
 end subroutine
 
 subroutine __APPEND(fvv_fcn_jac_opt_args,__PREC) (x, args, fx, fpx)
     import __PREC
+    import args_data
     real (__PREC), intent(in), dimension(:), contiguous :: x
-    real (__PREC), intent(inout), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (__PREC), intent(out), dimension(:), contiguous, optional :: fx
     real (__PREC), intent(out), dimension(:,:), contiguous, optional :: fpx
 end subroutine

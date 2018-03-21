@@ -118,7 +118,7 @@ subroutine __APPEND(root_broyden_args,__PREC) (fcn, x, args, ndiff, tol, xtol, &
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn_args,__PREC)) :: fcn
     real (PREC), intent(in out), dimension(:), contiguous :: x
-    real (PREC), intent(in out), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     logical, intent(in) :: ndiff
     real (PREC), intent(in), optional :: tol
     real (PREC), intent(in), optional :: xtol
@@ -153,7 +153,7 @@ subroutine __APPEND(root_broyden_jac_args,__PREC) (fcn, fjac, x, args, tol, xtol
     procedure (__APPEND(fvv_fcn_args,__PREC)) :: fcn
     procedure (__APPEND(fvv_jac_args,__PREC)) :: fjac
     real (PREC), intent(in out), dimension(:), contiguous :: x
-    real (PREC), intent(in out), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (PREC), intent(in), optional :: tol
     real (PREC), intent(in), optional :: xtol
     integer, intent(in), optional :: maxiter
@@ -178,7 +178,7 @@ subroutine __APPEND(root_broyden_fcn_jac_opt_args,__PREC) (fcn, x, args, &
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn_jac_opt_args,__PREC)) :: fcn
     real (PREC), intent(in out), dimension(:), contiguous :: x
-    real (PREC), intent(in out), dimension(:) :: args
+    class (args_data), intent(inout) :: args
     real (PREC), intent(in), optional :: tol
     real (PREC), intent(in), optional :: xtol
     integer, intent(in), optional :: maxiter
