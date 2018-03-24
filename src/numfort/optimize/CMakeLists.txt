@@ -11,7 +11,7 @@ set(SOURCE_FILES
     minimize_lbfgsb.f90
     minimize_simplex.f90
     minimize_slsqp.f90
-    minpack.f90
+    minpack.F90
     root_brent.F90
     root_broyden.F90
     root_newton.F90

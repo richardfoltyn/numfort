@@ -10,11 +10,10 @@ program minpack_lm_demo
 
     integer, parameter :: PREC = real64
 
-    character (len=10) :: msg
-
     call example1 ()
 
-contains
+    contains
+
 
 subroutine example1 ()
 
@@ -25,34 +24,36 @@ subroutine example1 ()
     type (optim_result) :: res
     type (workspace) :: work
 
+    ! Check with numerical differentiation
     ! (one) solution for fcn1 is (2, 3)
     x = 0.0
-    call root_lmdif (fcn1, x, fx, work=work, res=res)
+    call root_lm (fcn1, x, fx, ndiff=.true., work=work, res=res)
     call print_report (res)
 
+    ! Use analytical Jacobian
     x = 0.0
-    call root_lmder (fcn1_jac, x, fx, work=work, res=res)
+    call root_lm (fcn1_jac, x, fx, work=work, res=res)
     call print_report (res)
 
 end subroutine
 
-pure subroutine fcn1_jac (x, fx, jac, task)
-    real (PREC), dimension(:), intent(in) :: x
-    real (PREC), dimension(:), intent(out) :: fx
-    real (PREC), dimension(:,:), intent(out) :: jac
-    integer, intent(in out) :: task
+
+pure subroutine fcn1_jac (x, fx, jac)
+    real (PREC), dimension(:), intent(in), contiguous :: x
+    real (PREC), dimension(:), intent(out), optional, contiguous :: fx
+    real (PREC), dimension(:,:), intent(out), optional, contiguous :: jac
 
     real (PREC) :: x1, x2
 
     x1 = x(1)
     x2 = x(2)
 
-    if (task == 1) then
+    if (present(fx)) then
         fx(1) = 2 * x1 - 2*x2 + 2
         fx(2) = x1**2 - 2*x1*x2 + 8
         fx(3) = x1 + 3*x2**2 - 29
         fx(4) = -2*x1 + x1*x2 - 2*x2 + 4
-    else if (task == 2) then
+    else if (present(jac)) then
         jac(1,:) = [2.0d0, -2.0d0]
         jac(2,:) = [2*x1-2*x2, -2*x1]
         jac(3,:) = [1.0d0, 6*x2]
@@ -60,15 +61,12 @@ pure subroutine fcn1_jac (x, fx, jac, task)
     end if
 end subroutine
 
+
 pure subroutine fcn1 (x, fx)
-    real (PREC), dimension(:), intent(in) :: x
-    real (PREC), dimension(:), intent(out) :: fx
+    real (PREC), dimension(:), intent(in), contiguous :: x
+    real (PREC), dimension(:), intent(out), contiguous :: fx
 
-    real (PREC), dimension(0,0) :: jac
-    integer :: task
-
-    task = 1
-    call fcn1_jac (x, fx, jac, task)
+    call fcn1_jac (x, fx)
 
 end subroutine
 
