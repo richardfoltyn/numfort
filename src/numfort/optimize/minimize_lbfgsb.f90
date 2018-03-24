@@ -300,7 +300,6 @@ recursive subroutine lbfgsb_impl_real64 (fcn, x, lbounds, ubounds, maxiter, &
     type (workspace_real64), pointer :: ptr_work
 
     integer :: nrwrk, niwrk, n, lwork, liwork
-    type (status_t) :: status
     ! lenghts of additional working arrays
     integer, parameter :: NDSAVE = 29, NISAVE = 44, NLSAVE = 4, NCSAVE = 60, NTASK = 60
 
@@ -325,7 +324,6 @@ recursive subroutine lbfgsb_impl_real64 (fcn, x, lbounds, ubounds, maxiter, &
     integer :: iter, nfeval
         !   Number of iterations and function evaluations
 
-    status = NF_STATUS_INVALID_ARG
     nullify (ptr_work)
     nullify (ptr_rwork, ptr_iwork, llbounds, lubounds, fpx)
 
