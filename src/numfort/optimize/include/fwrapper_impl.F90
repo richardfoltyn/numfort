@@ -107,16 +107,21 @@ recursive subroutine __APPEND(fss_dispatch_fcn,__PREC) (self, x, fx)
 end subroutine
 
 
-recursive subroutine __APPEND(fss_dispatch_jac,__PREC) (self, x, fpx)
+recursive subroutine __APPEND(fss_dispatch_jac,__PREC) (self, x, fpx, fx)
     !*  DISPATH_JAC returns the first derivative of the wrapped function
     !   at a given point.
     integer, parameter :: PREC = __PREC
     type (__APPEND(fwrapper_ss,__PREC)), intent(inout) :: self
     real (PREC), intent(in) :: x
     real (PREC), intent(out) :: fpx
+    real (PREC), intent(in), optional :: fx
+        !*  Function value at point X. If present, numerical differentiation
+        !   takes one less function evaluation to compute. Ignored if
+        !   derivative is computed via a user-provided function.
 
-    real (PREC) :: fx
-        !   Function value, not used.
+    real (PREC) :: lfx
+        !   Function value, used to store return value from joint function/
+        !   derivative routine.
 
     if (associated(self%ptr_args)) then
         if (associated(self%jac_args)) then
@@ -126,11 +131,14 @@ recursive subroutine __APPEND(fss_dispatch_jac,__PREC) (self, x, fpx)
             call self%fcn_jac_opt_args (x, self%ptr_args, fpx=fpx)
             self%nfev = self%nfev + 1
         else if (associated(self%fcn_jac_args)) then
-            call self%fcn_jac_args (x, self%ptr_args, fx, fpx)
+            call self%fcn_jac_args (x, self%ptr_args, lfx, fpx)
             self%nfev = self%nfev + 1
         else if (associated(self%fcn_args)) then
-            call num_diff (self%fcn_args, x, self%ptr_args, fpx, eps=self%eps)
-            self%nfev = self%nfev + 2
+            call num_diff (self%fcn_args, x, self%ptr_args, fpx, fx, self%eps)
+            ! Number of function evaluations requierd to compute f(X+eps)
+            self%nfev = self%nfev + 1
+            ! Add function evaluated required to obtain f(X)
+            if (.not. present(fx)) self%nfev = self%nfev + 1
         end if
     else
         if (associated(self%jac)) then
@@ -140,11 +148,14 @@ recursive subroutine __APPEND(fss_dispatch_jac,__PREC) (self, x, fpx)
             call self%fcn_jac_opt (x, fpx=fpx)
             self%nfev = self%nfev + 1
         else if (associated(self%fcn_jac)) then
-            call self%fcn_jac (x, fx, fpx)
+            call self%fcn_jac (x, lfx, fpx)
             self%nfev = self%nfev + 1
         else if (associated(self%fcn)) then
-            call num_diff (self%fcn, x, fpx, eps=self%eps)
-            self%nfev = self%nfev + 2
+            call num_diff (self%fcn, x, fpx, fx, self%eps)
+            ! Number of function evaluations requierd to compute f(X+eps)
+            self%nfev = self%nfev + 1
+            ! Add function evaluated required to obtain f(X)
+            if (.not. present(fx)) self%nfev = self%nfev + 1
         end if
     end if
 
@@ -330,16 +341,21 @@ recursive subroutine __APPEND(fvs_dispatch_fcn,__PREC) (self, x, fx)
 end subroutine
 
 
-recursive subroutine __APPEND(fvs_dispatch_jac,__PREC) (self, x, fpx)
+recursive subroutine __APPEND(fvs_dispatch_jac,__PREC) (self, x, fpx, fx)
     !*  DISPATH_JAC returns the first derivative of the wrapped function
     !   at a given point.
     integer, parameter :: PREC = __PREC
     type (__APPEND(fwrapper_vs,__PREC)), intent(inout) :: self
     real (PREC), intent(in), dimension(:), contiguous  :: x
     real (PREC), intent(out), dimension(:), contiguous :: fpx
+    real (PREC), intent(in), optional :: fx
+        !*  Function value at point X. If present, numerical differentiation
+        !   takes one less function evaluation to compute. Ignored if
+        !   derivative is computed via a user-provided function.
 
-    real (PREC) :: fx
-        !   Function value; not returned to caller
+    real (PREC) :: lfx
+        !   Function value, used to store return value from joint function/
+        !   derivative routine.
 
     if (associated(self%ptr_args)) then
         if (associated(self%jac_args)) then
@@ -349,11 +365,14 @@ recursive subroutine __APPEND(fvs_dispatch_jac,__PREC) (self, x, fpx)
             call self%fcn_jac_opt_args (x, self%ptr_args, fpx=fpx)
             self%nfev = self%nfev + 1
         else if (associated(self%fcn_jac_args)) then
-            call self%fcn_jac_args (x, self%ptr_args, fx, fpx)
+            call self%fcn_jac_args (x, self%ptr_args, lfx, fpx)
             self%nfev = self%nfev + 1
         else if (associated(self%fcn_args)) then
-            call num_diff (self%fcn_args, x, self%ptr_args, fpx, eps=self%eps)
-            self%nfev = self%nfev + size(x) + 1
+            call num_diff (self%fcn_args, x, self%ptr_args, fpx, fx, self%eps)
+            ! Number of function evaluations requierd to compute f(X+eps)
+            self%nfev = self%nfev + size(x)
+            ! Add function evaluated required to obtain f(X)
+            if (.not. present(fx)) self%nfev = self%nfev + 1
         end if
     else
         if (associated(self%jac)) then
@@ -363,11 +382,14 @@ recursive subroutine __APPEND(fvs_dispatch_jac,__PREC) (self, x, fpx)
             call self%fcn_jac_opt (x, fpx=fpx)
             self%nfev = self%nfev + 1
         else if (associated(self%fcn_jac)) then
-            call self%fcn_jac (x, fx, fpx)
+            call self%fcn_jac (x, lfx, fpx)
             self%nfev = self%nfev + 1
         else if (associated(self%fcn)) then
-            call num_diff (self%fcn, x, fpx, eps=self%eps)
-            self%nfev = self%nfev + size(x) + 1
+            call num_diff (self%fcn, x, fpx, fx, self%eps)
+            ! Number of function evaluations requierd to compute f(X+eps)
+            self%nfev = self%nfev + size(x)
+            ! Add function evaluated required to obtain f(X)
+            if (.not. present(fx)) self%nfev = self%nfev + 1
         end if
     end if
 
@@ -549,16 +571,21 @@ recursive subroutine __APPEND(fvv_dispatch_fcn,__PREC) (self, x, fx)
 end subroutine
 
 
-recursive subroutine __APPEND(fvv_dispatch_jac,__PREC) (self, x, fpx)
+recursive subroutine __APPEND(fvv_dispatch_jac,__PREC) (self, x, fpx, fx)
     !*  DISPATH_JAC returns the first derivative of the wrapped function
     !   at a given point.
     integer, parameter :: PREC = __PREC
     type (__APPEND(fwrapper_vv,__PREC)), intent(inout) :: self
     real (PREC), intent(in), dimension(:), contiguous  :: x
     real (PREC), intent(out), dimension(:,:), contiguous :: fpx
+    real (PREC), intent(in), dimension(:), optional, contiguous :: fx
+        !*  Function value at point X. If present, numerical differentiation
+        !   takes one less function evaluation to compute. Ignored if
+        !   derivative is computed via a user-provided function.
 
-    real (PREC), dimension(:), allocatable :: fx
-        !   Local array to store function value; not returned to caller.
+    real (PREC), dimension(:), allocatable :: lfx
+        !   Function value, used to store return value from joint function/
+        !   derivative routine.
 
     if (associated(self%ptr_args)) then
         if (associated(self%jac_args)) then
@@ -568,13 +595,16 @@ recursive subroutine __APPEND(fvv_dispatch_jac,__PREC) (self, x, fpx)
             call self%fcn_jac_opt_args (x, self%ptr_args, fpx=fpx)
             self%nfev = self%nfev + 1
         else if (associated(self%fcn_jac_args)) then
-            allocate (fx(size(fpx,1)))
-            call self%fcn_jac_args (x, self%ptr_args, fx, fpx)
+            allocate (lfx(size(fpx,1)))
+            call self%fcn_jac_args (x, self%ptr_args, lfx, fpx)
             self%nfev = self%nfev + 1
-            deallocate (fx)
+            deallocate (lfx)
         else if (associated(self%fcn_args)) then
-            call num_diff (self%fcn_args, x, self%ptr_args, fpx, eps=self%eps)
-            self%nfev = self%nfev + size(x) + 1
+            call num_diff (self%fcn_args, x, self%ptr_args, fpx, fx, self%eps)
+            ! Number of function evaluations requierd to compute f(X+eps)
+            self%nfev = self%nfev + size(x)
+            ! Add function evaluated required to obtain f(X)
+            if (.not. present(fx)) self%nfev = self%nfev + 1
         end if
     else
         if (associated(self%jac)) then
@@ -584,13 +614,16 @@ recursive subroutine __APPEND(fvv_dispatch_jac,__PREC) (self, x, fpx)
             call self%fcn_jac_opt (x, fpx=fpx)
             self%nfev = self%nfev + 1
         else if (associated(self%fcn_jac)) then
-            allocate (fx(size(fpx,1)))
-            call self%fcn_jac (x, fx, fpx)
+            allocate (lfx(size(fpx,1)))
+            call self%fcn_jac (x, lfx, fpx)
             self%nfev = self%nfev + 1
-            deallocate (fx)
+            deallocate (lfx)
         else if (associated(self%fcn)) then
-            call num_diff (self%fcn, x, fpx, eps=self%eps)
-            self%nfev = self%nfev + size(x) + 1
+            call num_diff (self%fcn, x, fpx, fx, self%eps)
+            ! Number of function evaluations requierd to compute f(X+eps)
+            self%nfev = self%nfev + size(x)
+            ! Add function evaluated required to obtain f(X)
+            if (.not. present(fx)) self%nfev = self%nfev + 1
         end if
     end if
 
