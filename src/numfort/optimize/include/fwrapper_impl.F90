@@ -47,11 +47,21 @@ subroutine __APPEND(fss_init,__PREC) (self, fcn, jac, fcn_jac, fcn_jac_opt, &
         if (present(fcn_jac_args)) self%fcn_jac_args => fcn_jac_args
         if (present(fcn_jac_opt_args)) self%fcn_jac_opt_args => fcn_jac_opt_args
         self%ptr_args => args
+
+        ! Set flag whether numerical differentiation will be performed when
+        ! Jacobian needs to be computed.
+        self%num_diff = .not. (present(jac_args) .or. present(fcn_jac_args) &
+            .or. present(fcn_jac_opt_args))
     else
         if (present(fcn)) self%fcn => fcn
         if (present(jac)) self%jac => jac
         if (present(fcn_jac)) self%fcn_jac => fcn_jac
         if (present(fcn_jac_opt)) self%fcn_jac_opt => fcn_jac_opt
+
+        ! Set flag whether numerical differentiation will be performed when
+        ! Jacobian needs to be computed.
+        self%num_diff = .not. (present(jac) .or. present(fcn_jac) .or. &
+            present(fcn_jac_opt))
     end if
 
     if (present(eps)) then
@@ -255,11 +265,21 @@ subroutine __APPEND(fvs_init,__PREC) (self, fcn, jac, fcn_jac, &
         if (present(fcn_jac_args)) self%fcn_jac_args => fcn_jac_args
         if (present(fcn_jac_opt_args)) self%fcn_jac_opt_args => fcn_jac_opt_args
         self%ptr_args => args
+
+        ! Set flag whether numerical differentiation will be performed when
+        ! Jacobian needs to be computed.
+        self%num_diff = .not. (present(jac_args) .or. present(fcn_jac_args) &
+            .or. present(fcn_jac_opt_args))
     else
         if (present(fcn)) self%fcn => fcn
         if (present(jac)) self%jac => jac
         if (present(fcn_jac)) self%fcn_jac => fcn_jac
         if (present(fcn_jac_opt)) self%fcn_jac_opt => fcn_jac_opt
+
+        ! Set flag whether numerical differentiation will be performed when
+        ! Jacobian needs to be computed.
+        self%num_diff = .not. (present(jac) .or. present(fcn_jac) .or. &
+            present(fcn_jac_opt))
     end if
     
     if (present(eps)) then
@@ -464,11 +484,21 @@ subroutine __APPEND(fvv_init,__PREC) (self, fcn, jac, fcn_jac, fcn_jac_opt, &
         if (present(fcn_jac_args)) self%fcn_jac_args => fcn_jac_args
         if (present(fcn_jac_opt_args)) self%fcn_jac_opt_args => fcn_jac_opt_args
         self%ptr_args => args
+
+        ! Set flag whether numerical differentiation will be performed when
+        ! Jacobian needs to be computed.
+        self%num_diff = .not. (present(jac_args) .or. present(fcn_jac_args) &
+            .or. present(fcn_jac_opt_args))
     else
         if (present(fcn)) self%fcn => fcn
         if (present(jac)) self%jac => jac
         if (present(fcn_jac)) self%fcn_jac => fcn_jac
         if (present(fcn_jac_opt)) self%fcn_jac_opt => fcn_jac_opt
+
+        ! Set flag whether numerical differentiation will be performed when
+        ! Jacobian needs to be computed.
+        self%num_diff = .not. (present(jac) .or. present(fcn_jac) .or. &
+            present(fcn_jac_opt))
     end if
     
     if (present(eps)) then

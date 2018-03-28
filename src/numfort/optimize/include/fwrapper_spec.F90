@@ -23,6 +23,9 @@ type, public :: __APPEND(fwrapper_ss,__PREC)
         !*  Pointer to (optional) additional arguments
     real (__PREC) :: eps = sqrt(epsilon(__APPEND(0.0,__PREC)))
         !*  Step size to use for numerical differentiation
+    logical, public :: num_diff = .true.
+        !*  Flag indicating whether derivatives are obtained by numerical
+        !   differentiation.
 end type
 
 interface dispatch_fcn_jac
@@ -65,6 +68,9 @@ type, public :: __APPEND(fwrapper_vs,__PREC)
         !*  Pointer to (optional) additional arguments
     real (__PREC) :: eps = sqrt(epsilon(__APPEND(0.0,__PREC)))
         !*  Step size to use for numerical differentiation
+    logical, public :: num_diff = .true.
+    !*  Flag indicating whether derivatives are obtained by numerical
+    !   differentiation.
 end type
 
 interface wrap_procedure
@@ -106,6 +112,9 @@ type, public :: __APPEND(fwrapper_vv,__PREC)
         !*  Pointer to (optional) additional arguments
     real (__PREC) :: eps = sqrt(epsilon(__APPEND(0.0,__PREC)))
         !*  Step size to use for numerical differentiation
+    logical, public :: num_diff = .true.
+    !*  Flag indicating whether derivatives are obtained by numerical
+    !   differentiation.
 end type
 
 interface wrap_procedure
