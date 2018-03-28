@@ -7,8 +7,8 @@ subroutine __APPEND(root_broyden_check_input,__PREC) (maxiter, tol, xtol, rstep,
     integer, intent(in), optional :: maxiter
     real (PREC), intent(in) :: tol, xtol
     real (PREC), intent(in), optional :: rstep, xstep
-    type (status_t), intent(in out) :: status
-    character (*), intent(in out) :: msg
+    type (status_t), intent(inout) :: status
+    character (*), intent(inout) :: msg
 
     status = NF_STATUS_OK
 
@@ -38,7 +38,7 @@ subroutine __APPEND(root_broyden,__PREC) (fcn, x, ndiff, tol, xtol, &
         maxiter, rstep, xstep, dstep, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn,__PREC)) :: fcn
-    real (PREC), intent(in out), dimension(:), contiguous :: x
+    real (PREC), intent(inout), dimension(:), contiguous :: x
     logical, intent(in) :: ndiff
     real (PREC), intent(in), optional :: tol
     real (PREC), intent(in), optional :: xtol
@@ -46,8 +46,8 @@ subroutine __APPEND(root_broyden,__PREC) (fcn, x, ndiff, tol, xtol, &
     real (PREC), intent(in), optional :: rstep
     real (PREC), intent(in), optional :: xstep
     real (PREC), intent(in), optional :: dstep
-    type (__APPEND(workspace,__PREC)), intent(in out), optional :: work
-    type (__APPEND(optim_result,__PREC)), intent(in out), optional :: res
+    type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
+    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
 
     type (__APPEND(fwrapper_vv,__PREC)) :: fwrapper
 
@@ -72,14 +72,14 @@ subroutine __APPEND(root_broyden_jac,__PREC) (fcn, fjac, x, tol, xtol, &
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn,__PREC)) :: fcn
     procedure (__APPEND(fvv_jac,__PREC)) :: fjac
-    real (PREC), intent(in out), dimension(:), contiguous :: x
+    real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(in), optional :: tol
     real (PREC), intent(in), optional :: xtol
     integer, intent(in), optional :: maxiter
     real (PREC), intent(in), optional :: rstep
     real (PREC), intent(in), optional :: xstep
-    type (__APPEND(workspace,__PREC)), intent(in out), optional :: work
-    type (__APPEND(optim_result,__PREC)), intent(in out), optional :: res
+    type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
+    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
 
     type (__APPEND(fwrapper_vv,__PREC)) :: fwrapper
 
@@ -94,14 +94,14 @@ subroutine __APPEND(root_broyden_fcn_jac_opt,__PREC) (fcn, x, tol, xtol, &
         maxiter, rstep, xstep, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn_jac_opt,__PREC)) :: fcn
-    real (PREC), intent(in out), dimension(:), contiguous :: x
+    real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(in), optional :: tol
     real (PREC), intent(in), optional :: xtol
     integer, intent(in), optional :: maxiter
     real (PREC), intent(in), optional :: rstep
     real (PREC), intent(in), optional :: xstep
-    type (__APPEND(workspace,__PREC)), intent(in out), optional :: work
-    type (__APPEND(optim_result,__PREC)), intent(in out), optional :: res
+    type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
+    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
 
     type (__APPEND(fwrapper_vv,__PREC)) :: fwrapper
 
@@ -117,7 +117,7 @@ subroutine __APPEND(root_broyden_args,__PREC) (fcn, x, args, ndiff, tol, xtol, &
         maxiter, rstep, xstep, dstep, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn_args,__PREC)) :: fcn
-    real (PREC), intent(in out), dimension(:), contiguous :: x
+    real (PREC), intent(inout), dimension(:), contiguous :: x
     class (args_data), intent(inout) :: args
     logical, intent(in) :: ndiff
     real (PREC), intent(in), optional :: tol
@@ -126,8 +126,8 @@ subroutine __APPEND(root_broyden_args,__PREC) (fcn, x, args, ndiff, tol, xtol, &
     real (PREC), intent(in), optional :: rstep
     real (PREC), intent(in), optional :: xstep
     real (PREC), intent(in), optional :: dstep
-    type (__APPEND(workspace,__PREC)), intent(in out), optional :: work
-    type (__APPEND(optim_result,__PREC)), intent(in out), optional :: res
+    type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
+    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
 
     type (__APPEND(fwrapper_vv,__PREC)) :: fwrapper
 
@@ -152,15 +152,15 @@ subroutine __APPEND(root_broyden_jac_args,__PREC) (fcn, fjac, x, args, tol, xtol
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn_args,__PREC)) :: fcn
     procedure (__APPEND(fvv_jac_args,__PREC)) :: fjac
-    real (PREC), intent(in out), dimension(:), contiguous :: x
+    real (PREC), intent(inout), dimension(:), contiguous :: x
     class (args_data), intent(inout) :: args
     real (PREC), intent(in), optional :: tol
     real (PREC), intent(in), optional :: xtol
     integer, intent(in), optional :: maxiter
     real (PREC), intent(in), optional :: rstep
     real (PREC), intent(in), optional :: xstep
-    type (__APPEND(workspace,__PREC)), intent(in out), optional :: work
-    type (__APPEND(optim_result,__PREC)), intent(in out), optional :: res
+    type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
+    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
 
     type (__APPEND(fwrapper_vv,__PREC)) :: fwrapper
 
@@ -177,15 +177,15 @@ subroutine __APPEND(root_broyden_fcn_jac_opt_args,__PREC) (fcn, x, args, &
         tol, xtol, maxiter, rstep, xstep, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn_jac_opt_args,__PREC)) :: fcn
-    real (PREC), intent(in out), dimension(:), contiguous :: x
+    real (PREC), intent(inout), dimension(:), contiguous :: x
     class (args_data), intent(inout) :: args
     real (PREC), intent(in), optional :: tol
     real (PREC), intent(in), optional :: xtol
     integer, intent(in), optional :: maxiter
     real (PREC), intent(in), optional :: rstep
     real (PREC), intent(in), optional :: xstep
-    type (__APPEND(workspace,__PREC)), intent(in out), optional :: work
-    type (__APPEND(optim_result,__PREC)), intent(in out), optional :: res
+    type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
+    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
 
     type (__APPEND(fwrapper_vv,__PREC)) :: fwrapper
 
@@ -202,8 +202,8 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
 
     integer, parameter :: PREC = __PREC
 
-    type (__APPEND(fwrapper_vv,__PREC)), intent(in out) :: fcn
-    real (PREC), intent(in out), dimension(:), contiguous :: x
+    type (__APPEND(fwrapper_vv,__PREC)), intent(inout) :: fcn
+    real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(in), optional :: tol
     real (PREC), intent(in), optional :: xtol
     integer, intent(in), optional :: maxiter
@@ -212,8 +212,8 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
         !   point (default: unbounded)
     real (PREC), intent(in), optional :: xstep
         !*  Max. absolute step size in search direction (default: unbounded)
-    type (__APPEND(workspace,__PREC)), intent(in out), optional, target :: work
-    type (__APPEND(optim_result,__PREC)), intent(in out), optional, target :: res
+    type (__APPEND(workspace,__PREC)), intent(inout), optional, target :: work
+    type (__APPEND(optim_result,__PREC)), intent(inout), optional, target :: res
 
     real (PREC) :: ltol, lxtol
     real (PREC) :: dx_scale, denom, nrm, nrmp1
@@ -429,16 +429,16 @@ subroutine __APPEND(dumb_line_search,__PREC) (fcn, x, nrm, x_ls, fx_ls, dx, fx)
     !   If the Euclidean norm is larger at all candidate points in direction
     !   DX, the least bad step size is returned.
     integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_vv,__PREC)), intent(in out) :: fcn
+    type (__APPEND(fwrapper_vv,__PREC)), intent(inout) :: fcn
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in) :: nrm
         !*  Euclidean norm of the last function value, |FX|_2
-    real (PREC), intent(in out), dimension(:), contiguous :: x_ls, fx_ls
+    real (PREC), intent(inout), dimension(:), contiguous :: x_ls, fx_ls
         !*  Working arrays to store X, FX evaluated during line search
-    real (PREC), intent(in out), dimension(:) :: dx
+    real (PREC), intent(inout), dimension(:) :: dx
         !*  On entry, contains the max. step size in a desired direction.
         !   On exit, the value is updated to contain the "optimal" step size.
-    real (PREC), intent(in out), dimension(:), contiguous :: fx
+    real (PREC), intent(inout), dimension(:), contiguous :: fx
         !*  On entry, contains the function value evaluated at X. On exit,
         !   contains the function value at X + DX where DX is the updated
         !   value computed by the routine.
