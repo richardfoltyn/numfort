@@ -30,6 +30,8 @@ subroutine test_all ()
     call test_quad (tests)
     call test_func2 (tests)
 
+    call test_maxiter (tests)
+
     call tests%print ()
 end subroutine
 
@@ -124,6 +126,64 @@ subroutine test_func2 (tests)
     deallocate (x, fx, x0)
 
 end subroutine
+
+
+
+subroutine test_maxiter (tests)
+    !*  Test that
+    type (test_suite) :: tests
+
+    class (test_case), pointer :: tc
+    type (optim_result) :: res
+    real (PREC), dimension(:), allocatable :: x, fx, x0
+    integer :: n
+    logical :: lres
+
+    tc => tests%add_test ("ROOT_BROYDEN: MAXITER and MAXFUN tests")
+
+    ! Separate FCN and JAC routines
+    n = 3
+    allocate (x(n), fx(n), x0(n))
+    x0 = [4.0d0, 1.0d0, 1.0d0]
+    x = x0
+    call root_broyden (func2_fcn, func2_jac, x, tol=1.0d-8, xstep=0.1d0, &
+        maxiter=1, res=res)
+    lres = (.not. res%success) .and. res%status == NF_STATUS_MAX_ITER .and. &
+        res%nit == 1
+    call tc%assert_true (lres, "Separate FCN, JAC; MAXITER=1")
+
+    x = x0
+    call root_broyden (func2_fcn, func2_jac, x, tol=1.0d-8, xstep=0.1d0, &
+        maxfun=1, res=res)
+    lres = (.not. res%success) .and. res%status == NF_STATUS_MAX_EVAL .and. &
+        res%nit == 1
+    call tc%assert_true (lres, "Separate FCN, JAC; MAXFUN=1")
+
+    deallocate (x, fx, x0)
+
+    ! Numerical differentiation
+    n = 3
+    allocate (x(n), fx(n), x0(n))
+    x0 = [4.0d0, 1.0d0, 1.0d0]
+    x = x0
+    call root_broyden (func2_fcn, x, ndiff=.true., tol=1.0d-8, dstep=1.0d-5, &
+        maxiter=1, res=res)
+    lres = (.not. res%success) .and. res%status == NF_STATUS_MAX_ITER .and. &
+        res%nit == 1
+    call tc%assert_true (lres, "Numerical diff.; MAXITER=1")
+
+    x = x0
+    call root_broyden (func2_fcn, x, ndiff=.true., tol=1.0d-8, dstep=1.0d-5, &
+        maxfun=1, res=res)
+    lres = (.not. res%success) .and. res%status == NF_STATUS_MAX_EVAL .and. &
+        res%nit == 1
+    call tc%assert_true (lres, "Numerical diff.; MAXFUN=1")
+
+    deallocate (x, fx, x0)
+
+end subroutine
+
+
 
 
 
