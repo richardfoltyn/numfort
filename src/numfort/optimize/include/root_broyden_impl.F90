@@ -1,10 +1,10 @@
 
 
 
-subroutine __APPEND(root_broyden_check_input,__PREC) (maxiter, tol, xtol, rstep, &
-        xstep, status, msg)
+subroutine __APPEND(root_broyden_check_input,__PREC) (maxiter, maxfun, &
+        tol, xtol, rstep, xstep, status, msg)
     integer, parameter :: PREC = __PREC
-    integer, intent(in), optional :: maxiter
+    integer, intent(in):: maxiter, maxfun
     real (PREC), intent(in) :: tol, xtol
     real (PREC), intent(in), optional :: rstep, xstep
     type (status_t), intent(inout) :: status
@@ -13,6 +13,9 @@ subroutine __APPEND(root_broyden_check_input,__PREC) (maxiter, tol, xtol, rstep,
     status = NF_STATUS_OK
 
     call check_positive (0, maxiter, "maxiter", status, msg)
+    if (status /= NF_STATUS_OK) goto 100
+
+    call check_positive (0, maxfun, "maxfun", status, msg)
     if (status /= NF_STATUS_OK) goto 100
 
     call check_positive (0.0_PREC, tol, "tol", status, msg)
@@ -35,7 +38,7 @@ end subroutine
 
 
 subroutine __APPEND(root_broyden,__PREC) (fcn, x, ndiff, tol, xtol, &
-        maxiter, rstep, xstep, dstep, work, res)
+        maxiter, maxfun, rstep, xstep, dstep, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn,__PREC)) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
@@ -43,6 +46,9 @@ subroutine __APPEND(root_broyden,__PREC) (fcn, x, ndiff, tol, xtol, &
     real (PREC), intent(in), optional :: tol
     real (PREC), intent(in), optional :: xtol
     integer, intent(in), optional :: maxiter
+    integer, intent(in), optional :: maxfun
+    !*  Max. number of function evaluations (includes evaluations of
+    !   Jacobian obtained by numerical differentiation, if applicable)
     real (PREC), intent(in), optional :: rstep
     real (PREC), intent(in), optional :: xstep
     real (PREC), intent(in), optional :: dstep
@@ -61,14 +67,14 @@ subroutine __APPEND(root_broyden,__PREC) (fcn, x, ndiff, tol, xtol, &
 
     call wrap_procedure (fwrapper, fcn=fcn, eps=dstep)
 
-    call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, rstep, xstep, &
-        work, res)
+    call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, maxfun, &
+        rstep, xstep, work, res)
 
 end subroutine
 
 
 subroutine __APPEND(root_broyden_jac,__PREC) (fcn, fjac, x, tol, xtol, &
-        maxiter, rstep, xstep, work, res)
+        maxiter, maxfun, rstep, xstep, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn,__PREC)) :: fcn
     procedure (__APPEND(fvv_jac,__PREC)) :: fjac
@@ -76,6 +82,9 @@ subroutine __APPEND(root_broyden_jac,__PREC) (fcn, fjac, x, tol, xtol, &
     real (PREC), intent(in), optional :: tol
     real (PREC), intent(in), optional :: xtol
     integer, intent(in), optional :: maxiter
+    integer, intent(in), optional :: maxfun
+    !*  Max. number of function evaluations (includes evaluations of
+    !   Jacobian obtained by numerical differentiation, if applicable)
     real (PREC), intent(in), optional :: rstep
     real (PREC), intent(in), optional :: xstep
     type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
@@ -85,19 +94,22 @@ subroutine __APPEND(root_broyden_jac,__PREC) (fcn, fjac, x, tol, xtol, &
 
     call wrap_procedure (fwrapper, fcn=fcn, jac=fjac)
 
-    call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, rstep, xstep, &
-        work, res)
+    call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, maxfun, &
+        rstep, xstep, work, res)
 
 end subroutine
 
 subroutine __APPEND(root_broyden_fcn_jac_opt,__PREC) (fcn, x, tol, xtol, &
-        maxiter, rstep, xstep, work, res)
+        maxiter, maxfun, rstep, xstep, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn_jac_opt,__PREC)) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(in), optional :: tol
     real (PREC), intent(in), optional :: xtol
     integer, intent(in), optional :: maxiter
+    integer, intent(in), optional :: maxfun
+    !*  Max. number of function evaluations (includes evaluations of
+    !   Jacobian obtained by numerical differentiation, if applicable)
     real (PREC), intent(in), optional :: rstep
     real (PREC), intent(in), optional :: xstep
     type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
@@ -107,14 +119,14 @@ subroutine __APPEND(root_broyden_fcn_jac_opt,__PREC) (fcn, x, tol, xtol, &
 
     call wrap_procedure (fwrapper, fcn_jac_opt=fcn)
 
-    call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, rstep, xstep, &
-        work, res)
+    call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, maxfun, &
+        rstep, xstep, work, res)
 
 end subroutine
 
 
 subroutine __APPEND(root_broyden_args,__PREC) (fcn, x, args, ndiff, tol, xtol, &
-        maxiter, rstep, xstep, dstep, work, res)
+        maxiter, maxfun, rstep, xstep, dstep, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn_args,__PREC)) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
@@ -123,6 +135,9 @@ subroutine __APPEND(root_broyden_args,__PREC) (fcn, x, args, ndiff, tol, xtol, &
     real (PREC), intent(in), optional :: tol
     real (PREC), intent(in), optional :: xtol
     integer, intent(in), optional :: maxiter
+    integer, intent(in), optional :: maxfun
+    !*  Max. number of function evaluations (includes evaluations of
+    !   Jacobian obtained by numerical differentiation, if applicable)
     real (PREC), intent(in), optional :: rstep
     real (PREC), intent(in), optional :: xstep
     real (PREC), intent(in), optional :: dstep
@@ -141,14 +156,14 @@ subroutine __APPEND(root_broyden_args,__PREC) (fcn, x, args, ndiff, tol, xtol, &
 
     call wrap_procedure (fwrapper, fcn_args=fcn, args=args, eps=dstep)
 
-    call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, rstep, xstep, &
-        work, res)
+    call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, maxfun, &
+        rstep, xstep, work, res)
 
 end subroutine
 
 
 subroutine __APPEND(root_broyden_jac_args,__PREC) (fcn, fjac, x, args, tol, xtol, &
-        maxiter, rstep, xstep, work, res)
+        maxiter, maxfun, rstep, xstep, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn_args,__PREC)) :: fcn
     procedure (__APPEND(fvv_jac_args,__PREC)) :: fjac
@@ -157,6 +172,9 @@ subroutine __APPEND(root_broyden_jac_args,__PREC) (fcn, fjac, x, args, tol, xtol
     real (PREC), intent(in), optional :: tol
     real (PREC), intent(in), optional :: xtol
     integer, intent(in), optional :: maxiter
+    integer, intent(in), optional :: maxfun
+    !*  Max. number of function evaluations (includes evaluations of
+    !   Jacobian obtained by numerical differentiation, if applicable)
     real (PREC), intent(in), optional :: rstep
     real (PREC), intent(in), optional :: xstep
     type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
@@ -166,15 +184,15 @@ subroutine __APPEND(root_broyden_jac_args,__PREC) (fcn, fjac, x, args, tol, xtol
 
     call wrap_procedure (fwrapper, fcn_args=fcn, jac_args=fjac, args=args)
 
-    call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, rstep, xstep, &
-        work, res)
+    call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, maxfun, &
+        rstep, xstep, work, res)
 
 end subroutine
 
 
 
 subroutine __APPEND(root_broyden_fcn_jac_opt_args,__PREC) (fcn, x, args, &
-        tol, xtol, maxiter, rstep, xstep, work, res)
+        tol, xtol, maxiter, maxfun, rstep, xstep, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn_jac_opt_args,__PREC)) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
@@ -182,6 +200,9 @@ subroutine __APPEND(root_broyden_fcn_jac_opt_args,__PREC) (fcn, x, args, &
     real (PREC), intent(in), optional :: tol
     real (PREC), intent(in), optional :: xtol
     integer, intent(in), optional :: maxiter
+    integer, intent(in), optional :: maxfun
+    !*  Max. number of function evaluations (includes evaluations of
+    !   Jacobian obtained by numerical differentiation, if applicable)
     real (PREC), intent(in), optional :: rstep
     real (PREC), intent(in), optional :: xstep
     type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
@@ -191,14 +212,14 @@ subroutine __APPEND(root_broyden_fcn_jac_opt_args,__PREC) (fcn, x, args, &
 
     call wrap_procedure (fwrapper, fcn_jac_opt_args=fcn, args=args)
 
-    call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, rstep, xstep, &
-        work, res)
+    call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, maxfun, &
+        rstep, xstep, work, res)
 
 end subroutine
 
 
 subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
-        maxiter, rstep, xstep, work, res)
+        maxiter, maxfun, rstep, xstep, work, res)
 
     integer, parameter :: PREC = __PREC
 
@@ -207,6 +228,9 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
     real (PREC), intent(in), optional :: tol
     real (PREC), intent(in), optional :: xtol
     integer, intent(in), optional :: maxiter
+    integer, intent(in), optional :: maxfun
+        !*  Max. number of function evaluations (includes evaluations of
+        !   Jacobian obtained by numerical differentiation, if applicable)
     real (PREC), intent(in), optional :: rstep
         !*  Max. step size in search direction, relative to the current
         !   point (default: unbounded)
@@ -217,7 +241,7 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
 
     real (PREC) :: ltol, lxtol
     real (PREC) :: dx_scale, denom, nrm, nrmp1
-    integer :: lmaxiter, k, n, i, nrwrk, niwrk
+    integer :: lmaxiter, lmaxfun, k, n, i, nrwrk, niwrk
     integer, dimension(2) :: shp2d
     real (PREC), dimension(:), pointer, contiguous :: fx, fxlast, dx, dfx
     real (PREC), dimension(:), pointer, contiguous :: vec1, vec2
@@ -241,19 +265,36 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
     status = NF_STATUS_OK
     nullify (ptr_work, ptr_res)
 
+    call assert_alloc_ptr (res, ptr_res)
+    call result_reset (ptr_res)
+
+    ! Default arguments
     lmaxiter = 100
     ltol = sqrt(epsilon(0.0_PREC))
     lxtol = sqrt(epsilon(0.0_PREC))
 
+    ! Overwrite defaults with optionally provided user arguments
+    ! Note: RSTEP and XSTEP have no default values, we skip limiting the
+    ! step size completly whenever they are not present.
     if (present(maxiter)) lmaxiter = maxiter
     if (present(tol)) ltol = tol
     if (present(xtol)) lxtol = xtol
 
-    call assert_alloc_ptr (res, ptr_res)
-    call result_reset (ptr_res)
+    ! Max. number of function evaluations given by max. iteration count and
+    ! max. number of backtracking steps performed during linesearch.
+    ! Add 1 for initial function evaluation, 1 to ensure that root finder
+    ! will not exit due to NFEV exceeding MAXFUN when it in fact should
+    ! terminate due to exceeding MAXITER.
+    lmaxfun = lmaxiter * LINESEARCH_MAX_STEPS + 2
+    if (fcn%num_diff) then
+        ! If numerical differentiation is performed
+        lmaxfun = lmaxfun + size(x)
+    end if
+    if (present(maxfun)) lmaxfun = maxfun
 
-    call root_broyden_check_input (maxiter, ltol, lxtol, rstep, xstep, &
-        status, ptr_res%msg)
+    ! Validate inputs
+    call root_broyden_check_input (lmaxiter, lmaxfun, ltol, lxtol, &
+        rstep, xstep, status, ptr_res%msg)
     if (NF_STATUS_INVALID_ARG .in. status) goto 100
 
     n = size(x)
@@ -323,7 +364,17 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
             goto 100
         end if
 
-        ! 2. Find next candidate point
+        ! 2. Check whether max. number of func. evaluations was exceeded.
+        if (fcn%nfev >= lmaxfun) then
+            ! Set corresponding exit status.
+            ! At this point the last "best" guess for the root is stored in X,
+            ! the corresponding function value in FXLAST.
+            ptr_res%msg = 'Max. number of function evaluations exceeded'
+            status = NF_STATUS_MAX_EVAL
+            goto 100
+        end if
+
+        ! 3. Find next candidate point
         alpha = -1.0_PREC
         beta = 0.0_PREC
         trans = 'N'
@@ -371,7 +422,7 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
         ! result)
         dfx(:) = fx - fxlast
 
-        ! 3. Update inverse of J_k
+        ! 4. Update inverse of J_k
         ! Compute J^{-1}_{k-1} dfx_k
         alpha = 1.0_PREC
         beta = 0.0_PREC
@@ -404,6 +455,8 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
 
     ptr_res%msg = 'Max. number of iterations exceeded'
     status = NF_STATUS_MAX_ITER
+    ! Correct number of iterations
+    k = lmaxiter
 
 100 continue
 
@@ -444,7 +497,6 @@ subroutine __APPEND(dumb_line_search,__PREC) (fcn, x, nrm, x_ls, fx_ls, dx, fx)
         !   value computed by the routine.
 
     integer :: i, n
-    integer, parameter :: NSEARCH = 4
     real (PREC) :: factr, nrm_ls, nrm_ls_best, factr_best
 
     n = size(x)
@@ -453,8 +505,8 @@ subroutine __APPEND(dumb_line_search,__PREC) (fcn, x, nrm, x_ls, fx_ls, dx, fx)
     nrm_ls_best = huge(1.0_PREC)
     factr_best = 1.0_PREC
 
-    do i = 1, NSEARCH
-        factr = (NSEARCH-i+1.0_PREC)/NSEARCH
+    do i = 1, LINESEARCH_MAX_STEPS
+        factr = (LINESEARCH_MAX_STEPS-i+1.0_PREC)/LINESEARCH_MAX_STEPS
         x_ls(:) = x + factr * dx
 
         call dispatch (fcn, x_ls, fx_ls)

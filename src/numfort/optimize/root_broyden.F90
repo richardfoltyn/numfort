@@ -24,6 +24,10 @@ module numfort_optimize_root_broyden
 
     public :: root_broyden
 
+    integer, parameter :: LINESEARCH_MAX_STEPS = 4
+        !*  Max. number of evaluations during line search (ie. at most
+        !   LINESEARCH_MAX_STEPS-1 backtracking steps will be performed)
+
 #include <numfort_real32.h>
 #include "root_broyden_spec.F90"
 
