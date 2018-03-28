@@ -344,8 +344,9 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
         goto 100
     end if
 
-    ! Compute Jacobian at initial point
-    call dispatch_jac (fcn, x, jac)
+    ! Compute Jacobian at initial point. Reuse f(X) evaluated above in
+    ! case of numerical differentiation.
+    call dispatch_jac (fcn, x, jac, fxlast)
 
     ! Initial inverted Jacobian
     call inv (jac, jac_inv, rwork=rwork_inv, iwork=iwork_inv, status=status)
