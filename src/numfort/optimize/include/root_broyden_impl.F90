@@ -240,7 +240,7 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
     type (__APPEND(optim_result,__PREC)), intent(inout), optional, target :: res
 
     real (PREC) :: ltol, lxtol
-    real (PREC) :: dx_scale, denom, nrm, nrmp1
+    real (PREC) :: dx_scale, denom, nrm, nrmp1, nrm_last, nrm_upd
     integer :: lmaxiter, lmaxfun, k, n, i, nrwrk, niwrk
     integer, dimension(2) :: shp2d
     real (PREC), dimension(:), pointer, contiguous :: fx, fxlast, dx, dfx
@@ -337,8 +337,8 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
     call dispatch (fcn, x, fxlast)
 
     ! Check whether initial point satisfied convergence criterion
-    nrm = norm2(fxlast)
-    if (nrm < tol) then
+    nrm_last = norm2(fxlast)
+    if (nrm_last < tol) then
         ptr_res%msg = 'Convergence achieved, func. value smaller than tol'
         status = NF_STATUS_OK
         goto 100
@@ -357,25 +357,7 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
 
    do k = 1, lmaxiter
 
-        ! 1. Check convergence in terms of function values
-        nrm = norm2(fxlast)
-        if (nrm < tol) then
-            ptr_res%msg = 'Convergence achieved, func. value smaller than tol'
-            status = NF_STATUS_OK
-            goto 100
-        end if
-
-        ! 2. Check whether max. number of func. evaluations was exceeded.
-        if (fcn%nfev >= lmaxfun) then
-            ! Set corresponding exit status.
-            ! At this point the last "best" guess for the root is stored in X,
-            ! the corresponding function value in FXLAST.
-            ptr_res%msg = 'Max. number of function evaluations exceeded'
-            status = NF_STATUS_MAX_EVAL
-            goto 100
-        end if
-
-        ! 3. Find next candidate point
+        ! 1. Find next candidate point
         alpha = -1.0_PREC
         beta = 0.0_PREC
         trans = 'N'
@@ -404,15 +386,53 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
         ! for each element.
         dx(:) = dx_scale * dx
 
-        call dumb_line_search (fcn, x, nrm, x_ls, fx_ls, dx, fx)
+        call dumb_line_search (fcn, x, nrm_last, x_ls, fx_ls, dx, fx)
 
-        ! Check if x_k and x_{k-1} are sufficiently close to each other to
+         ! 2. Check convergence in terms of function values
+        nrm_upd = norm2(fx)
+        if (nrm_upd < tol) then
+            ptr_res%msg = 'Convergence achieved, func. value smaller than tol'
+            status = NF_STATUS_OK
+            ! Code below expects the final function value to be stored in FXLAST
+            call DCOPY (n, fx, 1, fxlast, 1)
+            x(:) = x + dx
+
+            goto 100
+        end if
+
+        ! 3. Check if x_k and x_{k-1} are sufficiently close to each other to
         ! terminate algorithm
         nrm = norm2(dx)
         nrmp1 = norm2(x) + 1.0_PREC
         if (nrm < lxtol * nrmp1) then
             ptr_res%msg = 'Not making sufficient progress, change in x smaller than xtol'
             status = NF_STATUS_NOT_CONVERGED
+
+            ! Determine whether to return (X,FXLAST) or (X+DX,FX) is a
+            ! better approximation
+            if (nrm_last > nrm_upd) then
+                x(:) = x + dx
+                call DCOPY (n, fx, 1, fxlast, 1)
+            end if
+
+            goto 100
+        end if
+
+        ! 4. Check whether max. number of func. evaluations was exceeded.
+        if (fcn%nfev >= lmaxfun) then
+            ! Set corresponding exit status.
+            ! At this point the last "best" guess for the root is stored in X,
+            ! the corresponding function value in FXLAST.
+            ptr_res%msg = 'Max. number of function evaluations exceeded'
+            status = NF_STATUS_MAX_EVAL
+
+            ! Determine whether to return (X,FXLAST) or (X+DX,FX) is a
+            ! better approximation
+            if (nrm_last > nrm_upd) then
+                x(:) = x + dx
+                call DCOPY (n, fx, 1, fxlast, 1)
+            end if
+
             goto 100
         end if
 
@@ -452,6 +472,7 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
 
         ! Update for next iteration
         call DCOPY (n, fx, 1, fxlast, 1)
+        nrm_last = nrm_upd
     end do
 
     ptr_res%msg = 'Max. number of iterations exceeded'
@@ -498,34 +519,34 @@ subroutine __APPEND(dumb_line_search,__PREC) (fcn, x, nrm, x_ls, fx_ls, dx, fx)
         !   value computed by the routine.
 
     integer :: i, n
-    real (PREC) :: factr, nrm_ls, nrm_ls_best, factr_best
+    real (PREC) :: step_size, nrm_ls, nrm_ls_best, step_best
 
     n = size(x)
 
     ! Line search
     nrm_ls_best = huge(1.0_PREC)
-    factr_best = 1.0_PREC
+    step_best = 0.0_PREC
 
     do i = 1, LINESEARCH_MAX_STEPS
-        factr = (LINESEARCH_MAX_STEPS-i+1.0_PREC)/LINESEARCH_MAX_STEPS
-        x_ls(:) = x + factr * dx
+        step_size = (LINESEARCH_MAX_STEPS-i+1.0_PREC)/LINESEARCH_MAX_STEPS
+        x_ls(:) = x + step_size * dx
 
         call dispatch (fcn, x_ls, fx_ls)
         nrm_ls = norm2(fx_ls)
 
         if (nrm_ls <= nrm) then
             fx(:) = fx_ls
-            dx(:) = dx * factr
+            dx = dx * step_size
             return
         else if (nrm_ls < nrm_ls_best) then
             fx(:) = fx_ls
-            factr_best = factr
+            step_best = step_size
             nrm_ls_best = nrm_ls
         end if
     end do
 
     ! No step size with decreasing objective found, take the least bad
-    dx(:) = factr_best * dx
+    dx = step_best * dx
 
 end subroutine
 
