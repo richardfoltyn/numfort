@@ -41,3 +41,6 @@ interface assert_dealloc_ptr
     procedure __APPEND(assert_dealloc_ptr,__PREC)
 end interface
 
+interface result_finalize
+    procedure __APPEND(result_finalize,__PREC)
+end interface

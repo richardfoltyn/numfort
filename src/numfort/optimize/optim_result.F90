@@ -12,10 +12,13 @@ module numfort_optimize_result
     implicit none
     private
 
-    public :: result_update, result_reset
-    public :: assert_alloc_ptr, assert_dealloc_ptr
+    public :: result_update
+    public :: result_reset
+    public :: result_finalize
+    public :: assert_alloc_ptr
+    public :: assert_dealloc_ptr
 
-    integer, parameter :: UNINITIALIZED_COUNTER = -1
+    integer, parameter :: UNINITIALIZED_COUNTER = 0
 
 #include <numfort_real32.h>
 #include "optim_result_spec.F90"

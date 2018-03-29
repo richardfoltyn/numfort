@@ -2,7 +2,7 @@
 
 pure subroutine __APPEND(update_ss,__PREC) (res, x, fx, status, nit, nfev, msg)
     integer, parameter :: PREC = __PREC
-    type (__APPEND(optim_result,__PREC)), intent(in out) :: res
+    type (__APPEND(optim_result,__PREC)), intent(inout) :: res
     real (PREC), intent(in) :: x, fx
     type (status_t), intent(in), optional :: status
     integer, intent(in), optional :: nit
@@ -19,7 +19,7 @@ end subroutine
 
 pure subroutine __APPEND(update_vs,__PREC) (res, x, fx, status, nit, nfev, msg)
     integer, parameter :: PREC = __PREC
-    type (__APPEND(optim_result,__PREC)), intent(in out) :: res
+    type (__APPEND(optim_result,__PREC)), intent(inout) :: res
     real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(in) :: fx
     type (status_t), intent(in), optional :: status
@@ -36,7 +36,7 @@ end subroutine
 
 pure subroutine __APPEND(update,__PREC) (res, x, fx, status, nit, nfev, msg)
     integer, parameter :: PREC = __PREC
-    type (__APPEND(optim_result,__PREC)), intent(in out) :: res
+    type (__APPEND(optim_result,__PREC)), intent(inout) :: res
     real (PREC), intent(in), dimension(:), optional :: x
     real (PREC), intent(in), dimension(:), optional :: fx
     type (status_t), intent(in), optional :: status
@@ -66,7 +66,7 @@ pure subroutine __APPEND(update_int_status,__PREC) (res, x, fx, status, nit, &
     !*  UPDATE_INT_STATUS updates OPTIM_RESULT object attributes with given
     !   values, accepting an integer status value instead of STATUS_T.
     integer, parameter :: PREC = __PREC
-    type (__APPEND(optim_result,__PREC)), intent(in out) :: res
+    type (__APPEND(optim_result,__PREC)), intent(inout) :: res
     real (PREC), intent(in), dimension(:), optional :: x
     real (PREC), intent(in), dimension(:), optional :: fx
     integer (NF_ENUM_KIND), intent(in) :: status
@@ -88,7 +88,7 @@ end subroutine
 
 pure subroutine __APPEND(reset,__PREC) (res)
     integer, parameter :: PREC = __PREC
-    type (__APPEND(optim_result,__PREC)), intent(in out) :: res
+    type (__APPEND(optim_result,__PREC)), intent(inout) :: res
 
     res%nit = UNINITIALIZED_COUNTER
     res%nfev = UNINITIALIZED_COUNTER
@@ -101,8 +101,8 @@ end subroutine
 
 
 pure subroutine __APPEND(assert_alloc_ptr,__PREC) (res, ptr)
-    type (__APPEND(optim_result,__PREC)), intent(in out), target, optional :: res
-    type (__APPEND(optim_result,__PREC)), pointer, intent(in out) :: ptr
+    type (__APPEND(optim_result,__PREC)), intent(inout), target, optional :: res
+    type (__APPEND(optim_result,__PREC)), pointer, intent(inout) :: ptr
 
     if (present(res)) then
         ptr => res
@@ -113,8 +113,8 @@ end subroutine
 
 
 pure subroutine __APPEND(assert_dealloc_ptr,__PREC) (res, ptr)
-    type (__APPEND(optim_result,__PREC)), intent(in out), target, optional :: res
-    type (__APPEND(optim_result,__PREC)), pointer, intent(in out) :: ptr
+    type (__APPEND(optim_result,__PREC)), intent(inout), target, optional :: res
+    type (__APPEND(optim_result,__PREC)), pointer, intent(inout) :: ptr
 
     if (associated(ptr)) then
         if (.not. present(res)) then
@@ -125,4 +125,13 @@ pure subroutine __APPEND(assert_dealloc_ptr,__PREC) (res, ptr)
             nullify (ptr)
         end if
     end if
+end subroutine
+
+subroutine __APPEND(result_finalize,__PREC) (self)
+    !*  RESULT_FINALIZE deallocates any allocated (allocatable) attributes.
+    type (__APPEND(optim_result,__PREC)), intent(inout) :: self
+
+    if (allocated(self%x)) deallocate (self%x)
+    if (allocated(self%fx)) deallocate (self%fx)
+
 end subroutine
