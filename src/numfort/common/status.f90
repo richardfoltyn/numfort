@@ -49,7 +49,7 @@ module numfort_common_status
         module procedure equal_status_status, equal_status_int, equal_int_status
     end interface
 
-    interface operator (/=)
+    interface operator ( /= )
         module procedure nequal_status_status, nequal_status_int, nequal_int_status
     end interface
 
