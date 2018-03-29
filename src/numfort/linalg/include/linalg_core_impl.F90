@@ -1,6 +1,5 @@
 
-
-subroutine __APPEND(inv_work_query,__PREC) (A, lwork, liwork, status)
+subroutine __APPEND(inv_work_query_mat,__PREC) (A, lwork, liwork, status)
     !*  INV_WORK_QUERY returns the optimal workspace sizes for real and
     !   integer working arrays needed by the INV routine.
     integer, parameter :: PREC = __PREC
@@ -13,33 +12,7 @@ subroutine __APPEND(inv_work_query,__PREC) (A, lwork, liwork, status)
     type (status_t), intent(out), optional :: status
         !*  Exit status.
 
-    type (status_t) :: lstatus
-    integer :: n, lda, info
-    integer, dimension(1) :: idummy1d
-    real (PREC), dimension(1) :: rdummy1d
-    real (PREC), dimension(1,1) :: rdummy2d
-
-    n = size(A,1)
-    lstatus = NF_STATUS_OK
-
-    liwork = -1
-
-    ! Workspace query for GETRI
-    lda = n
-    lwork = -1
-    call LAPACK_GETRI (n, rdummy2d, lda, idummy1d, rdummy1d, lwork, info)
-    if (info /= 0) then
-        lstatus = NF_STATUS_INVALID_STATE
-        goto 100
-    end if
-
-    ! Optimal array size stored in first element of RWORK1
-    lwork = int(rdummy1d(1))
-    liwork = n
-
-100 continue
-
-    if (present(status)) status = lstatus
+    call inv_work_query (size(A,1), lwork, liwork, status)
 
 end subroutine
 
