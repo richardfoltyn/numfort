@@ -3,7 +3,7 @@ pure subroutine __APPEND(ws_reset,__PREC) (self)
     !*  WORKSPACE_CLEAR clear any internal state other than allocated
     !   working arrays.
 
-    type (__APPEND(workspace,__PREC)), intent(in out) :: self
+    type (__APPEND(workspace,__PREC)), intent(inout) :: self
 
     self%roffset = 0
     self%ioffset = 0
@@ -19,7 +19,7 @@ pure subroutine __APPEND(ws_assert_alloc_int64,__PREC) &
     integer, parameter :: PREC = __PREC
     integer, parameter :: INTSIZE = int64
     ! Note: avoid polymorphic calls, might break OpenMP
-    type (__APPEND(workspace,__PREC)), intent(in out) :: self
+    type (__APPEND(workspace,__PREC)), intent(inout) :: self
     integer (INTSIZE), intent(in), optional :: nrwrk, niwrk, ncwrk, nlwrk
 
     real (PREC), dimension(:), allocatable :: rtmp
@@ -37,7 +37,6 @@ pure subroutine __APPEND(ws_assert_alloc_int64,__PREC) &
                 rtmp(1:size(self%rwrk)) = self%rwrk
                 call move_alloc (rtmp, self%rwrk)
             end if
-            self%nrwrk = size(self%rwrk)
         end if
     end if
 
@@ -51,7 +50,6 @@ pure subroutine __APPEND(ws_assert_alloc_int64,__PREC) &
                 itmp(1:size(self%iwrk)) = self%iwrk
                 call move_alloc (itmp, self%iwrk)
             end if
-            self%niwrk = size(self%iwrk)
         end if
     end if
 
@@ -65,7 +63,6 @@ pure subroutine __APPEND(ws_assert_alloc_int64,__PREC) &
                 ltmp(1:size(self%lwrk)) = self%lwrk
                 call move_alloc (ltmp, self%lwrk)
             end if
-            self%nlwrk = size(self%lwrk)
         end if
     end if
 
@@ -77,7 +74,6 @@ pure subroutine __APPEND(ws_assert_alloc_int64,__PREC) &
                 allocate (character (ncwrk) :: ctmp)
                 call move_alloc (ctmp, self%cwrk)
             end if
-            self%ncwrk = len(self%cwrk)
         end if
     end if
 end subroutine
@@ -88,7 +84,7 @@ pure subroutine __APPEND(ws_assert_alloc_int32,__PREC) &
 
     integer, parameter :: INTSIZE = int32
     ! Note: avoid polymorphic calls, might break OpenMP
-    type (__APPEND(workspace,__PREC)), intent(in out) :: self
+    type (__APPEND(workspace,__PREC)), intent(inout) :: self
     integer (INTSIZE), intent(in) :: nrwrk
     integer (INTSIZE), intent(in), optional :: niwrk, ncwrk, nlwrk
 
@@ -113,8 +109,8 @@ pure subroutine __APPEND(ws_assert_alloc_ptr,__PREC) (ws, ptr_ws)
     !   If argument ws is present, ptr_ws points to ws and no additional
     !   memory is allocated. If ws is not present, then ptr_ws points to a newly
     !   allocated instance of ws.
-    type (__APPEND(workspace,__PREC)), intent(in out), target, optional :: ws
-    type (__APPEND(workspace,__PREC)), pointer, intent(in out) :: ptr_ws
+    type (__APPEND(workspace,__PREC)), intent(inout), target, optional :: ws
+    type (__APPEND(workspace,__PREC)), pointer, intent(inout) :: ptr_ws
 
     if (present(ws)) then
         ptr_ws => ws
@@ -132,7 +128,7 @@ pure subroutine __APPEND(ws_assert_dealloc_ptr,__PREC) (ws, ptr_ws)
     !   by ptr_ws.
 
     type (__APPEND(workspace,__PREC)), intent(in), target, optional :: ws
-    type (__APPEND(workspace,__PREC)), pointer, intent(in out) :: ptr_ws
+    type (__APPEND(workspace,__PREC)), pointer, intent(inout) :: ptr_ws
 
     if (associated(ptr_ws)) then
         if (.not. present(ws)) then
@@ -148,17 +144,12 @@ pure subroutine __APPEND(ws_assert_dealloc_ptr,__PREC) (ws, ptr_ws)
 end subroutine
 
 pure subroutine __APPEND(ws_finalize,__PREC) (self)
-    type (__APPEND(workspace,__PREC)), intent(in out) :: self
+    type (__APPEND(workspace,__PREC)), intent(inout) :: self
 
     if (allocated(self%rwrk)) deallocate (self%rwrk)
     if (allocated(self%cwrk)) deallocate (self%cwrk)
     if (allocated(self%lwrk)) deallocate (self%lwrk)
     if (allocated(self%iwrk)) deallocate (self%iwrk)
-
-    self%roffset = 0
-    self%ioffset = 0
-    self%coffset = 0
-    self%loffset = 0
 
 end subroutine
 
@@ -175,7 +166,7 @@ pure subroutine __APPEND(ws_get_rptr_1d_int32,__PREC) (self, n, ptr)
     integer, parameter :: PREC = __PREC
     integer, parameter :: INTSIZE = int32
 
-    type (__APPEND(workspace,__PREC)), intent(in out), target :: self
+    type (__APPEND(workspace,__PREC)), intent(inout), target :: self
     integer (INTSIZE), intent(in) :: n
     real (PREC), intent(out), dimension(:), pointer, contiguous :: ptr
 
@@ -205,7 +196,7 @@ pure subroutine __APPEND(ws_get_rptr_2d_int32,__PREC) (self, shp, ptr)
     integer, parameter :: PREC = __PREC
     integer, parameter :: INTSIZE = int32
 
-    type (__APPEND(workspace,__PREC)), intent(in out), target :: self
+    type (__APPEND(workspace,__PREC)), intent(inout), target :: self
     integer (INTSIZE), intent(in), dimension(:) :: shp
     real (PREC), intent(out), dimension(:,:), pointer, contiguous :: ptr
 
@@ -235,7 +226,7 @@ pure subroutine __APPEND(ws_get_iptr_1d_int32,__PREC) (self, n, ptr)
 
     integer, parameter :: INTSIZE = int32
 
-    type (__APPEND(workspace,__PREC)), intent(in out), target :: self
+    type (__APPEND(workspace,__PREC)), intent(inout), target :: self
     integer (INTSIZE), intent(in) :: n
     integer, intent(out), dimension(:), pointer, contiguous :: ptr
 
