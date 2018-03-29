@@ -355,15 +355,20 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
     call workspace_get_ptr (ptr_work, n, rwork_inv)
     call workspace_get_ptr (ptr_work, n, iwork_inv)
 
+    if (liprint /= PRINT_NONE) then
+        print '(tr1, a)', "ROOT_BROYDEN: routine start"
+    end if
+
     call dispatch (fcn, x, fxlast)
 
     ! Check whether initial point satisfied convergence criterion
     nrm_last = norm2(fxlast)
 
     if (liprint /= PRINT_NONE) then
-        print '(tr1, a)', "ROOT_BROYDEN: routine start"
-        print 200, "Initial function value: ", fxlast
-        print 201, "Initial 2-norm: ", nrm_last
+        print '(tr1, a)', "ROOT_BROYDEN: initial values"
+        print 200, "x: ", x
+        print 200, "f(x): ", fxlast
+        print 201, "2-norm: ", nrm_last
     end if
 
     if (nrm_last < tol) then
@@ -532,6 +537,10 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
 
     ! Clean up local OPTIM_RESULT object if none was passed by client code
     call assert_dealloc_ptr (res, ptr_res)
+
+    if (liprint /= PRINT_NONE) then
+        print '(tr1, a)', "ROOT_BROYDEN: routine complete"
+    end if
 
 200 format (tr3, a, *(es9.2e2,:,", "))
 201 format (tr3, a, es9.2e2)
