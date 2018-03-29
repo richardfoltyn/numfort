@@ -52,11 +52,11 @@ subroutine __APPEND(inv,__PREC) (A, Ainv, work, rwork, iwork, status)
         !*  Input matrix to be inversted
     real (PREC), intent(out), dimension(:,:), contiguous :: Ainv
         !*  On exit, contains inverse of A if routine exits without errors.
-    type (__APPEND(workspace,__PREC)), intent(in out), optional, target :: work
+    type (__APPEND(workspace,__PREC)), intent(inout), optional, target :: work
         !*  Workspace object (optional)
-    real (PREC), intent(in out), dimension(:), optional, contiguous, target :: rwork
+    real (PREC), intent(inout), dimension(:), optional, contiguous, target :: rwork
         !*  Working array for reals. If present, takes precedence over WORK.
-    integer, intent(in out), dimension(:), optional, contiguous, target :: iwork
+    integer, intent(inout), dimension(:), optional, contiguous, target :: iwork
         !*  Working array for integers. If present, takes precedence over WORK.
     type (status_t), intent(out), optional :: status
         !*  Exit status (optoinal)
@@ -156,7 +156,7 @@ subroutine __APPEND(det,__PREC) (A, d, work, status)
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:,:), contiguous :: A
     real (PREC), intent(out) :: d
-    type (__APPEND(workspace,__PREC)), intent(in out), optional, target :: work
+    type (__APPEND(workspace,__PREC)), intent(inout), optional, target :: work
     type (status_t), intent(out), optional :: status
 
     type (__APPEND(workspace,__PREC)), pointer :: ptr_ws
