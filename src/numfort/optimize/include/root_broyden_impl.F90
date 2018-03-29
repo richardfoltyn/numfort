@@ -261,6 +261,8 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
     real (PREC) :: ltol, lxtol
     real (PREC) :: dx_scale, denom, nrm, nrmp1, nrm_last, nrm_upd
     integer :: lmaxiter, lmaxfun, k, n, i, nrwrk, niwrk, liprint
+    integer :: lwork_inv, liwork_inv
+        !   Workspace array sizes use for INV routine
     integer, dimension(2) :: shp2d
     real (PREC), dimension(:), pointer, contiguous :: fx, fxlast, dx, dfx
     real (PREC), dimension(:), pointer, contiguous :: vec1, vec2
@@ -328,8 +330,9 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
     ! Workspace array size
     nrwrk = 2*n*n + 8*n
     ! Working arrays needed for INV
-    nrwrk = nrwrk + n
-    niwrk = n
+    call inv_work_query (n, lwork_inv, liwork_inv)
+    nrwrk = nrwrk + lwork_inv
+    niwrk = liwork_inv
 
     ! Allocate workspace arrays
     call assert_alloc_ptr (work, ptr_work)

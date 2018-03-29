@@ -9,7 +9,7 @@ module numfort_optimize_root_broyden
     use numfort_common_input_checks
     use numfort_common_workspace
 
-    use numfort_linalg, only: inv
+    use numfort_linalg, only: inv, inv_work_query
 
     use numfort_optimize_result
     use numfort_optimize_interfaces
