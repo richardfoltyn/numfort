@@ -4,7 +4,7 @@ interface inv
 end interface
 
 interface inv_work_query
-    procedure __APPEND(inv_work_query,__PREC)
+    procedure __APPEND(inv_work_query_mat,__PREC)
 end interface
 
 interface det

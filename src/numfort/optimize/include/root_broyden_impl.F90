@@ -38,7 +38,7 @@ end subroutine
 
 
 subroutine __APPEND(root_broyden,__PREC) (fcn, x, ndiff, tol, xtol, &
-        maxiter, maxfun, rstep, xstep, dstep, work, res)
+        maxiter, maxfun, rstep, xstep, dstep, iprint, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn,__PREC)) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
@@ -52,6 +52,9 @@ subroutine __APPEND(root_broyden,__PREC) (fcn, x, ndiff, tol, xtol, &
     real (PREC), intent(in), optional :: rstep
     real (PREC), intent(in), optional :: xstep
     real (PREC), intent(in), optional :: dstep
+    integer (NF_ENUM_KIND), intent(in), optional :: iprint
+        !*  If present, debug info will be printed according to the value
+        !   of IPRINT.
     type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
     type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
 
@@ -68,13 +71,13 @@ subroutine __APPEND(root_broyden,__PREC) (fcn, x, ndiff, tol, xtol, &
     call wrap_procedure (fwrapper, fcn=fcn, eps=dstep)
 
     call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, maxfun, &
-        rstep, xstep, work, res)
+        rstep, xstep, iprint, work, res)
 
 end subroutine
 
 
 subroutine __APPEND(root_broyden_jac,__PREC) (fcn, fjac, x, tol, xtol, &
-        maxiter, maxfun, rstep, xstep, work, res)
+        maxiter, maxfun, rstep, xstep, iprint, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn,__PREC)) :: fcn
     procedure (__APPEND(fvv_jac,__PREC)) :: fjac
@@ -87,6 +90,9 @@ subroutine __APPEND(root_broyden_jac,__PREC) (fcn, fjac, x, tol, xtol, &
     !   Jacobian obtained by numerical differentiation, if applicable)
     real (PREC), intent(in), optional :: rstep
     real (PREC), intent(in), optional :: xstep
+    integer (NF_ENUM_KIND), intent(in), optional :: iprint
+    !*  If present, debug info will be printed according to the value
+    !   of IPRINT.
     type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
     type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
 
@@ -95,12 +101,12 @@ subroutine __APPEND(root_broyden_jac,__PREC) (fcn, fjac, x, tol, xtol, &
     call wrap_procedure (fwrapper, fcn=fcn, jac=fjac)
 
     call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, maxfun, &
-        rstep, xstep, work, res)
+        rstep, xstep, iprint, work, res)
 
 end subroutine
 
 subroutine __APPEND(root_broyden_fcn_jac_opt,__PREC) (fcn, x, tol, xtol, &
-        maxiter, maxfun, rstep, xstep, work, res)
+        maxiter, maxfun, rstep, xstep, iprint, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn_jac_opt,__PREC)) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
@@ -112,6 +118,9 @@ subroutine __APPEND(root_broyden_fcn_jac_opt,__PREC) (fcn, x, tol, xtol, &
     !   Jacobian obtained by numerical differentiation, if applicable)
     real (PREC), intent(in), optional :: rstep
     real (PREC), intent(in), optional :: xstep
+    integer (NF_ENUM_KIND), intent(in), optional :: iprint
+    !*  If present, debug info will be printed according to the value
+    !   of IPRINT.
     type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
     type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
 
@@ -120,13 +129,13 @@ subroutine __APPEND(root_broyden_fcn_jac_opt,__PREC) (fcn, x, tol, xtol, &
     call wrap_procedure (fwrapper, fcn_jac_opt=fcn)
 
     call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, maxfun, &
-        rstep, xstep, work, res)
+        rstep, xstep, iprint, work, res)
 
 end subroutine
 
 
 subroutine __APPEND(root_broyden_args,__PREC) (fcn, x, args, ndiff, tol, xtol, &
-        maxiter, maxfun, rstep, xstep, dstep, work, res)
+        maxiter, maxfun, rstep, xstep, dstep, iprint, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn_args,__PREC)) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
@@ -141,6 +150,9 @@ subroutine __APPEND(root_broyden_args,__PREC) (fcn, x, args, ndiff, tol, xtol, &
     real (PREC), intent(in), optional :: rstep
     real (PREC), intent(in), optional :: xstep
     real (PREC), intent(in), optional :: dstep
+    integer (NF_ENUM_KIND), intent(in), optional :: iprint
+    !*  If present, debug info will be printed according to the value
+    !   of IPRINT.
     type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
     type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
 
@@ -157,13 +169,13 @@ subroutine __APPEND(root_broyden_args,__PREC) (fcn, x, args, ndiff, tol, xtol, &
     call wrap_procedure (fwrapper, fcn_args=fcn, args=args, eps=dstep)
 
     call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, maxfun, &
-        rstep, xstep, work, res)
+        rstep, xstep, iprint, work, res)
 
 end subroutine
 
 
 subroutine __APPEND(root_broyden_jac_args,__PREC) (fcn, fjac, x, args, tol, xtol, &
-        maxiter, maxfun, rstep, xstep, work, res)
+        maxiter, maxfun, rstep, xstep, iprint, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn_args,__PREC)) :: fcn
     procedure (__APPEND(fvv_jac_args,__PREC)) :: fjac
@@ -177,6 +189,9 @@ subroutine __APPEND(root_broyden_jac_args,__PREC) (fcn, fjac, x, args, tol, xtol
     !   Jacobian obtained by numerical differentiation, if applicable)
     real (PREC), intent(in), optional :: rstep
     real (PREC), intent(in), optional :: xstep
+    integer (NF_ENUM_KIND), intent(in), optional :: iprint
+    !*  If present, debug info will be printed according to the value
+    !   of IPRINT.
     type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
     type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
 
@@ -185,14 +200,14 @@ subroutine __APPEND(root_broyden_jac_args,__PREC) (fcn, fjac, x, args, tol, xtol
     call wrap_procedure (fwrapper, fcn_args=fcn, jac_args=fjac, args=args)
 
     call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, maxfun, &
-        rstep, xstep, work, res)
+        rstep, xstep, iprint, work, res)
 
 end subroutine
 
 
 
 subroutine __APPEND(root_broyden_fcn_jac_opt_args,__PREC) (fcn, x, args, &
-        tol, xtol, maxiter, maxfun, rstep, xstep, work, res)
+        tol, xtol, maxiter, maxfun, rstep, xstep, iprint, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn_jac_opt_args,__PREC)) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
@@ -205,6 +220,9 @@ subroutine __APPEND(root_broyden_fcn_jac_opt_args,__PREC) (fcn, x, args, &
     !   Jacobian obtained by numerical differentiation, if applicable)
     real (PREC), intent(in), optional :: rstep
     real (PREC), intent(in), optional :: xstep
+    integer (NF_ENUM_KIND), intent(in), optional :: iprint
+    !*  If present, debug info will be printed according to the value
+    !   of IPRINT.
     type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
     type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
 
@@ -213,13 +231,13 @@ subroutine __APPEND(root_broyden_fcn_jac_opt_args,__PREC) (fcn, x, args, &
     call wrap_procedure (fwrapper, fcn_jac_opt_args=fcn, args=args)
 
     call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, maxfun, &
-        rstep, xstep, work, res)
+        rstep, xstep, iprint, work, res)
 
 end subroutine
 
 
 subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
-        maxiter, maxfun, rstep, xstep, work, res)
+        maxiter, maxfun, rstep, xstep, iprint, work, res)
 
     integer, parameter :: PREC = __PREC
 
@@ -236,12 +254,15 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
         !   point (default: unbounded)
     real (PREC), intent(in), optional :: xstep
         !*  Max. absolute step size in search direction (default: unbounded)
+    integer (NF_ENUM_KIND), intent(in), optional :: iprint
     type (__APPEND(workspace,__PREC)), intent(inout), optional, target :: work
     type (__APPEND(optim_result,__PREC)), intent(inout), optional, target :: res
 
     real (PREC) :: ltol, lxtol
     real (PREC) :: dx_scale, denom, nrm, nrmp1, nrm_last, nrm_upd
-    integer :: lmaxiter, lmaxfun, k, n, i, nrwrk, niwrk
+    integer :: lmaxiter, lmaxfun, k, n, i, nrwrk, niwrk, liprint
+    integer :: lwork_inv, liwork_inv
+        !   Workspace array sizes use for INV routine
     integer, dimension(2) :: shp2d
     real (PREC), dimension(:), pointer, contiguous :: fx, fxlast, dx, dfx
     real (PREC), dimension(:), pointer, contiguous :: vec1, vec2
@@ -272,6 +293,7 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
     lmaxiter = 100
     ltol = sqrt(epsilon(0.0_PREC))
     lxtol = sqrt(epsilon(0.0_PREC))
+    liprint = PRINT_NONE
 
     ! Overwrite defaults with optionally provided user arguments
     ! Note: RSTEP and XSTEP have no default values, we skip limiting the
@@ -279,6 +301,7 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
     if (present(maxiter)) lmaxiter = maxiter
     if (present(tol)) ltol = tol
     if (present(xtol)) lxtol = xtol
+    if (present(iprint)) liprint = iprint
 
     ! Max. number of function evaluations given by max. iteration count and
     ! max. number of backtracking steps performed during linesearch.
@@ -307,8 +330,9 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
     ! Workspace array size
     nrwrk = 2*n*n + 8*n
     ! Working arrays needed for INV
-    nrwrk = nrwrk + n
-    niwrk = n
+    call inv_work_query (n, lwork_inv, liwork_inv)
+    nrwrk = nrwrk + lwork_inv
+    niwrk = liwork_inv
 
     ! Allocate workspace arrays
     call assert_alloc_ptr (work, ptr_work)
@@ -334,10 +358,22 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
     call workspace_get_ptr (ptr_work, n, rwork_inv)
     call workspace_get_ptr (ptr_work, n, iwork_inv)
 
+    if (liprint /= PRINT_NONE) then
+        print '(tr1, a)', "ROOT_BROYDEN: routine start"
+    end if
+
     call dispatch (fcn, x, fxlast)
 
     ! Check whether initial point satisfied convergence criterion
     nrm_last = norm2(fxlast)
+
+    if (liprint /= PRINT_NONE) then
+        print '(tr1, a)', "ROOT_BROYDEN: initial values"
+        print 200, "x: ", x
+        print 200, "f(x): ", fxlast
+        print 201, "2-norm: ", nrm_last
+    end if
+
     if (nrm_last < tol) then
         ptr_res%msg = 'Convergence achieved, func. value smaller than tol'
         status = NF_STATUS_OK
@@ -347,6 +383,13 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
     ! Compute Jacobian at initial point. Reuse f(X) evaluated above in
     ! case of numerical differentiation.
     call dispatch_jac (fcn, x, jac, fxlast)
+
+    if (iand(liprint, PRINT_JAC) == PRINT_JAC) then
+        print '(tr1, a)', "ROOT_BROYDEN: initial Jacobian"
+        do i = 1, n
+            print 200, "", jac(i,:)
+        end do
+    end if
 
     ! Initial inverted Jacobian
     call inv (jac, jac_inv, rwork=rwork_inv, iwork=iwork_inv, status=status)
@@ -382,11 +425,17 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
             end do
         end if
 
+        if (iand(liprint, PRINT_STEP) == PRINT_STEP) then
+            print '(tr1,a)', "ROOT_BROYDEN: STEP direction"
+            print 200, "Unrestricted step direction: ", dx
+            print 201, "Rescaling factor: ", dx_scale
+        end if
+
         ! Rescale step size such that change in x is at most EPSX percent
         ! for each element.
         dx(:) = dx_scale * dx
 
-        call dumb_line_search (fcn, x, nrm_last, x_ls, fx_ls, dx, fx)
+        call dumb_line_search (fcn, x, nrm_last, liprint, x_ls, fx_ls, dx, fx)
 
          ! 2. Check convergence in terms of function values
         nrm_upd = norm2(fx)
@@ -492,11 +541,19 @@ subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
     ! Clean up local OPTIM_RESULT object if none was passed by client code
     call assert_dealloc_ptr (res, ptr_res)
 
+    if (liprint /= PRINT_NONE) then
+        print '(tr1, a)', "ROOT_BROYDEN: routine complete"
+    end if
+
+200 format (tr3, a, *(es9.2e2,:,", "))
+201 format (tr3, a, es9.2e2)
+
 end subroutine
 
 
 
-subroutine __APPEND(dumb_line_search,__PREC) (fcn, x, nrm, x_ls, fx_ls, dx, fx)
+subroutine __APPEND(dumb_line_search,__PREC) (fcn, x, nrm, iprint, &
+        x_ls, fx_ls, dx, fx)
     !*  DUMB_LINE_SEARCH uses backtracking to identify the step size in a
     !   given direction that yields a lower Euclidean norm of the objective
     !   function than at a given point X.
@@ -508,6 +565,7 @@ subroutine __APPEND(dumb_line_search,__PREC) (fcn, x, nrm, x_ls, fx_ls, dx, fx)
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in) :: nrm
         !*  Euclidean norm of the last function value, |FX|_2
+    integer (NF_ENUM_KIND), intent(in) :: iprint
     real (PREC), intent(inout), dimension(:), contiguous :: x_ls, fx_ls
         !*  Working arrays to store X, FX evaluated during line search
     real (PREC), intent(inout), dimension(:) :: dx
@@ -527,6 +585,10 @@ subroutine __APPEND(dumb_line_search,__PREC) (fcn, x, nrm, x_ls, fx_ls, dx, fx)
     nrm_ls_best = huge(1.0_PREC)
     step_best = 0.0_PREC
 
+    if (iand(iprint, PRINT_LSEARCH) == PRINT_LSEARCH) then
+        print '(tr1, a)', "ROOT_BROYDEN: LINE SEARCH routine"
+    end if
+
     do i = 1, LINESEARCH_MAX_STEPS
         step_size = (LINESEARCH_MAX_STEPS-i+1.0_PREC)/LINESEARCH_MAX_STEPS
         x_ls(:) = x + step_size * dx
@@ -534,10 +596,19 @@ subroutine __APPEND(dumb_line_search,__PREC) (fcn, x, nrm, x_ls, fx_ls, dx, fx)
         call dispatch (fcn, x_ls, fx_ls)
         nrm_ls = norm2(fx_ls)
 
+        if (iand(iprint, PRINT_LSEARCH) == PRINT_LSEARCH) then
+            if (i > 1) then
+                print '(tr3, a, i0)', "ROOT_BROYDEN: BACKTRACKING step #", i-1
+            end if
+            print 200, "x: ", x_ls
+            print 200, "f(x): ", fx_ls
+            print 201, "2-norm: ", nrm_ls
+        end if
+
         if (nrm_ls <= nrm) then
             fx(:) = fx_ls
             dx = dx * step_size
-            return
+            goto 100
         else if (nrm_ls < nrm_ls_best) then
             fx(:) = fx_ls
             step_best = step_size
@@ -547,6 +618,15 @@ subroutine __APPEND(dumb_line_search,__PREC) (fcn, x, nrm, x_ls, fx_ls, dx, fx)
 
     ! No step size with decreasing objective found, take the least bad
     dx = step_best * dx
+
+100 continue
+
+    if (iand(iprint, PRINT_LSEARCH) == PRINT_LSEARCH) then
+        print '(tr1, a)', "ROOT_BROYDEN: LINE SEARCH complete"
+    end if
+
+200 format (tr3, a, *(es9.2e2, :, ", "))
+201 format (tr3, a, es9.2e2)
 
 end subroutine
 
