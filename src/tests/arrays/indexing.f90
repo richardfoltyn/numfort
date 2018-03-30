@@ -72,6 +72,7 @@ subroutine test_ind2sub (tests)
 end subroutine
 
 subroutine ind2sub_fp (tc, shp, text)
+    !*  Check fixed point x = ind2sub(sub2ind(x))
     class (test_case), intent(in), pointer :: tc
     integer, intent(in), dimension(:) :: shp
     character (len=*), intent(in) :: text

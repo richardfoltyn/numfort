@@ -2,10 +2,12 @@ integer (INTSIZE), intent(in), dimension(:) :: shp
 integer (INTSIZE), intent(in), dimension(:,:) :: sub_indices
 integer (INTSIZE), intent(out), dimension(:) :: lin_indices
 
-integer (INTSIZE), dimension(size(shape(sub_indices))) :: stride
+integer (INTSIZE), dimension(:), allocatable :: stride
 integer (INTSIZE) :: i, j, rnk, stride_j
 
 rnk = size(shp)
+
+allocate (stride(rnk))
 
 stride = 1
 do i = 2, rnk
@@ -23,3 +25,5 @@ do j = rnk, 2, -1
         lin_indices(i) = lin_indices(i) + (sub_indices(i, j) - 1) * stride_j
     end do
 end do
+
+deallocate (stride)
