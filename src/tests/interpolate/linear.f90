@@ -15,7 +15,7 @@ contains
 subroutine test_all ()
     type (test_suite) :: tests
 
-    call tests%set_label ("numfort_interpolate unit tests")
+    call tests%set_label ("LINEAR interpolation unit tests")
 
     call test_exact (tests)
     call test_extrap (tests)
