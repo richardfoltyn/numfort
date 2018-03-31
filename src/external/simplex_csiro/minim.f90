@@ -76,10 +76,11 @@ SUBROUTINE minim(p, step, nop, func, maxfn, iprint, stopcr, nloop, iquad,  &
 INTEGER, INTENT(IN)        :: nop, maxfn, iprint, nloop, iquad
 INTEGER, INTENT(OUT)       :: ifault
 REAL (dp), INTENT(IN)      :: stopcr, simp
-REAL (dp), INTENT(IN OUT)  :: p(:), step(:)
+REAL (dp), INTENT(INOUT)  :: p(:), step(:)
 REAL (dp), INTENT(OUT)     :: var(:), func
 
 PROCEDURE(functn_if) :: functn
+CONTIGUOUS :: p
 
 !     Local variables
 

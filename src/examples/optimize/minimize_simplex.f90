@@ -10,7 +10,7 @@ program simplex_demo
 
     call example1 ()
 
-contains
+    contains
 
 ! replicates example from t_minim.f90 that originally came with the simplex
 ! code.
@@ -30,7 +30,7 @@ subroutine example1 ()
     quad = .true.
     tol = 1d-04
 
-    call minimize_simplex (fobj1, x, tol, maxfun, quad, iprint, res)
+    call minimize_simplex (fobj1, x, tol, maxfun, quad, iprint, res=res)
 
     print "('Status codes(s): ', a, ' - ', a100)", char(res%status), res%msg
     print "('Function value at minimum: ', en22.15e2)", res%fx(1)
@@ -40,8 +40,8 @@ subroutine example1 ()
 
 end subroutine
 
-pure subroutine fobj1 (x, fx)
-    real (PREC), intent(in), dimension(:) :: x
+subroutine fobj1 (x, fx)
+    real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(out) :: fx
 
     fx = - 1.0_PREC/(1.0_PREC + (x(1)-x(2)) ** 2) &

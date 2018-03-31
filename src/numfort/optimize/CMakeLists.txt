@@ -9,7 +9,7 @@ set(SOURCE_FILES
     optim_result.F90
     minimize_bounded.F90
     minimize_lbfgsb.f90
-    minimize_simplex.f90
+    minimize_simplex.F90
     minimize_slsqp.f90
     minpack.F90
     root_brent.F90
