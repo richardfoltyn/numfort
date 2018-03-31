@@ -1,7 +1,7 @@
 
 
 subroutine root_lm_real64 (fcn, x, fx, ndiff, ftol, xtol, gtol, maxfev, &
-        factor, diag, dstep, work, res)
+        factor, diag, dstep, drstep, work, res)
 
     integer, parameter :: PREC = real64
     procedure (fvv_fcn_real64) :: fcn
@@ -15,10 +15,16 @@ subroutine root_lm_real64 (fcn, x, fx, ndiff, ftol, xtol, gtol, maxfev, &
     real (PREC), intent(in), optional :: factor
     real (PREC), intent(in), dimension(:), optional, contiguous :: diag
     real (PREC), intent(in), optional :: dstep
+    real (PREC), intent(in), optional :: drstep
+        !*  Relative step size for numerical forward differencing. The
+        !   step size for the derivative wrt. X(j) is computed as
+        !       h = DRSTEP * abs(X(j))
+        !   Note: Ignored if DSTEP is present.
     type (workspace_real64), intent(inout), optional :: work
     type (optim_result_real64), intent(inout), optional :: res
 
     type (fwrapper_vv_real64) :: fwrapper
+    real (PREC) :: reps
 
     ! Force NDIFF argument to be TRUE
     if (.not. ndiff) then
@@ -29,7 +35,14 @@ subroutine root_lm_real64 (fcn, x, fx, ndiff, ftol, xtol, gtol, maxfev, &
         end if
     end if
 
-    call wrap_procedure (fwrapper, fcn=fcn, eps=dstep)
+    ! MINPACK compatibility: If neither DSTEP nor DRSTEP are present, use
+    ! rel. step size of SQRT(machine eps).
+    if (.not. present(dstep) .and. .not. present(drstep)) then
+        reps = sqrt(epsilon(0.0_PREC))
+        call wrap_procedure (fwrapper, fcn=fcn, reps=reps)
+    else
+        call wrap_procedure (fwrapper, fcn=fcn, eps=dstep, reps=drstep)
+    end if
     
     call root_lm_impl (fwrapper, x, fx, ftol, xtol, gtol, maxfev, &
         factor, diag, work, res)
@@ -93,7 +106,7 @@ end subroutine
 
 
 subroutine root_lm_args_real64 (fcn, x, args, fx, ndiff, ftol, xtol, gtol, maxfev, &
-        factor, diag, dstep, work, res)
+        factor, diag, dstep, drstep, work, res)
 
     integer, parameter :: PREC = real64
     procedure (fvv_fcn_args_real64) :: fcn
@@ -108,10 +121,16 @@ subroutine root_lm_args_real64 (fcn, x, args, fx, ndiff, ftol, xtol, gtol, maxfe
     real (PREC), intent(in), optional :: factor
     real (PREC), intent(in), dimension(:), optional, contiguous :: diag
     real (PREC), intent(in), optional :: dstep
+    real (PREC), intent(in), optional :: drstep
+        !*  Relative step size for numerical forward differencing. The
+        !   step size for the derivative wrt. X(j) is computed as
+        !       h = DRSTEP * abs(X(j))
+        !   Note: Ignored if DSTEP is present.
     type (workspace_real64), intent(inout), optional :: work
     type (optim_result_real64), intent(inout), optional :: res
 
     type (fwrapper_vv_real64) :: fwrapper
+    real (PREC) :: reps
 
     ! Force NDIFF argument to be TRUE
     if (.not. ndiff) then
@@ -122,8 +141,15 @@ subroutine root_lm_args_real64 (fcn, x, args, fx, ndiff, ftol, xtol, gtol, maxfe
         end if
     end if
 
-    call wrap_procedure (fwrapper, fcn_args=fcn, args=args, eps=dstep)
-    
+    ! MINPACK compatibility: If neither DSTEP nor DRSTEP are present, use
+    ! rel. step size of SQRT(machine eps).
+    if (.not. present(dstep) .and. .not. present(drstep)) then
+        reps = sqrt(epsilon(0.0_PREC))
+        call wrap_procedure (fwrapper, fcn_args=fcn, args=args, reps=reps)
+    else
+        call wrap_procedure (fwrapper, fcn_args=fcn, args=args, eps=dstep, reps=drstep)
+    end if
+
     call root_lm_impl (fwrapper, x, fx, ftol, xtol, gtol, maxfev, &
         factor, diag, work, res)
 
@@ -165,8 +191,8 @@ subroutine root_lm_fcn_jac_args_real64 (fcn, x, args, fx, ftol, xtol, gtol, &
     integer, parameter :: PREC = real64
     procedure (fvv_fcn_jac_opt_args_real64) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
-    real (PREC), intent(out), dimension(:), contiguous :: fx
     class (args_data), intent(inout) :: args
+    real (PREC), intent(out), dimension(:), contiguous :: fx
     real (PREC), intent(in), optional :: ftol
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: gtol
