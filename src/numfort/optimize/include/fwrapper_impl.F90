@@ -3,7 +3,7 @@
 ! Routines for FWRAPPER_SS
 
 subroutine __APPEND(fss_init,__PREC) (self, fcn, jac, fcn_jac, fcn_jac_opt, &
-        fcn_args, jac_args, fcn_jac_args, fcn_jac_opt_args, args, eps)
+        fcn_args, jac_args, fcn_jac_args, fcn_jac_opt_args, args, eps, reps)
     !*  FSS_INIT intializes a wrapper found a scalar-valued function f:R->R.
     integer, parameter :: PREC = __PREC
     type (__APPEND(fwrapper_ss,__PREC)), intent(inout) :: self
@@ -33,13 +33,20 @@ subroutine __APPEND(fss_init,__PREC) (self, fcn, jac, fcn_jac, fcn_jac_opt, &
         !*  Additional arguments that need to be passed to function.
     real (PREC), intent(in), optional :: eps
         !*  If present, sets the step size used when computing numerical
-        !   derivative if no other way to obtain the derivative is avaiable.
+        !   derivatives if no other way to obtain the derivative is avaiable.
+        !   Note: REPS is ignored if EPS is present.
+    real (PREC), intent(in), optional :: reps
+        !*  If present, sets the relative step size used when computing numerical
+        !   derivatives by forward differencing.
+        !   Note: REPS is ignored if EPS is present.
 
     nullify (self%ptr_args)
     nullify (self%fcn, self%jac, self%fcn_jac, self%fcn_jac_opt)
     nullify (self%fcn_args, self%jac_args, self%fcn_jac_args, self%fcn_jac_opt_args)
     self%nfev = 0
     self%eps = sqrt(epsilon(0.0_PREC))
+    self%reps = sqrt(epsilon(0.0_PREC))
+    self%rel_diff = .false.
 
     if (present(args)) then
         if (present(fcn_args)) self%fcn_args => fcn_args
@@ -66,6 +73,11 @@ subroutine __APPEND(fss_init,__PREC) (self, fcn, jac, fcn_jac, fcn_jac_opt, &
 
     if (present(eps)) then
         self%eps = eps
+    end if
+
+    if (present(reps) .and. .not. present(eps)) then
+        self%rel_diff = .true.
+        self%reps = reps
     end if
 
 end subroutine
@@ -134,7 +146,12 @@ recursive subroutine __APPEND(fss_dispatch_jac,__PREC) (self, x, fpx, fx)
             call self%fcn_jac_args (x, self%ptr_args, lfx, fpx)
             self%nfev = self%nfev + 1
         else if (associated(self%fcn_args)) then
-            call num_diff (self%fcn_args, x, self%ptr_args, fpx, fx, self%eps)
+            if (.not. self%rel_diff) then
+                call num_diff (self%fcn_args, x, self%ptr_args, fpx, fx, self%eps)
+            else
+                call num_diff (self%fcn_args, x, self%ptr_args, fpx, fx, &
+                    reps=self%reps)
+            end if
             ! Number of function evaluations requierd to compute f(X+eps)
             self%nfev = self%nfev + 1
             ! Add function evaluated required to obtain f(X)
@@ -151,7 +168,11 @@ recursive subroutine __APPEND(fss_dispatch_jac,__PREC) (self, x, fpx, fx)
             call self%fcn_jac (x, lfx, fpx)
             self%nfev = self%nfev + 1
         else if (associated(self%fcn)) then
-            call num_diff (self%fcn, x, fpx, fx, self%eps)
+            if (.not. self%rel_diff) then
+                call num_diff (self%fcn, x, fpx, fx, self%eps)
+            else
+                call num_diff (self%fcn, x, fpx, fx, reps=self%reps)
+            end if
             ! Number of function evaluations requierd to compute f(X+eps)
             self%nfev = self%nfev + 1
             ! Add function evaluated required to obtain f(X)
@@ -188,7 +209,12 @@ recursive subroutine __APPEND(fss_dispatch_fcn_jac,__PREC) (self, x, fx, fpx)
                 call self%jac_args (x, self%ptr_args, fpx)
                 self%nfev = self%nfev + 1
             else
-                call num_diff (self%fcn_args, x, self%ptr_args, fpx, fx, self%eps)
+                if (.not. self%rel_diff) then
+                    call num_diff (self%fcn_args, x, self%ptr_args, fpx, fx, self%eps)
+                else
+                    call num_diff (self%fcn_args, x, self%ptr_args, fpx, fx, &
+                        reps=self%reps)
+                end if
                 self%nfev = self%nfev + 1
             end if
         end if
@@ -207,7 +233,11 @@ recursive subroutine __APPEND(fss_dispatch_fcn_jac,__PREC) (self, x, fx, fpx)
                 call self%jac (x, fpx)
                 self%nfev = self%nfev + 1
             else
-                call num_diff (self%fcn, x, fpx, fx, eps=self%eps)
+                if (.not. self%rel_diff) then
+                    call num_diff (self%fcn, x, fpx, fx, eps=self%eps)
+                else
+                    call num_diff (self%fcn, x, fpx, fx, reps=self%reps)
+                end if
                 self%nfev = self%nfev + 1
             end if
         end if
@@ -233,7 +263,7 @@ end function
 
 subroutine __APPEND(fvs_init,__PREC) (self, fcn, jac, fcn_jac, &
         fcn_jac_opt, fcn_args, jac_args, fcn_jac_args, fcn_jac_opt_args, &
-        args, eps)
+        args, eps, reps)
     integer, parameter :: PREC = __PREC
     type (__APPEND(fwrapper_vs,__PREC)), intent(inout) :: self
     procedure (__APPEND(fvs_fcn,__PREC)), optional :: fcn
@@ -263,12 +293,19 @@ subroutine __APPEND(fvs_init,__PREC) (self, fcn, jac, fcn_jac, &
     real (PREC), intent(in), optional :: eps
         !*  If present, sets the step size used when computing numerical
         !   derivative if no other way to obtain the derivative is avaiable.
-        
+        !   Note: REPS is ignored if EPS is present.
+    real (PREC), intent(in), optional :: reps
+        !*  If present, sets the relative step size used when computing numerical
+        !   derivatives by forward differencing.
+        !   Note: REPS is ignored if EPS is present.
+
     nullify (self%ptr_args)
     nullify (self%fcn, self%jac, self%fcn_jac, self%fcn_jac_opt)
     nullify (self%fcn_args, self%jac_args, self%fcn_jac_args, self%fcn_jac_opt_args)
     self%nfev = 0
     self%eps = sqrt(epsilon(0.0_PREC))
+    self%reps = sqrt(epsilon(0.0_PREC))
+    self%rel_diff = .false.
 
     if (present(args)) then
         if (present(fcn_args)) self%fcn_args => fcn_args
@@ -295,6 +332,11 @@ subroutine __APPEND(fvs_init,__PREC) (self, fcn, jac, fcn_jac, &
     
     if (present(eps)) then
         self%eps = eps 
+    end if
+
+    if (present(reps) .and. .not. present(eps)) then
+        self%rel_diff = .true.
+        self%reps = reps
     end if
 end subroutine
 
@@ -368,7 +410,12 @@ recursive subroutine __APPEND(fvs_dispatch_jac,__PREC) (self, x, fpx, fx)
             call self%fcn_jac_args (x, self%ptr_args, lfx, fpx)
             self%nfev = self%nfev + 1
         else if (associated(self%fcn_args)) then
-            call num_diff (self%fcn_args, x, self%ptr_args, fpx, fx, self%eps)
+            if (.not. self%rel_diff) then
+                call num_diff (self%fcn_args, x, self%ptr_args, fpx, fx, self%eps)
+            else
+                call num_diff (self%fcn_args, x, self%ptr_args, fpx, fx, &
+                    reps=self%reps)
+            end if
             ! Number of function evaluations requierd to compute f(X+eps)
             self%nfev = self%nfev + size(x)
             ! Add function evaluated required to obtain f(X)
@@ -385,7 +432,11 @@ recursive subroutine __APPEND(fvs_dispatch_jac,__PREC) (self, x, fpx, fx)
             call self%fcn_jac (x, lfx, fpx)
             self%nfev = self%nfev + 1
         else if (associated(self%fcn)) then
-            call num_diff (self%fcn, x, fpx, fx, self%eps)
+            if (.not. self%rel_diff) then
+                call num_diff (self%fcn, x, fpx, fx, self%eps)
+            else
+                call num_diff (self%fcn, x, fpx, fx, reps=self%reps)
+            end if
             ! Number of function evaluations requierd to compute f(X+eps)
             self%nfev = self%nfev + size(x)
             ! Add function evaluated required to obtain f(X)
@@ -422,7 +473,12 @@ recursive subroutine __APPEND(fvs_dispatch_fcn_jac,__PREC) (self, x, fx, fpx)
                 call self%jac_args (x, self%ptr_args, fpx)
                 self%nfev = self%nfev + 1
             else
-                call num_diff (self%fcn_args, x, self%ptr_args, fpx, fx, self%eps)
+                if (.not. self%rel_diff) then
+                    call num_diff (self%fcn_args, x, self%ptr_args, fpx, fx, self%eps)
+                else
+                    call num_diff (self%fcn_args, x, self%ptr_args, fpx, fx, &
+                        reps=self%reps)
+                end if
                 self%nfev = self%nfev + size(x)
             end if
         end if
@@ -441,7 +497,11 @@ recursive subroutine __APPEND(fvs_dispatch_fcn_jac,__PREC) (self, x, fx, fpx)
                 call self%jac (x, fpx)
                 self%nfev = self%nfev + 1
             else
-                call num_diff (self%fcn, x, fpx, fx, eps=self%eps)
+                if (.not. self%rel_diff) then
+                    call num_diff (self%fcn, x, fpx, fx, eps=self%eps)
+                else
+                    call num_diff (self%fcn, x, fpx, fx, reps=self%reps)
+                end if
                 self%nfev = self%nfev + size(x)
             end if
         end if
@@ -463,7 +523,7 @@ end function
 ! Routines for FWRAPPER_VV
 
 subroutine __APPEND(fvv_init,__PREC) (self, fcn, jac, fcn_jac, fcn_jac_opt, &
-        fcn_args, jac_args, fcn_jac_args, fcn_jac_opt_args, args, eps)
+        fcn_args, jac_args, fcn_jac_args, fcn_jac_opt_args, args, eps, reps)
     integer, parameter :: PREC = __PREC
     type (__APPEND(fwrapper_vv,__PREC)), intent(inout) :: self
     procedure (__APPEND(fvv_fcn,__PREC)), optional :: fcn
@@ -493,12 +553,19 @@ subroutine __APPEND(fvv_init,__PREC) (self, fcn, jac, fcn_jac, fcn_jac_opt, &
     real (PREC), intent(in), optional :: eps
         !*  If present, sets the step size used when computing numerical
         !   derivative if no other way to obtain the derivative is avaiable.
-        
+        !   Note: REPS is ignored if EPS is present.
+    real (PREC), intent(in), optional :: reps
+        !*  If present, sets the relative step size used when computing numerical
+        !   derivatives by forward differencing.
+        !   Note: REPS is ignored if EPS is present.
+
     nullify (self%ptr_args)
     nullify (self%fcn, self%jac, self%fcn_jac, self%fcn_jac_opt)
     nullify (self%fcn_args, self%jac_args, self%fcn_jac_args, self%fcn_jac_opt_args)
     self%nfev = 0
     self%eps = sqrt(epsilon(0.0_PREC))
+    self%reps = sqrt(epsilon(0.0_PREC))
+    self%rel_diff = .false.
 
     if (present(args)) then
         if (present(fcn_args)) self%fcn_args => fcn_args
@@ -525,6 +592,11 @@ subroutine __APPEND(fvv_init,__PREC) (self, fcn, jac, fcn_jac, fcn_jac_opt, &
     
     if (present(eps)) then
         self%eps = eps 
+    end if
+
+    if (present(reps) .and. .not. present(eps)) then
+        self%rel_diff = .true.
+        self%reps = reps
     end if
 end subroutine
 
@@ -600,7 +672,12 @@ recursive subroutine __APPEND(fvv_dispatch_jac,__PREC) (self, x, fpx, fx)
             self%nfev = self%nfev + 1
             deallocate (lfx)
         else if (associated(self%fcn_args)) then
-            call num_diff (self%fcn_args, x, self%ptr_args, fpx, fx, self%eps)
+            if (.not. self%rel_diff) then
+                call num_diff (self%fcn_args, x, self%ptr_args, fpx, fx, self%eps)
+            else
+                call num_diff (self%fcn_args, x, self%ptr_args, fpx, fx, &
+                    reps=self%reps)
+            end if
             ! Number of function evaluations requierd to compute f(X+eps)
             self%nfev = self%nfev + size(x)
             ! Add function evaluated required to obtain f(X)
@@ -619,7 +696,11 @@ recursive subroutine __APPEND(fvv_dispatch_jac,__PREC) (self, x, fpx, fx)
             self%nfev = self%nfev + 1
             deallocate (lfx)
         else if (associated(self%fcn)) then
-            call num_diff (self%fcn, x, fpx, fx, self%eps)
+            if (.not. self%rel_diff) then
+                call num_diff (self%fcn, x, fpx, fx, self%eps)
+            else
+                call num_diff (self%fcn, x, fpx, fx, reps=self%reps)
+            end if
             ! Number of function evaluations requierd to compute f(X+eps)
             self%nfev = self%nfev + size(x)
             ! Add function evaluated required to obtain f(X)
@@ -656,7 +737,12 @@ recursive subroutine __APPEND(fvv_dispatch_fcn_jac,__PREC) (self, x, fx, fpx)
                 call self%jac_args (x, self%ptr_args, fpx)
                 self%nfev = self%nfev + 1
             else
-                call num_diff (self%fcn_args, x, self%ptr_args, fpx, fx, self%eps)
+                if (.not. self%rel_diff) then
+                    call num_diff (self%fcn_args, x, self%ptr_args, fpx, fx, self%eps)
+                else
+                    call num_diff (self%fcn_args, x, self%ptr_args, fpx, fx, &
+                        reps=self%reps)
+                end if
                 self%nfev = self%nfev + size(x)
             end if
         end if
@@ -675,7 +761,11 @@ recursive subroutine __APPEND(fvv_dispatch_fcn_jac,__PREC) (self, x, fx, fpx)
                 call self%jac (x, fpx)
                 self%nfev = self%nfev + 1
             else
-                call num_diff (self%fcn, x, fpx, fx, eps=self%eps)
+                if (.not. self%rel_diff) then
+                    call num_diff (self%fcn, x, fpx, fx, eps=self%eps)
+                else
+                    call num_diff (self%fcn, x, fpx, fx, reps=self%reps)
+                end if
                 self%nfev = self%nfev + size(x)
             end if
         end if

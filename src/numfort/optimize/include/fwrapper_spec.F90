@@ -23,6 +23,11 @@ type, public :: __APPEND(fwrapper_ss,__PREC)
         !*  Pointer to (optional) additional arguments
     real (__PREC) :: eps = sqrt(epsilon(__APPEND(0.0,__PREC)))
         !*  Step size to use for numerical differentiation
+    real (__PREC) :: reps = sqrt(epsilon(__APPEND(0.0,__PREC)))
+        !*  Relative step size for numerical differentiation.
+    logical :: rel_diff = .false.
+        !*  Flag determining whether absolute or relative step size will be
+        !   used for computing forward differences.
     logical, public :: num_diff = .true.
         !*  Flag indicating whether derivatives are obtained by numerical
         !   differentiation.
@@ -68,6 +73,11 @@ type, public :: __APPEND(fwrapper_vs,__PREC)
         !*  Pointer to (optional) additional arguments
     real (__PREC) :: eps = sqrt(epsilon(__APPEND(0.0,__PREC)))
         !*  Step size to use for numerical differentiation
+    real (__PREC) :: reps = sqrt(epsilon(__APPEND(0.0,__PREC)))
+        !*  Relative step size for numerical differentiation.
+    logical :: rel_diff = .false.
+        !*  Flag determining whether absolute or relative step size will be
+        !   used for computing forward differences.
     logical, public :: num_diff = .true.
     !*  Flag indicating whether derivatives are obtained by numerical
     !   differentiation.
@@ -112,6 +122,11 @@ type, public :: __APPEND(fwrapper_vv,__PREC)
         !*  Pointer to (optional) additional arguments
     real (__PREC) :: eps = sqrt(epsilon(__APPEND(0.0,__PREC)))
         !*  Step size to use for numerical differentiation
+    real (__PREC) :: reps = sqrt(epsilon(__APPEND(0.0,__PREC)))
+        !*  Relative step size for numerical differentiation.
+    logical :: rel_diff = .false.
+        !*  Flag determining whether absolute or relative step size will be
+        !   used for computing forward differences.
     logical, public :: num_diff = .true.
     !*  Flag indicating whether derivatives are obtained by numerical
     !   differentiation.
