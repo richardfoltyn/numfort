@@ -177,7 +177,11 @@ pure subroutine __APPEND(ws_get_rptr_1d_int32,__PREC) (self, n, ptr)
     ifrom = self%roffset + 1
     ito = self%roffset + n
 
-    call assert_alloc (self, nrwrk=ito)
+    ! Note: if working array is not large enough, return NULL pointer instead
+    ! of reallocating the working array, which will invalidate all previosly
+    ! associated pointers.
+    if (ito > size(self%rwrk)) return
+
     ptr => self%rwrk(ifrom:ito)
 
     self%roffset = ito
@@ -208,7 +212,11 @@ pure subroutine __APPEND(ws_get_rptr_2d_int32,__PREC) (self, shp, ptr)
     ifrom = self%roffset + 1
     ito = self%roffset + n
 
-    call assert_alloc (self, nrwrk=ito)
+    ! Note: if working array is not large enough, return NULL pointer instead
+    ! of reallocating the working array, which will invalidate all previosly
+    ! associated pointers.
+    if (ito > size(self%rwrk)) return
+
     ptr(1:shp(1),1:shp(2)) => self%rwrk(ifrom:ito)
 
     self%roffset = ito
@@ -237,7 +245,11 @@ pure subroutine __APPEND(ws_get_iptr_1d_int32,__PREC) (self, n, ptr)
     ifrom = self%ioffset + 1
     ito = self%ioffset + n
 
-    call assert_alloc (self, niwrk=ito)
+    ! Note: if working array is not large enough, return NULL pointer instead
+    ! of reallocating the working array, which will invalidate all previosly
+    ! associated pointers.
+    if (ito > size(self%iwrk)) return
+
     ptr => self%iwrk(ifrom:ito)
 
     self%ioffset = ito
