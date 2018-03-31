@@ -22,3 +22,7 @@ end interface
 interface num_diff
     procedure __APPEND(fvv_args_deriv,__PREC)
 end interface
+
+interface get_step_size
+    procedure __APPEND(get_step_size,__PREC)
+end interface

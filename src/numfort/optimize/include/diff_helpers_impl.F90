@@ -1,6 +1,6 @@
 
 
-subroutine __APPEND(fss_deriv,__PREC) (fcn, x, fpx, fx, eps)
+subroutine __APPEND(fss_deriv,__PREC) (fcn, x, fpx, fx, eps, reps)
     !*  FSS_DERIV numerically differentiates a function f:R->R
     !   and returns its derivative
     integer, parameter :: PREC = __PREC
@@ -14,14 +14,19 @@ subroutine __APPEND(fss_deriv,__PREC) (fcn, x, fpx, fx, eps)
         !   it need not be computed inside the routine.
     real (PREC), intent(in), optional :: eps
         !*  If present, contains the step size used to compute the numerical
-        !   derivatives, ie. the derivative of f(X) wrt. to X is obtained as
-        !   (f(X + eps) - f(X)) / eps.
+        !   derivatives, ie. the derivative of f(X)
+        !   wrt. X is obtained as (f(X + eps) - f(X)) / eps.
         !   (default: square root of machine epsilon)
+        !   Note: If both EPS and REPS are present, REPS is ignored.
+    real (PREC), intent(in), optional :: reps
+        !   If present, contains the relative step size used to compute the
+        !   numerical derivatives, ie. the derivative of f(X) wrt. X
+        !   is obtained as
+        !       (f(X + h) - f(X) / h
+        !   where h = reps * abs(X).
+        !   Note: If both EPS and REPS are present, REPS is ignored.
 
-    real (PREC) :: leps, fx_eps, lfx
-
-    leps = sqrt(epsilon(0.0_PREC))
-    if (present(eps)) leps = eps
+    real (PREC) :: fx_h, lfx, h
 
     if (present(fx)) then
         lfx = fx
@@ -29,12 +34,15 @@ subroutine __APPEND(fss_deriv,__PREC) (fcn, x, fpx, fx, eps)
         call fcn (x, lfx)
     end if
 
-    call fcn (x + leps, fx_eps)
-    fpx = (fx_eps - lfx) / leps
+    h = get_step_size (x, eps, reps)
+
+    call fcn (x + h, fx_h)
+    fpx = (fx_h - lfx) / h
 end subroutine
 
 
-subroutine __APPEND(fss_deriv_args,__PREC) (fcn, x, args, fpx, fx, eps)
+
+subroutine __APPEND(fss_deriv_args,__PREC) (fcn, x, args, fpx, fx, eps, reps)
     !*  FSS_DERIV_ARGS numerically differentiates a function f:R->R
     !   and returns its derivative
     integer, parameter :: PREC = __PREC
@@ -49,14 +57,19 @@ subroutine __APPEND(fss_deriv_args,__PREC) (fcn, x, args, fpx, fx, eps)
         !   it need not be computed inside the routine.
     real (PREC), intent(in), optional :: eps
         !*  If present, contains the step size used to compute the numerical
-        !   derivatives, ie. the derivative of f(X) wrt. to X is obtained as
-        !   (f(X + eps) - f(X)) / eps.
+        !   derivatives, ie. the derivative of f(X)
+        !   wrt. X is obtained as (f(X + eps) - f(X)) / eps.
         !   (default: square root of machine epsilon)
+        !   Note: If both EPS and REPS are present, REPS is ignored.
+    real (PREC), intent(in), optional :: reps
+        !   If present, contains the relative step size used to compute the
+        !   numerical derivatives, ie. the derivative of f(X) wrt. X
+        !   is obtained as
+        !       (f(X + h) - f(X) / h
+        !   where h = reps * abs(X).
+        !   Note: If both EPS and REPS are present, REPS is ignored.
 
-    real (PREC) :: leps, fx_eps, lfx
-
-    leps = sqrt(epsilon(0.0_PREC))
-    if (present(eps)) leps = eps
+    real (PREC) :: fx_h, lfx, h
 
     if (present(fx)) then
         lfx = fx
@@ -64,15 +77,19 @@ subroutine __APPEND(fss_deriv_args,__PREC) (fcn, x, args, fpx, fx, eps)
         call fcn (x, args, lfx)
     end if
 
-    call fcn (x + leps, args, fx_eps)
-    fpx = (fx_eps - lfx) / leps
+    h = get_step_size (x, eps, reps)
+
+    call fcn (x + h, args, fx_h)
+    fpx = (fx_h - lfx) / h
+
 end subroutine
+
 
 
 ! ------------------------------------------------------------------------------
 ! Numeric differentiation for functions that map vectors into scalars
 
-subroutine __APPEND(fvs_deriv,__PREC) (fcn, x, fpx, fx, eps)
+subroutine __APPEND(fvs_deriv,__PREC) (fcn, x, fpx, fx, eps, reps)
     !*  FVS_DERIV numerically differentiates a function f:R^n->R^m
     !   and returns its m-by-n Jacobian.
     integer, parameter :: PREC = __PREC
@@ -86,21 +103,26 @@ subroutine __APPEND(fvs_deriv,__PREC) (fcn, x, fpx, fx, eps)
         !   it need not be computed inside the routine.
     real (PREC), intent(in), optional :: eps
         !*  If present, contains the step size used to compute the numerical
-        !   derivatives, ie. the derivative of the j-th element of f(X)
-        !   wrt. to X(i) is obtained as (f_j(X(i) + eps) - f_j(X(i))) / eps.
+        !   derivatives, ie. the derivative of f(X)
+        !   wrt. X(j) is obtained as (f(X + e_j*eps) - f(X)) / eps.
+        !   where e_j is the unit vector with e(j) = 1.
         !   (default: square root of machine epsilon)
+        !   Note: If both EPS and REPS are present, REPS is ignored.
+    real (PREC), intent(in), optional :: reps
+        !   If present, contains the relative step size used to compute the
+        !   numerical derivatives, ie. the derivative of f(X) wrt. X(j)
+        !   is obtained as
+        !       (f(X + e_j*h) - f(X) / h
+        !   where h = reps * abs(X(j)) and e_j is the unit vector with e(j) = 1.
+        !   Note: If both EPS and REPS are present, REPS is ignored.
 
-    real (PREC) :: leps
-    real (PREC), dimension(:), allocatable :: x_eps
-    real (PREC) :: fx_eps, lfx
-    integer :: i , n
-
-    leps = sqrt(epsilon(0.0_PREC))
-    if (present(eps)) leps = eps
+    real (PREC), dimension(:), allocatable :: x_h
+    real (PREC) :: fx_h, lfx, h
+    integer :: j , n
 
     n = size(x)
 
-    allocate (x_eps(n))
+    allocate (x_h(n))
 
     if (present(fx)) then
         lfx = fx
@@ -108,20 +130,23 @@ subroutine __APPEND(fvs_deriv,__PREC) (fcn, x, fpx, fx, eps)
         call fcn (x, lfx)
     end if
 
-    do i = 1, n
-        x_eps(:) = x
-        x_eps(i) = x_eps(i) + leps
+    do j = 1, n
+        x_h(:) = x
+        h = get_step_size (x(j), eps, reps)
+        x_h(j) = x_h(j) + h
 
-        call fcn (x_eps, fx_eps)
+        call fcn (x_h, fx_h)
 
-        fpx(i) = (fx_eps - lfx) / leps
+        fpx(j) = (fx_h - lfx) / h
     end do
 
-    deallocate (x_eps)
+    deallocate (x_h)
 
 end subroutine
 
-subroutine __APPEND(fvs_args_deriv,__PREC) (fcn, x, args, fpx, fx, eps)
+
+
+subroutine __APPEND(fvs_args_deriv,__PREC) (fcn, x, args, fpx, fx, eps, reps)
     !*  FVS_DERIV numerically differentiates a function f:R^n->R^m
     !   and returns its m-by-n Jacobian.
     integer, parameter :: PREC = __PREC
@@ -136,21 +161,26 @@ subroutine __APPEND(fvs_args_deriv,__PREC) (fcn, x, args, fpx, fx, eps)
         !   it need not be computed inside the routine.
     real (PREC), intent(in), optional :: eps
         !*  If present, contains the step size used to compute the numerical
-        !   derivatives, ie. the derivative of the j-th element of f(X)
-        !   wrt. to X(i) is obtained as (f_j(X(i) + eps) - f_j(X(i))) / eps.
+        !   derivatives, ie. the derivative of f(X)
+        !   wrt. X(j) is obtained as (f(X + e_j*eps) - f(X)) / eps.
+        !   where e_j is the unit vector with e(j) = 1.
         !   (default: square root of machine epsilon)
+        !   Note: If both EPS and REPS are present, REPS is ignored.
+    real (PREC), intent(in), optional :: reps
+        !   If present, contains the relative step size used to compute the
+        !   numerical derivatives, ie. the derivative of f(X) wrt. X(j)
+        !   is obtained as
+        !       (f(X + e_j*h) - f(X) / h
+        !   where h = reps * abs(X(j)) and e_j is the unit vector with e(j) = 1.
+        !   Note: If both EPS and REPS are present, REPS is ignored.
 
-    real (PREC) :: leps
-    real (PREC), dimension(:), allocatable :: x_eps
-    real (PREC) :: fx_eps, lfx
-    integer :: i , n
-
-    leps = sqrt(epsilon(0.0_PREC))
-    if (present(eps)) leps = eps
+    real (PREC), dimension(:), allocatable :: x_h
+    real (PREC) :: fx_h, lfx, h
+    integer :: j , n
 
     n = size(x)
 
-    allocate (x_eps(n))
+    allocate (x_h(n))
 
     if (present(fx)) then
         lfx = fx
@@ -158,16 +188,17 @@ subroutine __APPEND(fvs_args_deriv,__PREC) (fcn, x, args, fpx, fx, eps)
         call fcn (x, args, lfx)
     end if
 
-    do i = 1, n
-        x_eps(:) = x
-        x_eps(i) = x_eps(i) + leps
+    do j = 1, n
+        x_h(:) = x
+        h = get_step_size (x(j), eps, reps)
+        x_h(j) = x_h(j) + h
 
-        call fcn (x_eps, args, fx_eps)
+        call fcn (x_h, args, fx_h)
 
-        fpx(i) = (fx_eps - lfx) / leps
+        fpx(j) = (fx_h - lfx) / h
     end do
 
-    deallocate (x_eps)
+    deallocate (x_h)
 
 end subroutine
 
@@ -176,7 +207,7 @@ end subroutine
 ! ------------------------------------------------------------------------------
 ! Numeric differentiation for functions that map vectors into vectors
 
-subroutine __APPEND(fvv_deriv,__PREC) (fcn, x, fpx, fx, eps)
+subroutine __APPEND(fvv_deriv,__PREC) (fcn, x, fpx, fx, eps, reps)
     !*  JACOBIAN numerically differentiates a function f:R^n->R^m
     !   and returns its m-by-n Jacobian.
     integer, parameter :: PREC = __PREC
@@ -191,22 +222,28 @@ subroutine __APPEND(fvv_deriv,__PREC) (fcn, x, fpx, fx, eps)
         !   it need not be computed inside the routine.
     real (PREC), intent(in), optional :: eps
         !*  If present, contains the step size used to compute the numerical
-        !   derivatives, ie. the derivative of the j-th element of f(X)
-        !   wrt. to X(i) is obtained as (f_j(X(i) + eps) - f_j(X(i))) / eps.
+        !   derivatives, ie. the derivative of the i-th element of f(X)
+        !   wrt. X(j) is obtained as (f_i(X + e_j*eps) - f_i(X)) / eps.
+        !   where e_j is the unit vector with e(j) = 1.
         !   (default: square root of machine epsilon)
+        !   Note: If both EPS and REPS are present, REPS is ignored.
+    real (PREC), intent(in), optional :: reps
+        !   If present, contains the relative step size used to compute the
+        !   numerical derivatives, ie. the derivative of the i-th element
+        !   of f(X) wrt. X(j) is obtained as
+        !       (f_i(X + e_j*h) - f_i(X) / h
+        !   where h = reps * abs(X(j)) and e_j is the unit vector with e(j) = 1.
+        !   Note: If both EPS and REPS are present, REPS is ignored.
 
-    real (PREC) :: leps
-    real (PREC), dimension(:), allocatable :: x_eps, fx_eps, lfx
+    real (PREC) :: h
+    real (PREC), dimension(:), allocatable :: x_h, fx_h, lfx
     integer :: i, j, m, n
-
-    leps = sqrt(epsilon(0.0_PREC))
-    if (present(eps)) leps = eps
 
     ! Dimension of function range
     m = size(fpx,1)
     n = size(x)
 
-    allocate (x_eps(n), fx_eps(m))
+    allocate (x_h(n), fx_h(m))
 
     if (present(fx)) then
         allocate (lfx(m), source=fx)
@@ -216,22 +253,23 @@ subroutine __APPEND(fvv_deriv,__PREC) (fcn, x, fpx, fx, eps)
     end if
 
     do j = 1, n
-        x_eps(:) = x
-        x_eps(j) = x_eps(j) + leps
+        x_h(:) = x
+        h = get_step_size (x(j), eps, reps)
+        x_h(j) = x_h(j) + h
 
-        call fcn (x_eps, fx_eps)
+        call fcn (x_h, fx_h)
 
         do i = 1, m
-            fpx(i,j) = (fx_eps(i) - lfx(i)) / leps
+            fpx(i,j) = (fx_h(i) - lfx(i)) / h
         end do
     end do
 
-    deallocate (x_eps, fx_eps, lfx)
+    deallocate (x_h, fx_h, lfx)
 
 end subroutine
 
 
-subroutine __APPEND(fvv_args_deriv,__PREC) (fcn, x, args, fpx, fx, eps)
+subroutine __APPEND(fvv_args_deriv,__PREC) (fcn, x, args, fpx, fx, eps, reps)
     !*  JACOBIAN numerically differentiates a function f:R^n->R^m
     !   and returns its m-by-n Jacobian.
     integer, parameter :: PREC = __PREC
@@ -247,22 +285,28 @@ subroutine __APPEND(fvv_args_deriv,__PREC) (fcn, x, args, fpx, fx, eps)
         !   it need not be computed inside the routine.
     real (PREC), intent(in), optional :: eps
         !*  If present, contains the step size used to compute the numerical
-        !   derivatives, ie. the derivative of the j-th element of f(X)
-        !   wrt. to X(i) is obtained as (f_j(X(i) + eps) - f_j(X(i))) / eps.
+        !   derivatives, ie. the derivative of the i-th element of f(X)
+        !   wrt. X(j) is obtained as (f_i(X + e_j*eps) - f_i(X)) / eps.
+        !   where e_j is the unit vector with e(j) = 1.
         !   (default: square root of machine epsilon)
+        !   Note: If both EPS and REPS are present, REPS is ignored.
+    real (PREC), intent(in), optional :: reps
+        !   If present, contains the relative step size used to compute the
+        !   numerical derivatives, ie. the derivative of the i-th element
+        !   of f(X) wrt. X(j) is obtained as
+        !       (f_i(X + e_j*h) - f_i(X) / h
+        !   where h = reps * abs(X(j)) and e_j is the unit vector with e(j) = 1.
+        !   Note: If both EPS and REPS are present, REPS is ignored.
 
-    real (PREC) :: leps
-    real (PREC), dimension(:), allocatable :: x_eps, fx_eps, lfx
+    real (PREC) :: h
+    real (PREC), dimension(:), allocatable :: x_h, fx_h, lfx
     integer :: i, j, m, n
-
-    leps = sqrt(epsilon(0.0_PREC))
-    if (present(eps)) leps = eps
 
     ! Dimension of function range
     m = size(fpx,1)
     n = size(x)
 
-    allocate (x_eps(n), fx_eps(m))
+    allocate (x_h(n), fx_h(m))
 
     if (present(fx)) then
         allocate (lfx(m), source=fx)
@@ -272,16 +316,44 @@ subroutine __APPEND(fvv_args_deriv,__PREC) (fcn, x, args, fpx, fx, eps)
     end if
 
     do j = 1, n
-        x_eps(:) = x
-        x_eps(j) = x_eps(j) + leps
+        x_h(:) = x
+        h = get_step_size (x(j), eps, reps)
+        x_h(j) = x_h(j) + h
 
-        call fcn (x_eps, args, fx_eps)
+        call fcn (x_h, args, fx_h)
 
         do i = 1, m
-            fpx(i,j) = (fx_eps(i) - lfx(i)) / leps
+            fpx(i,j) = (fx_h(i) - lfx(i)) / h
         end do
     end do
 
-    deallocate (x_eps, fx_eps, lfx)
+    deallocate (x_h, fx_h, lfx)
 
 end subroutine
+
+
+
+pure function __APPEND(get_step_size,__PREC) (x, eps, reps) result(res)
+    !*  GET_STEP_SIZE determines the forward-difference step size
+    !   depending on (presence of) user-provided arguments.
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in) :: x
+    real (PREC), intent(in), optional :: eps
+    real (PREC), intent(in), optional :: reps
+    real (PREC) :: res
+
+    real (PREC) :: h
+
+    if (present(reps) .and. .not. present(eps)) then
+        h = reps * abs(x)
+        ! Take care of cases when x = 0.0
+        if (h == 0.0_PREC) h = reps
+    else if (present(eps)) then
+        h = eps
+    else
+        ! Default step size
+        h = sqrt(epsilon(0.0_PREC))
+    end if
+
+    res = h
+end function
