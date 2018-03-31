@@ -10,7 +10,7 @@ module numfort_arrays_create
     public :: vander
 
     interface arange
-        procedure arange_impl_int32, arange_impl_int64, arange_int32, arange_int64
+        procedure arange_int32, arange_int64, arange_real32, arange_real64
     end interface
 
     interface linspace
@@ -56,29 +56,26 @@ end subroutine
 ! ******************************************************************************
 ! ARANGE procedures
 
-pure subroutine arange_int32 (x)
-    integer, parameter :: INTSIZE = int32
-    integer (INTSIZE), intent(out), dimension(:) :: x
-
-    call arange (x, 1_INTSIZE, 1_INTSIZE)
-end subroutine
-
-pure subroutine arange_int64 (x)
-    integer, parameter :: INTSIZE = int64
-    integer (INTSIZE), intent(out), dimension(:) :: x
-
-    call arange (x, 1_INTSIZE, 1_INTSIZE)
-end subroutine
-
-pure subroutine arange_impl_int32 (x, ifrom, step)
+pure subroutine arange_int32 (x, ifrom, step)
     integer, parameter :: INTSIZE = int32
     include "include/arange_impl.f90"
 end subroutine
 
-pure subroutine arange_impl_int64 (x, ifrom, step)
+pure subroutine arange_int64 (x, ifrom, step)
     integer, parameter :: INTSIZE = int64
     include "include/arange_impl.f90"
 end subroutine
+
+pure subroutine arange_real32 (x, ifrom, step)
+    integer, parameter :: PREC = real32
+    include "include/arange_real_impl.f90"
+end subroutine
+
+pure subroutine arange_real64 (x, ifrom, step)
+    integer, parameter :: PREC = real64
+    include "include/arange_real_impl.f90"
+end subroutine
+
 
 ! ------------------------------------------------------------------------------
 ! POWERSPACE routines
