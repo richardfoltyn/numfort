@@ -5,37 +5,23 @@
 
         abstract interface
           subroutine lmder_fcn_real64 (m,n,x,fvec,fjac,ldfjac,iflag)
-              integer, intent(in) :: m
-              integer, intent(in) :: n
-              integer, intent(in) :: ldfjac
-              double precision, intent(in) :: x(n)
-              double precision, intent(in out) :: fvec(m)
-              double precision, intent(in out) :: fjac(ldfjac, n)
-              integer, intent(in out) :: iflag
+              integer :: m, n, ldfjac, iflag
+              double precision :: x(n), fvec(m), fjac(ldfjac, n)
           end subroutine
 
           subroutine lmdif_fcn_real64 (m, n, x, fvec, iflag)
-              integer, intent(in) :: m
-              integer, intent(in) :: n
-              double precision, intent(in) :: x(n)
-              double precision, intent(in out) :: fvec(m)
-              integer, intent(in out) :: iflag
+              integer :: m, n, iflag
+              double precision :: x(n), fvec(m)
           end subroutine
 
           subroutine hybrd_fcn_real64 (n, x, fvec, iflag)
-              integer, intent(in) :: n
-              double precision, intent(in) :: x(n)
-              double precision, intent(in out) :: fvec(n)
-              integer, intent(in out) :: iflag
+              integer :: n, iflat
+              double precision :: x(n), fvec(n)
           end subroutine
 
           subroutine hybrj_fcn_real64 (n,x,fvec,fjac,ldfjac,iflag)
-              integer, intent(in) :: n
-              integer, intent(in) :: ldfjac
-              double precision, intent(in) :: x(n)
-              double precision, intent(in out) :: fvec(n)
-              double precision, intent(in out) :: fjac(ldfjac, n)
-              integer, intent(in out) :: iflag
+              integer :: n, iflag
+              double precision  :: x(n), fvec(n), fjac(ldfjac, n)
           end subroutine
         end interface
 

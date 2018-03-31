@@ -278,6 +278,11 @@ subroutine root_lm_impl_real64 (fcn, x, fx, ftol, xtol, gtol, maxfev, &
     if (present(factor)) lfactor = factor
     if (present(maxfev)) lmaxfev = maxfev
 
+    ! Workspace size requirements:
+    !   size(fjac) = m * n
+    !   size(wa1) = size(wa2) = size(wa3) = n
+    !   size(wa4) = m
+    !   size(qtf) = n
     nrwrk = 4*n + m + n*m
     ! Add space to store diag
     if (.not. present(diag)) nrwrk = nrwrk + n
@@ -285,6 +290,9 @@ subroutine root_lm_impl_real64 (fcn, x, fx, ftol, xtol, gtol, maxfev, &
     niwrk = n
 
     call assert_alloc_ptr (work, ptr_work)
+    ! Clear any internal state in workspace object, in particular index offsets
+    ! (this does not deallocate working arrays)
+    call workspace_reset (ptr_work)
     call assert_alloc (ptr_work, nrwrk=nrwrk, niwrk=niwrk)
 
     ! map array arguments to lmder() onto workspace
@@ -364,9 +372,6 @@ subroutine root_lm_impl_real64 (fcn, x, fx, ftol, xtol, gtol, maxfev, &
     subroutine fcn_wrapper (m, n, x, fx, fjac, ldfjac, iflag)
         integer :: m, n, iflag, ldfjac
         real (PREC) :: x(n), fx(m), fjac(ldfjac, n)
-
-        intent (in) :: m, n, x, ldfjac
-        intent (inout) :: fx, fjac, iflag
 
         select case (iflag)
         case (1)

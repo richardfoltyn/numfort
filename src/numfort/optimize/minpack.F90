@@ -209,9 +209,6 @@ contains
         integer :: n, iflag
         real (PREC) :: x(n), fx(n)
 
-        intent (in) :: n, x
-        intent (inout) :: fx, iflag
-
         ! call user-provided function
         call func (x, fx)
     end subroutine
@@ -343,9 +340,6 @@ contains
     subroutine fwrapper (n, x, fx, jac, ldfjac, iflag)
         integer :: n, iflag, ldfjac
         real (PREC) :: x(n), fx(n), jac(ldfjac, n)
-
-        intent (in) :: n, x, ldfjac
-        intent (inout) :: fx, jac, iflag
 
         ! call user-provided function
         call func (x, fx, jac, iflag)
