@@ -154,7 +154,7 @@ subroutine test_maxiter (tests)
 
     x = x0
     call root_broyden (func2_fcn, func2_jac, x, tol=1.0d-8, xstep=0.1d0, &
-        maxfun=1, res=res)
+        maxfev=1, res=res)
     lres = (.not. res%success) .and. res%status == NF_STATUS_MAX_EVAL .and. &
         res%nit == 1
     call tc%assert_true (lres, "Separate FCN, JAC; MAXFUN=1")
@@ -174,7 +174,7 @@ subroutine test_maxiter (tests)
 
     x = x0
     call root_broyden (func2_fcn, x, ndiff=.true., tol=1.0d-8, dstep=1.0d-5, &
-        maxfun=1, res=res)
+        maxfev=1, res=res)
     lres = (.not. res%success) .and. res%status == NF_STATUS_MAX_EVAL .and. &
         res%nit == 1
     call tc%assert_true (lres, "Numerical diff.; MAXFUN=1")
