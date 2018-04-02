@@ -374,7 +374,7 @@ recursive subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
         print 201, "2-norm: ", nrm_last
     end if
 
-    if (nrm_last < tol) then
+    if (nrm_last < ltol) then
         ptr_res%msg = 'Convergence achieved, func. value smaller than tol'
         status = NF_STATUS_OK
         goto 100
@@ -439,7 +439,7 @@ recursive subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
 
          ! 2. Check convergence in terms of function values
         nrm_upd = norm2(fx)
-        if (nrm_upd < tol) then
+        if (nrm_upd < ltol) then
             ptr_res%msg = 'Convergence achieved, func. value smaller than tol'
             status = NF_STATUS_OK
             ! Code below expects the final function value to be stored in FXLAST
