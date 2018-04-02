@@ -37,7 +37,7 @@ subroutine __APPEND(root_broyden_check_input,__PREC) (maxiter, maxfev, &
 end subroutine
 
 
-subroutine __APPEND(root_broyden,__PREC) (fcn, x, ndiff, tol, xtol, &
+recursive subroutine __APPEND(root_broyden,__PREC) (fcn, x, ndiff, tol, xtol, &
         maxiter, maxfev, rstep, xstep, dstep, iprint, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn,__PREC)) :: fcn
@@ -76,8 +76,8 @@ subroutine __APPEND(root_broyden,__PREC) (fcn, x, ndiff, tol, xtol, &
 end subroutine
 
 
-subroutine __APPEND(root_broyden_jac,__PREC) (fcn, fjac, x, tol, xtol, &
-        maxiter, maxfev, rstep, xstep, iprint, work, res)
+recursive subroutine __APPEND(root_broyden_jac,__PREC) (fcn, fjac, x, tol, &
+        xtol, maxiter, maxfev, rstep, xstep, iprint, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn,__PREC)) :: fcn
     procedure (__APPEND(fvv_jac,__PREC)) :: fjac
@@ -105,8 +105,8 @@ subroutine __APPEND(root_broyden_jac,__PREC) (fcn, fjac, x, tol, xtol, &
 
 end subroutine
 
-subroutine __APPEND(root_broyden_fcn_jac_opt,__PREC) (fcn, x, tol, xtol, &
-        maxiter, maxfev, rstep, xstep, iprint, work, res)
+recursive subroutine __APPEND(root_broyden_fcn_jac_opt,__PREC) (fcn, x, tol, &
+        xtol, maxiter, maxfev, rstep, xstep, iprint, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn_jac_opt,__PREC)) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
@@ -134,8 +134,8 @@ subroutine __APPEND(root_broyden_fcn_jac_opt,__PREC) (fcn, x, tol, xtol, &
 end subroutine
 
 
-subroutine __APPEND(root_broyden_args,__PREC) (fcn, x, args, ndiff, tol, xtol, &
-        maxiter, maxfev, rstep, xstep, dstep, iprint, work, res)
+recursive subroutine __APPEND(root_broyden_args,__PREC) (fcn, x, args, ndiff, &
+        tol, xtol, maxiter, maxfev, rstep, xstep, dstep, iprint, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn_args,__PREC)) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
@@ -174,8 +174,8 @@ subroutine __APPEND(root_broyden_args,__PREC) (fcn, x, args, ndiff, tol, xtol, &
 end subroutine
 
 
-subroutine __APPEND(root_broyden_jac_args,__PREC) (fcn, fjac, x, args, tol, xtol, &
-        maxiter, maxfev, rstep, xstep, iprint, work, res)
+recursive subroutine __APPEND(root_broyden_jac_args,__PREC) (fcn, fjac, x, &
+        args, tol, xtol, maxiter, maxfev, rstep, xstep, iprint, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn_args,__PREC)) :: fcn
     procedure (__APPEND(fvv_jac_args,__PREC)) :: fjac
@@ -206,8 +206,8 @@ end subroutine
 
 
 
-subroutine __APPEND(root_broyden_fcn_jac_opt_args,__PREC) (fcn, x, args, &
-        tol, xtol, maxiter, maxfev, rstep, xstep, iprint, work, res)
+recursive subroutine __APPEND(root_broyden_fcn_jac_opt_args,__PREC) (fcn, x, &
+        args, tol, xtol, maxiter, maxfev, rstep, xstep, iprint, work, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvv_fcn_jac_opt_args,__PREC)) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
@@ -236,7 +236,7 @@ subroutine __APPEND(root_broyden_fcn_jac_opt_args,__PREC) (fcn, x, args, &
 end subroutine
 
 
-subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
+recursive subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
         maxiter, maxfev, rstep, xstep, iprint, work, res)
 
     integer, parameter :: PREC = __PREC
@@ -552,7 +552,7 @@ end subroutine
 
 
 
-subroutine __APPEND(dumb_line_search,__PREC) (fcn, x, nrm, iprint, &
+recursive subroutine __APPEND(dumb_line_search,__PREC) (fcn, x, nrm, iprint, &
         x_ls, fx_ls, dx, fx)
     !*  DUMB_LINE_SEARCH uses backtracking to identify the step size in a
     !   given direction that yields a lower Euclidean norm of the objective
