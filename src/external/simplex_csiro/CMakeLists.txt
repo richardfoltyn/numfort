@@ -65,6 +65,3 @@ if (${PROJECT_NAME}_STANDALONE)
     add_library(${_name} $<TARGET_OBJECTS:${_name}>)
 endif ()
 
-if (BUILD_EXAMPLES)
-	add_subdirectory(examples)
-endif ()
