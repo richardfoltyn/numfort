@@ -3,7 +3,8 @@
 set(COMPONENT_NAME core)
 
 set(SOURCE_FILES
-	core.f90
+    core.F90
 )
 
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})

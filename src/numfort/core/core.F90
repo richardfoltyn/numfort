@@ -55,47 +55,17 @@ elemental function factorial_int64(n) result(res)
 end function
 
 elemental function comb_int32 (n, k, repetition) result(res)
+    !*  COMB returns the number of combinations (with or without repetition)
+    !   of N items taken K at a time.
     integer, parameter :: PREC = int32
-    integer (PREC), intent(in) :: n, k
-    logical, intent(in), optional :: repetition
-    integer (PREC) :: res
-
-    res = int(comb(int(n, int64), int(k, int64), repetition), int32)
+#include "comb_impl.F90"
 end function
 
 elemental function comb_int64 (n, k, repetition) result(res)
+    !*  COMB returns the number of combinations (with or without repetition)
+    !   of N items taken K at a time.
     integer, parameter :: PREC = int64
-    integer (PREC), intent(in) :: n, k
-    logical, intent(in), optional :: repetition
-    integer (PREC) :: res
-
-    integer (PREC) :: i
-
-    logical :: lrep
-    lrep = .false.
-
-    if (present(repetition)) lrep = repetition
-
-    if (lrep) then
-        ! combination with repetition:
-        ! this is (n + k - 1)!/(k! (n-1)!)
-        ! First compute (n + k - 1)!/(n-1)! = (n+k-1) * ... * n
-        res = n
-        do i = res+1, n+k-1
-            res = res * i
-        end do
-    else
-        ! combination without repetition:
-        ! this is n-choose-k, ie \binomial{n}{k}
-        ! compute n! / (n-k)! = n * (n-1) * ... * (n-k+1)
-        res = n - k + 1
-        do i = res + 1, n
-            res = res * i
-        end do
-    end if
-
-    ! Adjust for k! ways to order k elements
-    res = res / factorial (k)
+#include "comb_impl.F90"
 end function
 
 
