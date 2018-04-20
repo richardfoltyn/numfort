@@ -58,7 +58,7 @@ set(SOURCE_FILES
     inssor.f90
     median.f90
     mrgref.f90
-    mrgrnk.f90
+    mrgrnk.F90
     mulcnt.f90
     rapknr.f90
     refpar.f90
@@ -74,6 +74,8 @@ set(SOURCE_FILES
 )
 
 set(_name ${${PROJECT_NAME}_LIBRARY_NAME})
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
+
 add_library(${_name} OBJECT ${SOURCE_FILES})
 if (BUILD_SHARED_LIBS)
     set_target_properties(${_name} PROPERTIES POSITION_INDEPENDENT_CODE ON)
