@@ -6,13 +6,9 @@ module numfort_core
     implicit none
     private
 
-    public :: cumsum, comb, signum
+    public :: comb, signum
     public :: factorial
     public :: PI, PI_real32, PI_real64
-
-    interface cumsum
-        module procedure cumsum_1d_real64, cumsum_2d_real64, cumsum_3d_real64
-    end interface
 
     interface factorial
         module procedure factorial_int32, factorial_int64
@@ -178,54 +174,6 @@ elemental function signum_int64 (x) result(res)
     end if
 end function
 
-
-!-------------------------------------------------------------------------------
-subroutine cumsum_1d_real64(x, res, axis)
-
-    real (real64), intent(in), dimension(:) :: x
-    real (real64), dimension(:) :: res
-    ! ignore axis for 1D, only relevant for higher-dimensional arrays
-    integer, intent(in), optional :: axis
-
-    integer :: i
-
-    res = x(1)
-
-    do i = 2, size(x)
-        res(i) = res(i-1) + x(i)
-    end do
-
-end subroutine
-
-
-subroutine cumsum_2d_real64(x, res, axis)
-
-    real (real64), intent(in), dimension(:,:), target, contiguous :: x
-    real (real64), dimension(:, :), target, contiguous :: res
-    real (real64), dimension(:), pointer :: ptr_x => null(), ptr_res => null()
-
-    include "include/cumsum_wrapper.f90"
-
-end subroutine
-
-subroutine cumsum_3d_real64(x, res, axis)
-
-    real (real64), intent(in), dimension(:,:,:), target, contiguous :: x
-    real (real64), dimension(:,:,:), target, contiguous :: res
-    real (real64), dimension(:), pointer :: ptr_x => null(), ptr_res => null()
-
-    include "include/cumsum_wrapper.f90"
-
-end subroutine
-
-subroutine cumsum_nd_real64(x, shp, res, axis)
-
-    real (real64), intent(in), dimension(:) :: x
-    real (real64), dimension(:) :: res
-
-    include "include/cumsum_impl.f90"
-
-end subroutine
 
 
 end module
