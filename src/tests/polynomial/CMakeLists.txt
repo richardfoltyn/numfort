@@ -5,5 +5,6 @@ set(${COMPONENT_NAME}_FILES
     polyfit.f90
     polyroots.f90
     polyval.f90
+    poly_complete.f90
     PARENT_SCOPE
 )
