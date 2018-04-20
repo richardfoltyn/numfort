@@ -62,7 +62,7 @@ set(COMPONENTS
     integrate
     linalg
     optimize
-    polynomials
+    polynomial
     stats
 )
 
