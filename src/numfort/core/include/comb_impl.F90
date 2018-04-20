@@ -20,16 +20,16 @@ if (lrep) then
     ! combination with repetition:
     ! this is (n + k - 1)!/(k! (n-1)!)
     ! First compute (n + k - 1)!/(n-1)! = (n+k-1) * ... * n
-    res = n
-    do i = res+1, n+k-1
+    res = 1
+    do i = n+k-1, n, -1
         res = res * i
     end do
 else
     ! combination without repetition:
     ! this is n-choose-k, ie \binomial{n}{k}
     ! compute n! / (n-k)! = n * (n-1) * ... * (n-k+1)
-    res = n - k + 1
-    do i = res + 1, n
+    res = 1
+    do i = n, n-k+1, -1
         res = res * i
     end do
 end if
