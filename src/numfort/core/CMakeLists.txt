@@ -4,6 +4,8 @@ set(COMPONENT_NAME core)
 
 set(SOURCE_FILES
     core.F90
+    combinatorics.F90
+    misc.F90
 )
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
