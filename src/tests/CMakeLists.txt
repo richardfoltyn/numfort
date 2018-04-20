@@ -44,6 +44,7 @@ message(STATUS "Flags for TESTS: ${CMAKE_Fortran_FLAGS} ${CMAKE_Fortran_FLAGS_${
 list(APPEND COMPONENTS
     arrays
     common
+    core
     integrate
     interpolate
     optimize
