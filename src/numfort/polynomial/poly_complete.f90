@@ -49,6 +49,31 @@ pure subroutine polyexponents_complete (n, k, exponents, status)
     !*  POLYEXPONENTS_COMPLETE returns the list of all exponent permutations
     !   that occur in a complete polynomial of given degree for a given
     !   number of variables.
+    !
+    !   Note on the implementation:
+    !
+    !   The exponent permutations are computed blockwise, such that for each
+    !   "block" the exponents sum up to the same fixed number k_i in [0,..,k].
+    !   The first two blocks are thus given by
+    !
+    !       [0,0,.....,0]
+    !
+    !       [1,0,......0]
+    !       [0,1,0,...,0]
+    !       [...........]
+    !       [0,.....,0,1]
+    !
+    !   ie they are the zero n-vector and the n-by-n identity matrix.
+    !   Any consecutive blocks are formed from the previous block by
+    !       1.  Copying the entire previous block and adding 1 to all exponents
+    !           for variable 1, x_1.
+    !       2.  Copying those rows from the previous block where the
+    !           exponent for x_1 is zero, and adding 1 to all exponents for
+    !           x_2.
+    !       3.  etc. until we process x_n
+    !   We need to restrict which rows are copied and incremented for all
+    !   variables other than x_1 to avoid introducing duplicates.
+
     integer, intent(in) :: n
         !*  Number of variables
     integer, intent(in) :: k
