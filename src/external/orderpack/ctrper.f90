@@ -1,5 +1,5 @@
 Module m_ctrper
-Use m_mrgrnk
+Use orderpack_mrgrnk
 Private
 Integer, Parameter :: kdp = selected_real_kind(15)
 public :: ctrper
