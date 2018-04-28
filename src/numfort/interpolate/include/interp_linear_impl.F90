@@ -195,3 +195,222 @@ subroutine __APPEND(interp_linear_1d,__PREC) (x, xp, fp, fx, ext, left, right)
 end subroutine
 
 
+pure function __APPEND(interp_bilinear_impl,__PREC) (x1, x2, xp1, xp2, fp, ext, &
+        fill_value) result(fx)
+    !*  INTERP_BILINEAR_IMPL performs bilineare interpolation over a
+    !   rectangular grid.
+    integer, parameter :: PREC = __PREC
+    integer, parameter :: INTSIZE = int32
+
+    real (PREC), intent(in) :: x1
+    real (PREC), intent(in) :: x2
+    real (PREC), intent(in), dimension(:) :: xp1
+        !*  Grid points in dimension 1
+    real (PREC), intent(in), dimension(:) :: xp2
+        !*  Grid points in dimension 2
+    real (PREC), intent(in), dimension(:,:) :: fp
+        !*  Function evaluated at given grid points, ie FP(i,j) = f(xp1(i),xp2(j))
+    integer (NF_ENUM_KIND), intent(in) :: ext
+        !*  Defines behavious in case function should be evaluated at point (x1,x2)
+        !   outside of the range specified by [xpi(1), xpi(size(xpi))] for
+        !   i = 1,2.
+        !   Adminissible constants are
+        !       - NF_INTERP_EVAL_CONST: Returns value of argument 'fill_value'
+        !           for all xi < xpi(1), i=1,2.
+        !       - For all other values, the function value at x is extrapolated.
+    real (PREC), intent(in) :: fill_value
+        !*  Fill value to be used if point (X1,X2) is outside of the domain
+        !   defined by XP1, XP2.
+    real (PREC) :: fx
+        !*  Interpolated function value f(x1,x2)
+
+    integer (INTSIZE) :: ilb1, ilb2
+    real (PREC) :: w1, w2, fx1_lb, fx1_ub
+    integer :: np1, np2
+
+    np1 = size(xp1)
+    np2 = size(xp2)
+
+    select case (ext)
+    case (NF_INTERP_EVAL_CONST)
+        if (x1 < xp1(1) .or. x1 > xp1(np1) .or. x2 < xp2(1) .or. x2 > xp2(np2)) then
+            goto 100
+        end if
+    end select
+
+    ! default: At this point there is either a bracketing interval, or we extrapolate
+    ! values outside of domain
+    ilb1 = interp_find (x1, xp1)
+    ilb2 = interp_find (x2, xp2)
+
+    w1 = (x1 - xp1(ilb1)) / (xp1(ilb1+1) - xp1(ilb1))
+    w2 = (x2 - xp2(ilb2)) / (xp2(ilb2+1) - xp2(ilb2))
+
+    ! Interpolate in dimension 1 for upper and lower bracketing value of
+    ! dimension 2.
+    fx1_lb = (1.0_PREC-w1) * fp(ilb1,ilb2) + w1 * fp(ilb1+1,ilb2)
+    fx1_ub = (1.0_PREC-w1) * fp(ilb1,ilb2+1) + w1 * fp(ilb1+1,ilb2+1)
+
+    ! Interpolate in dimension two
+    fx = (1.0_PREC-w2) * fx1_lb + w2 * fx1_ub
+
+    return
+
+100 continue
+    ! Return constant fill_value if X in any dimension is not "interior".
+
+    fx = fill_value
+
+end function
+
+
+
+pure subroutine __APPEND(interp_bilinear_check_input,__PREC) (xp1, xp2, fp, status)
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in), dimension(:) :: xp1, xp2
+    real (PREC), intent(in), dimension(:,:) :: fp
+    type (status_t), intent(out) :: status
+
+    status = NF_STATUS_OK
+
+    if (size(xp1) /= size(fp, 1) .or. size(xp2) /= size(fp,2)) then
+        status = NF_STATUS_INVALID_ARG
+        return
+    end if
+
+    if (size(xp1) < 2 .or. size(xp2) < 2) then
+        status = NF_STATUS_INVALID_ARG
+        return
+    end if
+
+end subroutine
+
+
+
+pure subroutine __APPEND(interp_bilinear_1d,__PREC) (x1, x2, xp1, xp2, fp, fx, &
+        ext, fill_value, status)
+    !*  INTERP_BILINEAR_IMPL performs bilineare interpolation over a
+    !   rectangular grid.
+    integer, parameter :: PREC = __PREC
+    integer, parameter :: INTSIZE = int32
+
+    real (PREC), intent(in), dimension(:) :: x1
+        !*  Array of dimension-1 values where function should be interpolated
+    real (PREC), intent(in), dimension(:) :: x2
+        !*  Array of dimension-2 values where function should be interpolated
+    real (PREC), intent(in), dimension(:) :: xp1
+        !*  Grid points in dimension 1
+    real (PREC), intent(in), dimension(:) :: xp2
+        !*  Grid points in dimension 2
+    real (PREC), intent(in), dimension(:,:) :: fp
+        !*  Function evaluated at given grid points, ie FP(i,j) = f(xp1(i),xp2(j))
+    real (PREC), intent(out), dimension(:) :: fx
+        !*  Array of interpolated values
+    integer (NF_ENUM_KIND), intent(in), optional :: ext
+        !*  Defines behavious in case function should be evaluated at point (x1,x2)
+        !   outside of the range specified by [xpi(1), xpi(size(xpi))] for
+        !   i = 1,2.
+        !   Adminissible constants are
+        !       - NF_INTERP_EVAL_CONST: Returns value of argument 'fill_value'
+        !           for all xi < xpi(1), i=1,2.
+        !       - For all other values, the function value at x is extrapolated.
+    real (PREC), intent(in), optional :: fill_value
+        !*  Fill value to be used if point (X1,X2) is outside of the domain
+        !   defined by XP1, XP2.
+    type (status_t), intent(out), optional :: status
+        !*  Optional exit status.
+
+    type (status_t) :: lstatus
+    real (PREC) :: lfill_value
+    integer (NF_ENUM_KIND) :: lext
+    integer (INTSIZE) :: i
+
+    lstatus = NF_STATUS_OK
+
+    if (size(x1) /= size(x2) .or. size(x1) /= size(fx)) then
+        lstatus = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+
+    ! Check remaining inputs using common function
+    call interp_bilinear_check_input (xp1, xp2, fp, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    lfill_value = 0.0_PREC
+    lext = NF_INTERP_EVAL_EXTRAPOLATE
+    if (present(ext)) lext = ext
+    if (present(fill_value)) then
+        lfill_value = fill_value
+        ! Assume this implies setting non-interior points to constant
+        lext = NF_INTERP_EVAL_CONST
+    end if
+
+    do i = 1, size(x1)
+        fx(i) = interp_bilinear_impl (x1(i), x2(i), xp1, xp2, fp, lext, lfill_value)
+    end do
+
+100 continue
+    if (present(status)) status = lstatus
+end subroutine
+
+
+
+pure subroutine __APPEND(interp_bilinear_scalar,__PREC) (x1, x2, xp1, xp2, fp, fx, &
+        ext, fill_value, status)
+    !*  INTERP_BILINEAR_IMPL performs bilineare interpolation over a
+    !   rectangular grid.
+    integer, parameter :: PREC = __PREC
+
+    real (PREC), intent(in) :: x1
+        !*  Dimension-1 value where function should be interpolated
+    real (PREC), intent(in) :: x2
+        !*  Dimension-2 value where function should be interpolated
+    real (PREC), intent(in), dimension(:) :: xp1
+        !*  Grid points in dimension 1
+    real (PREC), intent(in), dimension(:) :: xp2
+        !*  Grid points in dimension 2
+    real (PREC), intent(in), dimension(:,:) :: fp
+        !*  Function evaluated at given grid points, ie FP(i,j) = f(xp1(i),xp2(j))
+    real (PREC), intent(out) :: fx
+        !*  Array of interpolated values
+    integer (NF_ENUM_KIND), intent(in), optional :: ext
+        !*  Defines behavious in case function should be evaluated at point (x1,x2)
+        !   outside of the range specified by [xpi(1), xpi(size(xpi))] for
+        !   i = 1,2.
+        !   Adminissible constants are
+        !       - NF_INTERP_EVAL_CONST: Returns value of argument 'fill_value'
+        !           for all xi < xpi(1), i=1,2.
+        !       - For all other values, the function value at x is extrapolated.
+    real (PREC), intent(in), optional :: fill_value
+        !*  Fill value to be used if point (X1,X2) is outside of the domain
+        !   defined by XP1, XP2.
+    type (status_t), intent(out), optional :: status
+        !*  Optional exit status.
+
+    type (status_t) :: lstatus
+    real (PREC) :: lfill_value
+    integer (NF_ENUM_KIND) :: lext
+
+    lstatus = NF_STATUS_OK
+
+    ! Check remaining inputs using common function
+    call interp_bilinear_check_input (xp1, xp2, fp, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    lfill_value = 0.0_PREC
+    lext = NF_INTERP_EVAL_EXTRAPOLATE
+    if (present(ext)) lext = ext
+    if (present(fill_value)) then
+        lfill_value = fill_value
+        ! Assume this implies setting non-interior points to constant
+        lext = NF_INTERP_EVAL_CONST
+    end if
+
+    fx = interp_bilinear_impl (x1, x2, xp1, xp2, fp, lext, lfill_value)
+
+100 continue
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
