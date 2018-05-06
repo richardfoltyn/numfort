@@ -7,6 +7,7 @@ set(SOURCE_FILES
 	common.f90
 	interp_result.f90
     interp_linear.F90
+	interp_pchip.F90
 	fitpack.f90
 )
 
