@@ -187,11 +187,11 @@ end subroutine
 pure subroutine __APPEND(interp_pchip_eval,__PREC) (xp, coef, x, y, order, ext, &
         left, right, status)
     integer, parameter :: PREC = __PREC
-    real (PREC), intent(in), dimension(:) :: coef
-    real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(in), dimension(:) :: xp
         !*  x-values of data points. These must be the same points that were
         !   previously passed to INTERP_PCHIP_FIT.
+    real (PREC), intent(in), dimension(:) :: coef
+    real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(out), dimension(:) :: y
     integer, intent(in), optional :: order
     integer (NF_ENUM_KIND), intent(in), optional :: ext
@@ -208,6 +208,8 @@ pure subroutine __APPEND(interp_pchip_eval,__PREC) (xp, coef, x, y, order, ext, 
     real (PREC), parameter :: ALPHA(0:POLY_DEGREE,0:MAX_ORDER) = reshape( &
         [1, 1, 1, 1, 0, 1, 2, 3, 0, 0, 2, 6], &
         shape=[POLY_DEGREE+1, MAX_ORDER+1])
+        ! Hard-code "additional" coefficients that will arise when taking
+        ! derivatives, so we don't have to compute them later.
 
     lstatus = NF_STATUS_OK
 
@@ -263,6 +265,8 @@ pure subroutine __APPEND(interp_pchip_eval,__PREC) (xp, coef, x, y, order, ext, 
             a = ALPHA(k, lorder)
             yi = yi + a * coef(jj+k) * si ** (k-lorder)
         end do
+
+        y(i) = yi
 
     end do
 
