@@ -5,5 +5,6 @@ set(${COMPONENT_NAME}_FILES
     concon.f90
     curfit.f90
     linear.f90
+    pchip.f90
     PARENT_SCOPE
 )
