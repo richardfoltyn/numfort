@@ -31,6 +31,9 @@ module numfort_interpolate_pchip
     integer, parameter :: MAX_ORDER = 2
         !*  Max. order of derivative that can be evaluated
 
+    integer, parameter :: IDX_Y = 1, IDX_D = 2, IDX_C = 3, IDX_B = 4
+        !*   Positions of individual coefficients within each interval block
+
 #include "numfort_real64.h"
 #include "interp_pchip_spec.F90"
 

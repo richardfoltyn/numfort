@@ -56,8 +56,6 @@ pure subroutine __APPEND(interp_pchip_fit,__PREC) (x, y, coef, work, status)
 
     integer :: i, j, n, nrwrk
     real (PREC) :: h0, h1, delta0, delta1, w0, w1, d0, d1, ci, bi, sgn
-    integer, parameter :: IDX_Y = 1, IDX_D = 2, IDX_C = 3, IDX_B = 4
-        ! positions of individual coefficients within each interval block
 
     nullify (ptr_work, d, delta, h)
 
@@ -290,7 +288,7 @@ pure subroutine __APPEND(interp_pchip_eval,__PREC) (xp, coef, x, y, order, ext, 
             select case (lext)
             case (NF_INTERP_EVAL_BOUNDARY)
                 ! Lower bound: set corresponding interpolation interval to the
-                ! first one. Correct value will be assumed via regular
+                ! first one. Correct boundary value will be interpolated below.
                 j = 1
                 xi = xlb
             case (NF_INTERP_EVAL_CONST)
@@ -299,12 +297,15 @@ pure subroutine __APPEND(interp_pchip_eval,__PREC) (xp, coef, x, y, order, ext, 
             case (NF_INTERP_EVAL_ERROR)
                 lstatus = NF_STATUS_BOUNDS_ERROR
                 goto 100
+            case default
+                ! Find interval j such that xp(j) <= x(i)
+                j = interp_find (x(i), xp)
             end select
         else if (xi > xub) then
             select case (lext)
             case (NF_INTERP_EVAL_BOUNDARY)
                 ! Upper bound: set corresponding interpolation interval to the
-                ! last one.
+                ! last one. Correct boundary value will be interpolated below.
                 j = nxp - 1
                 xi = xub
             case (NF_INTERP_EVAL_CONST)
@@ -313,6 +314,9 @@ pure subroutine __APPEND(interp_pchip_eval,__PREC) (xp, coef, x, y, order, ext, 
             case (NF_INTERP_EVAL_ERROR)
                 lstatus = NF_STATUS_BOUNDS_ERROR
                 goto 100
+            case default
+                ! Find interval j such that xp(j) <= x(i)
+                j = interp_find (x(i), xp)
             end select
         else
             ! Find interval j such that xp(j) <= x(i)
