@@ -8,6 +8,10 @@ interface interp_pchip_eval
     procedure __APPEND(interp_pchip_eval,__PREC)
 end interface
 
+interface interp_pchip_eval
+    procedure __APPEND(interp_pchip_eval_scalar,__PREC)
+end interface
+
 interface pchip_fit_input_check
     procedure __APPEND(pchip_fit_input_check,__PREC)
 end interface

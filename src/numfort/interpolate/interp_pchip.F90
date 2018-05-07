@@ -2,7 +2,13 @@
 #include <numfort.h>
 
 module numfort_interpolate_pchip
-
+    !*  Module implements fitting and evaluation using the PCHIP algorithm
+    !   (Piecewise Cubic Hermite Intepolating polynomials) that preserves
+    !   the monotonicity of monotonic input data.
+    !
+    !   References:
+    !       Fritsch, F. N. & Carlson, R. E. (1980):  Monotone Piecewise
+    !           Cubic Interpolation. SIAM Journal on Numerical Analysis (17) 238-246
     use, intrinsic :: iso_fortran_env
 
     use numfort_core
@@ -39,9 +45,8 @@ pure function interp_pchip_get_ncoef (n) result(res)
     integer, intent(in) :: n
     integer :: res
 
-    ! Need to store 4 data points per interval; we also save the function
-    ! value at the end point for certain types of extrapolation.
-    res = (n-1) * 4 + 1
+    ! Need to store 4 data points per interval
+    res = (n-1) * 4
 end function
 
 #include "numfort_real64.h"
