@@ -33,6 +33,7 @@ subroutine test_all ()
 
     call test_input (tests)
     call test_interp (tests)
+    call test_extrap (tests)
 
     call tests%print()
 
@@ -381,6 +382,152 @@ subroutine test_interp (tests)
 
 end subroutine
 
+
+
+subroutine test_extrap (tests)
+    class (test_suite) :: tests
+
+    class (test_case), pointer :: tc
+    type (status_t) :: status
+    type (str) :: msg
+    type (workspace) :: work
+    integer :: n, ncoef, np, i
+    real (PREC), dimension(:), allocatable :: x, y, xp, yp, coef, y_ok, yp_ok
+    real (PREC), parameter :: TOL = 1.0d-7
+    real (PREC) :: left, right
+
+    real (PREC), parameter :: SCIPY_TEST5(*,0:*) = reshape([ real(PREC) :: &
+             3.21428571,  0.01234568,  3.21428571, &
+            -1.78571429,  0.        ,  1.78571429, &
+            -2.14285714,  0.        , -2.14285714 &
+        ], shape=[3,3])
+
+    real (PREC), parameter :: SCIPY_TEST6(*,0:*) = reshape([ real(PREC) :: &
+            -3.2799424026d+01,  0.0,  3.2799424026d+01, &
+             1.3643273611d+01, -2.3317027720d+00,  1.3643273611d+01, &
+             2.7803696622d+01, 0.0, -2.7803696622d+01 &
+        ], shape=[3,3])
+
+    tc => tests%add_test ('Extrapolation tests')
+
+    ! Test 1: linear monotinic function, extrapolation
+    np = 10
+    n = 5
+    ncoef = interp_pchip_get_ncoef (np)
+    allocate (xp(np), yp(np), yp_ok(np), coef(ncoef), x(n), y(n), y_ok(n))
+    call linspace (xp, 1.0_PREC, 10.0_PREC)
+    call fcn1 (xp, yp, order=0)
+    call linspace (x, 0.0_PREC, 15.0_PREC)
+    call interp_pchip_fit (xp, yp, coef, status=status)
+    call tc%assert_true (status == NF_STATUS_OK, "FIT: linear function")
+
+    do i = 0, 2
+        call fcn1 (x, y_ok, order=i)
+        msg = "EVAL: Linear function, extrapolate, order=" // str(i, 'i0')
+        call interp_pchip_eval (xp, coef, x, y, order=i, status=status, &
+            ext=NF_INTERP_EVAL_EXTRAPOLATE)
+        call tc%assert_true (status == NF_STATUS_OK .and. &
+                all_close (y, y_ok, atol=TOL), msg)
+    end do
+
+
+    ! Test 2: reuse fitted polynomial from above, replace non-interior points
+    ! with const
+    left = -1.0d2
+    right = 1.0d2
+
+    do i = 0, 2
+        call fcn1 (x, y_ok, order=i)
+        ! replace function values at non-interior points
+        where (x > xp(np))
+            y_ok = right
+        else where (x < xp(1))
+            y_ok = left
+        end where
+
+        msg = "EVAL: Linear function, return const, order=" // str(i, 'i0')
+        call interp_pchip_eval (xp, coef, x, y, order=i, status=status, &
+            ext=NF_INTERP_EVAL_CONST, left=left, right=right)
+        call tc%assert_true (status == NF_STATUS_OK .and. &
+                all_close (y, y_ok, atol=TOL), msg)
+    end do
+
+
+    ! Test 3:  reuse fitted polynomial from above, replace non-interior points
+    ! with boundary values
+    do i = 0, 2
+        call fcn1 (x, y_ok, order=i)
+        call fcn1 (xp, yp_ok, order=i)
+        ! replace function values at non-interior points
+        where (x > xp(np))
+            y_ok = yp_ok(np)
+        else where (x < xp(1))
+            y_ok = yp_ok(1)
+        end where
+
+        msg = "EVAL: Linear function, use boundary, order=" // str(i, 'i0')
+        call interp_pchip_eval (xp, coef, x, y, order=i, status=status, &
+            ext=NF_INTERP_EVAL_BOUNDARY)
+        call tc%assert_true (status == NF_STATUS_OK .and. &
+                all_close (y, y_ok, atol=TOL), msg)
+    end do
+
+
+    ! Test 4: reuse fitted polynomial from above, raise error on non-interior
+    do i = 0, 2
+        msg = "EVAL: Linear function, raise error, order=" // str(i, 'i0')
+        call interp_pchip_eval (xp, coef, x, y, order=i, status=status, &
+            ext=NF_INTERP_EVAL_ERROR)
+        call tc%assert_true (status == NF_STATUS_BOUNDS_ERROR, msg)
+    end do
+
+    deallocate (xp, yp, yp_ok, coef, x, y, y_ok)
+
+
+    ! Test 5: quadratic function
+    np = 10
+    n = 3
+    ncoef = interp_pchip_get_ncoef (np)
+    allocate (xp(np), yp(np), yp_ok(np), coef(ncoef), x(n), y(n), y_ok(n))
+    call linspace (xp, -1.0_PREC, 1.0_PREC)
+    call fcn3 (xp, yp, order=0)
+    call linspace (x, -2.0_PREC, 2.0_PREC)
+    call interp_pchip_fit (xp, yp, coef, work=work, status=status)
+    call tc%assert_true (status == NF_STATUS_OK, "FIT: f(x) = x^2")
+
+    do i = 0, 2
+        msg = "EVAL: p(x) ~ x^2, extrapolate, order=" // str(i, 'i0')
+        call interp_pchip_eval (xp, coef, x, y, order=i, status=status, &
+            ext=NF_INTERP_EVAL_EXTRAPOLATE)
+        call tc%assert_true (status == NF_STATUS_OK .and. &
+                all_close (y, SCIPY_TEST5(:,i), atol=TOL), msg)
+    end do
+
+    deallocate (xp, yp, yp_ok, coef, x, y, y_ok)
+
+
+    ! Test 6: cubic function
+    np = 10
+    n = 3
+    ncoef = interp_pchip_get_ncoef (np)
+    allocate (xp(np), yp(np), yp_ok(np), coef(ncoef), x(n), y(n), y_ok(n))
+    call linspace (xp, -2.0_PREC, 2.0_PREC)
+    call fcn5 (xp, yp, order=0)
+    call linspace (x, -3.0_PREC, 3.0_PREC)
+    call interp_pchip_fit (xp, yp, coef, work=work, status=status)
+    call tc%assert_true (status == NF_STATUS_OK, "FIT: f(x) = 2(x^3 - x)")
+
+    do i = 0, 2
+        msg = "EVAL: p(x) ~ 2(x^3 - x), extrapolate, order=" // str(i, 'i0')
+        call interp_pchip_eval (xp, coef, x, y, order=i, status=status, &
+            ext=NF_INTERP_EVAL_EXTRAPOLATE)
+        call tc%assert_true (status == NF_STATUS_OK .and. &
+                all_close (y, SCIPY_TEST6(:,i), atol=TOL), msg)
+    end do
+
+    deallocate (xp, yp, yp_ok, coef, x, y, y_ok)
+
+end subroutine
 
 
 elemental subroutine fcn1 (x, y, order)
