@@ -22,7 +22,7 @@ module numfort_polynomial_complete
 
 
 
-pure function poly_complete_get_nterms (n, k) result(res)
+elemental function poly_complete_get_nterms (n, k) result(res)
     !*  POLY_COMPLETE_GET_NTERMS returns the number of terms in a complete
     !   polynomial in N variables of degree K.
     integer, intent(in) :: n

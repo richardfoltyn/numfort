@@ -1,6 +1,6 @@
 
 
-subroutine __APPEND(polybasis_check_input,__PREC) (x, k, basis, status)
+pure subroutine __APPEND(polybasis_check_input,__PREC) (x, k, basis, status)
     !*  POLYBASIS_CHECK_INPUT performs input checks for user-provided
     !   arguments for POLYBASIS_COMPLETE.
     integer, parameter :: PREC = __PREC
@@ -31,7 +31,7 @@ subroutine __APPEND(polybasis_check_input,__PREC) (x, k, basis, status)
 end subroutine
 
 
-subroutine __APPEND(polybasis,__PREC) (x, k, basis, status)
+pure subroutine __APPEND(polybasis,__PREC) (x, k, basis, status)
     !*  POLYBASIS_COMPLETE returns the basis functions (or terms) of a
     !   complete polynomial of given degree and number of variables,
     !   evaluated at a given set of x.
@@ -99,7 +99,7 @@ subroutine __APPEND(polybasis,__PREC) (x, k, basis, status)
 end subroutine
 
 
-subroutine __APPEND(polybasis_jac,__PREC) (x, k, jac, status)
+pure subroutine __APPEND(polybasis_jac,__PREC) (x, k, jac, status)
     !*  POLYBASIS_JAC_COMPLETE returns the Jacobian of the basis functions
     !   (or terms) of a complete polynomial of given degree and number of variables,
     !   evaluated at a given set of x.
