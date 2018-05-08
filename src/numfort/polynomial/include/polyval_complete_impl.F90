@@ -99,6 +99,41 @@ pure subroutine __APPEND(polybasis,__PREC) (x, k, basis, status)
 end subroutine
 
 
+pure subroutine __APPEND(polybasis_scalar,__PREC) (x, k, basis, status)
+    !*  POLYBASIS_COMPLETE_SCALAR returns the basis functions (or terms) of a
+    !   complete polynomial of given degree and number of variables,
+    !   evaluated at a given *single* point X in R^n.
+    integer, parameter :: PREC = __PREC
+
+    real (PREC), intent(in), dimension(:), target :: x
+        !*  Point X where basis functions should be evaluated
+    integer, intent(in) :: k
+        !*  (Maximum) degree of complete polynomial
+    real (PREC), intent(out), dimension(:) :: basis
+        !*  Basis functions evaluated at X
+    type (status_t), intent(out), optional :: status
+        !*  Optional status code
+
+    type (status_t) :: lstatus
+    real (PREC), dimension(:,:), allocatable :: x2d, basis2d
+
+    allocate (x2d(size(x),1), basis2d(size(basis),1))
+
+    x2d(:,1) = x
+
+    call polybasis_complete (x2d, k, basis2d, lstatus)
+
+    if (lstatus == NF_STATUS_OK) then
+        basis(:) = basis2d(:,1)
+    end if
+    if (present(status)) status = lstatus
+
+    deallocate (x2d, basis2d)
+
+end subroutine
+
+
+
 pure subroutine __APPEND(polybasis_jac,__PREC) (x, k, jac, status)
     !*  POLYBASIS_JAC_COMPLETE returns the Jacobian of the basis functions
     !   (or terms) of a complete polynomial of given degree and number of variables,
