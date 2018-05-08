@@ -367,9 +367,17 @@ pure subroutine __APPEND(interp_pchip_eval_scalar,__PREC) (xp, coef, x, y, &
     type (status_t), intent(out), optional :: status
 
     real (PREC), dimension(1) :: x1, y1
+    type (status_t) :: lstatus
 
     x1(1) = x
-    call interp_pchip_eval (xp, coef, x1, y1, order, ext, left, right, status)
-    y = y1(1)
+    call interp_pchip_eval (xp, coef, x1, y1, order, ext, left, right, lstatus)
+
+    ! Note: y1 may be uninitialized if error is encountered and evaluation is
+    ! is not performed.
+    if (lstatus == NF_STATUS_OK) then
+        y = y1(1)
+    end if
+
+    if (present(status)) status = lstatus
 
 end subroutine
