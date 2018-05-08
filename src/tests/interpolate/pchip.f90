@@ -151,7 +151,7 @@ subroutine test_interp (tests)
     type (status_t) :: status
     type (str) :: msg
     type (workspace) :: work
-    integer :: n, ncoef, np, i
+    integer :: n, ncoef, np, i, j
     real (PREC), dimension(:), allocatable :: x, y, xp, yp, coef, y_ok, yp_ok
     real (PREC), parameter :: TOL = 1.0d-7
 
@@ -377,8 +377,27 @@ subroutine test_interp (tests)
             all_close (y, SCIPY_TEST7(:,i) , atol=TOL), msg)
     end do
 
-    deallocate (xp, yp, yp_ok, coef, x, y, y_ok)
+    ! Test 8: Test scalar interface using same setup as in test 7.
 
+    ! Evaluate using scalar interface
+    do j = 1, size(yp)
+        call interp_pchip_eval (xp, coef, xp(j), yp_ok(j), status=status)
+    end do
+    msg = 'EVAL (scalar): CRRA utility (2 points), check interpolated values at XP'
+    call tc%assert_true (status == NF_STATUS_OK .and. &
+        all_close (yp, yp_ok, atol=TOL), msg)
+
+    do i = 0, 2
+        msg = "EVAL (scalar): CRRA utility (2 points), order=" // str(i, 'i0')
+        ! Evaluate using scalar interface
+        do j = 1, size(y)
+            call interp_pchip_eval (xp, coef, x(j), y(j), order=i, status=status)
+        end do
+        call tc%assert_true (status == NF_STATUS_OK .and. &
+            all_close (y, SCIPY_TEST7(:,i) , atol=TOL), msg)
+    end do
+
+    deallocate (xp, yp, yp_ok, coef, x, y, y_ok)
 
 end subroutine
 
