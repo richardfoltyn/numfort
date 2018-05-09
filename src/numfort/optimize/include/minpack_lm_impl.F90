@@ -227,7 +227,7 @@ subroutine root_lm_impl_real64 (fcn, x, fx, ftol, xtol, gtol, maxfev, &
     real (PREC), intent(in), optional :: gtol
     integer, intent(in), optional :: maxfev
     real (PREC), intent(in), optional :: factor
-    real (PREC), intent(in), dimension(:), optional, target :: diag
+    real (PREC), intent(in), dimension(:), optional, target, contiguous :: diag
     type (workspace_real64), intent(inout), target, optional :: work
     type (optim_result_real64), intent(inout), optional :: res
 

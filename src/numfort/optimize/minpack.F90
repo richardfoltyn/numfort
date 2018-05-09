@@ -81,7 +81,7 @@ subroutine root_hybrd_real64 (func, x, fx, xtol, maxfev, ml, mu, eps, factor, di
     procedure (func_vec_vec_real64) :: func
     ! Note: will be passed using F77 implicit interface, ensure contiguous array.
     real (PREC), dimension(:), contiguous :: x, fx
-    real (PREC), dimension(:), target :: diag
+    real (PREC), dimension(:), target, contiguous :: diag
     real (PREC) :: xtol, eps, factor
     integer :: maxfev, ml, mu
     type (workspace_real64), intent(inout), target, optional :: work
@@ -225,7 +225,7 @@ subroutine root_hybrj_real64 (func, x, fx, xtol, maxfev, factor, diag, work, res
     real (PREC), intent(in), optional :: xtol
     integer, intent(in), optional :: maxfev
     real (PREC), intent(in), optional :: factor
-    real (PREC), intent(in), dimension(:), target, optional :: diag
+    real (PREC), intent(in), dimension(:), target, optional, contiguous :: diag
     type (workspace_real64), intent(inout), target, optional :: work
     type (optim_result_real64), intent(inout), optional :: res
 

@@ -368,8 +368,8 @@ pure subroutine concon_real64 (x, y, v, s, &
     integer, intent(in), optional :: maxbin
     type (workspace_real64), intent(inout), optional, target :: work
     real (PREC), intent(out), optional :: ssr
-    real (PREC), intent(out), dimension(:), optional :: sx
-    logical, intent(out), dimension(:), optional :: bind
+    real (PREC), intent(out), dimension(:), optional, contiguous :: sx
+    logical, intent(out), dimension(:), optional, contiguous :: bind
     type (status_t), intent(out), optional :: status
     character (*), intent(out), optional :: msg
 
