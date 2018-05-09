@@ -191,14 +191,14 @@ pure subroutine curfit_real64 (x, y, k, s, knots, coefs, n, &
     real (PREC), intent(in), dimension(:), contiguous :: y
     integer, intent(in), optional :: k
     real (PREC), intent(in), optional :: s
-    real (PREC), intent(in out), dimension(:), contiguous :: knots
+    real (PREC), intent(inout), dimension(:), contiguous :: knots
     real (PREC), intent(out), dimension(:), contiguous :: coefs
     integer, intent(out) :: n
     integer, intent(in), optional :: iopt
     real (PREC), intent(in), dimension(:), contiguous, optional :: w
     real (PREC), intent(in), optional :: xe
     real (PREC), intent(in), optional :: xb
-    type (workspace_real64), intent(in out), optional, target :: work
+    type (workspace_real64), intent(inout), optional, target :: work
     integer, intent(in), optional :: maxiter
     real (PREC), intent(out), optional :: ssr
     type (status_t), intent(out), optional :: status
@@ -359,14 +359,14 @@ pure subroutine concon_real64 (x, y, v, s, &
     real (PREC), intent(in), dimension(:), contiguous :: y
     real (PREC), intent(in), dimension(:), contiguous :: v
     real (PREC), intent(in), optional :: s
-    real (PREC), intent(in out), dimension(:), contiguous :: knots
+    real (PREC), intent(inout), dimension(:), contiguous :: knots
     real (PREC), intent(out), dimension(:), contiguous :: coefs
     integer, intent(out) :: n
     integer, intent(in), optional :: iopt
     real (PREC), intent(in), dimension(:), contiguous, optional :: w
     integer, intent(in), optional :: maxtr
     integer, intent(in), optional :: maxbin
-    type (workspace_real64), intent(in out), optional, target :: work
+    type (workspace_real64), intent(inout), optional, target :: work
     real (PREC), intent(out), optional :: ssr
     real (PREC), intent(out), dimension(:), optional :: sx
     logical, intent(out), dimension(:), optional :: bind
@@ -617,7 +617,7 @@ pure subroutine splder_real64 (knots, coefs, k, order, x, y, ext, work, status)
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(out), dimension(:), contiguous :: y
     integer, intent(in), optional :: ext
-    type (workspace_real64), intent(in out), optional, target :: work
+    type (workspace_real64), intent(inout), optional, target :: work
     type (status_t), intent(out), optional :: status
 
     type (workspace_real64), pointer :: ptr_work
@@ -688,7 +688,7 @@ pure subroutine splder_scalar_real64 (knots, coefs, k, order, x, y, ext, work, s
     real (PREC), intent(in) :: x
     real (PREC), intent(out) :: y
     integer, intent(in), optional :: ext
-    type (workspace_real64), intent(in out), optional, target :: work
+    type (workspace_real64), intent(inout), optional, target :: work
     type (status_t), intent(out), optional :: status
 
     real (PREC), dimension(1) :: lx, ly
