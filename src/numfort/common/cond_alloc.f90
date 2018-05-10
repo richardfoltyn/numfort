@@ -72,6 +72,20 @@ module numfort_common_cond_alloc
             cond_alloc_5d_real64, cond_alloc_5d_scalar_real64, &
             cond_alloc_5d_logical, cond_alloc_5d_scalar_logical
     end interface
+
+    ! COND_ALLOC for 6d-arrays
+    interface cond_alloc
+        procedure &
+            cond_alloc_6d_int8, cond_alloc_6d_scalar_int8, &
+            cond_alloc_6d_int32, cond_alloc_6d_scalar_int32, &
+            cond_alloc_6d_int64, cond_alloc_6d_scalar_int64, &
+            cond_alloc_6d_real32, cond_alloc_6d_scalar_real32, &
+            cond_alloc_6d_real64, cond_alloc_6d_scalar_real64, &
+            cond_alloc_6d_logical, cond_alloc_6d_scalar_logical
+    end interface
+
+
+
     contains
 
 !-------------------------------------------------------------------------------
@@ -976,6 +990,165 @@ pure subroutine cond_alloc_5d_logical (arr, source, stat)
         !   (re)allocated.
     include "include/cond_alloc_5d.f90"
 end subroutine
+
+!-------------------------------------------------------------------------------
+! Implementation for 6d-arrays
+
+pure subroutine cond_alloc_6d_scalar_real32 (arr, shp, source, stat)
+    !*  COND_ALLOC conditinally allocates a given array if it is not already
+    !   allocated, or its allocated shape differs from the desired shape
+    !   or source array.
+    integer, parameter :: PREC = real32
+    real (PREC), intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+        !*  Array to be conditionally allocated
+    real (PREC), intent(in), optional :: source
+        !*  If present, used as source value if array ARR needs to be
+        !   (re)allocated.
+    include "include/cond_alloc_6d_scalar.f90"
+end subroutine
+
+pure subroutine cond_alloc_6d_real32 (arr, source, stat)
+    !*  COND_ALLOC conditinally allocates a given array if it is not already
+    !   allocated, or its allocated shape differs from the desired shape
+    !   or source array.
+    integer, parameter :: PREC = real32
+    real (PREC), intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+        !*  Array to be conditionally allocated
+    real (PREC), intent(in), dimension(:,:,:,:,:,:) :: source
+        !*  If present, used as source value if array ARR needs to be
+        !   (re)allocated.
+    include "include/cond_alloc_6d.f90"
+end subroutine
+
+
+pure subroutine cond_alloc_6d_scalar_real64 (arr, shp, source, stat)
+    !*  COND_ALLOC conditinally allocates a given array if it is not already
+    !   allocated, or its allocated shape differs from the desired shape
+    !   or source array.
+    integer, parameter :: PREC = real64
+    real (PREC), intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+        !*  Array to be conditionally allocated
+    real (PREC), intent(in), optional :: source
+        !*  If present, used as source value if array ARR needs to be
+        !   (re)allocated.
+    include "include/cond_alloc_6d_scalar.f90"
+end subroutine
+
+pure subroutine cond_alloc_6d_real64 (arr, source, stat)
+    !*  COND_ALLOC conditinally allocates a given array if it is not already
+    !   allocated, or its allocated shape differs from the desired shape
+    !   or source array.
+    integer, parameter :: PREC = real64
+    real (PREC), intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+        !*  Array to be conditionally allocated
+    real (PREC), intent(in), dimension(:,:,:,:,:,:) :: source
+        !*  If present, used as source value if array ARR needs to be
+        !   (re)allocated.
+    include "include/cond_alloc_6d.f90"
+end subroutine
+
+
+pure subroutine cond_alloc_6d_int32 (arr, source, stat)
+    integer, parameter :: INTSIZE = int32
+    integer (INTSIZE), intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+        !*  Array to be conditionally allocated
+    integer (INTSIZE), intent(in), dimension(:,:,:,:,:,:) :: source
+        !*  If present, used as source value if array ARR needs to be
+        !   (re)allocated.
+    include "include/cond_alloc_6d.f90"
+end subroutine
+
+pure subroutine cond_alloc_6d_scalar_int32 (arr, shp, source, stat)
+    !*  COND_ALLOC conditinally allocates a given array if it is not already
+    !   allocated, or its allocated shape differs from the desired shape
+    !   or source array.
+    integer, parameter :: INTSIZE = int32
+    integer (INTSIZE), intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+        !*  Array to be conditionally allocated
+    integer (INTSIZE), intent(in), optional :: source
+        !*  If present, used as source value if array ARR needs to be
+        !   (re)allocated.
+    include "include/cond_alloc_6d_scalar.f90"
+end subroutine
+
+pure subroutine cond_alloc_6d_int64 (arr, source, stat)
+    !*  COND_ALLOC conditinally allocates a given array if it is not already
+    !   allocated, or its allocated shape differs from the desired shape
+    !   or source array.
+    integer, parameter :: INTSIZE = int64
+    integer (INTSIZE), intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+        !*  Array to be conditionally allocated
+    integer (INTSIZE), intent(in), dimension(:,:,:,:,:,:) :: source
+        !*  If present, used as source value if array ARR needs to be
+        !   (re)allocated.
+    include "include/cond_alloc_6d.f90"
+end subroutine
+
+
+pure subroutine cond_alloc_6d_scalar_int64 (arr, shp, source, stat)
+    !*  COND_ALLOC conditinally allocates a given array if it is not already
+    !   allocated, or its allocated shape differs from the desired shape
+    !   or source array.
+    integer, parameter :: INTSIZE = int64
+    integer (INTSIZE), intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(in), optional :: source
+        !*  If present, used as source value if array ARR needs to be
+        !   (re)allocated.
+    include "include/cond_alloc_6d_scalar.f90"
+end subroutine
+
+
+pure subroutine cond_alloc_6d_int8 (arr, source, stat)
+    !*  COND_ALLOC conditinally allocates a given array if it is not already
+    !   allocated, or its allocated shape differs from the desired shape
+    !   or source array.
+    integer, parameter :: INTSIZE = int8
+    integer (INTSIZE), intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+        !*  Array to be conditionally allocated
+    integer (INTSIZE), intent(in), dimension(:,:,:,:,:,:) :: source
+        !*  If present, used as source value if array ARR needs to be
+        !   (re)allocated.
+    include "include/cond_alloc_6d.f90"
+end subroutine
+
+
+pure subroutine cond_alloc_6d_scalar_int8 (arr, shp, source, stat)
+    !*  COND_ALLOC conditinally allocates a given array if it is not already
+    !   allocated, or its allocated shape differs from the desired shape
+    !   or source array.
+    integer, parameter :: INTSIZE = int8
+    integer (INTSIZE), intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(in), optional :: source
+        !*  If present, used as source value if array ARR needs to be
+        !   (re)allocated.
+    include "include/cond_alloc_6d_scalar.f90"
+end subroutine
+
+
+pure subroutine cond_alloc_6d_scalar_logical (arr, shp, source, stat)
+    !*  COND_ALLOC conditinally allocates a given array if it is not already
+    !   allocated, or its allocated shape differs from the desired shape
+    !   or source array.
+    logical, intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+        !*  Array to be conditionally allocated
+    logical, intent(in), optional :: source
+        !*  If present, used as source value if array ARR needs to be
+        !   (re)allocated.
+    include "include/cond_alloc_6d_scalar.f90"
+end subroutine
+
+pure subroutine cond_alloc_6d_logical (arr, source, stat)
+    !*  COND_ALLOC conditinally allocates a given array if it is not already
+    !   allocated, or its allocated shape differs from the desired shape
+    !   or source array.
+    logical, intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+        !*  Array to be conditionally allocated
+    logical, intent(in), dimension(:,:,:,:,:,:) :: source
+        !*  If present, used as source value if array ARR needs to be
+        !   (re)allocated.
+    include "include/cond_alloc_6d.f90"
+end subroutine
+
 
 
 end module
