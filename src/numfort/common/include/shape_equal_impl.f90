@@ -1,7 +1,7 @@
 
 logical :: res
-logical, dimension(ND) :: all_equal
-integer, dimension(ND) :: shp1, shp2
+logical, dimension(NDIM) :: all_equal
+integer, dimension(NDIM) :: shp1, shp2
 
 res = .false.
 if (.not. present(arr2)) return
