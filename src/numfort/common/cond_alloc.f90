@@ -96,7 +96,7 @@ pure subroutine cond_alloc_1d_scalar_real32 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real32
-    real (PREC), intent(in out), dimension(:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -108,7 +108,7 @@ pure subroutine cond_alloc_1d_scalar_scalar_real32 (arr, shp, source, stat)
     !*  COND_ALLOC wrapper to support scalar shape argument for 1d-arrays.
     integer, parameter :: PREC = real32
 
-    real (PREC), intent(in out), dimension(:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:), allocatable :: arr
     integer, intent(in) :: shp
     real (PREC), intent(in), optional :: source
     integer, intent(out), optional :: stat
@@ -124,7 +124,7 @@ pure subroutine cond_alloc_1d_real32 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real32
-    real (PREC), intent(in out), dimension(:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), dimension(:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -139,7 +139,7 @@ pure subroutine cond_alloc_1d_scalar_real64 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real64
-    real (PREC), intent(in out), dimension(:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -151,7 +151,7 @@ pure subroutine cond_alloc_1d_scalar_scalar_real64 (arr, shp, source, stat)
     !*  COND_ALLOC wrapper to support scalar shape argument for 1d-arrays.
     integer, parameter :: PREC = real64
 
-    real (PREC), intent(in out), dimension(:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:), allocatable :: arr
     integer, intent(in) :: shp
     real (PREC), intent(in), optional :: source
     integer, intent(out), optional :: stat
@@ -167,7 +167,7 @@ pure subroutine cond_alloc_1d_real64 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real64
-    real (PREC), intent(in out), dimension(:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), dimension(:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -178,7 +178,7 @@ end subroutine
 
 pure subroutine cond_alloc_1d_int32 (arr, source, stat)
     integer, parameter :: INTSIZE = int32
-    integer (INTSIZE), intent(in out), dimension(:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), dimension(:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -196,7 +196,7 @@ pure subroutine cond_alloc_1d_scalar_int32 (arr, shp, source, stat)
     !   all arguments being mandatory, otherwise the interface of several
     !   routines is indistinguishable.
     integer, parameter :: INTSIZE = int32
-    integer (INTSIZE), intent(in out), dimension(:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:), allocatable :: arr
     integer, intent(in), dimension(:) :: shp
     integer (INTSIZE), intent(in) :: source
     integer, intent(out) :: stat
@@ -220,7 +220,7 @@ pure subroutine cond_alloc_1d_scalar_scalar_int32 (arr, shp, source, stat)
     !*  COND_ALLOC wrapper to support scalar shape argument for 1d-arrays.
     integer, parameter :: INTSIZE = int32
 
-    integer (INTSIZE), intent(in out), dimension(:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:), allocatable :: arr
     integer, intent(in) :: shp
     integer (INTSIZE), intent(in), optional :: source
     integer, intent(out), optional :: stat
@@ -241,7 +241,7 @@ pure subroutine cond_alloc_1d_int64 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int64
-    integer (INTSIZE), intent(in out), dimension(:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), dimension(:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -255,7 +255,7 @@ pure subroutine cond_alloc_1d_scalar_int64 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int64
-    integer (INTSIZE), intent(in out), dimension(:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:), allocatable :: arr
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
@@ -265,7 +265,7 @@ end subroutine
 pure subroutine cond_alloc_1d_scalar_scalar_int64 (arr, shp, source, stat)
     !*  COND_ALLOC wrapper to support scalar shape argument for 1d-arrays.
     integer, parameter :: INTSIZE = int64
-    integer (INTSIZE), intent(in out), dimension(:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:), allocatable :: arr
     integer, intent(in) :: shp
     integer (INTSIZE), intent(in), optional :: source
     integer, intent(out), optional :: stat
@@ -282,7 +282,7 @@ pure subroutine cond_alloc_1d_int8 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int8
-    integer (INTSIZE), intent(in out), dimension(:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), dimension(:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -296,7 +296,7 @@ pure subroutine cond_alloc_1d_scalar_int8 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int8
-    integer (INTSIZE), intent(in out), dimension(:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:), allocatable :: arr
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
@@ -306,7 +306,7 @@ end subroutine
 pure subroutine cond_alloc_1d_scalar_scalar_int8 (arr, shp, source, stat)
     !*  COND_ALLOC wrapper to support scalar shape argument for 1d-arrays.
     integer, parameter :: INTSIZE = int8
-    integer (INTSIZE), intent(in out), dimension(:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:), allocatable :: arr
     integer, intent(in) :: shp
     integer (INTSIZE), intent(in), optional :: source
     integer, intent(out), optional :: stat
@@ -322,7 +322,7 @@ pure subroutine cond_alloc_1d_scalar_logical (arr, shp, source, stat)
     !*  COND_ALLOC conditinally allocates a given array if it is not already
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
-    logical, intent(in out), dimension(:), allocatable :: arr
+    logical, intent(inout), dimension(:), allocatable :: arr
         !*  Array to be conditionally allocated
     logical, intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -332,7 +332,7 @@ end subroutine
 
 pure subroutine cond_alloc_1d_scalar_scalar_logical (arr, shp, source, stat)
     !*  COND_ALLOC wrapper to support scalar shape argument for 1d-arrays.
-    logical, intent(in out), dimension(:), allocatable :: arr
+    logical, intent(inout), dimension(:), allocatable :: arr
     integer, intent(in) :: shp
     logical, intent(in), optional :: source
     integer, intent(out), optional :: stat
@@ -347,7 +347,7 @@ pure subroutine cond_alloc_1d_logical (arr, source, stat)
     !*  COND_ALLOC conditinally allocates a given array if it is not already
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
-    logical, intent(in out), dimension(:), allocatable :: arr
+    logical, intent(inout), dimension(:), allocatable :: arr
         !*  Array to be conditionally allocated
     logical, intent(in), dimension(:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -365,7 +365,7 @@ pure subroutine cond_alloc_2d_scalar_real32 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real32
-    real (PREC), intent(in out), dimension(:,:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -378,7 +378,7 @@ pure subroutine cond_alloc_2d_real32 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real32
-    real (PREC), intent(in out), dimension(:,:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), dimension(:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -392,7 +392,7 @@ pure subroutine cond_alloc_2d_scalar_real64 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real64
-    real (PREC), intent(in out), dimension(:,:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -405,7 +405,7 @@ pure subroutine cond_alloc_2d_real64 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real64
-    real (PREC), intent(in out), dimension(:,:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), dimension(:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -416,7 +416,7 @@ end subroutine
 
 pure subroutine cond_alloc_2d_int32 (arr, source, stat)
     integer, parameter :: INTSIZE = int32
-    integer (INTSIZE), intent(in out), dimension(:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), dimension(:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -429,7 +429,7 @@ pure subroutine cond_alloc_2d_scalar_int32 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int32
-    integer (INTSIZE), intent(in out), dimension(:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -442,7 +442,7 @@ pure subroutine cond_alloc_2d_int64 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int64
-    integer (INTSIZE), intent(in out), dimension(:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), dimension(:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -456,7 +456,7 @@ pure subroutine cond_alloc_2d_scalar_int64 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int64
-    integer (INTSIZE), intent(in out), dimension(:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:), allocatable :: arr
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
@@ -469,7 +469,7 @@ pure subroutine cond_alloc_2d_int8 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int8
-    integer (INTSIZE), intent(in out), dimension(:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), dimension(:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -483,7 +483,7 @@ pure subroutine cond_alloc_2d_scalar_int8 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int8
-    integer (INTSIZE), intent(in out), dimension(:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:), allocatable :: arr
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
@@ -495,7 +495,7 @@ pure subroutine cond_alloc_2d_scalar_logical (arr, shp, source, stat)
     !*  COND_ALLOC conditinally allocates a given array if it is not already
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
-    logical, intent(in out), dimension(:,:), allocatable :: arr
+    logical, intent(inout), dimension(:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     logical, intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -507,7 +507,7 @@ pure subroutine cond_alloc_2d_logical (arr, source, stat)
     !*  COND_ALLOC conditinally allocates a given array if it is not already
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
-    logical, intent(in out), dimension(:,:), allocatable :: arr
+    logical, intent(inout), dimension(:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     logical, intent(in), dimension(:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -524,7 +524,7 @@ pure subroutine cond_alloc_3d_scalar_real32 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real32
-    real (PREC), intent(in out), dimension(:,:,:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -537,7 +537,7 @@ pure subroutine cond_alloc_3d_real32 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real32
-    real (PREC), intent(in out), dimension(:,:,:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), dimension(:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -551,7 +551,7 @@ pure subroutine cond_alloc_3d_scalar_real64 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real64
-    real (PREC), intent(in out), dimension(:,:,:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -564,7 +564,7 @@ pure subroutine cond_alloc_3d_real64 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real64
-    real (PREC), intent(in out), dimension(:,:,:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), dimension(:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -575,7 +575,7 @@ end subroutine
 
 pure subroutine cond_alloc_3d_int32 (arr, source, stat)
     integer, parameter :: INTSIZE = int32
-    integer (INTSIZE), intent(in out), dimension(:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), dimension(:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -588,7 +588,7 @@ pure subroutine cond_alloc_3d_scalar_int32 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int32
-    integer (INTSIZE), intent(in out), dimension(:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -601,7 +601,7 @@ pure subroutine cond_alloc_3d_int64 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int64
-    integer (INTSIZE), intent(in out), dimension(:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), dimension(:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -615,7 +615,7 @@ pure subroutine cond_alloc_3d_scalar_int64 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int64
-    integer (INTSIZE), intent(in out), dimension(:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:), allocatable :: arr
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
@@ -628,7 +628,7 @@ pure subroutine cond_alloc_3d_int8 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int8
-    integer (INTSIZE), intent(in out), dimension(:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), dimension(:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -642,7 +642,7 @@ pure subroutine cond_alloc_3d_scalar_int8 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int8
-    integer (INTSIZE), intent(in out), dimension(:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:), allocatable :: arr
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
@@ -654,7 +654,7 @@ pure subroutine cond_alloc_3d_scalar_logical (arr, shp, source, stat)
     !*  COND_ALLOC conditinally allocates a given array if it is not already
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
-    logical, intent(in out), dimension(:,:,:), allocatable :: arr
+    logical, intent(inout), dimension(:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     logical, intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -666,7 +666,7 @@ pure subroutine cond_alloc_3d_logical (arr, source, stat)
     !*  COND_ALLOC conditinally allocates a given array if it is not already
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
-    logical, intent(in out), dimension(:,:,:), allocatable :: arr
+    logical, intent(inout), dimension(:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     logical, intent(in), dimension(:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -683,7 +683,7 @@ pure subroutine cond_alloc_4d_scalar_real32 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real32
-    real (PREC), intent(in out), dimension(:,:,:,:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -696,7 +696,7 @@ pure subroutine cond_alloc_4d_real32 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real32
-    real (PREC), intent(in out), dimension(:,:,:,:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), dimension(:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -710,7 +710,7 @@ pure subroutine cond_alloc_4d_scalar_real64 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real64
-    real (PREC), intent(in out), dimension(:,:,:,:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -723,7 +723,7 @@ pure subroutine cond_alloc_4d_real64 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real64
-    real (PREC), intent(in out), dimension(:,:,:,:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), dimension(:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -734,7 +734,7 @@ end subroutine
 
 pure subroutine cond_alloc_4d_int32 (arr, source, stat)
     integer, parameter :: INTSIZE = int32
-    integer (INTSIZE), intent(in out), dimension(:,:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), dimension(:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -747,7 +747,7 @@ pure subroutine cond_alloc_4d_scalar_int32 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int32
-    integer (INTSIZE), intent(in out), dimension(:,:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -760,7 +760,7 @@ pure subroutine cond_alloc_4d_int64 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int64
-    integer (INTSIZE), intent(in out), dimension(:,:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), dimension(:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -774,7 +774,7 @@ pure subroutine cond_alloc_4d_scalar_int64 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int64
-    integer (INTSIZE), intent(in out), dimension(:,:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:), allocatable :: arr
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
@@ -787,7 +787,7 @@ pure subroutine cond_alloc_4d_int8 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int8
-    integer (INTSIZE), intent(in out), dimension(:,:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), dimension(:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -801,7 +801,7 @@ pure subroutine cond_alloc_4d_scalar_int8 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int8
-    integer (INTSIZE), intent(in out), dimension(:,:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:), allocatable :: arr
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
@@ -813,7 +813,7 @@ pure subroutine cond_alloc_4d_scalar_logical (arr, shp, source, stat)
     !*  COND_ALLOC conditinally allocates a given array if it is not already
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
-    logical, intent(in out), dimension(:,:,:,:), allocatable :: arr
+    logical, intent(inout), dimension(:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     logical, intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -825,7 +825,7 @@ pure subroutine cond_alloc_4d_logical (arr, source, stat)
     !*  COND_ALLOC conditinally allocates a given array if it is not already
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
-    logical, intent(in out), dimension(:,:,:,:), allocatable :: arr
+    logical, intent(inout), dimension(:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     logical, intent(in), dimension(:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -841,7 +841,7 @@ pure subroutine cond_alloc_5d_scalar_real32 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real32
-    real (PREC), intent(in out), dimension(:,:,:,:,:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:,:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -854,7 +854,7 @@ pure subroutine cond_alloc_5d_real32 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real32
-    real (PREC), intent(in out), dimension(:,:,:,:,:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:,:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), dimension(:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -868,7 +868,7 @@ pure subroutine cond_alloc_5d_scalar_real64 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real64
-    real (PREC), intent(in out), dimension(:,:,:,:,:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:,:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -881,7 +881,7 @@ pure subroutine cond_alloc_5d_real64 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real64
-    real (PREC), intent(in out), dimension(:,:,:,:,:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:,:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), dimension(:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -892,7 +892,7 @@ end subroutine
 
 pure subroutine cond_alloc_5d_int32 (arr, source, stat)
     integer, parameter :: INTSIZE = int32
-    integer (INTSIZE), intent(in out), dimension(:,:,:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -905,7 +905,7 @@ pure subroutine cond_alloc_5d_scalar_int32 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int32
-    integer (INTSIZE), intent(in out), dimension(:,:,:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -918,7 +918,7 @@ pure subroutine cond_alloc_5d_int64 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int64
-    integer (INTSIZE), intent(in out), dimension(:,:,:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -932,7 +932,7 @@ pure subroutine cond_alloc_5d_scalar_int64 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int64
-    integer (INTSIZE), intent(in out), dimension(:,:,:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:,:), allocatable :: arr
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
@@ -945,7 +945,7 @@ pure subroutine cond_alloc_5d_int8 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int8
-    integer (INTSIZE), intent(in out), dimension(:,:,:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -959,7 +959,7 @@ pure subroutine cond_alloc_5d_scalar_int8 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int8
-    integer (INTSIZE), intent(in out), dimension(:,:,:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:,:), allocatable :: arr
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
@@ -971,7 +971,7 @@ pure subroutine cond_alloc_5d_scalar_logical (arr, shp, source, stat)
     !*  COND_ALLOC conditinally allocates a given array if it is not already
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
-    logical, intent(in out), dimension(:,:,:,:,:), allocatable :: arr
+    logical, intent(inout), dimension(:,:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     logical, intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -983,7 +983,7 @@ pure subroutine cond_alloc_5d_logical (arr, source, stat)
     !*  COND_ALLOC conditinally allocates a given array if it is not already
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
-    logical, intent(in out), dimension(:,:,:,:,:), allocatable :: arr
+    logical, intent(inout), dimension(:,:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     logical, intent(in), dimension(:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -999,7 +999,7 @@ pure subroutine cond_alloc_6d_scalar_real32 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real32
-    real (PREC), intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:,:,:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -1012,7 +1012,7 @@ pure subroutine cond_alloc_6d_real32 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real32
-    real (PREC), intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:,:,:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), dimension(:,:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -1026,7 +1026,7 @@ pure subroutine cond_alloc_6d_scalar_real64 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real64
-    real (PREC), intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:,:,:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -1039,7 +1039,7 @@ pure subroutine cond_alloc_6d_real64 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: PREC = real64
-    real (PREC), intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+    real (PREC), intent(inout), dimension(:,:,:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     real (PREC), intent(in), dimension(:,:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -1050,7 +1050,7 @@ end subroutine
 
 pure subroutine cond_alloc_6d_int32 (arr, source, stat)
     integer, parameter :: INTSIZE = int32
-    integer (INTSIZE), intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -1063,7 +1063,7 @@ pure subroutine cond_alloc_6d_scalar_int32 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int32
-    integer (INTSIZE), intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -1076,7 +1076,7 @@ pure subroutine cond_alloc_6d_int64 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int64
-    integer (INTSIZE), intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -1090,7 +1090,7 @@ pure subroutine cond_alloc_6d_scalar_int64 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int64
-    integer (INTSIZE), intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:,:,:), allocatable :: arr
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
@@ -1103,7 +1103,7 @@ pure subroutine cond_alloc_6d_int8 (arr, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int8
-    integer (INTSIZE), intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
@@ -1117,7 +1117,7 @@ pure subroutine cond_alloc_6d_scalar_int8 (arr, shp, source, stat)
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
     integer, parameter :: INTSIZE = int8
-    integer (INTSIZE), intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:,:,:), allocatable :: arr
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
@@ -1129,7 +1129,7 @@ pure subroutine cond_alloc_6d_scalar_logical (arr, shp, source, stat)
     !*  COND_ALLOC conditinally allocates a given array if it is not already
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
-    logical, intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+    logical, intent(inout), dimension(:,:,:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     logical, intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
@@ -1141,7 +1141,7 @@ pure subroutine cond_alloc_6d_logical (arr, source, stat)
     !*  COND_ALLOC conditinally allocates a given array if it is not already
     !   allocated, or its allocated shape differs from the desired shape
     !   or source array.
-    logical, intent(in out), dimension(:,:,:,:,:,:), allocatable :: arr
+    logical, intent(inout), dimension(:,:,:,:,:,:), allocatable :: arr
         !*  Array to be conditionally allocated
     logical, intent(in), dimension(:,:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
