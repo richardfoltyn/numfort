@@ -8,10 +8,13 @@ module lapack_interfaces
     integer, parameter :: COMPLEX_SP = kind((1.0e0, 1.0e0))
     integer, parameter :: COMPLEX_DP = kind((1.0d0, 1.0d0))
 
+    public :: GELSD
     public :: GETRF
     public :: GETRI
     public :: GETRS
+    public :: GESDD
     public :: GESV
+    public :: GESVD
 
     interface GETRF
         procedure sgetrf, dgetrf, cgetrf, zgetrf
@@ -26,8 +29,22 @@ module lapack_interfaces
     end interface
 
     interface GESV
+        !*  DGESV computes the solution to system of linear equations
+        !   A * X = B for GE matrices.
         procedure SGESV, DGESV, CGESV, ZGESV, DSGESV, ZCGESV
     end interface
+
+    interface GESVD
+        !*  DGESVD computes the singular value decomposition (SVD) for
+        !   GE matrices.
+        procedure SGESVD, DGESVD, CGESVD, ZGESVD
+    end interface
+
+    interface GESDD
+        !*  Computes the singular value decomposition of a general rectangular
+        !   matrix using a divide and conquer method.
+        procedure SGESDD, DGESDD, CGESDD, ZGESDD
+    end interface GESDD
 
     interface GELSD
         procedure SGELSD, DGELSD, CGELSD, ZGELSD
@@ -181,6 +198,75 @@ module lapack_interfaces
         end subroutine
     end interface
 
+
+    interface
+        subroutine SGESVD (jobu, jobvt, m, n, a, lda, s, u, ldu, vt, ldvt, work, lwork, info)
+            import
+            character               :: jobu, jobvt
+            integer                 :: info, lda, ldu, ldvt, lwork, m, n
+            real (SP)               :: a(lda, *), s(*), u(ldu, *), vt(ldvt, *), work(*)
+        end subroutine
+
+        subroutine DGESVD (jobu, jobvt, m, n, a, lda, s, u, ldu, vt, ldvt, work, lwork, info)
+            import
+            character               :: jobu, jobvt
+            integer                 :: info, lda, ldu, ldvt, lwork, m, n
+            real (DP)               :: a(lda, *), s(*), u(ldu, *), vt(ldvt, *), work(*)
+        end subroutine
+
+        subroutine CGESVD (jobu, jobvt, m, n, a, lda, s, u, ldu, vt, ldvt, work, lwork, rwork, info)
+            import
+            character               :: jobu, jobvt
+            integer                 :: info, lda, ldu, ldvt, lwork, m, n
+            real (SP)               :: rwork(*), s(*)
+            complex (COMPLEX_SP)    :: a(lda, *), u(ldu, *), vt(ldvt, *), work(*)
+        end subroutine
+
+        subroutine ZGESVD (jobu, jobvt, m, n, a, lda, s, u, ldu, vt, ldvt, work, lwork, rwork, info)
+            import
+            character               :: jobu, jobvt
+            integer                 :: info, lda, ldu, ldvt, lwork, m, n
+            real (DP)               :: rwork(*), s(*)
+            complex (COMPLEX_DP)    :: a(lda, *), u(ldu, *), vt(ldvt, *), work(*)
+        end subroutine
+    end interface
+
+    interface
+        subroutine SGESDD (jobz, m, n, a, lda, s, u, ldu, vt, ldvt, work, lwork, iwork, info)
+            import
+            character               :: jobz
+            integer                 :: info, lda, ldu, ldvt, lwork, m, n
+            integer                 :: iwork(*)
+            real (SP)               :: a(lda, *), s(*), u(ldu, *), vt(ldvt, *), work(*)
+        end subroutine
+
+        subroutine DGESDD (jobz, m, n, a, lda, s, u, ldu, vt, ldvt, work, lwork, iwork, info)
+            import
+            character               :: jobz
+            integer                 :: info, lda, ldu, ldvt, lwork, m, n
+            integer                 :: iwork(*)
+            real (DP)               :: a(lda, *), s(*), u(ldu, *), vt(ldvt, *), work(*)
+        end subroutine
+
+        subroutine CGESDD (jobz, m, n, a, lda, s, u, ldu, vt, ldvt, work, lwork, rwork, iwork, info)
+            import
+            character               :: jobz
+            integer                 :: info, lda, ldu, ldvt, lwork, m, n
+            integer                 :: iwork(*)
+            real (SP)               :: rwork(*), s(*)
+            complex (COMPLEX_SP)    :: a(lda, *), u(ldu, *), vt(ldvt, *), worK(*)
+        end subroutine
+
+        subroutine ZGESDD (jobz, m, n, a, lda, s, u, ldu, vt, ldvt, work, lwork, rwork, iwork, info)
+            import
+            character               :: jobz
+            integer                 :: info, lda, ldu, ldvt, lwork, m, n
+            integer                 :: iwork(*)
+            real (DP)               :: rwork(*), s(*)
+            complex (COMPLEX_DP)    :: a(lda, *), u(ldu, *), vt(ldvt, *), work(*)
+        end subroutine
+
+    end interface
 
     interface
         subroutine SGELSD (m, n, nrhs, a, lda, b, ldb, s, rcond, rank, work, lwork, iwork, info)
