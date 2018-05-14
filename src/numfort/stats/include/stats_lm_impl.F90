@@ -132,7 +132,7 @@ subroutine __APPEND(ols_2d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
     allocate (work(1))
     allocate (iwork(1))
 
-    call __GELSD (m, n, nrhs, lx, lda, lhs, ldb, sval, lrcond, lrank, work, &
+    call LAPACK_GELSD (m, n, nrhs, lx, lda, lhs, ldb, sval, lrcond, lrank, work, &
         lwork, iwork, info)
 
     if (info < 0) then
@@ -148,7 +148,7 @@ subroutine __APPEND(ols_2d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
     allocate (work(lwork), iwork(liwork))
 
     ! 3. Actual call to perform LS
-    call __GELSD (m, n, nrhs, lx, lda, lhs, ldb, sval, lrcond, lrank, work, &
+    call LAPACK_GELSD (m, n, nrhs, lx, lda, lhs, ldb, sval, lrcond, lrank, work, &
         lwork, iwork, info)
 
     ! Check whether algorithm for computing SVD failed to converge
@@ -356,7 +356,7 @@ subroutine __APPEND(pca,__PREC) (x, scores, ncomp, center, scale, trans_x, &
 
     ! workspace query
     lwork = -1
-    call __GESDD (jobz, m, n, x_tmp, lda, ls, u, ldu, vt, ldvt, qwork, lwork, iwork, info)
+    call LAPACK_GESDD (jobz, m, n, x_tmp, lda, ls, u, ldu, vt, ldvt, qwork, lwork, iwork, info)
 
     ! Recover minimal work space size
     if (info /= 0) then
@@ -368,7 +368,7 @@ subroutine __APPEND(pca,__PREC) (x, scores, ncomp, center, scale, trans_x, &
     ! perform actual SVD
     allocate (work(lwork))
 
-    call __GESDD (jobz, m, n, x_tmp, lda, ls, u, ldu, vt, ldvt, work, lwork, iwork, info)
+    call LAPACK_GESDD (jobz, m, n, x_tmp, lda, ls, u, ldu, vt, ldvt, work, lwork, iwork, info)
     deallocate (x_tmp)
 
     if (info /= 0) then
@@ -394,7 +394,7 @@ subroutine __APPEND(pca,__PREC) (x, scores, ncomp, center, scale, trans_x, &
     ldc = nobs
     transa = 'N'
     transb = 'N'
-    call __GEMM (transa, transb, m, n, k, alpha, x_n, lda, vk, ldb, beta, scores, ldc)
+    call BLAS_GEMM (transa, transb, m, n, k, alpha, x_n, lda, vk, ldb, beta, scores, ldc)
 
     if (present(sval)) sval(1:ncomp) = ls(1:ncomp)
     if (present(loadings)) then
@@ -503,12 +503,15 @@ subroutine __APPEND(pcr_2d,__PREC) (lhs, scores, sval, loadings, coefs, mean_x, 
     type (status_t) :: lstatus
     integer :: i, nconst
 
-    real (PREC), dimension(:,:), allocatable :: y_n, PCy, lcoefs, work
+    real (PREC), dimension(:,:), allocatable :: y_n, PCy, lcoefs
+    real (PREC), dimension(:), allocatable :: work
     real (PREC), dimension(:), allocatable :: mean_y
     ! Arguments to GEMM
     character (1) :: transa, transb
     integer :: m, n, k, lda, ldb, ldc
-    real (PREC), parameter :: alpha = 1.0_PREC, beta = 0.0_PREC
+    real (PREC) :: alpha, beta
+    ! Arguments to GEMV
+    integer, parameter :: incx = 1, incy = 1
 
     lstatus = NF_STATUS_OK
 
@@ -548,8 +551,10 @@ subroutine __APPEND(pcr_2d,__PREC) (lhs, scores, sval, loadings, coefs, mean_x, 
     ldc = ncomp
     transa = 'T'
     transb = 'N'
+    alpha = 1.0_PREC
+    beta = 0.0_PREC
     allocate (PCy(ncomp, nlhs))
-    call __GEMM (transa, transb, m, n, k, alpha, scores, lda, y_n, ldb, beta, PCy, ldc)
+    call BLAS_GEMM (transa, transb, m, n, k, alpha, scores, lda, y_n, ldb, beta, PCy, ldc)
 
     ! 2. Regression coefficients are given by (diag(sval**2))^{-1} PC'y,
     ! can be computed directly without solving equation system.
@@ -567,8 +572,10 @@ subroutine __APPEND(pcr_2d,__PREC) (lhs, scores, sval, loadings, coefs, mean_x, 
     ldc = nvars
     transa = 'N'
     transb = 'N'
+    alpha = 1.0_PREC
+    beta = 0.0_PREC
     allocate (lcoefs(nvars, nlhs))
-    call __GEMM (transa, transb, m, n, k, alpha, loadings, lda, PCy, ldb, beta, lcoefs, ldc)
+    call BLAS_GEMM (transa, transb, m, n, k, alpha, loadings, lda, PCy, ldb, beta, lcoefs, ldc)
 
     ! Scale back betas if explanatory variables were normalized
     do i = 1, nlhs
@@ -577,25 +584,25 @@ subroutine __APPEND(pcr_2d,__PREC) (lhs, scores, sval, loadings, coefs, mean_x, 
 
     ! Add intercept if requested
     if (ladd_const) then
-        m = 1
+        m = nvars
         n = nlhs
-        k = nvars
         lda = nvars
-        ldb = nvars
-        ldc = 1
         transa = 'T'
-        transb = 'N'
+        alpha = -1.0_PREC
+        beta = 1.0
 
         ! Compute intercept as a = mean(y) - mean(x)'b
         ! where mean(x)'b is stored in temporary array work.
         ! Manually create temporary array as coefs(1:1,:) is not contiguous
         ! in memory and ifort issues runtime warning in debug mode every time.
-        allocate (work(1, nlhs))
+        allocate (work(nlhs), source=mean_y)
 
-        call __GEMM (transa, transb, m, n, k, alpha, mean_x, lda, &
-            lcoefs, ldb, beta, work, ldc)
+        call BLAS_GEMV (transa, m, n, alpha, lcoefs, lda, mean_x, incx, beta, &
+            work, incy)
 
-        coefs(1,1:nlhs) = mean_y - work(1,1:nlhs)
+        coefs(1,1:nlhs) = work
+
+        deallocate (work)
     end if
 
     ! copy over remaining coefficients
@@ -607,6 +614,8 @@ subroutine __APPEND(pcr_2d,__PREC) (lhs, scores, sval, loadings, coefs, mean_x, 
     if (present(status)) status = lstatus
 
 end subroutine
+
+
 
 subroutine __APPEND(pcr_1d,__PREC) (lhs, scores, sval, loadings, coefs, &
         mean_x, std_x, add_const, center, status)
@@ -885,7 +894,7 @@ subroutine __APPEND(lm_post_estim,__PREC) (model, lhs, rhs, rsq, status)
     integer, parameter :: PREC = __PREC
     type (__APPEND(lm_data,__PREC)), intent(in) :: model
         !*  Estimated model
-    real (PREC), intent(in), dimension(:) :: lhs
+    real (PREC), intent(in), dimension(:), contiguous :: lhs
         !*  Vector of observations of the dependent variable used to estimate
         !   model.
     real (PREC), intent(in), dimension(:,:), contiguous :: rhs

@@ -8,7 +8,9 @@ module numfort_stats_lm
     use numfort_common_alloc
     use numfort_stats_core, only: normalize, mean, std
     
-    use blas_interfaces, only: BLAS_DOT => DOT, BLAS_GEMV => GEMV
+    use blas_interfaces, only: BLAS_DOT => DOT, BLAS_GEMV => GEMV, BLAS_GEMM => GEMM
+    use lapack_interfaces, only: LAPACK_GESVD => GESVD, LAPACK_GELSD => GELSD, &
+        LAPACK_GESDD => GESDD
 
     implicit none
     private
