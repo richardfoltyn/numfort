@@ -8,6 +8,7 @@ set(SOURCE_FILES
     polyval.F90
     poly_complete.f90
     polyval_complete.F90
+    ppolyval.F90
 )
 
 include_directories(
