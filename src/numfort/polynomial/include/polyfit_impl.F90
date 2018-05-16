@@ -148,12 +148,21 @@ end subroutine
 
 
 pure subroutine __APPEND(polyfit_deriv_scalar,__PREC) (x, y, coefs, work, status)
+    !*  POLYFIT_DERIV_SCALAR fits a polynomial to a set of function values
+    !   and derivatives evaluated at the same given point X.
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: x
+        !*  Point X where function value and derivatives are evaluated
     real (PREC), intent(in), dimension(0:) :: y
-    real (PREC), intent(in out), dimension(0:) :: coefs
-    type (__APPEND(workspace,__PREC)), intent(in out), optional :: work
+        !*  List of function values ("order 0" derivative) and k-th order
+        !   derivatives in increasing order, ie
+        !   y = [f(x), df(x)/x, d^2f(x)/dx^2, ... , d^kf(x)/dx^k]
+    real (PREC), intent(out), dimension(0:) :: coefs
+        !*  Coefficients of fitted polynomial
+    type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
+        !*  Optional workspace object
     type (status_t), intent(out), optional :: status
+        !*  Optional exit code
     
     type (__APPEND(workspace,__PREC)), pointer :: ptr_work
     real (PREC), dimension(:), pointer, contiguous :: xp, fact
