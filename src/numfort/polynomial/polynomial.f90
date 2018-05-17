@@ -1,5 +1,7 @@
 module numfort_polynomial
 
+    use numfort_polynomial_create
+
     use numfort_polynomial_polyfit
     use numfort_polynomial_polyroots
     use numfort_polynomial_polyval
@@ -11,6 +13,5 @@ module numfort_polynomial
     use numfort_polynomial_ppolyval
     use numfort_polynomial_ppolyint
 
-    use numfort_polynomial_misc
 
 end module

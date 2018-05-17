@@ -76,7 +76,7 @@ subroutine test_polyfit_deriv (tests)
     class (test_suite) :: tests
     class (test_case), pointer :: tc
     
-    real (PREC), dimension(:), allocatable :: y, coefs, coefs2
+    real (PREC), dimension(:), allocatable :: y, coefs, coefs2, coefs_deriv
     real (PREC) :: x
     type (workspace) :: work
     integer :: deg, n, k
@@ -94,9 +94,13 @@ subroutine test_polyfit_deriv (tests)
     coefs(:) = [-1.234d0, 2.688d0, 3.132d0]
     x = -6.234d0
 
+    allocate (coefs_deriv(deg+1))
     do k = 0, deg
-        call polyder (coefs, x, k, y(k+1), status)
+        call polyder (coefs, coefs_deriv(:deg+1-k), k, status)
+        call polyval (coefs_deriv(:deg+1-k), x, y(k+1), status)
     end do
+    deallocate (coefs_deriv)
+
 
     call polyfit_deriv (x, y, coefs2, work, status)
     call tc%assert_true (all_close (coefs, coefs2, atol=xtol), &
@@ -110,9 +114,12 @@ subroutine test_polyfit_deriv (tests)
     coefs(:) = [-123.23d0, 0.0d0, 34.89d0]
     x = 0.1234d0
 
+    allocate (coefs_deriv(deg+1))
     do k = 0, deg
-        call polyder (coefs, x, k, y(k+1), status)
+        call polyder (coefs, coefs_deriv(:deg+1-k), k, status)
+        call polyval (coefs_deriv(:deg+1-k), x, y(k+1), status)
     end do
+    deallocate (coefs_deriv)
 
     call polyfit_deriv (x, y, coefs2, work, status)
     call tc%assert_true (all_close (coefs, coefs2, atol=xtol), &
@@ -126,9 +133,12 @@ subroutine test_polyfit_deriv (tests)
     coefs(:) = [-123.23d0, 234.9d0, 0.0d0]
     x = 10.2345d0
 
+    allocate (coefs_deriv(deg+1))
     do k = 0, deg
-        call polyder (coefs, x, k, y(k+1), status)
+        call polyder (coefs, coefs_deriv(:deg+1-k), k, status)
+        call polyval (coefs_deriv(:deg+1-k), x, y(k+1), status)
     end do
+    deallocate (coefs_deriv)
 
     call polyfit_deriv (x, y, coefs2, work, status)
     call tc%assert_true (all_close (coefs, coefs2, atol=xtol), &
@@ -142,9 +152,12 @@ subroutine test_polyfit_deriv (tests)
     coefs(:) = [-123.23d0, 0.0d0, -34.9d0, 3.456d0]
     x = 1.2345d0
 
+    allocate (coefs_deriv(deg+1))
     do k = 0, deg
-        call polyder (coefs, x, k, y(k+1), status)
+        call polyder (coefs, coefs_deriv(:deg+1-k), k, status)
+        call polyval (coefs_deriv(:deg+1-k), x, y(k+1), status)
     end do
+    deallocate (coefs_deriv)
 
     call polyfit_deriv (x, y, coefs2, work, status)
     call tc%assert_true (all_close (coefs, coefs2, atol=xtol), &

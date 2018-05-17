@@ -71,7 +71,7 @@ pure subroutine __APPEND(polyval_scalar,__PREC) (coefs, x, y, status)
     real (PREC), intent(in), dimension(0:) :: coefs
     real (PREC), intent(in) :: x
     real (PREC), intent(out) :: y
-    real (PREC), intent(out), optional :: status
+    type (status_t), intent(out), optional :: status
 
     real (PREC), dimension(1) :: x1d, y1d
 

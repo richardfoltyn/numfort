@@ -6,6 +6,6 @@ set(${COMPONENT_NAME}_FILES
     polyroots.f90
     polyval.f90
     poly_complete.f90
-    poly_misc.f90
+    poly_create.f90
     PARENT_SCOPE
 )
