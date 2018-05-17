@@ -1,10 +1,10 @@
 
 
-pure subroutine __APPEND(ppolyval_input_check,__PREC) (knots, coef, k, x, y, &
+pure subroutine __APPEND(ppolyval_input_check,__PREC) (knots, coefs, k, x, y, &
         ext, left, right, status)
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:) :: knots
-    real (PREC), intent(in), dimension(:) :: coef
+    real (PREC), intent(in), dimension(:) :: coefs
     integer, intent(in) :: k
     real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(in), dimension(:) :: y
@@ -29,8 +29,8 @@ pure subroutine __APPEND(ppolyval_input_check,__PREC) (knots, coef, k, x, y, &
 
     ! Check whether coefficient array is at least as large as expected to
     ! prevent possible out-of-bounds access
-    n = ppoly_get_ncoef (size(knots), k)
-    if (size(coef) < n) then
+    n = ppoly_size (size(knots), k)
+    if (size(coefs) < n) then
         status = NF_STATUS_INVALID_ARG
         goto 100
     end if
@@ -50,7 +50,7 @@ pure subroutine __APPEND(ppolyval_input_check,__PREC) (knots, coef, k, x, y, &
 end subroutine
 
 
-pure subroutine __APPEND(ppolyval,__PREC) (knots, coef, k, x, y, ext, &
+pure subroutine __APPEND(ppolyval,__PREC) (knots, coefs, k, x, y, ext, &
         left, right, status)
     !*  PPOLYVAL evaluates the fitted piecewise cubic polynomial at
     !   a set of given points.
@@ -58,7 +58,7 @@ pure subroutine __APPEND(ppolyval,__PREC) (knots, coef, k, x, y, ext, &
     real (PREC), intent(in), dimension(:) :: knots
         !*  x-values of data points (knots) that define the breakpoints of
         !   the piecewise polynomial
-    real (PREC), intent(in), dimension(:) :: coef
+    real (PREC), intent(in), dimension(:) :: coefs
         !*  Stacked array of polynomial coefficients for each segment
     integer, intent(in) :: k
         !*  Polynomial degree on each segment
@@ -86,7 +86,7 @@ pure subroutine __APPEND(ppolyval,__PREC) (knots, coef, k, x, y, ext, &
 
     lstatus = NF_STATUS_OK
 
-    call ppolyval_input_check (knots, coef, k, x, y, ext, left, right, lstatus)
+    call ppolyval_input_check (knots, coefs, k, x, y, ext, left, right, lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
     lext = NF_INTERP_EVAL_EXTRAPOLATE
@@ -148,10 +148,10 @@ pure subroutine __APPEND(ppolyval,__PREC) (knots, coef, k, x, y, ext, &
         ! Index of coefficient block for interval j
         jj = (j-1) * (k+1) + 1
 
-        yi = 0.0
         si = xi - knots(j)
-        do ik = 0, k
-            yi = yi +  coef(jj+ik) * si ** ik
+        yi = coefs(jj)
+        do ik = 1, k
+            yi = yi + coefs(jj+ik) * si ** ik
         end do
 
         y(i) = yi
@@ -164,7 +164,7 @@ pure subroutine __APPEND(ppolyval,__PREC) (knots, coef, k, x, y, ext, &
 end subroutine
 
 
-pure subroutine __APPEND(ppolyval_scalar,__PREC) (knots, coef, k, x, y, &
+pure subroutine __APPEND(ppolyval_scalar,__PREC) (knots, coefs, k, x, y, &
         ext, left, right, status)
     !*  PPOLYVAL evaluates the fitted piecewise cubic polynomial at
     !   a given (scalar!) point.
@@ -172,7 +172,7 @@ pure subroutine __APPEND(ppolyval_scalar,__PREC) (knots, coef, k, x, y, &
     real (PREC), intent(in), dimension(:) :: knots
         !*  x-values of data points (knots) that define the breakpoints of
         !   the piecewise polynomial
-    real (PREC), intent(in), dimension(:) :: coef
+    real (PREC), intent(in), dimension(:) :: coefs
         !*  Stacked array of polynomial coefficients for each segment
     integer, intent(in) :: k
         !*  Polynomial degree on each segment
@@ -187,7 +187,7 @@ pure subroutine __APPEND(ppolyval_scalar,__PREC) (knots, coef, k, x, y, &
     type (status_t) :: lstatus
 
     x1(1) = x
-    call ppolyval (knots, coef, k, x1, y1, ext, left, right, lstatus)
+    call ppolyval (knots, coefs, k, x1, y1, ext, left, right, lstatus)
 
     ! Note: y1 may be uninitialized if error is encountered and evaluation is
     ! is not performed.
