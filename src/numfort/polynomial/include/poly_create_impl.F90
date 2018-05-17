@@ -68,13 +68,94 @@ end subroutine
 
 
 
-pure subroutine __APPEND(polyint,__PREC) (coefs, coefs_new, x, y, status)
-    integer, parameter ::  PREC = __PREC
+pure subroutine __APPEND(polyint_check_input,__PREC) (coefs, coefs_new, x, y, &
+        status)
+    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:) :: coefs
-    real (PREC), intent(out), dimension(:) :: coefs_new
+    real (PREC), intent(in), dimension(:) :: coefs_new
     real (PREC), intent(in), optional :: x
     real (PREC), intent(in), optional :: y
     type (status_t), intent(out), optional :: status
+
+    if (size(coefs_new) < (size(coefs) + 1)) goto 100
+
+    if ((present(x) .and. .not. present(y)) .or. &
+        (.not. present(x) .and. present(y))) goto 100
+
+    status = NF_STATUS_OK
+    return
+
+100 continue
+
+    status = NF_STATUS_INVALID_ARG
+
+end subroutine
+
+
+
+pure subroutine __APPEND(polyint,__PREC) (coefs, coefs_new, x, y, status)
+    !*  POLYINT constructs a new polynomial as the integral of a given
+    !   polynomial, defined by its coefficient array.
+    !   The integration constant is optionally determined by providing
+    !   an arbitrary point (x,y) from the graph of the antiderivative.
+    integer, parameter ::  PREC = __PREC
+    real (PREC), intent(in), dimension(0:) :: coefs
+        !*  Coefficients of polynomial to be integrated
+    real (PREC), intent(out), dimension(0:) :: coefs_new
+        !*  Coefficients of polynomial representing the antiderivative
+    real (PREC), intent(in), optional :: x
+        !*  Optional point X used to determine the integration constant.
+    real (PREC), intent(in), optional :: y
+        !*  Optional point Y used to determine the integration constant,
+        !   defined such that P(x) = Y where P is the antiderivative.
+    type (status_t), intent(out), optional :: status
+        !*  Optional status code.
+
+    type (status_t) :: lstatus
+
+    lstatus = NF_STATUS_OK
+
+    call polyint_check_input (coefs, coefs_new, x, y, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    call polyint_impl (coefs, coefs_new, x, y)
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+pure subroutine __APPEND(polyint_impl,__PREC) (coefs, coefs_new, x, y)
+    !*  POLYINT_IMPL provides the actual integration functionality of
+    !   POLYINT without the error-checking overhead.
+    integer, parameter ::  PREC = __PREC
+    real (PREC), intent(in), dimension(0:) :: coefs
+        !*  Coefficients of polynomial to be integrated
+    real (PREC), intent(out), dimension(0:) :: coefs_new
+        !*  Coefficients of polynomial representing the antiderivative
+    real (PREC), intent(in), optional :: x
+        !*  Optional point X used to determine the integration constant.
+    real (PREC), intent(in), optional :: y
+        !*  Optional point Y used to determine the integration constant,
+        !   defined such that P(x) = Y where P is the antiderivative.
+
+    integer :: k, ik
+    real (PREC) :: fx(1), x1(1)
+
+    k = size(coefs) - 1
+
+    coefs_new = 0.0
+    do ik = 1, k+1
+        coefs_new(ik) = coefs(ik-1) / ik
+    end do
+
+    if (present(x) .and. present(y)) then
+        x1(1) = x
+        call polyval_impl (coefs_new, x1, fx)
+        coefs_new(0) = y - fx(1)
+    end if
 
 end subroutine
 

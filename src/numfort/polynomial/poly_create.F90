@@ -11,11 +11,14 @@ module numfort_polynomial_create
 
     use numfort_core
     use numfort_common
+    use numfort_polynomial_polyval, only: polyval_impl
 
     implicit none
     private
 
     public :: polyder
+    public :: polyint
+    public :: polyint_impl
     public :: polyshift
 
 #include <numfort_real32.h>
