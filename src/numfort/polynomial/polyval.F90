@@ -12,6 +12,7 @@ module numfort_polynomial_polyval
     private
 
     public :: polyval
+    public :: polyval_impl
 
 #include <numfort_real32.h>
 #include "polyval_spec.F90"
