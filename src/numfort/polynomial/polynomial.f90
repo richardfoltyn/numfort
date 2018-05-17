@@ -11,4 +11,6 @@ module numfort_polynomial
     use numfort_polynomial_ppolyval
     use numfort_polynomial_ppolyint
 
+    use numfort_polynomial_misc
+
 end module
