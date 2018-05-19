@@ -55,7 +55,6 @@ subroutine __APPEND(polyfit,__PREC) (x, y, deg, coefs, work, status)
     type (__APPEND(workspace,__PREC)), optional :: work
     type (status_t), intent(out), optional :: status
 
-    type (__APPEND(workspace,__PREC)), pointer :: ptr_work
     type (status_t) :: lstatus
 
     integer :: n
@@ -64,8 +63,6 @@ subroutine __APPEND(polyfit,__PREC) (x, y, deg, coefs, work, status)
 
     call polyfit_check_input (x, y, deg, coefs, lstatus)
     if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
-
-    call assert_alloc_ptr (work, ptr_work)
 
     n = size(x)
 
@@ -80,8 +77,6 @@ subroutine __APPEND(polyfit,__PREC) (x, y, deg, coefs, work, status)
 
     if (present(status)) status = lstatus
 
-    call assert_dealloc_ptr (work, ptr_work)
-
 end subroutine
 
 
@@ -91,7 +86,7 @@ subroutine __APPEND(polyfit_exact,__PREC) (x, y, deg, work, coefs, status)
     real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(in), dimension(:,:) :: y
     integer, intent(in) :: deg
-    type (__APPEND(workspace,__PREC)) :: work
+    type (__APPEND(workspace,__PREC)), optional :: work
     real (PREC), intent(out), dimension(:,:), contiguous :: coefs
     type (status_t), intent(out) :: status
 
@@ -100,6 +95,7 @@ subroutine __APPEND(polyfit_exact,__PREC) (x, y, deg, work, coefs, status)
     real (PREC), dimension(:,:), pointer, contiguous :: ptr_a
     integer, dimension(:), pointer, contiguous :: ptr_ipiv
 
+    type (__APPEND(workspace,__PREC)), pointer :: ptr_work
     integer, dimension(2) :: shp
 
     n = size(x)
@@ -107,11 +103,12 @@ subroutine __APPEND(polyfit_exact,__PREC) (x, y, deg, work, coefs, status)
     lda = n
     ldb = deg + 1
 
-    call assert_alloc (work, nrwrk=n*n, niwrk=n)
+    call assert_alloc_ptr (work, ptr_work)
+    call assert_alloc (ptr_work, nrwrk=n*n, niwrk=n)
 
     shp = n
-    call workspace_get_ptr (work, shp, ptr_a)
-    call workspace_get_ptr (work, n, ptr_ipiv)
+    call workspace_get_ptr (ptr_work, shp, ptr_a)
+    call workspace_get_ptr (ptr_work, n, ptr_ipiv)
 
     call vander (x, ptr_a, increasing=.true.)
     ! Copy into COEFS which will contains the coefficients after calling GESV
@@ -129,6 +126,8 @@ subroutine __APPEND(polyfit_exact,__PREC) (x, y, deg, work, coefs, status)
     else
         status = NF_STATUS_INVALID_STATE
     end if
+
+    call assert_dealloc_ptr (work, ptr_work)
 
 end subroutine
 
