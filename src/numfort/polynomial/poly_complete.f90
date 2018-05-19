@@ -88,7 +88,7 @@ pure subroutine polyexponents_complete (n, k, exponents, status)
     lstatus = NF_STATUS_OK
 
     ! Input checks
-    call check_positive (n, n, "n", lstatus)
+    call check_nonneg (n, n, "n", lstatus)
     if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
     call check_nonneg (k, k, "k", lstatus)
     if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100

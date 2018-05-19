@@ -59,17 +59,25 @@ pure subroutine __APPEND(polybasis,__PREC) (x, k, basis, status)
     if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
     ! number of points and dimensions
-    nd = size (x, 1)
+    nd = size(x, 1)
     nx = size(x, 2)
     ! Number of basis functions
     nbasis = poly_complete_get_nterms (nd, k)
 
-    if (nx == 0) return
+    ! No points given, hence nothing to do
+    if (nx == 0) goto 100
+
+    ! Basis functions for 0-dimensional data: in this case we should just
+    ! return the constant term and exit immediately.
+    if (nd == 0) then
+        basis(1,:) = 1.0
+        goto 100
+    end if
 
     allocate (xi(nd))
 
     ! Array that contains all permutations of exponents that occur in
-    ! given complete polynomial (one per column)
+    ! given complete polynomial (one per column).
     allocate (exponents(nd, nbasis))
 
     ! obtain sorted permutations of exponents that sum to k=2,...,k
