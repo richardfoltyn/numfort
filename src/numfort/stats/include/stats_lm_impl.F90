@@ -456,6 +456,10 @@ pure subroutine __APPEND(pcr_check_input,__PREC) (lhs, scores, sval, loadings, &
         if (size(std_x) < nvars) return
     end if
 
+    ! Do not support regressing on zero PCs if constant adding constant
+    ! was not requested by user.
+    if (ncomp == 0.0 .and. .not. add_const) return
+
     status = NF_STATUS_OK
 
 end subroutine
@@ -513,6 +517,8 @@ subroutine __APPEND(pcr_2d,__PREC) (lhs, scores, sval, loadings, coefs, mean_x, 
     ! Arguments to GEMV
     integer, parameter :: incx = 1, incy = 1
 
+    nullify (ptr_mean_x, ptr_std_x)
+
     lstatus = NF_STATUS_OK
 
     ladd_const = .true.
@@ -527,19 +533,28 @@ subroutine __APPEND(pcr_2d,__PREC) (lhs, scores, sval, loadings, coefs, mean_x, 
     call pcr_get_dims (lhs, scores, coefs, ladd_const, &
         nobs, nvars, ncomp, nlhs, ncoefs, nconst)
 
-    ! sample mean and standard deviation of original x variables
-    call assert_alloc_ptr (mean_x, nvars, ptr_mean_x)
-    call assert_alloc_ptr (std_x, nvars, ptr_std_x)
-
-    if (.not. present(mean_x)) ptr_mean_x = 0.0_PREC
-    if (.not. present(std_x)) ptr_std_x = 1.0_PREC
-
     ! copy over dependent variable, will be overwritten by GELS
     allocate (y_n(nobs, nlhs), source=lhs)
     allocate (mean_y(nlhs), source=0.0_PREC)
     if (lcenter) then
         call normalize (y_n, m=mean_y, dim=1, center=.true., scale=.false.)
     end if
+
+    ! If no components are present, we can still run a constant-only regression
+    ! if requested by user. Otherwise exit doing nothing.
+    if (ncomp == 0) then
+        if (ladd_const) then
+            coefs(1,1:nlhs) = mean_y
+        end if
+        goto 100
+    end if
+
+    ! sample mean and standard deviation of original x variables
+    call assert_alloc_ptr (mean_x, nvars, ptr_mean_x)
+    call assert_alloc_ptr (std_x, nvars, ptr_std_x)
+
+    if (.not. present(mean_x)) ptr_mean_x = 0.0_PREC
+    if (.not. present(std_x)) ptr_std_x = 1.0_PREC
 
     ! Compute regression coefficients of regression y_n on PC
     ! 1. Compute PC'y
