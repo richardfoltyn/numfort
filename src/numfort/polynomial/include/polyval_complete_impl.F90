@@ -6,7 +6,7 @@ pure subroutine __APPEND(polybasis_check_input,__PREC) (x, k, basis, status)
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:,:) :: x
     integer, intent(in) :: k
-    real (PREC), intent(out), dimension(:,:) :: basis
+    real (PREC), intent(in), dimension(:,:) :: basis
     type (status_t), intent(out), optional :: status
 
     integer :: npoints, nd, nterms
