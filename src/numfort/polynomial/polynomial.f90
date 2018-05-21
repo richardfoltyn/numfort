@@ -10,8 +10,6 @@ module numfort_polynomial
     use numfort_polynomial_polyval_complete
 
     use numfort_polynomial_ppoly
-    use numfort_polynomial_ppolyval
-    use numfort_polynomial_ppolyint
 
 
 end module
