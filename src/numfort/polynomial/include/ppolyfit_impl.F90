@@ -2,18 +2,16 @@
 
 
 pure subroutine __APPEND(bernstein_fit_deriv_check_input,__PREC) &
-        (self, x, y, k, knots, coefs, status)
+        (self, x, y, k, status)
 
     integer, parameter :: PREC = __PREC
     type (ppoly_bernstein), intent(in) :: self
     real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(in), dimension(:,:) :: y
     integer, intent(in) :: k
-    real (PREC), intent(in), dimension(:) :: knots
-    real (PREC), intent(in), dimension(:) :: coefs
     type (status_t), intent(out) :: status
 
-    integer :: n, nknots, ncoefs
+    integer :: n
 
     n = size(x)
 
@@ -25,12 +23,6 @@ pure subroutine __APPEND(bernstein_fit_deriv_check_input,__PREC) &
 
     if (size(x) /= size(y,2)) goto 100
     if (size(y,1) < ((k+1) / 2)) goto 100
-
-    nknots = ppoly_get_nknots (self, n, k)
-    ncoefs = ppoly_get_ncoefs (self, n, k)
-
-    if (size(knots) < nknots) goto 100
-    if (size(coefs) /= ncoefs) goto 100
 
     status = NF_STATUS_OK
     return
@@ -53,9 +45,18 @@ pure subroutine __APPEND(bernstein_fit_deriv,__PREC) (self, x, y, k, &
     type (status_t), intent(out), optional :: status
 
     type (status_t) :: lstatus
+    integer :: n
 
     lstatus = NF_STATUS_OK
-    call bernstein_fit_deriv_check_input (self, x, y, k, knots, coefs, lstatus)
+    n = size(x)
+
+    ! Perform input checking commong to all routines processing Bernstein
+    ! polynomials.
+    call bernstein_check_input (self, knots, coefs, n, k, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! Perform input checking specifing to fitting polynomials to derivatives.
+    call bernstein_fit_deriv_check_input (self, x, y, k, lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
     call bernstein_fit_deriv_impl (self, x, y, k, knots, coefs, lstatus)

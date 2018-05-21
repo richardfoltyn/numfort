@@ -199,14 +199,12 @@ pure subroutine __APPEND(ppolyval_scalar,__PREC) (self, knots, coefs, x, y, &
 end subroutine
 
 
-pure subroutine __APPEND(bernstein_ppolyval_check_input,__PREC) (self, knots, &
-        coefs, x, y, ext, left, right, status)
+pure subroutine __APPEND(bernstein_ppolyval_check_input,__PREC) (self, &
+        x, y, ext, left, right, status)
     !*  BERNSTEIN_PPOLYVAL_CHECK_INPUT performs input checks on caller-provided
     !   arguments to BERNSTEIN_PPOLYVAL.
     integer, parameter :: PREC = __PREC
     type (ppoly_bernstein), intent(in) :: self
-    real (PREC), intent(in), dimension(:) :: knots
-    real (PREC), intent(in), dimension(:) :: coefs
     real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(out), dimension(:) :: y
     integer (NF_ENUM_KIND), intent(in), optional :: ext
@@ -215,18 +213,7 @@ pure subroutine __APPEND(bernstein_ppolyval_check_input,__PREC) (self, knots, &
     type (status_t), intent(out) :: status
         !   Exit code (optional)
 
-    integer :: nknots, ncoefs
-
     if (size(x) /= size(y)) goto 100
-
-    ! Check min. data point array size
-    nknots = ppoly_get_nknots (self)
-    if (size(knots) < nknots) goto 100
-
-    ! Check whether coefficient array is at least as large as expected to
-    ! prevent possible out-of-bounds access
-    ncoefs = ppoly_get_ncoefs (self)
-    if (size(coefs) /= ncoefs) goto 100
 
     ! Need to provide constants for extrapolation if corresponding extrapolation
     ! mode was requested.
@@ -278,7 +265,12 @@ pure subroutine __APPEND(bernstein_ppolyval,__PREC) (self, knots, coefs, x, y, &
 
     lstatus = NF_STATUS_OK
 
-    call ppolyval_check_input (self, knots, coefs, x, y, ext, left, right, lstatus)
+    ! Perform common input checks
+    call bernstein_check_input (self, knots, coefs, status=lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! Perform input checks specific to evaluating polynomials
+    call ppolyval_check_input (self, x, y, ext, left, right, lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
     lext = NF_INTERP_EVAL_EXTRAPOLATE

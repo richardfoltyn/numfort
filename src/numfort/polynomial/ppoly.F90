@@ -4,6 +4,8 @@
 #include <numfort.h>
 
 module numfort_polynomial_ppoly
+    !*  Module implements fitting, evaluation and interpolation of
+    !   piecewise polynomials.
 
     use, intrinsic :: iso_fortran_env
 
@@ -22,15 +24,17 @@ module numfort_polynomial_ppoly
     public :: ppoly_get_ncoefs
     public :: ppolyfit
     public :: ppolyval
+    public :: ppolyder
 
+    ! The following routines contain the implementations of the more
+    ! userfriendly routines exported above, but do not perform any input checks.
+    ! For NUMFORT-internal use only!
     public :: ppolyval_impl
-        !*  POLYVAL implementation routine that does not perform any input
-        !   checks. For NUMFORT-internal use only.
-
     public :: bernstein_fit_deriv_impl
-        !   Not intended as public API, but for NUMFORT-internal use.
+    public :: ppolyder_impl
 
     type :: ppoly_abc
+        private
         integer :: degree = 0
             !*  Polynomial degree of each piecewise polynomial
         integer :: nknots = 0
@@ -54,12 +58,16 @@ module numfort_polynomial_ppoly
     end interface
 
 #include <numfort_real32.h>
+#include "ppoly_common_spec.F90"
 #include "ppolyfit_spec.F90"
 #include "ppolyval_spec.F90"
+#include "ppolyder_spec.F90"
 
 #include <numfort_real64.h>
+#include "ppoly_common_spec.F90"
 #include "ppolyfit_spec.F90"
 #include "ppolyval_spec.F90"
+#include "ppolyder_spec.F90"
 
     contains
 
@@ -128,11 +136,15 @@ end function
 
 
 #include <numfort_real32.h>
+#include "ppoly_common_impl.F90"
 #include "ppolyfit_impl.F90"
 #include "ppolyval_impl.F90"
+#include "ppolyder_impl.F90"
 
 #include <numfort_real64.h>
+#include "ppoly_common_impl.F90"
 #include "ppolyfit_impl.F90"
 #include "ppolyval_impl.F90"
+#include "ppolyder_impl.F90"
 
 end module
