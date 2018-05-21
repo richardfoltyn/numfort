@@ -26,6 +26,7 @@ subroutine test_all ()
 
     call test_factorial (tests)
     call test_comb (tests)
+    call test_poch (tests)
 
     call tests%print ()
 
@@ -95,6 +96,33 @@ subroutine test_comb (tests)
         call tc%assert_true (ok, msg)
     end do
 
+
+end subroutine
+
+
+subroutine test_poch (tests)
+    !*  Unit tests for Pochhammer symbol
+    class (test_suite) :: tests
+
+    class (test_case), pointer :: tc
+    type (str) :: msg
+    integer :: n, k, res, res_ok
+
+    tc => tests%add_test ("Pochhammer symbol unit tests")
+
+    ! Test with empty product
+    res_ok = 1
+    res = poch (0, 0)
+    call tc%assert_true (res == res_ok , 'POCH(0,0) == 1')
+
+    do n = 1, 5
+        do k = 0, 5
+            res = poch (n, k)
+            res_ok = factorial (k) * comb (n+k-1, k)
+            msg = 'POCH(' // str(n) // ',' // str(k) // ') == ' // str(res_ok)
+            call tc%assert_true (res == res_ok, msg)
+        end do
+    end do
 
 end subroutine
 
