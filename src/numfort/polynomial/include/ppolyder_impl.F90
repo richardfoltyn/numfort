@@ -63,6 +63,8 @@ pure subroutine __APPEND(bernstein_ppolyder_impl,__PREC) (self, knots, coefs, &
     integer :: nknots, k1, i, j, k, ii0, ii1
     real (PREC) :: dx, dcoef
 
+    status = NF_STATUS_OK
+
     nknots = self%nknots
     k = self%degree
     k1 = max(0, k - m)

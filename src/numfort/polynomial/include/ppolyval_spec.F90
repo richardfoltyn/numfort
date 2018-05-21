@@ -16,6 +16,10 @@ interface ppolyval
     procedure __APPEND(bernstein_ppolyval,__PREC)
 end interface
 
+interface ppolyval
+    procedure __APPEND(bernstein_ppolyval_scalar,__PREC)
+end interface
+
 interface ppolyval_impl
     procedure __APPEND(bernstein_ppolyval_impl,__PREC)
 end interface

@@ -186,15 +186,11 @@ pure subroutine __APPEND(ppolyval_scalar,__PREC) (self, knots, coefs, x, y, &
     type (status_t) :: lstatus
 
     x1(1) = x
+    ! Initialize to something to present unintialized variable warnings
+    ! if PPOLYVAL exits with an error.
+    y1 = 0.0
     call ppolyval (self, knots, coefs, x1, y1, ext, left, right, lstatus)
-
-    ! Note: y1 may be uninitialized if error is encountered and evaluation is
-    ! is not performed.
-    if (lstatus == NF_STATUS_OK) then
-        y = y1(1)
-    end if
-
-    if (present(status)) status = lstatus
+    y = y1(1)
 
 end subroutine
 
@@ -206,7 +202,7 @@ pure subroutine __APPEND(bernstein_ppolyval_check_input,__PREC) (self, &
     integer, parameter :: PREC = __PREC
     type (ppoly_bernstein), intent(in) :: self
     real (PREC), intent(in), dimension(:) :: x
-    real (PREC), intent(out), dimension(:) :: y
+    real (PREC), intent(in), dimension(:) :: y
     integer (NF_ENUM_KIND), intent(in), optional :: ext
     real (PREC), intent(in), optional :: left
     real (PREC), intent(in), optional :: right
@@ -284,6 +280,44 @@ pure subroutine __APPEND(bernstein_ppolyval,__PREC) (self, knots, coefs, x, y, &
 
 end subroutine
 
+
+pure subroutine __APPEND(bernstein_ppolyval_scalar,__PREC) (self, knots, coefs, &
+        x, y, ext, left, right, status)
+    integer, parameter :: PREC = __PREC
+    type (ppoly_bernstein), intent(in) :: self
+    real (PREC), intent(in), dimension(:) :: knots
+        !*  x-values of data points (knots) that define the breakpoints of
+        !   the piecewise polynomial
+    real (PREC), intent(in), dimension(:), contiguous :: coefs
+        !*  Stacked array of polynomial coefficients for each segment
+    real (PREC), intent(in) :: x
+        !*  x-coordinate of point where function should be interpolating.
+    real (PREC), intent(out) :: y
+        !*  On exit, contains interpolated function value for x-coordinate
+        !   given in X.
+    integer (NF_ENUM_KIND), intent(in), optional :: ext
+        !*  Type of extrapolation, if applicable (default: extrapolate based
+        !   on coefficients of closest interior interval).
+    real (PREC), intent(in), optional :: left
+        !*  Constant value assigned to x-coordinates smaller than KNOTS(1), if
+        !   EXT = NF_INTERP_EVAL_CONST.
+    real (PREC), intent(in), optional :: right
+        !*  Constant value assigned to x-coordinates larger than KNOTS(-1), if
+        !   EXT = NF_INTERP_EVAL_CONST.
+    type (status_t), intent(out), optional :: status
+        !   Exit code (optional)
+
+    real (PREC), dimension(1) :: x1, y1
+
+    x1(1) = x
+    ! Initialize to something to present unintialized variable warnings
+    ! if POLYVAL exits with an error.
+    y1 = 0.0
+
+    call ppolyval (self, knots, coefs, x1, y1, ext, left, right, status)
+    y = y1(1)
+
+end subroutine
 
 
 
