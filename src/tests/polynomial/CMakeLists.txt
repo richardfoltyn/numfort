@@ -7,5 +7,6 @@ set(${COMPONENT_NAME}_FILES
     polyval.f90
     poly_complete.f90
     poly_create.f90
+    ppoly.f90
     PARENT_SCOPE
 )
