@@ -22,7 +22,7 @@ pure subroutine __APPEND(bernstein_ppolyder,__PREC) (self, knots, coefs, &
     call check_nonneg (1, m, "m", lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
-    lm = 0
+    lm = 1
     if (present(m)) lm = m
 
     ! TODO: Implement support for higher derivatives

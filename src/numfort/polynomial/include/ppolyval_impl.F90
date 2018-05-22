@@ -183,13 +183,12 @@ pure subroutine __APPEND(ppolyval_scalar,__PREC) (self, knots, coefs, x, y, &
     type (status_t), intent(out), optional :: status
 
     real (PREC), dimension(1) :: x1, y1
-    type (status_t) :: lstatus
 
     x1(1) = x
     ! Initialize to something to present unintialized variable warnings
     ! if PPOLYVAL exits with an error.
     y1 = 0.0
-    call ppolyval (self, knots, coefs, x1, y1, ext, left, right, lstatus)
+    call ppolyval (self, knots, coefs, x1, y1, ext, left, right, status)
     y = y1(1)
 
 end subroutine
