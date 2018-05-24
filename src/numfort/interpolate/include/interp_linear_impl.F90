@@ -195,8 +195,8 @@ subroutine __APPEND(interp_linear_1d,__PREC) (x, xp, fp, fx, ext, left, right)
 end subroutine
 
 
-pure function __APPEND(interp_bilinear_impl,__PREC) (x1, x2, xp1, xp2, fp, ext, &
-        fill_value) result(fx)
+pure subroutine __APPEND(interp_bilinear_impl,__PREC) (x1, x2, xp1, xp2, fp, &
+        ext, fill_value, fx, wgt)
     !*  INTERP_BILINEAR_IMPL performs bilineare interpolation over a
     !   rectangular grid.
     integer, parameter :: PREC = __PREC
@@ -221,8 +221,11 @@ pure function __APPEND(interp_bilinear_impl,__PREC) (x1, x2, xp1, xp2, fp, ext, 
     real (PREC), intent(in) :: fill_value
         !*  Fill value to be used if point (X1,X2) is outside of the domain
         !   defined by XP1, XP2.
-    real (PREC) :: fx
+    real (PREC), intent(out) :: fx
         !*  Interpolated function value f(x1,x2)
+    real (PREC), intent(out), dimension(:) :: wgt
+        !*  If present, returns the weights for the upper edge of the bracketing
+        !   interval for each dimension.
 
     integer (INTSIZE) :: ilb1, ilb2
     real (PREC) :: w1, w2, fx1_lb, fx1_ub
@@ -234,6 +237,7 @@ pure function __APPEND(interp_bilinear_impl,__PREC) (x1, x2, xp1, xp2, fp, ext, 
     select case (ext)
     case (NF_INTERP_EVAL_CONST)
         if (x1 < xp1(1) .or. x1 > xp1(np1) .or. x2 < xp2(1) .or. x2 > xp2(np2)) then
+            wgt = 0.0_PREC
             goto 100
         end if
     end select
@@ -254,6 +258,9 @@ pure function __APPEND(interp_bilinear_impl,__PREC) (x1, x2, xp1, xp2, fp, ext, 
     ! Interpolate in dimension two
     fx = (1.0_PREC-w2) * fx1_lb + w2 * fx1_ub
 
+    wgt(1) = w1
+    wgt(2) = w2
+
     return
 
 100 continue
@@ -261,7 +268,7 @@ pure function __APPEND(interp_bilinear_impl,__PREC) (x1, x2, xp1, xp2, fp, ext, 
 
     fx = fill_value
 
-end function
+end subroutine
 
 
 
@@ -288,7 +295,7 @@ end subroutine
 
 
 pure subroutine __APPEND(interp_bilinear_1d,__PREC) (x1, x2, xp1, xp2, fp, fx, &
-        ext, fill_value, status)
+        ext, fill_value, wgt, status)
     !*  INTERP_BILINEAR_IMPL performs bilineare interpolation over a
     !   rectangular grid.
     integer, parameter :: PREC = __PREC
@@ -317,6 +324,7 @@ pure subroutine __APPEND(interp_bilinear_1d,__PREC) (x1, x2, xp1, xp2, fp, fx, &
     real (PREC), intent(in), optional :: fill_value
         !*  Fill value to be used if point (X1,X2) is outside of the domain
         !   defined by XP1, XP2.
+    real (PREC), intent(out), dimension(:,:), optional :: wgt
     type (status_t), intent(out), optional :: status
         !*  Optional exit status.
 
@@ -324,6 +332,7 @@ pure subroutine __APPEND(interp_bilinear_1d,__PREC) (x1, x2, xp1, xp2, fp, fx, &
     real (PREC) :: lfill_value
     integer (NF_ENUM_KIND) :: lext
     integer (INTSIZE) :: i
+    real (PREC), dimension(2) :: wgt_dummy
 
     lstatus = NF_STATUS_OK
 
@@ -336,6 +345,13 @@ pure subroutine __APPEND(interp_bilinear_1d,__PREC) (x1, x2, xp1, xp2, fp, fx, &
     call interp_bilinear_check_input (xp1, xp2, fp, lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
+    if (present(wgt)) then
+        if (size(wgt, 1) < 2) then
+            lstatus = NF_STATUS_INVALID_ARG
+            goto 100
+        end if
+    end if
+
     lfill_value = 0.0_PREC
     lext = NF_INTERP_EVAL_EXTRAPOLATE
     if (present(ext)) lext = ext
@@ -345,9 +361,17 @@ pure subroutine __APPEND(interp_bilinear_1d,__PREC) (x1, x2, xp1, xp2, fp, fx, &
         lext = NF_INTERP_EVAL_CONST
     end if
 
-    do i = 1, size(x1)
-        fx(i) = interp_bilinear_impl (x1(i), x2(i), xp1, xp2, fp, lext, lfill_value)
-    end do
+    if (present(wgt)) then
+        do i = 1, size(x1)
+            call interp_bilinear_impl (x1(i), x2(i), xp1, xp2, fp, lext, &
+                lfill_value, fx(i), wgt(:,i))
+        end do
+    else
+        do i = 1, size(x1)
+            call interp_bilinear_impl (x1(i), x2(i), xp1, xp2, fp, lext, &
+                lfill_value, fx(i), wgt_dummy)
+        end do
+    end if
 
 100 continue
     if (present(status)) status = lstatus
@@ -356,7 +380,7 @@ end subroutine
 
 
 pure subroutine __APPEND(interp_bilinear_scalar,__PREC) (x1, x2, xp1, xp2, fp, fx, &
-        ext, fill_value, status)
+        ext, fill_value, wgt, status)
     !*  INTERP_BILINEAR_IMPL performs bilineare interpolation over a
     !   rectangular grid.
     integer, parameter :: PREC = __PREC
@@ -384,12 +408,14 @@ pure subroutine __APPEND(interp_bilinear_scalar,__PREC) (x1, x2, xp1, xp2, fp, f
     real (PREC), intent(in), optional :: fill_value
         !*  Fill value to be used if point (X1,X2) is outside of the domain
         !   defined by XP1, XP2.
+    real (PREC), intent(out), dimension(:), optional :: wgt
     type (status_t), intent(out), optional :: status
         !*  Optional exit status.
 
     type (status_t) :: lstatus
     real (PREC) :: lfill_value
     integer (NF_ENUM_KIND) :: lext
+    real (PREC), dimension(2) :: wgt_dummy
 
     lstatus = NF_STATUS_OK
 
@@ -397,6 +423,13 @@ pure subroutine __APPEND(interp_bilinear_scalar,__PREC) (x1, x2, xp1, xp2, fp, f
     call interp_bilinear_check_input (xp1, xp2, fp, lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
+    if (present(wgt)) then
+    if (size(wgt) < 2) then
+        lstatus = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+
+    end if
     lfill_value = 0.0_PREC
     lext = NF_INTERP_EVAL_EXTRAPOLATE
     if (present(ext)) lext = ext
@@ -406,7 +439,13 @@ pure subroutine __APPEND(interp_bilinear_scalar,__PREC) (x1, x2, xp1, xp2, fp, f
         lext = NF_INTERP_EVAL_CONST
     end if
 
-    fx = interp_bilinear_impl (x1, x2, xp1, xp2, fp, lext, lfill_value)
+    if (present(wgt)) then
+        call interp_bilinear_impl (x1, x2, xp1, xp2, fp, lext, lfill_value, &
+            fx, wgt)
+    else
+        call interp_bilinear_impl (x1, x2, xp1, xp2, fp, lext, lfill_value, &
+            fx, wgt_dummy)
+    end if
 
 100 continue
     if (present(status)) status = lstatus
