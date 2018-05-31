@@ -329,21 +329,21 @@ subroutine test_basis (tests)
 
     allocate (x(1,1), basis(1,1))
     status = NF_STATUS_OK
-    call polybasis_complete (x, -1, basis, status)
+    call polybasis_complete (x, -1, basis, status=status)
     call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
         "Invalid polynomial degree")
     deallocate (x, basis)
 
     allocate (x(1,2), basis(1,1))
     status = NF_STATUS_OK
-    call polybasis_complete (x, 0, basis, status)
+    call polybasis_complete (x, 0, basis, status=status)
     call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
         "BASIS input has too few columns")
     deallocate (x, basis)
 
     allocate (x(1,1), basis(1,1))
     status = NF_STATUS_OK
-    call polybasis_complete (x, 1, basis, status)
+    call polybasis_complete (x, 1, basis, status=status)
     call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
         "BASIS input has too few rows")
     deallocate (x, basis)
@@ -359,7 +359,7 @@ subroutine test_basis (tests)
         nterms = poly_complete_get_nterms (k, n)
         allocate (basis(nterms, nx), basis_ok(nterms, nx))
 
-        call polybasis_complete (x, k, basis, status)
+        call polybasis_complete (x, k, basis, status=status)
 
         do i = 1, k+1
             do j = 1, nx
@@ -388,7 +388,7 @@ subroutine test_basis (tests)
         nterms = poly_complete_get_nterms (k, n)
         allocate (basis(nterms, nx), basis_ok(nterms, nx))
 
-        call polybasis_complete (x, k, basis, status)
+        call polybasis_complete (x, k, basis, status=status)
 
         basis_ok(1,:) = 1.0
         if (k >= 1) then
@@ -430,7 +430,7 @@ subroutine test_basis (tests)
         nterms = poly_complete_get_nterms (k, n)
         allocate (basis(nterms, nx), basis_ok(nterms, nx))
 
-        call polybasis_complete (x, k, basis, status)
+        call polybasis_complete (x, k, basis, status=status)
 
         basis_ok(1,:) = 1.0
         if (k >= 1) then
@@ -492,21 +492,21 @@ subroutine test_basis_jac (tests)
 
     allocate (x(1), jac(1,1))
     status = NF_STATUS_OK
-    call polybasis_jac_complete (x, -1, jac, status)
+    call polybasis_jac_complete (x, -1, jac, status=status)
     call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
         "Invalid polynomial degree")
     deallocate (x, jac)
 
     allocate (x(2), jac(1,1))
     status = NF_STATUS_OK
-    call polybasis_jac_complete (x, 0, jac, status)
+    call polybasis_jac_complete (x, 0, jac, status=status)
     call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
         "JAC input has too few columns")
     deallocate (x, jac)
 
     allocate (x(1), jac(1,1))
     status = NF_STATUS_OK
-    call polybasis_jac_complete (x, 1, jac, status)
+    call polybasis_jac_complete (x, 1, jac, status=status)
     call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
         "JAC input has too few rows")
     deallocate (x, jac)
@@ -521,7 +521,7 @@ subroutine test_basis_jac (tests)
         nterms = poly_complete_get_nterms (k, n)
         allocate (jac(nterms, n), jac_ok(nterms, n))
 
-        call polybasis_jac_complete (x, k, jac, status)
+        call polybasis_jac_complete (x, k, jac, status=status)
 
         jac_ok(1,:) = 0.0
         do i = 1, k
@@ -548,7 +548,7 @@ subroutine test_basis_jac (tests)
         nterms = poly_complete_get_nterms (k, n)
         allocate (jac(nterms, n), jac_ok(nterms, n))
 
-        call polybasis_jac_complete (x, k, jac, status)
+        call polybasis_jac_complete (x, k, jac, status=status)
 
         jac_ok(:,:) = 0.0
         if (k >= 1) then
@@ -592,7 +592,7 @@ subroutine test_basis_jac (tests)
         nterms = poly_complete_get_nterms (k, n)
         allocate (jac(nterms, n), jac_ok(nterms, n))
 
-        call polybasis_jac_complete (x, k, jac, status)
+        call polybasis_jac_complete (x, k, jac, status=status)
 
         jac_ok(:,:) = 0.0
         if (k >= 1) then

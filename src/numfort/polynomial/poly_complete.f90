@@ -78,7 +78,7 @@ pure subroutine polyexponents_complete (n, k, exponents, status)
         !*  Number of variables
     integer, intent(in) :: k
         !*  (Maximum) degree of complete polynomial
-    integer, intent(out), dimension(:,:) :: exponents
+    integer, intent(out), dimension(:,:), contiguous :: exponents
     type (status_t), intent(out), optional :: status
 
     type (status_t) :: lstatus
