@@ -101,7 +101,7 @@ pure subroutine cond_alloc_1d_scalar_real32 (arr, shp, source, stat)
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_1d_scalar.f90"
+#include "cond_alloc_1d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_1d_scalar_scalar_real32 (arr, shp, source, stat)
@@ -129,7 +129,7 @@ pure subroutine cond_alloc_1d_real32 (arr, source, stat)
     real (PREC), intent(in), dimension(:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_1d.f90"
+#include "cond_alloc_1d.f90"
 end subroutine
 
 
@@ -144,7 +144,7 @@ pure subroutine cond_alloc_1d_scalar_real64 (arr, shp, source, stat)
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_1d_scalar.f90"
+#include "cond_alloc_1d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_1d_scalar_scalar_real64 (arr, shp, source, stat)
@@ -172,7 +172,7 @@ pure subroutine cond_alloc_1d_real64 (arr, source, stat)
     real (PREC), intent(in), dimension(:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_1d.f90"
+#include "cond_alloc_1d.f90"
 end subroutine
 
 
@@ -183,7 +183,7 @@ pure subroutine cond_alloc_1d_int32 (arr, source, stat)
     integer (INTSIZE), intent(in), dimension(:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_1d.f90"
+#include "cond_alloc_1d.f90"
 end subroutine
 
 
@@ -246,7 +246,7 @@ pure subroutine cond_alloc_1d_int64 (arr, source, stat)
     integer (INTSIZE), intent(in), dimension(:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_1d.f90"
+#include "cond_alloc_1d.f90"
 end subroutine
 
 
@@ -259,7 +259,7 @@ pure subroutine cond_alloc_1d_scalar_int64 (arr, shp, source, stat)
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_1d_scalar.f90"
+#include "cond_alloc_1d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_1d_scalar_scalar_int64 (arr, shp, source, stat)
@@ -287,7 +287,7 @@ pure subroutine cond_alloc_1d_int8 (arr, source, stat)
     integer (INTSIZE), intent(in), dimension(:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_1d.f90"
+#include "cond_alloc_1d.f90"
 end subroutine
 
 
@@ -300,7 +300,7 @@ pure subroutine cond_alloc_1d_scalar_int8 (arr, shp, source, stat)
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_1d_scalar.f90"
+#include "cond_alloc_1d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_1d_scalar_scalar_int8 (arr, shp, source, stat)
@@ -327,7 +327,7 @@ pure subroutine cond_alloc_1d_scalar_logical (arr, shp, source, stat)
     logical, intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_1d_scalar.f90"
+#include "cond_alloc_1d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_1d_scalar_scalar_logical (arr, shp, source, stat)
@@ -352,7 +352,7 @@ pure subroutine cond_alloc_1d_logical (arr, source, stat)
     logical, intent(in), dimension(:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_1d.f90"
+#include "cond_alloc_1d.f90"
 end subroutine
 
 
@@ -370,7 +370,7 @@ pure subroutine cond_alloc_2d_scalar_real32 (arr, shp, source, stat)
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_2d_scalar.f90"
+#include "cond_alloc_2d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_2d_real32 (arr, source, stat)
@@ -383,7 +383,7 @@ pure subroutine cond_alloc_2d_real32 (arr, source, stat)
     real (PREC), intent(in), dimension(:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_2d.f90"
+#include "cond_alloc_2d.f90"
 end subroutine
 
 
@@ -397,7 +397,7 @@ pure subroutine cond_alloc_2d_scalar_real64 (arr, shp, source, stat)
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_2d_scalar.f90"
+#include "cond_alloc_2d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_2d_real64 (arr, source, stat)
@@ -410,7 +410,7 @@ pure subroutine cond_alloc_2d_real64 (arr, source, stat)
     real (PREC), intent(in), dimension(:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_2d.f90"
+#include "cond_alloc_2d.f90"
 end subroutine
 
 
@@ -421,7 +421,7 @@ pure subroutine cond_alloc_2d_int32 (arr, source, stat)
     integer (INTSIZE), intent(in), dimension(:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_2d.f90"
+#include "cond_alloc_2d.f90"
 end subroutine
 
 pure subroutine cond_alloc_2d_scalar_int32 (arr, shp, source, stat)
@@ -434,7 +434,7 @@ pure subroutine cond_alloc_2d_scalar_int32 (arr, shp, source, stat)
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_2d_scalar.f90"
+#include "cond_alloc_2d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_2d_int64 (arr, source, stat)
@@ -447,7 +447,7 @@ pure subroutine cond_alloc_2d_int64 (arr, source, stat)
     integer (INTSIZE), intent(in), dimension(:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_2d.f90"
+#include "cond_alloc_2d.f90"
 end subroutine
 
 
@@ -460,7 +460,7 @@ pure subroutine cond_alloc_2d_scalar_int64 (arr, shp, source, stat)
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_2d_scalar.f90"
+#include "cond_alloc_2d_scalar.f90"
 end subroutine
 
 
@@ -474,7 +474,7 @@ pure subroutine cond_alloc_2d_int8 (arr, source, stat)
     integer (INTSIZE), intent(in), dimension(:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_2d.f90"
+#include "cond_alloc_2d.f90"
 end subroutine
 
 
@@ -487,7 +487,7 @@ pure subroutine cond_alloc_2d_scalar_int8 (arr, shp, source, stat)
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_2d_scalar.f90"
+#include "cond_alloc_2d_scalar.f90"
 end subroutine
 
 
@@ -500,7 +500,7 @@ pure subroutine cond_alloc_2d_scalar_logical (arr, shp, source, stat)
     logical, intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_2d_scalar.f90"
+#include "cond_alloc_2d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_2d_logical (arr, source, stat)
@@ -512,7 +512,7 @@ pure subroutine cond_alloc_2d_logical (arr, source, stat)
     logical, intent(in), dimension(:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_2d.f90"
+#include "cond_alloc_2d.f90"
 end subroutine
 
 
@@ -529,7 +529,7 @@ pure subroutine cond_alloc_3d_scalar_real32 (arr, shp, source, stat)
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_3d_scalar.f90"
+#include "cond_alloc_3d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_3d_real32 (arr, source, stat)
@@ -542,7 +542,7 @@ pure subroutine cond_alloc_3d_real32 (arr, source, stat)
     real (PREC), intent(in), dimension(:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_3d.f90"
+#include "cond_alloc_3d.f90"
 end subroutine
 
 
@@ -556,7 +556,7 @@ pure subroutine cond_alloc_3d_scalar_real64 (arr, shp, source, stat)
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_3d_scalar.f90"
+#include "cond_alloc_3d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_3d_real64 (arr, source, stat)
@@ -569,7 +569,7 @@ pure subroutine cond_alloc_3d_real64 (arr, source, stat)
     real (PREC), intent(in), dimension(:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_3d.f90"
+#include "cond_alloc_3d.f90"
 end subroutine
 
 
@@ -580,7 +580,7 @@ pure subroutine cond_alloc_3d_int32 (arr, source, stat)
     integer (INTSIZE), intent(in), dimension(:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_3d.f90"
+#include "cond_alloc_3d.f90"
 end subroutine
 
 pure subroutine cond_alloc_3d_scalar_int32 (arr, shp, source, stat)
@@ -593,7 +593,7 @@ pure subroutine cond_alloc_3d_scalar_int32 (arr, shp, source, stat)
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_3d_scalar.f90"
+#include "cond_alloc_3d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_3d_int64 (arr, source, stat)
@@ -606,7 +606,7 @@ pure subroutine cond_alloc_3d_int64 (arr, source, stat)
     integer (INTSIZE), intent(in), dimension(:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_3d.f90"
+#include "cond_alloc_3d.f90"
 end subroutine
 
 
@@ -619,7 +619,7 @@ pure subroutine cond_alloc_3d_scalar_int64 (arr, shp, source, stat)
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_3d_scalar.f90"
+#include "cond_alloc_3d_scalar.f90"
 end subroutine
 
 
@@ -633,7 +633,7 @@ pure subroutine cond_alloc_3d_int8 (arr, source, stat)
     integer (INTSIZE), intent(in), dimension(:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_3d.f90"
+#include "cond_alloc_3d.f90"
 end subroutine
 
 
@@ -646,7 +646,7 @@ pure subroutine cond_alloc_3d_scalar_int8 (arr, shp, source, stat)
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_3d_scalar.f90"
+#include "cond_alloc_3d_scalar.f90"
 end subroutine
 
 
@@ -659,7 +659,7 @@ pure subroutine cond_alloc_3d_scalar_logical (arr, shp, source, stat)
     logical, intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_3d_scalar.f90"
+#include "cond_alloc_3d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_3d_logical (arr, source, stat)
@@ -671,7 +671,7 @@ pure subroutine cond_alloc_3d_logical (arr, source, stat)
     logical, intent(in), dimension(:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_3d.f90"
+#include "cond_alloc_3d.f90"
 end subroutine
 
 
@@ -688,7 +688,7 @@ pure subroutine cond_alloc_4d_scalar_real32 (arr, shp, source, stat)
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_4d_scalar.f90"
+#include "cond_alloc_4d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_4d_real32 (arr, source, stat)
@@ -701,7 +701,7 @@ pure subroutine cond_alloc_4d_real32 (arr, source, stat)
     real (PREC), intent(in), dimension(:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_4d.f90"
+#include "cond_alloc_4d.f90"
 end subroutine
 
 
@@ -715,7 +715,7 @@ pure subroutine cond_alloc_4d_scalar_real64 (arr, shp, source, stat)
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_4d_scalar.f90"
+#include "cond_alloc_4d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_4d_real64 (arr, source, stat)
@@ -728,7 +728,7 @@ pure subroutine cond_alloc_4d_real64 (arr, source, stat)
     real (PREC), intent(in), dimension(:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_4d.f90"
+#include "cond_alloc_4d.f90"
 end subroutine
 
 
@@ -739,7 +739,7 @@ pure subroutine cond_alloc_4d_int32 (arr, source, stat)
     integer (INTSIZE), intent(in), dimension(:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_4d.f90"
+#include "cond_alloc_4d.f90"
 end subroutine
 
 pure subroutine cond_alloc_4d_scalar_int32 (arr, shp, source, stat)
@@ -752,7 +752,7 @@ pure subroutine cond_alloc_4d_scalar_int32 (arr, shp, source, stat)
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_4d_scalar.f90"
+#include "cond_alloc_4d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_4d_int64 (arr, source, stat)
@@ -765,7 +765,7 @@ pure subroutine cond_alloc_4d_int64 (arr, source, stat)
     integer (INTSIZE), intent(in), dimension(:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_4d.f90"
+#include "cond_alloc_4d.f90"
 end subroutine
 
 
@@ -778,7 +778,7 @@ pure subroutine cond_alloc_4d_scalar_int64 (arr, shp, source, stat)
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_4d_scalar.f90"
+#include "cond_alloc_4d_scalar.f90"
 end subroutine
 
 
@@ -792,7 +792,7 @@ pure subroutine cond_alloc_4d_int8 (arr, source, stat)
     integer (INTSIZE), intent(in), dimension(:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_4d.f90"
+#include "cond_alloc_4d.f90"
 end subroutine
 
 
@@ -805,7 +805,7 @@ pure subroutine cond_alloc_4d_scalar_int8 (arr, shp, source, stat)
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_4d_scalar.f90"
+#include "cond_alloc_4d_scalar.f90"
 end subroutine
 
 
@@ -818,7 +818,7 @@ pure subroutine cond_alloc_4d_scalar_logical (arr, shp, source, stat)
     logical, intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_4d_scalar.f90"
+#include "cond_alloc_4d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_4d_logical (arr, source, stat)
@@ -830,7 +830,7 @@ pure subroutine cond_alloc_4d_logical (arr, source, stat)
     logical, intent(in), dimension(:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_4d.f90"
+#include "cond_alloc_4d.f90"
 end subroutine
 
 !-------------------------------------------------------------------------------
@@ -846,7 +846,7 @@ pure subroutine cond_alloc_5d_scalar_real32 (arr, shp, source, stat)
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_5d_scalar.f90"
+#include "cond_alloc_5d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_5d_real32 (arr, source, stat)
@@ -859,7 +859,7 @@ pure subroutine cond_alloc_5d_real32 (arr, source, stat)
     real (PREC), intent(in), dimension(:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_5d.f90"
+#include "cond_alloc_5d.f90"
 end subroutine
 
 
@@ -873,7 +873,7 @@ pure subroutine cond_alloc_5d_scalar_real64 (arr, shp, source, stat)
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_5d_scalar.f90"
+#include "cond_alloc_5d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_5d_real64 (arr, source, stat)
@@ -886,7 +886,7 @@ pure subroutine cond_alloc_5d_real64 (arr, source, stat)
     real (PREC), intent(in), dimension(:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_5d.f90"
+#include "cond_alloc_5d.f90"
 end subroutine
 
 
@@ -897,7 +897,7 @@ pure subroutine cond_alloc_5d_int32 (arr, source, stat)
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_5d.f90"
+#include "cond_alloc_5d.f90"
 end subroutine
 
 pure subroutine cond_alloc_5d_scalar_int32 (arr, shp, source, stat)
@@ -910,7 +910,7 @@ pure subroutine cond_alloc_5d_scalar_int32 (arr, shp, source, stat)
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_5d_scalar.f90"
+#include "cond_alloc_5d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_5d_int64 (arr, source, stat)
@@ -923,7 +923,7 @@ pure subroutine cond_alloc_5d_int64 (arr, source, stat)
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_5d.f90"
+#include "cond_alloc_5d.f90"
 end subroutine
 
 
@@ -936,7 +936,7 @@ pure subroutine cond_alloc_5d_scalar_int64 (arr, shp, source, stat)
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_5d_scalar.f90"
+#include "cond_alloc_5d_scalar.f90"
 end subroutine
 
 
@@ -950,7 +950,7 @@ pure subroutine cond_alloc_5d_int8 (arr, source, stat)
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_5d.f90"
+#include "cond_alloc_5d.f90"
 end subroutine
 
 
@@ -963,7 +963,7 @@ pure subroutine cond_alloc_5d_scalar_int8 (arr, shp, source, stat)
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_5d_scalar.f90"
+#include "cond_alloc_5d_scalar.f90"
 end subroutine
 
 
@@ -976,7 +976,7 @@ pure subroutine cond_alloc_5d_scalar_logical (arr, shp, source, stat)
     logical, intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_5d_scalar.f90"
+#include "cond_alloc_5d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_5d_logical (arr, source, stat)
@@ -988,7 +988,7 @@ pure subroutine cond_alloc_5d_logical (arr, source, stat)
     logical, intent(in), dimension(:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_5d.f90"
+#include "cond_alloc_5d.f90"
 end subroutine
 
 !-------------------------------------------------------------------------------
@@ -1004,7 +1004,7 @@ pure subroutine cond_alloc_6d_scalar_real32 (arr, shp, source, stat)
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_6d_scalar.f90"
+#include "cond_alloc_6d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_6d_real32 (arr, source, stat)
@@ -1017,7 +1017,7 @@ pure subroutine cond_alloc_6d_real32 (arr, source, stat)
     real (PREC), intent(in), dimension(:,:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_6d.f90"
+#include "cond_alloc_6d.f90"
 end subroutine
 
 
@@ -1031,7 +1031,7 @@ pure subroutine cond_alloc_6d_scalar_real64 (arr, shp, source, stat)
     real (PREC), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_6d_scalar.f90"
+#include "cond_alloc_6d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_6d_real64 (arr, source, stat)
@@ -1044,7 +1044,7 @@ pure subroutine cond_alloc_6d_real64 (arr, source, stat)
     real (PREC), intent(in), dimension(:,:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_6d.f90"
+#include "cond_alloc_6d.f90"
 end subroutine
 
 
@@ -1055,7 +1055,7 @@ pure subroutine cond_alloc_6d_int32 (arr, source, stat)
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_6d.f90"
+#include "cond_alloc_6d.f90"
 end subroutine
 
 pure subroutine cond_alloc_6d_scalar_int32 (arr, shp, source, stat)
@@ -1068,7 +1068,7 @@ pure subroutine cond_alloc_6d_scalar_int32 (arr, shp, source, stat)
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_6d_scalar.f90"
+#include "cond_alloc_6d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_6d_int64 (arr, source, stat)
@@ -1081,7 +1081,7 @@ pure subroutine cond_alloc_6d_int64 (arr, source, stat)
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_6d.f90"
+#include "cond_alloc_6d.f90"
 end subroutine
 
 
@@ -1094,7 +1094,7 @@ pure subroutine cond_alloc_6d_scalar_int64 (arr, shp, source, stat)
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_6d_scalar.f90"
+#include "cond_alloc_6d_scalar.f90"
 end subroutine
 
 
@@ -1108,7 +1108,7 @@ pure subroutine cond_alloc_6d_int8 (arr, source, stat)
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_6d.f90"
+#include "cond_alloc_6d.f90"
 end subroutine
 
 
@@ -1121,7 +1121,7 @@ pure subroutine cond_alloc_6d_scalar_int8 (arr, shp, source, stat)
     integer (INTSIZE), intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_6d_scalar.f90"
+#include "cond_alloc_6d_scalar.f90"
 end subroutine
 
 
@@ -1134,7 +1134,7 @@ pure subroutine cond_alloc_6d_scalar_logical (arr, shp, source, stat)
     logical, intent(in), optional :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_6d_scalar.f90"
+#include "cond_alloc_6d_scalar.f90"
 end subroutine
 
 pure subroutine cond_alloc_6d_logical (arr, source, stat)
@@ -1146,7 +1146,7 @@ pure subroutine cond_alloc_6d_logical (arr, source, stat)
     logical, intent(in), dimension(:,:,:,:,:,:) :: source
         !*  If present, used as source value if array ARR needs to be
         !   (re)allocated.
-    include "include/cond_alloc_6d.f90"
+#include "cond_alloc_6d.f90"
 end subroutine
 
 

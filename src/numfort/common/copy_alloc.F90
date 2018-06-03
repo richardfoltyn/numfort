@@ -56,7 +56,7 @@ pure subroutine copy_alloc_1d_real64 (src, dst)
 
     real (PREC), intent(in), dimension(:), optional :: src
     real (PREC), intent(out), dimension(:), allocatable :: dst
-    include "include/copy_alloc_1d_impl.f90"
+#include "copy_alloc_1d_impl.f90"
 end subroutine
 
 pure subroutine copy_alloc_1d_real32 (src, dst)
@@ -77,7 +77,7 @@ pure subroutine copy_alloc_1d_real32 (src, dst)
 
     real (PREC), intent(in), dimension(:), optional :: src
     real (PREC), intent(out), dimension(:), allocatable :: dst
-    include "include/copy_alloc_1d_impl.f90"
+#include "copy_alloc_1d_impl.f90"
 end subroutine
 
 pure subroutine copy_alloc_1d_int32 (src, dst)
@@ -98,7 +98,7 @@ pure subroutine copy_alloc_1d_int32 (src, dst)
 
     integer (INTSIZE), intent(in), dimension(:), optional :: src
     integer (INTSIZE), intent(out), dimension(:), allocatable :: dst
-    include "include/copy_alloc_1d_impl.f90"
+#include "copy_alloc_1d_impl.f90"
 end subroutine
 
 pure subroutine copy_alloc_1d_int64 (src, dst)
@@ -119,7 +119,7 @@ pure subroutine copy_alloc_1d_int64 (src, dst)
 
     integer (INTSIZE), intent(in), dimension(:), optional :: src
     integer (INTSIZE), intent(out), dimension(:), allocatable :: dst
-    include "include/copy_alloc_1d_impl.f90"
+#include "copy_alloc_1d_impl.f90"
 end subroutine
 
 !-------------------------------------------------------------------------------
@@ -143,7 +143,7 @@ pure subroutine copy_alloc_2d_real32 (src, dst)
 
     real (PREC), intent(in), dimension(:,:), optional :: src
     real (PREC), intent(out), dimension(:,:), allocatable :: dst
-    include "include/copy_alloc_2d_impl.f90"
+#include "copy_alloc_2d_impl.f90"
 end subroutine
 
 pure subroutine copy_alloc_2d_real64 (src, dst)
@@ -164,7 +164,7 @@ pure subroutine copy_alloc_2d_real64 (src, dst)
 
     real (PREC), intent(in), dimension(:,:), optional :: src
     real (PREC), intent(out), dimension(:,:), allocatable :: dst
-    include "include/copy_alloc_2d_impl.f90"
+#include "copy_alloc_2d_impl.f90"
 end subroutine
 
 pure subroutine copy_alloc_2d_int32 (src, dst)
@@ -185,7 +185,7 @@ pure subroutine copy_alloc_2d_int32 (src, dst)
 
     integer (INTSIZE), intent(in), dimension(:,:), optional :: src
     integer (INTSIZE), intent(out), dimension(:,:), allocatable :: dst
-    include "include/copy_alloc_2d_impl.f90"
+#include "copy_alloc_2d_impl.f90"
 
 end subroutine
 
@@ -207,7 +207,7 @@ pure subroutine copy_alloc_2d_int64 (src, dst)
 
     integer (INTSIZE), intent(in), dimension(:,:), optional :: src
     integer (INTSIZE), intent(out), dimension(:,:), allocatable :: dst
-    include "include/copy_alloc_2d_impl.f90"
+#include "copy_alloc_2d_impl.f90"
 
 end subroutine
 
@@ -232,7 +232,7 @@ pure subroutine copy_alloc_3d_real32 (src, dst)
 
     real (PREC), intent(in), dimension(:,:,:), optional :: src
     real (PREC), intent(out), dimension(:,:,:), allocatable :: dst
-    include "include/copy_alloc_3d_impl.f90"
+#include "copy_alloc_3d_impl.f90"
 end subroutine
 
 pure subroutine copy_alloc_3d_real64 (src, dst)
@@ -253,7 +253,7 @@ pure subroutine copy_alloc_3d_real64 (src, dst)
 
     real (PREC), intent(in), dimension(:,:,:), optional :: src
     real (PREC), intent(out), dimension(:,:,:), allocatable :: dst
-    include "include/copy_alloc_3d_impl.f90"
+#include "copy_alloc_3d_impl.f90"
 end subroutine
 
 pure subroutine copy_alloc_3d_int32 (src, dst)
@@ -274,7 +274,7 @@ pure subroutine copy_alloc_3d_int32 (src, dst)
 
     integer (INTSIZE), intent(in), dimension(:,:,:), optional :: src
     integer (INTSIZE), intent(out), dimension(:,:,:), allocatable :: dst
-    include "include/copy_alloc_3d_impl.f90"
+#include "copy_alloc_3d_impl.f90"
 
 end subroutine
 
@@ -296,7 +296,7 @@ pure subroutine copy_alloc_3d_int64 (src, dst)
 
     integer (INTSIZE), intent(in), dimension(:,:,:), optional :: src
     integer (INTSIZE), intent(out), dimension(:,:,:), allocatable :: dst
-    include "include/copy_alloc_3d_impl.f90"
+#include "copy_alloc_3d_impl.f90"
 
 end subroutine
 !-------------------------------------------------------------------------------
@@ -320,7 +320,7 @@ pure subroutine copy_alloc_4d_real32 (src, dst)
 
     real (PREC), intent(in), dimension(:,:,:,:), optional :: src
     real (PREC), intent(out), dimension(:,:,:,:), allocatable :: dst
-    include "include/copy_alloc_4d_impl.f90"
+#include "copy_alloc_4d_impl.f90"
 end subroutine
 
 pure subroutine copy_alloc_4d_real64 (src, dst)
@@ -341,7 +341,7 @@ pure subroutine copy_alloc_4d_real64 (src, dst)
 
     real (PREC), intent(in), dimension(:,:,:,:), optional :: src
     real (PREC), intent(out), dimension(:,:,:,:), allocatable :: dst
-    include "include/copy_alloc_4d_impl.f90"
+#include "copy_alloc_4d_impl.f90"
 end subroutine
 
 pure subroutine copy_alloc_4d_int32 (src, dst)
@@ -362,7 +362,7 @@ pure subroutine copy_alloc_4d_int32 (src, dst)
 
     integer (INTSIZE), intent(in), dimension(:,:,:,:), optional :: src
     integer (INTSIZE), intent(out), dimension(:,:,:,:), allocatable :: dst
-    include "include/copy_alloc_4d_impl.f90"
+#include "copy_alloc_4d_impl.f90"
 
 end subroutine
 
@@ -384,7 +384,7 @@ pure subroutine copy_alloc_4d_int64 (src, dst)
 
     integer (INTSIZE), intent(in), dimension(:,:,:,:), optional :: src
     integer (INTSIZE), intent(out), dimension(:,:,:,:), allocatable :: dst
-    include "include/copy_alloc_4d_impl.f90"
+#include "copy_alloc_4d_impl.f90"
 
 end subroutine
 
@@ -410,7 +410,7 @@ pure subroutine copy_alloc_5d_real32 (src, dst)
 
     real (PREC), intent(in), dimension(:,:,:,:,:), optional :: src
     real (PREC), intent(out), dimension(:,:,:,:,:), allocatable :: dst
-    include "include/copy_alloc_5d_impl.f90"
+#include "copy_alloc_5d_impl.f90"
 end subroutine
 
 pure subroutine copy_alloc_5d_real64 (src, dst)
@@ -431,7 +431,7 @@ pure subroutine copy_alloc_5d_real64 (src, dst)
 
     real (PREC), intent(in), dimension(:,:,:,:,:), optional :: src
     real (PREC), intent(out), dimension(:,:,:,:,:), allocatable :: dst
-    include "include/copy_alloc_5d_impl.f90"
+#include "copy_alloc_5d_impl.f90"
 end subroutine
 
 pure subroutine copy_alloc_5d_int32 (src, dst)
@@ -452,7 +452,7 @@ pure subroutine copy_alloc_5d_int32 (src, dst)
 
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:), optional :: src
     integer (INTSIZE), intent(out), dimension(:,:,:,:,:), allocatable :: dst
-    include "include/copy_alloc_5d_impl.f90"
+#include "copy_alloc_5d_impl.f90"
 
 end subroutine
 
@@ -474,7 +474,7 @@ pure subroutine copy_alloc_5d_int64 (src, dst)
 
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:), optional :: src
     integer (INTSIZE), intent(out), dimension(:,:,:,:,:), allocatable :: dst
-    include "include/copy_alloc_5d_impl.f90"
+#include "copy_alloc_5d_impl.f90"
 
 end subroutine
 

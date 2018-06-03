@@ -152,7 +152,7 @@ pure function shape_equal_1d_real32 (arr1, arr2) result(res)
     real (PREC), intent(in), dimension(:) :: arr1
     real (PREC), intent(in), dimension(:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_1d_real64 (arr1, arr2) result(res)
@@ -161,7 +161,7 @@ pure function shape_equal_1d_real64 (arr1, arr2) result(res)
     real (PREC), intent(in), dimension(:) :: arr1
     real (PREC), intent(in), dimension(:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_1d_int8 (arr1, arr2) result(res)
@@ -170,7 +170,7 @@ pure function shape_equal_1d_int8 (arr1, arr2) result(res)
     integer (INTSIZE), intent(in), dimension(:) :: arr1
     integer (INTSIZE), intent(in), dimension(:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_1d_int32 (arr1, arr2) result(res)
@@ -179,7 +179,7 @@ pure function shape_equal_1d_int32 (arr1, arr2) result(res)
     integer (INTSIZE), intent(in), dimension(:) :: arr1
     integer (INTSIZE), intent(in), dimension(:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_1d_int64 (arr1, arr2) result(res)
@@ -188,7 +188,7 @@ pure function shape_equal_1d_int64 (arr1, arr2) result(res)
     integer (INTSIZE), intent(in), dimension(:) :: arr1
     integer (INTSIZE), intent(in), dimension(:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_1d_logical (arr1, arr2) result(res)
@@ -196,7 +196,7 @@ pure function shape_equal_1d_logical (arr1, arr2) result(res)
     logical, intent(in), dimension(:) :: arr1
     logical, intent(in), dimension(:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 !-------------------------------------------------------------------------------
@@ -208,7 +208,7 @@ pure function shape_equal_2d_real32 (arr1, arr2) result(res)
     real (PREC), intent(in), dimension(:,:) :: arr1
     real (PREC), intent(in), dimension(:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_2d_real64 (arr1, arr2) result(res)
@@ -217,7 +217,7 @@ pure function shape_equal_2d_real64 (arr1, arr2) result(res)
     real (PREC), intent(in), dimension(:,:) :: arr1
     real (PREC), intent(in), dimension(:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_2d_int8 (arr1, arr2) result(res)
@@ -226,7 +226,7 @@ pure function shape_equal_2d_int8 (arr1, arr2) result(res)
     integer (INTSIZE), intent(in), dimension(:,:) :: arr1
     integer (INTSIZE), intent(in), dimension(:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_2d_int32 (arr1, arr2) result(res)
@@ -235,7 +235,7 @@ pure function shape_equal_2d_int32 (arr1, arr2) result(res)
     integer (INTSIZE), intent(in), dimension(:,:) :: arr1
     integer (INTSIZE), intent(in), dimension(:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_2d_int64 (arr1, arr2) result(res)
@@ -244,7 +244,7 @@ pure function shape_equal_2d_int64 (arr1, arr2) result(res)
     integer (INTSIZE), intent(in), dimension(:,:) :: arr1
     integer (INTSIZE), intent(in), dimension(:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_2d_logical (arr1, arr2) result(res)
@@ -252,7 +252,7 @@ pure function shape_equal_2d_logical (arr1, arr2) result(res)
     logical, intent(in), dimension(:,:) :: arr1
     logical, intent(in), dimension(:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 !-------------------------------------------------------------------------------
@@ -264,7 +264,7 @@ pure function shape_equal_3d_real32 (arr1, arr2) result(res)
     real (PREC), intent(in), dimension(:,:,:) :: arr1
     real (PREC), intent(in), dimension(:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_3d_real64 (arr1, arr2) result(res)
@@ -273,7 +273,7 @@ pure function shape_equal_3d_real64 (arr1, arr2) result(res)
     real (PREC), intent(in), dimension(:,:,:) :: arr1
     real (PREC), intent(in), dimension(:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_3d_int8 (arr1, arr2) result(res)
@@ -282,7 +282,7 @@ pure function shape_equal_3d_int8 (arr1, arr2) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:) :: arr1
     integer (INTSIZE), intent(in), dimension(:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_3d_int32 (arr1, arr2) result(res)
@@ -291,7 +291,7 @@ pure function shape_equal_3d_int32 (arr1, arr2) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:) :: arr1
     integer (INTSIZE), intent(in), dimension(:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_3d_int64 (arr1, arr2) result(res)
@@ -300,7 +300,7 @@ pure function shape_equal_3d_int64 (arr1, arr2) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:) :: arr1
     integer (INTSIZE), intent(in), dimension(:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_3d_logical (arr1, arr2) result(res)
@@ -308,7 +308,7 @@ pure function shape_equal_3d_logical (arr1, arr2) result(res)
     logical, intent(in), dimension(:,:,:) :: arr1
     logical, intent(in), dimension(:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 !-------------------------------------------------------------------------------
@@ -320,7 +320,7 @@ pure function shape_equal_4d_real32 (arr1, arr2) result(res)
     real (PREC), intent(in), dimension(:,:,:,:) :: arr1
     real (PREC), intent(in), dimension(:,:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_4d_real64 (arr1, arr2) result(res)
@@ -329,7 +329,7 @@ pure function shape_equal_4d_real64 (arr1, arr2) result(res)
     real (PREC), intent(in), dimension(:,:,:,:) :: arr1
     real (PREC), intent(in), dimension(:,:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_4d_int8 (arr1, arr2) result(res)
@@ -338,7 +338,7 @@ pure function shape_equal_4d_int8 (arr1, arr2) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:,:) :: arr1
     integer (INTSIZE), intent(in), dimension(:,:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_4d_int32 (arr1, arr2) result(res)
@@ -347,7 +347,7 @@ pure function shape_equal_4d_int32 (arr1, arr2) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:,:) :: arr1
     integer (INTSIZE), intent(in), dimension(:,:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_4d_int64 (arr1, arr2) result(res)
@@ -356,7 +356,7 @@ pure function shape_equal_4d_int64 (arr1, arr2) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:,:) :: arr1
     integer (INTSIZE), intent(in), dimension(:,:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_4d_logical (arr1, arr2) result(res)
@@ -364,7 +364,7 @@ pure function shape_equal_4d_logical (arr1, arr2) result(res)
     logical, intent(in), dimension(:,:,:,:) :: arr1
     logical, intent(in), dimension(:,:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 
@@ -377,7 +377,7 @@ pure function shape_equal_5d_real32 (arr1, arr2) result(res)
     real (PREC), intent(in), dimension(:,:,:,:,:) :: arr1
     real (PREC), intent(in), dimension(:,:,:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_5d_real64 (arr1, arr2) result(res)
@@ -386,7 +386,7 @@ pure function shape_equal_5d_real64 (arr1, arr2) result(res)
     real (PREC), intent(in), dimension(:,:,:,:,:) :: arr1
     real (PREC), intent(in), dimension(:,:,:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_5d_int8 (arr1, arr2) result(res)
@@ -395,7 +395,7 @@ pure function shape_equal_5d_int8 (arr1, arr2) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:) :: arr1
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_5d_int32 (arr1, arr2) result(res)
@@ -404,7 +404,7 @@ pure function shape_equal_5d_int32 (arr1, arr2) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:) :: arr1
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_5d_int64 (arr1, arr2) result(res)
@@ -413,7 +413,7 @@ pure function shape_equal_5d_int64 (arr1, arr2) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:) :: arr1
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_5d_logical (arr1, arr2) result(res)
@@ -421,7 +421,7 @@ pure function shape_equal_5d_logical (arr1, arr2) result(res)
     logical, intent(in), dimension(:,:,:,:,:) :: arr1
     logical, intent(in), dimension(:,:,:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 
@@ -434,7 +434,7 @@ pure function shape_equal_6d_real32 (arr1, arr2) result(res)
     real (PREC), intent(in), dimension(:,:,:,:,:,:) :: arr1
     real (PREC), intent(in), dimension(:,:,:,:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_6d_real64 (arr1, arr2) result(res)
@@ -443,7 +443,7 @@ pure function shape_equal_6d_real64 (arr1, arr2) result(res)
     real (PREC), intent(in), dimension(:,:,:,:,:,:) :: arr1
     real (PREC), intent(in), dimension(:,:,:,:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_6d_int8 (arr1, arr2) result(res)
@@ -452,7 +452,7 @@ pure function shape_equal_6d_int8 (arr1, arr2) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:,:) :: arr1
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_6d_int32 (arr1, arr2) result(res)
@@ -461,7 +461,7 @@ pure function shape_equal_6d_int32 (arr1, arr2) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:,:) :: arr1
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_6d_int64 (arr1, arr2) result(res)
@@ -470,7 +470,7 @@ pure function shape_equal_6d_int64 (arr1, arr2) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:,:) :: arr1
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 pure function shape_equal_6d_logical (arr1, arr2) result(res)
@@ -478,7 +478,7 @@ pure function shape_equal_6d_logical (arr1, arr2) result(res)
     logical, intent(in), dimension(:,:,:,:,:,:) :: arr1
     logical, intent(in), dimension(:,:,:,:,:,:), optional :: arr2
 
-    include "include/shape_equal_impl.f90"
+#include "shape_equal_impl.f90"
 end function
 
 
@@ -492,7 +492,7 @@ pure function has_shape_1d_real32 (arr, shp) result(res)
     real (PREC), intent(in), dimension(:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 1
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_1d_scalar_real32 (arr, shp) result(res)
@@ -519,7 +519,7 @@ pure function has_shape_1d_real64 (arr, shp) result(res)
     real (PREC), intent(in), dimension(:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 1
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_1d_scalar_real64 (arr, shp) result(res)
@@ -546,7 +546,7 @@ pure function has_shape_1d_int8 (arr, shp) result(res)
     integer (INTSIZE), intent(in), dimension(:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 1
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_1d_scalar_int8 (arr, shp) result(res)
@@ -573,7 +573,7 @@ pure function has_shape_1d_int32 (arr, shp) result(res)
     integer (INTSIZE), intent(in), dimension(:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 1
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_1d_scalar_int32 (arr, shp) result(res)
@@ -600,7 +600,7 @@ pure function has_shape_1d_int64 (arr, shp) result(res)
     integer (INTSIZE), intent(in), dimension(:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 1
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_1d_scalar_int64 (arr, shp) result(res)
@@ -626,7 +626,7 @@ pure function has_shape_1d_logical (arr, shp) result(res)
     logical, intent(in), dimension(:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 1
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_1d_scalar_logical (arr, shp) result(res)
@@ -655,7 +655,7 @@ pure function has_shape_2d_real32 (arr, shp) result(res)
     real (PREC), intent(in), dimension(:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 2
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_2d_real64 (arr, shp) result(res)
@@ -664,7 +664,7 @@ pure function has_shape_2d_real64 (arr, shp) result(res)
     real (PREC), intent(in), dimension(:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 2
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_2d_int8 (arr, shp) result(res)
@@ -673,7 +673,7 @@ pure function has_shape_2d_int8 (arr, shp) result(res)
     integer (INTSIZE), intent(in), dimension(:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 2
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_2d_int32 (arr, shp) result(res)
@@ -682,7 +682,7 @@ pure function has_shape_2d_int32 (arr, shp) result(res)
     integer (INTSIZE), intent(in), dimension(:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 2
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_2d_int64 (arr, shp) result(res)
@@ -691,7 +691,7 @@ pure function has_shape_2d_int64 (arr, shp) result(res)
     integer (INTSIZE), intent(in), dimension(:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 2
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_2d_logical (arr, shp) result(res)
@@ -699,7 +699,7 @@ pure function has_shape_2d_logical (arr, shp) result(res)
     logical, intent(in), dimension(:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 2
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 !-------------------------------------------------------------------------------
@@ -711,7 +711,7 @@ pure function has_shape_3d_real32 (arr, shp) result(res)
     real (PREC), intent(in), dimension(:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 3
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_3d_real64 (arr, shp) result(res)
@@ -720,7 +720,7 @@ pure function has_shape_3d_real64 (arr, shp) result(res)
     real (PREC), intent(in), dimension(:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 3
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_3d_int8 (arr, shp) result(res)
@@ -729,7 +729,7 @@ pure function has_shape_3d_int8 (arr, shp) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 3
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_3d_int32 (arr, shp) result(res)
@@ -738,7 +738,7 @@ pure function has_shape_3d_int32 (arr, shp) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 3
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_3d_int64 (arr, shp) result(res)
@@ -747,7 +747,7 @@ pure function has_shape_3d_int64 (arr, shp) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 3
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_3d_logical (arr, shp) result(res)
@@ -755,7 +755,7 @@ pure function has_shape_3d_logical (arr, shp) result(res)
     logical, intent(in), dimension(:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 3
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 
@@ -768,7 +768,7 @@ pure function has_shape_4d_real32 (arr, shp) result(res)
     real (PREC), intent(in), dimension(:,:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 4
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_4d_real64 (arr, shp) result(res)
@@ -777,7 +777,7 @@ pure function has_shape_4d_real64 (arr, shp) result(res)
     real (PREC), intent(in), dimension(:,:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 4
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_4d_int8 (arr, shp) result(res)
@@ -786,7 +786,7 @@ pure function has_shape_4d_int8 (arr, shp) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 4
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_4d_int32 (arr, shp) result(res)
@@ -795,7 +795,7 @@ pure function has_shape_4d_int32 (arr, shp) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 4
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_4d_int64 (arr, shp) result(res)
@@ -804,7 +804,7 @@ pure function has_shape_4d_int64 (arr, shp) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 4
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_4d_logical (arr, shp) result(res)
@@ -812,7 +812,7 @@ pure function has_shape_4d_logical (arr, shp) result(res)
     logical, intent(in), dimension(:,:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 4
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 !-------------------------------------------------------------------------------
@@ -824,7 +824,7 @@ pure function has_shape_5d_real32 (arr, shp) result(res)
     real (PREC), intent(in), dimension(:,:,:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 5
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_5d_real64 (arr, shp) result(res)
@@ -833,7 +833,7 @@ pure function has_shape_5d_real64 (arr, shp) result(res)
     real (PREC), intent(in), dimension(:,:,:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 5
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_5d_int8 (arr, shp) result(res)
@@ -842,7 +842,7 @@ pure function has_shape_5d_int8 (arr, shp) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 5
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_5d_int32 (arr, shp) result(res)
@@ -851,7 +851,7 @@ pure function has_shape_5d_int32 (arr, shp) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 5
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_5d_int64 (arr, shp) result(res)
@@ -860,7 +860,7 @@ pure function has_shape_5d_int64 (arr, shp) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 5
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_5d_logical (arr, shp) result(res)
@@ -868,7 +868,7 @@ pure function has_shape_5d_logical (arr, shp) result(res)
     logical, intent(in), dimension(:,:,:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 5
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 !-------------------------------------------------------------------------------
@@ -880,7 +880,7 @@ pure function has_shape_6d_real32 (arr, shp) result(res)
     real (PREC), intent(in), dimension(:,:,:,:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 6
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_6d_real64 (arr, shp) result(res)
@@ -889,7 +889,7 @@ pure function has_shape_6d_real64 (arr, shp) result(res)
     real (PREC), intent(in), dimension(:,:,:,:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 6
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_6d_int8 (arr, shp) result(res)
@@ -898,7 +898,7 @@ pure function has_shape_6d_int8 (arr, shp) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 6
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_6d_int32 (arr, shp) result(res)
@@ -907,7 +907,7 @@ pure function has_shape_6d_int32 (arr, shp) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 6
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_6d_int64 (arr, shp) result(res)
@@ -916,7 +916,7 @@ pure function has_shape_6d_int64 (arr, shp) result(res)
     integer (INTSIZE), intent(in), dimension(:,:,:,:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 6
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 pure function has_shape_6d_logical (arr, shp) result(res)
@@ -924,7 +924,7 @@ pure function has_shape_6d_logical (arr, shp) result(res)
     logical, intent(in), dimension(:,:,:,:,:,:) :: arr
         !*  Input array to check
     integer, parameter :: NDIM = 6
-    include "include/has_shape_impl.f90"
+#include "has_shape_impl.f90"
 end function
 
 
