@@ -447,7 +447,7 @@ subroutine __APPEND(newton_bisect_jac,__PREC) (fcn, jac, x, a, b, xtol, &
 end subroutine
 
 
-subroutine __APPEND(newton_bisect_fcn_jac_args,__PREC) (fcn, x, a, b, xtol, &
+subroutine __APPEND(newton_bisect_fcn_jac,__PREC) (fcn, x, a, b, xtol, &
         tol, maxiter, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fss_fcn_jac,__PREC)) :: fcn
@@ -468,7 +468,7 @@ end subroutine
 
 
 
-subroutine __APPEND(newton_bisect_fcn_jac,__PREC) (fcn, x, args, a, b, xtol, &
+subroutine __APPEND(newton_bisect_fcn_jac_args,__PREC) (fcn, x, args, a, b, xtol, &
         tol, maxiter, res)
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fss_fcn_jac_args,__PREC)) :: fcn
