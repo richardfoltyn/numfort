@@ -322,7 +322,7 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     ! Pointer to workspace used directly by SLSQP
     call workspace_get_ptr (ptr_work, lw, ptr_w)
     ! ACC argument: for exact linesearch this has to be the negative tolerance
-    acc = tol
+    acc = ltol
     if (llinesearch == NF_LINESEARCH_EXACT) acc = - abs(tol)
 
     ! Overwrite any garbage. In particular, column n+1 of these arrays
