@@ -5,7 +5,6 @@ set(COMPONENT_NAME interpolate)
 set(SOURCE_FILES
 	interpolate.f90
 	common.f90
-	interp_result.f90
     interp_linear.F90
 	interp_pchip.F90
 	fitpack.f90
