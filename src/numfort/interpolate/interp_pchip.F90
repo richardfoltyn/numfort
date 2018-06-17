@@ -16,6 +16,7 @@ module numfort_interpolate_pchip
     use numfort_common_status
     use numfort_common_workspace
     use numfort_interpolate_common
+    use numfort_interpolate_search
 
     implicit none
 

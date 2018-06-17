@@ -6,6 +6,7 @@ module numfort_interpolate
     use numfort_common, only: workspace_real64, workspace_real32
 
     use numfort_interpolate_common
+    use numfort_interpolate_search
     use numfort_interpolate_result
     use numfort_interpolate_linear
     use numfort_interpolate_pchip

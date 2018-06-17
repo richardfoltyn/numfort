@@ -8,6 +8,7 @@ module numfort_interpolate_linear
     use numfort_common_kinds
     use numfort_common_status
     use numfort_interpolate_common
+    use numfort_interpolate_search
 
     implicit none
     private
