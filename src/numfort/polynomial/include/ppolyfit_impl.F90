@@ -50,7 +50,7 @@ pure subroutine __APPEND(bernstein_fit_deriv,__PREC) (self, x, y, k, &
     lstatus = NF_STATUS_OK
     n = size(x)
 
-    ! Perform input checking commong to all routines processing Bernstein
+    ! Perform input checking common to all routines processing Bernstein
     ! polynomials.
     call bernstein_check_input (self, knots, coefs, n, k, lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100

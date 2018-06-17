@@ -10,6 +10,7 @@ set(SOURCE_FILES
     poly_complete.f90
     polyval_complete.F90
     ppoly.F90
+    ppoly_tensor.F90
 )
 
 include_directories(
