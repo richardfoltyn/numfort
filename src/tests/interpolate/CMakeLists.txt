@@ -6,5 +6,6 @@ set(${COMPONENT_NAME}_FILES
     curfit.f90
     linear.f90
     pchip.f90
+    search.f90
     PARENT_SCOPE
 )
