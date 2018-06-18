@@ -25,7 +25,7 @@ pure subroutine __APPEND(ppoly2d_val_check_input,__PREC) (self, x1, x2, y, &
     if (present(m)) then
         if (.not. present(dim)) goto 100
         ! Note: at this point we know that DIM is present
-        if (dim /= 1 .or. dim /=2) goto 100
+        if (dim /= 1 .and. dim /= 2) goto 100
         if (m < 0) goto 100
     end if
 
