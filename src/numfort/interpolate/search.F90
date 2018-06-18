@@ -12,6 +12,15 @@ module numfort_interpolate_search
     public :: bsearch
     public :: interp_find
 
+    public :: search_cache
+    public :: bsearch_cached
+    public :: interp_find_cached
+
+    type :: search_cache
+        private
+        integer :: i = 1
+    end type
+
 #include <numfort_real32.h>
 #include "search_spec.F90"
 

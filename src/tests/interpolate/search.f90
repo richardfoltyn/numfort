@@ -26,10 +26,12 @@ subroutine test_all ()
     call tests%set_label ("Interpolation SEARCH routines unit tests")
 
     call test_bsearch (tests)
+    call test_bsearch_cached (tests)
 
     call tests%print ()
 
 end subroutine
+
 
 
 subroutine test_bsearch (tests)
@@ -48,20 +50,13 @@ subroutine test_bsearch (tests)
     needle = 0.0
     i = bsearch (needle, haystack)
     call tc%assert_true (i == 0, "size(HAYSTACK) = 0")
-    i = bsearch (needle, haystack, i)
-    call tc%assert_true (i == 0, "size(HAYSTACK) = 0, using init guess")
-
     deallocate (haystack)
 
     n = 1
     allocate (haystack(n), source=0.0_PREC)
     needle = 0.0
-
     i = bsearch (needle, haystack)
     call tc%assert_true (i == 1, "size(HAYSTACK) = 1")
-    i = bsearch (needle, haystack, i)
-    call tc%assert_true (i == 1, "size(HAYSTACK) = 1, using init guess")
-
     deallocate (haystack)
 
     n = 11
@@ -71,39 +66,107 @@ subroutine test_bsearch (tests)
     needle = -1.0
     i = bsearch (needle, haystack)
     call tc%assert_true (i == 1, "needle < HAYSTACK(1)")
-    i = bsearch (needle, haystack, i)
-    call tc%assert_true (i == 1, "needle < HAYSTACK(1), using correct init guess")
-    i = bsearch (needle, haystack, i=5)
-    call tc%assert_true (i == 1, "needle < HAYSTACK(1), using incorrect init guess")
 
     needle = 11.0
     i = bsearch (needle, haystack)
     call tc%assert_true (i == 10, "needle > HAYSTACK(size(HAYSTACK))")
-    i = bsearch (needle, haystack, i)
-    call tc%assert_true (i == 10, "needle > HAYSTACK(size(HAYSTACK)), using correct init guess")
-    i = bsearch (needle, haystack, i=4)
-    call tc%assert_true (i == 10, "needle > HAYSTACK(size(HAYSTACK)), using incorrect init guess")
 
     needle = 0.5d0
     i = bsearch (needle, haystack)
     call tc%assert_true (i == 1, "needle in first interval")
-    i = bsearch (needle, haystack, i)
-    call tc%assert_true (i == 1, "needle in first interval, using correct init guess")
-    i = bsearch (needle, haystack, i=3)
-    call tc%assert_true (i == 1, "needle in first interval, using incorrect init guess")
 
     needle = 9.5d0
     i = bsearch (needle, haystack)
     call tc%assert_true (i == 10, "needle in last interval")
-    i = bsearch (needle, haystack, i)
-    call tc%assert_true (i == 10, "needle in last interval, using correct init guess")
-    i = bsearch (needle, haystack, i=5)
-    call tc%assert_true (i == 10, "needle in last interval, using incorrect init guess")
 
-    ! Test with init guess that is not the correct interval
-    needle = 1.5d0
-    i = bsearch (needle, haystack, i=5)
-    call tc%assert_true (i == 2, "Init guess /= correct bracket")
+    deallocate (haystack)
+
+end subroutine
+
+
+subroutine test_bsearch_cached (tests)
+    !*  Unit tests for BSEARCH routine
+    class (test_suite) :: tests
+
+    class (test_case), pointer :: tc
+    real (PREC), dimension(:), allocatable :: haystack
+    real (PREC) :: needle
+    integer :: i, n
+    type (search_cache) :: cache
+
+    tc => tests%add_test ("BSEARCH_CACHED unit tests")
+
+    n = 0
+    allocate (haystack(n), source=0.0_PREC)
+    needle = 0.0
+    call bsearch_cached (needle, haystack, i)
+    call tc%assert_true (i == 0, "size(HAYSTACK) = 0")
+
+    call bsearch_cached (needle, haystack, i, cache)
+    call tc%assert_true (i == 0, "size(HAYSTACK) = 0 with cache")
+
+    call bsearch_cached (needle, haystack, i, cache)
+    call tc%assert_true (i == 0, "size(HAYSTACK) = 0 with cache, repeat call")
+
+    deallocate (haystack)
+
+    n = 1
+    allocate (haystack(n), source=0.0_PREC)
+    needle = 0.0
+
+    call bsearch_cached (needle, haystack, i)
+    call tc%assert_true (i == 1, "size(HAYSTACK) = 1")
+
+    call bsearch_cached (needle, haystack, i, cache)
+    call tc%assert_true (i == 1, "size(HAYSTACK) = 1 with cache")
+
+    call bsearch_cached (needle, haystack, i, cache)
+    call tc%assert_true (i == 1, "size(HAYSTACK) = 1 with cache, repeat call")
+
+    deallocate (haystack)
+
+    n = 11
+    allocate (haystack(n))
+    call linspace (haystack, 0.0_PREC, 10.0_PREC)
+
+    needle = -1.0
+    call bsearch_cached (needle, haystack, i)
+    call tc%assert_true (i == 1, "needle < HAYSTACK(1)")
+
+    call bsearch_cached (needle, haystack, i, cache)
+    call tc%assert_true (i == 1, "needle < HAYSTACK(1) with cache")
+
+    call bsearch_cached (needle, haystack, i, cache)
+    call tc%assert_true (i == 1, "needle < HAYSTACK(1) with cache, repeat call")
+
+    needle = 11.0
+    call bsearch_cached (needle, haystack, i)
+    call tc%assert_true (i == 10, "needle > HAYSTACK(size(HAYSTACK))")
+
+    call bsearch_cached (needle, haystack, i, cache)
+    call tc%assert_true (i == 10, "needle > HAYSTACK(size(HAYSTACK)) with cache")
+
+    call bsearch_cached (needle, haystack, i, cache)
+    call tc%assert_true (i == 10, "needle > HAYSTACK(size(HAYSTACK)) with cache, repeat call")
+
+    needle = 0.5d0
+    call bsearch_cached (needle, haystack, i)
+    call tc%assert_true (i == 1, "needle in first interval")
+
+    call bsearch_cached (needle, haystack, i, cache)
+    call tc%assert_true (i == 1, "needle in first interval with cache")
+    call bsearch_cached (needle, haystack, i, cache)
+    call tc%assert_true (i == 1, "needle in first interval with cache, repeat call")
+
+    needle = 9.5d0
+    call bsearch_cached (needle, haystack, i)
+    call tc%assert_true (i == 10, "needle in last interval")
+
+    call bsearch_cached (needle, haystack, i, cache)
+    call tc%assert_true (i == 10, "needle in last interval with cache")
+
+    call bsearch_cached (needle, haystack, i, cache)
+    call tc%assert_true (i == 10, "needle in last interval with cache, repeat call")
 
     deallocate (haystack)
 
