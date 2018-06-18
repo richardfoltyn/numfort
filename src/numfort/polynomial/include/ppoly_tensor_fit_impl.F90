@@ -111,7 +111,7 @@ pure subroutine __APPEND(ppoly2d_fit_bilinear,__PREC) (self, x1, x2, y, k, &
             a0 = y(i1,i2)
             a1 = y(i1+1,i2) - a0
             a2 = y(i1,i2+1) - a0
-            a3 = y(i1+1,i2+1) - a1 - a2 + 3 * a0
+            a3 = y(i1+1,i2+1) - a0 - a1 - a2
 
             ptr_coefs(0,i1,i2) = a0
             ptr_coefs(1,i1,i2) = a1

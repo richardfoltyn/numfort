@@ -330,7 +330,7 @@ pure subroutine __APPEND(bernstein_ppolyval_impl,__PREC) (self, knots, coefs, &
     real (PREC), intent(in), dimension(0:), contiguous :: coefs
         !*  Stacked array of polynomial coefficients for each segment
     real (PREC), intent(in), dimension(:) :: x
-        !*  x-coordinates of points where function should be interpolating.
+        !*  x-coordinates of points where function should be interpolated
     real (PREC), intent(out), dimension(:) :: y
         !*  On exit, contains interpolated function values for x-coordinates
         !   given in X.

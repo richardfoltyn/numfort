@@ -45,12 +45,12 @@ module numfort_polynomial_ppoly_tensor
 #include <numfort_real32.h>
 #include "ppoly_tensor_common_spec.F90"
 #include "ppoly_tensor_fit_spec.F90"
+#include "ppoly_tensor_val_spec.F90"
 
 #include <numfort_real64.h>
 #include "ppoly_tensor_common_spec.F90"
 #include "ppoly_tensor_fit_spec.F90"
 #include "ppoly_tensor_val_spec.F90"
-
 
     contains
 
@@ -90,6 +90,7 @@ end function
 #include <numfort_real32.h>
 #include "ppoly_tensor_common_impl.F90"
 #include "ppoly_tensor_fit_impl.F90"
+#include "ppoly_tensor_val_impl.F90"
 
 #include <numfort_real64.h>
 #include "ppoly_tensor_common_impl.F90"
