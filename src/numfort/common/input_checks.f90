@@ -79,7 +79,7 @@ pure subroutine check_enum (val, valid, name, status, msg)
         !*  Array containing the set of valid enum values.
     character (*), intent(in), optional :: name
         !*  Optional argument name, used in error message.
-    type (status_t), intent(in out) :: status
+    type (status_t), intent(inout) :: status
     character (*), intent(out), optional :: msg
 
     integer :: i
@@ -107,7 +107,7 @@ end subroutine
 ! HELPER ROUTINES
 
 pure subroutine clear_status (status, msg)
-    type (status_t), intent(in out) :: status
+    type (status_t), intent(inout) :: status
     character (*), intent(out), optional :: msg
 
     status = NF_STATUS_OK
