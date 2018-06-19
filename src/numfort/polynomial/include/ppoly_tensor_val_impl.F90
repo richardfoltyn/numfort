@@ -99,6 +99,7 @@ pure subroutine __APPEND(ppoly2d_val,__PREC) (self, knots, coefs, x1, x2, y, &
 100 continue
 
     if (present(status)) status = lstatus
+    if (present(cache)) cache = lcache
 end subroutine
 
 
@@ -139,21 +140,24 @@ pure subroutine __APPEND(ppoly2d_val_bilinear,__PREC) (self, knots, coefs, &
     type (status_t), intent(out) :: status
         !*  Exit status
 
-    integer :: nx, n1, n2, k
-    integer :: i1, i2, i, jj
-    real (PREC) :: x1i, x2i, x1lb, x2lb, x1ub, x2ub, z1, z2, dx1, dx2
+    integer :: nx, n1, n2
+    integer :: i1, i2, i, jj, j
+    real (PREC) :: x1i, x2i, x1lb, x2lb, x1ub, x2ub, z1, z2, dx1, dx2, yi
+    integer, parameter :: NCOEFS_BLOCK = 4
+    real (PREC), dimension(0:NCOEFS_BLOCK-1) :: zz
 
     status = NF_STATUS_OK
 
     nx = size(x1)
     n1 = self%nknots(1)
     n2 = self%nknots(2)
-    k = self%degree
 
     x1lb = knots(1)
     x1ub = knots(n1)
     x2lb = knots(n1+1)
     x2ub = knots(n1+n2)
+
+    zz(0) = 1.0_PREC
 
     do i = 1, nx
         x1i = x1(i)
@@ -171,7 +175,7 @@ pure subroutine __APPEND(ppoly2d_val_bilinear,__PREC) (self, knots, coefs, &
             case default
                 ! Find interval that will be used to interpolate/extrapolate
                 ! in dimension 1
-                call interp_find_cached (x1i, knots(1:n1), i1, cache(1))
+                call bsearch_cached (x1i, knots(1:n1), i1, cache(1))
             end select
         else if (x1i > x1ub) then
             select case (ext)
@@ -187,10 +191,10 @@ pure subroutine __APPEND(ppoly2d_val_bilinear,__PREC) (self, knots, coefs, &
             case default
                 ! Find interval that will be used to interpolate/extrapolate
                 ! in dimension 1
-                call interp_find_cached (x1i, knots(1:n1), i1, cache(1))
+                call bsearch_cached (x1i, knots(1:n1), i1, cache(1))
             end select
         else
-            call interp_find_cached (x1i, knots(1:n1), i1, cache(1))
+            call bsearch_cached (x1i, knots(1:n1), i1, cache(1))
         end if
 
         x2i = x2(i)
@@ -208,7 +212,7 @@ pure subroutine __APPEND(ppoly2d_val_bilinear,__PREC) (self, knots, coefs, &
             case default
                 ! Find interval that will be used to interpolate/extrapolate
                 ! in dimension 1
-                call interp_find_cached (x2i, knots(n1+1:n1+n2), i2, cache(2))
+                call bsearch_cached (x2i, knots(n1+1:n1+n2), i2, cache(2))
             end select
         else if (x2i > x2ub) then
             select case (ext)
@@ -224,29 +228,34 @@ pure subroutine __APPEND(ppoly2d_val_bilinear,__PREC) (self, knots, coefs, &
             case default
                 ! Find interval that will be used to interpolate/extrapolate:
                 ! in dimension 1
-                call interp_find_cached (x2i, knots(n1+1:n1+n2), i2, cache(2))
+                call bsearch_cached (x2i, knots(n1+1:n1+n2), i2, cache(2))
             end select
         else
-            call interp_find_cached (x2i, knots(n1+1:n1+n2), i2, cache(2))
+            call bsearch_cached (x2i, knots(n1+1:n1+n2), i2, cache(2))
         end if
 
         ! Offset of coefficient block for bracket (i1,i2)
-        jj = ((i2-1) * (n1-1) + (i1-1)) * (k+1)**2
+        jj = ((i2-1) * (n1-1) + (i1-1)) * NCOEFS_BLOCK
 
         dx1 = knots(i1+1) - knots(i1)
         dx2 = knots(n1+i2+1) - knots(n1+i2)
-        z1 = (x1i - knots(i1)) / dx1
-        z2 = (x2i - knots(n1+i2)) / dx2
+        zz(1) = (x1i - knots(i1)) / dx1
+        zz(2) = (x2i - knots(n1+i2)) / dx2
 
         if (m == 0) then
-            y(i) = coefs(jj) + coefs(jj+1)*z1 + coefs(jj+2)*z2 + coefs(jj+3)*z1*z2
+            zz(3) = zz(1)*zz(2)
+            yi = coefs(jj)
+            do j = 1, NCOEFS_BLOCK-1
+                yi = yi + coefs(jj+j)*zz(j)
+            end do
+            y(i) = yi
         else if (m == 1) then
             if (dim == 1) then
                 ! Apply chain rule dz1/dx1
-                y(i) = (coefs(jj+1) + coefs(jj+3)*z2) / dx1
+                y(i) = (coefs(jj+1) + coefs(jj+3)*zz(2)) / dx1
             else if (dim == 2) then
                 ! Apply chain rule dz2/dx2
-                y(i) = (coefs(jj+2) + coefs(jj+3)*z1) / dx2
+                y(i) = (coefs(jj+2) + coefs(jj+3)*zz(1)) / dx2
             end if
         end if
 
