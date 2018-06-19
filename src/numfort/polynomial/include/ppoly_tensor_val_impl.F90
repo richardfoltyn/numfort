@@ -142,7 +142,7 @@ pure subroutine __APPEND(ppoly2d_val_bilinear,__PREC) (self, knots, coefs, &
 
     integer :: nx, n1, n2
     integer :: i1, i2, i, jj, j
-    real (PREC) :: x1i, x2i, x1lb, x2lb, x1ub, x2ub, z1, z2, dx1, dx2, yi
+    real (PREC) :: x1i, x2i, x1lb, x2lb, x1ub, x2ub, dx1, dx2, yi
     integer, parameter :: NCOEFS_BLOCK = 4
     real (PREC), dimension(0:NCOEFS_BLOCK-1) :: zz
 
