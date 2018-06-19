@@ -196,7 +196,7 @@ subroutine root_hybrd_real64 (func, x, fx, xtol, maxfev, ml, mu, eps, factor, di
     end select
 
     if (present(res)) then
-        call result_update (res, x=x, fx=fx, nfev=nfev, status=status, msg=msg)
+        call result_update (res, x=x, fx=fx, nfev=nfev, nit=1, status=status, msg=msg)
     end if
 
     call assert_dealloc_ptr (work, ptr_work)
@@ -328,7 +328,7 @@ subroutine root_hybrj_real64 (func, x, fx, xtol, maxfev, factor, diag, work, res
     end select
 
     if (present(res)) then
-        call result_update (res, x=x, fx=fx, nfev=nfev, status=status, msg=msg)
+        call result_update (res, x=x, fx=fx, nfev=nfev, nit=1, status=status, msg=msg)
     end if
 
     call assert_dealloc_ptr (work, ptr_work)
