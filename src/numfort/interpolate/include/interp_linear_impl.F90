@@ -1,5 +1,5 @@
 
-subroutine __APPEND(interp_linear_impl,__PREC) (x, xp, fp, fx, ext, left, right)
+subroutine __APPEND(interp_linear_impl,__PREC) (x, xp, fp, fx, wgt, ext, left, right)
     !*  Implements linear interpolation for scalar input/return value
     !   and no optional arguments.
     !   Should be called from wrapper routines doing the optional argument handling,
@@ -13,6 +13,10 @@ subroutine __APPEND(interp_linear_impl,__PREC) (x, xp, fp, fx, ext, left, right)
         !*  x-coordinates of data points in increasing order
     real (PREC), intent(in), dimension(:) :: fp
         !*  y-coordinates of the data points, same length as xp.
+    real (PREC), intent(out) :: fx
+        !*  Interpolated value
+    real (PREC), intent(out) :: wgt
+        !*  Weight placed on the lower bound of the bracketing interval
     integer (NF_ENUM_KIND), intent(in) :: ext
         !*  Defines behavious in case function should be evaluated at point x
         !   outside of the range specified by [xp(1), xp(size(xp))].
@@ -30,11 +34,8 @@ subroutine __APPEND(interp_linear_impl,__PREC) (x, xp, fp, fx, ext, left, right)
         !*  Value to return if x < xp(1)
     real (PREC), intent(in) :: right
         !*  Value to return if x > xp(size(xp))
-    real (PREC), intent(out) :: fx
-        !*  Interpolated value
 
     integer (INTSIZE) :: ilb, iub
-    real (PREC) :: slope
     integer :: np
 
     np = size(xp)
@@ -69,14 +70,16 @@ subroutine __APPEND(interp_linear_impl,__PREC) (x, xp, fp, fx, ext, left, right)
     ! values outside of domain
     ilb = interp_find (x, xp)
     iub = ilb + 1
-    slope = (x - xp(ilb)) / (xp(iub) - xp(ilb))
-    fx = (1.0_PREC-slope) * fp(ilb) + slope * fp(iub)
+    ! Weight on lower bound
+    wgt = (xp(iub) - x) / (xp(iub) - xp(ilb))
+    fx = wgt * fp(ilb) + (1.0_PREC-wgt) * fp(iub)
 
 end subroutine
 
 
 
-subroutine __APPEND(interp_linear_scalar,__PREC) (x, xp, fp, fx, ext, left, right)
+subroutine __APPEND(interp_linear_scalar,__PREC) (x, xp, fp, fx, ext, &
+        left, right, wgt)
     !*  INTERP_LINEAR_SCALAR performs linear interpolation for scalar arguments
     integer, parameter :: PREC = __PREC
 
@@ -86,6 +89,8 @@ subroutine __APPEND(interp_linear_scalar,__PREC) (x, xp, fp, fx, ext, left, righ
         !*  The x-coordinates of data points in increasing order.
     real (PREC), intent(in), dimension(:) :: fp
         !*  The y-coordinates of data points, same length as xp.
+    real (PREC), intent(out) :: fx
+        !*  Interpolated value
     integer (NF_ENUM_KIND), intent(in), optional :: ext
         !*  Defines behavious in case function should be evaluated at point x
         !   outside of the range specified by [xp(1), xp(size(xp))].
@@ -105,11 +110,10 @@ subroutine __APPEND(interp_linear_scalar,__PREC) (x, xp, fp, fx, ext, left, righ
     real (PREC), intent(in), optional :: right
         !*  Value to return if x > xp(-1) and extrapolation disabled (`ext=.false.`).
         !   Default is fp(-1).
-    real (PREC), intent(out) :: fx
-        !*  Interpolated value
+    real (PREC), intent(out), optional :: wgt
 
     integer (NF_ENUM_KIND) :: lext
-    real (PREC) :: lright, lleft
+    real (PREC) :: lright, lleft, lwgt
 
     lext = NF_INTERP_EVAL_EXTRAPOLATE
     if (present(ext)) lext = ext
@@ -126,13 +130,15 @@ subroutine __APPEND(interp_linear_scalar,__PREC) (x, xp, fp, fx, ext, left, righ
         lright = fp(size(fp))
     end if
 
-    call interp_linear_impl (x, xp, fp, fx, lext, lleft, lright)
+    call interp_linear_impl (x, xp, fp, fx, lwgt, lext, lleft, lright)
+
+    if (present(wgt)) wgt = lwgt
 
 end subroutine
 
 
 
-subroutine __APPEND(interp_linear_1d,__PREC) (x, xp, fp, fx, ext, left, right)
+subroutine __APPEND(interp_linear_1d,__PREC) (x, xp, fp, fx, ext, left, right, wgt)
     !*  INTERP_LINEAR_1D performs linear interpolation for an array of
     !   points.
 
@@ -145,6 +151,8 @@ subroutine __APPEND(interp_linear_1d,__PREC) (x, xp, fp, fx, ext, left, right)
         !*  The x-coordinates of data points in increasing order.
     real (PREC), intent(in), dimension(:) :: fp
         !*  The y-coordinates of data points, same length as xp.
+    real (PREC), intent(out), dimension(:) :: fx
+        !*  Array of interpolated values, same shape as x.
     integer (NF_ENUM_KIND), intent(in), optional :: ext
         !*  Defines behavious in case function should be evaluated at point x
         !   outside of the range specified by [xp(1), xp(size(xp))].
@@ -164,12 +172,11 @@ subroutine __APPEND(interp_linear_1d,__PREC) (x, xp, fp, fx, ext, left, right)
     real (PREC), intent(in), optional :: right
         !*  Value to return if x > xp(-1) and extrapolation disabled (`ext=.false.`).
         !   Default is fp(-1)
-    real (PREC), intent(out), dimension(:) :: fx
-        !*  Array of interpolated values, same shape as x.
+    real (PREC), intent(out), dimension(:), optional :: wgt
 
     integer (INTSIZE) :: n, i
     integer (NF_ENUM_KIND) :: lext
-    real (PREC) :: lright, lleft
+    real (PREC) :: lright, lleft, wgt_dummy
 
     n = size (x)
     lext = NF_INTERP_EVAL_EXTRAPOLATE
@@ -187,10 +194,19 @@ subroutine __APPEND(interp_linear_1d,__PREC) (x, xp, fp, fx, ext, left, right)
         lright = fp(size(fp))
     end if
 
-    do i = 1, n
-        ! call scalar implementation
-        call interp_linear_impl (x(i), xp, fp, fx(i), lext, lleft, lright)
-    end do
+    if (present(wgt)) then
+        do i = 1, n
+            ! call scalar implementation
+            call interp_linear_impl (x(i), xp, fp, fx(i), wgt(i), lext, &
+                lleft, lright)
+        end do
+    else
+        do i = 1, n
+            ! call scalar implementation
+            call interp_linear_impl (x(i), xp, fp, fx(i), wgt_dummy, lext, &
+                lleft, lright)
+        end do
+    end if
 
 end subroutine
 
@@ -224,7 +240,7 @@ pure subroutine __APPEND(interp_bilinear_impl,__PREC) (x1, x2, xp1, xp2, fp, &
     real (PREC), intent(out) :: fx
         !*  Interpolated function value f(x1,x2)
     real (PREC), intent(out), dimension(:) :: wgt
-        !*  If present, returns the weights for the upper edge of the bracketing
+        !*  If present, returns the weights for the lower bound of the bracketing
         !   interval for each dimension.
 
     integer (INTSIZE) :: ilb1, ilb2
@@ -258,8 +274,9 @@ pure subroutine __APPEND(interp_bilinear_impl,__PREC) (x1, x2, xp1, xp2, fp, &
     ! Interpolate in dimension two
     fx = (1.0_PREC-w2) * fx1_lb + w2 * fx1_ub
 
-    wgt(1) = w1
-    wgt(2) = w2
+    ! Return weights on lower bounds
+    wgt(1) = 1.0_PREC - w1
+    wgt(2) = 1.0_PREC - w2
 
     return
 
