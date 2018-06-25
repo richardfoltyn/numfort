@@ -15,3 +15,6 @@ interface interp_find_cached
     procedure __APPEND(interp_find_cached,__PREC)
 end interface
 
+interface interp_find_cached
+    procedure __APPEND(interp_find_wgt_cached,__PREC)
+end interface
