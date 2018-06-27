@@ -181,7 +181,7 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     # explicitly add -cpp to run C preprocessor if required
     # By default set -Wall, but disable warnings when comparing reals
     # and -Wsurpsiring, as this generates numerous warnings about finalizers.
-    set(_FFLAGS "${_FFLAGS} -Wall -Wno-compare-reals -Wno-surprising")
+    set(_FFLAGS "${_FFLAGS} -Wall -Wno-compare-reals -Wno-surprising -frecursive")
     set(_FFLAGS_DEBUG "-fcheck=all -O0")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
