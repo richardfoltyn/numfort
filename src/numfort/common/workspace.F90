@@ -7,6 +7,8 @@ module numfort_common_workspace
 
     use, intrinsic :: iso_fortran_env, only : real32, real64, int32, int64
 
+    use numfort_common_status
+
     implicit none
     private
 

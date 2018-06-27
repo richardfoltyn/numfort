@@ -155,7 +155,7 @@ end subroutine
 
 
 
-pure subroutine __APPEND(ws_get_rptr_1d_int32,__PREC) (self, n, ptr)
+pure subroutine __APPEND(ws_get_rptr_1d_int32,__PREC) (self, n, ptr, status)
     !*  WORKSPACE_GET_PTR associates a given pointer to a 1d-array with
     !   a subset of the workspace array of desired length.
     !
@@ -169,10 +169,13 @@ pure subroutine __APPEND(ws_get_rptr_1d_int32,__PREC) (self, n, ptr)
     type (__APPEND(workspace,__PREC)), intent(inout), target :: self
     integer (INTSIZE), intent(in) :: n
     real (PREC), intent(out), dimension(:), pointer, contiguous :: ptr
+    type (status_t), intent(out), optional :: status
 
     integer (int64) :: ifrom, ito
+    type (status_t) :: lstatus
 
     nullify (ptr)
+    lstatus = NF_STATUS_OK
 
     ifrom = self%roffset + 1
     ito = self%roffset + n
@@ -180,16 +183,22 @@ pure subroutine __APPEND(ws_get_rptr_1d_int32,__PREC) (self, n, ptr)
     ! Note: if working array is not large enough, return NULL pointer instead
     ! of reallocating the working array, which will invalidate all previosly
     ! associated pointers.
-    if (ito > size(self%rwrk)) return
+    if (ito > size(self%rwrk)) then
+        lstatus = NF_STATUS_BOUNDS_ERROR
+        goto 100
+    end if
 
     ptr => self%rwrk(ifrom:ito)
 
     self%roffset = ito
 
+100 continue
+    if (present(status)) status = lstatus
+
 end subroutine
 
 
-pure subroutine __APPEND(ws_get_rptr_2d_int32,__PREC) (self, shp, ptr)
+pure subroutine __APPEND(ws_get_rptr_2d_int32,__PREC) (self, shp, ptr, status)
     !*  WORKSPACE_GET_PTR maps a pointer to a 2d-array of given shape to
     !   a subset of the 1-dimensional workspace array of appropriate length.
     !
@@ -203,10 +212,13 @@ pure subroutine __APPEND(ws_get_rptr_2d_int32,__PREC) (self, shp, ptr)
     type (__APPEND(workspace,__PREC)), intent(inout), target :: self
     integer (INTSIZE), intent(in), dimension(:) :: shp
     real (PREC), intent(out), dimension(:,:), pointer, contiguous :: ptr
+    type (status_t), intent(out), optional :: status
 
     integer (int64) :: ifrom, ito, n
+    type (status_t) :: lstatus
 
     nullify (ptr)
+    lstatus = NF_STATUS_OK
 
     n = product(shp)
     ifrom = self%roffset + 1
@@ -215,16 +227,22 @@ pure subroutine __APPEND(ws_get_rptr_2d_int32,__PREC) (self, shp, ptr)
     ! Note: if working array is not large enough, return NULL pointer instead
     ! of reallocating the working array, which will invalidate all previosly
     ! associated pointers.
-    if (ito > size(self%rwrk)) return
+    if (ito > size(self%rwrk)) then
+        lstatus = NF_STATUS_BOUNDS_ERROR
+        goto 100
+    end if
 
     ptr(1:shp(1),1:shp(2)) => self%rwrk(ifrom:ito)
 
     self%roffset = ito
 
+100 continue
+    if (present(status)) status = lstatus
+
 end subroutine
 
 
-pure subroutine __APPEND(ws_get_iptr_1d_int32,__PREC) (self, n, ptr)
+pure subroutine __APPEND(ws_get_iptr_1d_int32,__PREC) (self, n, ptr, status)
     !*  WORKSPACE_GET_PTR associates a given pointer to a 1d-array with
     !   a subset of the workspace array of desired length.
     !
@@ -237,10 +255,13 @@ pure subroutine __APPEND(ws_get_iptr_1d_int32,__PREC) (self, n, ptr)
     type (__APPEND(workspace,__PREC)), intent(inout), target :: self
     integer (INTSIZE), intent(in) :: n
     integer, intent(out), dimension(:), pointer, contiguous :: ptr
+    type (status_t), intent(out), optional :: status
 
     integer (int64) :: ifrom, ito
+    type (status_t) :: lstatus
 
     nullify (ptr)
+    lstatus = NF_STATUS_OK
 
     ifrom = self%ioffset + 1
     ito = self%ioffset + n
@@ -248,10 +269,16 @@ pure subroutine __APPEND(ws_get_iptr_1d_int32,__PREC) (self, n, ptr)
     ! Note: if working array is not large enough, return NULL pointer instead
     ! of reallocating the working array, which will invalidate all previosly
     ! associated pointers.
-    if (ito > size(self%iwrk)) return
+    if (ito > size(self%iwrk)) then
+        lstatus = NF_STATUS_BOUNDS_ERROR
+        goto 100
+    end if
 
     ptr => self%iwrk(ifrom:ito)
 
     self%ioffset = ito
+
+100 continue
+    if (present(status)) status = lstatus
 
 end subroutine
