@@ -181,6 +181,9 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     integer :: n, n1, mineq, mode, lmeq, lm, mieq, k, lda, lw
     logical :: has_eq, has_ieq
     real (PREC) :: fx, ltol
+    type (status_t) :: status
+
+    status = NF_STATUS_OK
 
     nullify (ptr_work)
     nullify (ptr_xlb, ptr_xub)
@@ -192,8 +195,8 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     call result_reset (ptr_res)
 
     call slsqp_check_input (x, lbounds, ubounds, m ,meq, f_eqcons, f_ieqcons, &
-        maxiter, linesearch, tol, ptr_res%status, ptr_res%msg)
-    if (NF_STATUS_INVALID_ARG .in. ptr_res%status) goto 100
+        maxiter, linesearch, tol, status, ptr_res%msg)
+    if (NF_STATUS_INVALID_ARG .in. status) goto 100
 
     ! Determine if enough information is present for equality or inequality
     ! constraints.
@@ -213,6 +216,11 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     if (present(m)) lm = m
     if (present(meq)) lmeq = meq
     if (present(linesearch)) llinesearch = linesearch
+
+    ! Default initialize some values that might be retured as attributes
+    ! of OPTIM_RESULT before minimization starts if an error is encountered
+    fx = 0.0
+    iter = 0
 
     ! if equality constraint specified, but no inequality constraint,
     ! m = meq and allow for missing meq if m is present.
@@ -239,6 +247,10 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     ! Workspace used directly by SLSQP: Take calculations from implementation.
     lw = (3*n1+lm)*(n1+1)+(n1-lmeq+1)*(mineq+2) + 2*mineq+(n1+mineq)*(n1-lmeq) &
         + 2*lmeq + n1 + ((n+1)*n)/2 + 2*lm + 3*n + 3*n1 + 1
+    ! potential bug in underlying SLSQP routine that leads to random memory
+    ! errors. Maybe WA is accessed past its boundary, so increase by 1 KiB for
+    ! now and hope for the best.
+    lw = lw + 128
     nrwrk = lw
 
     ! Add space for lower / upper bounds
@@ -264,8 +276,11 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     call workspace_reset (ptr_work)
     call assert_alloc (ptr_work, nrwrk=nrwrk, niwrk=niwrk)
 
-    call workspace_get_ptr (ptr_work, n, ptr_xlb)
-    call workspace_get_ptr (ptr_work, n, ptr_xub)
+    call workspace_get_ptr (ptr_work, n, ptr_xlb, status)
+    if (status /= NF_STATUS_OK) goto 100
+
+    call workspace_get_ptr (ptr_work, n, ptr_xub, status)
+    if (status /= NF_STATUS_OK) goto 100
 
     ! Assert that bounds values are as expected by underlying routine
     call slsqp_sanitize_bounds (x, lbounds, ubounds, ptr_xlb, ptr_xub, ptr_res)
@@ -277,12 +292,14 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     mode = 0
 
     ! SLSQP implementation expects gradient array to be of size (n+1)
-    call workspace_get_ptr (ptr_work, n+1, ptr_g)
+    call workspace_get_ptr (ptr_work, n+1, ptr_g, status)
+    if (status /= NF_STATUS_OK) goto 100
 
     ! Pointers to data containing evaluated constraints
     if (.not. has_eq .and. .not. has_ieq) then
         ! Array C is expected to be at least size 1
-        call workspace_get_ptr (ptr_work, 1, ptr_c)
+        call workspace_get_ptr (ptr_work, 1, ptr_c, status)
+        if (status /= NF_STATUS_OK) goto 100
 
         ! Add "empty" row of stacked Jacobian matrices as SLSQP expects
         ! argument A to be at least (1, n+1).
@@ -290,14 +307,18 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
         ! temporaray arrays.
         shp(1) = 1
         shp(2) = n+1
-        call workspace_get_ptr (ptr_work, shp, ptr_a)
+        call workspace_get_ptr (ptr_work, shp, ptr_a, status)
+        if (status /= NF_STATUS_OK) goto 100
     else
         ! Array C is expected to contain eq. and ineq. constraint values
         ! concatenated together.
-        call workspace_get_ptr (ptr_work, lm, ptr_c)
+        call workspace_get_ptr (ptr_work, lm, ptr_c, status)
+        if (status /= NF_STATUS_OK) goto 100
+
         shp = lm
         shp(2) = n+1
-        call workspace_get_ptr (ptr_work, shp, ptr_a)
+        call workspace_get_ptr (ptr_work, shp, ptr_a, status)
+        if (status /= NF_STATUS_OK) goto 100
 
         ioffset = 0
         if (has_eq) then
@@ -306,21 +327,25 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
 
             shp(1) = lmeq
             shp(2) = n
-            call workspace_get_ptr (ptr_work, shp, ptr_cpx_eq)
+            call workspace_get_ptr (ptr_work, shp, ptr_cpx_eq, status)
+            if (status /= NF_STATUS_OK) goto 100
         end if
         if (has_ieq) then
             ptr_cx_ieq(1:mieq) => ptr_c(ioffset+1:lm)
 
             shp(1) = mieq
             shp(2) = n
-            call workspace_get_ptr (ptr_work, shp, ptr_cpx_ieq)
+            call workspace_get_ptr (ptr_work, shp, ptr_cpx_ieq, status)
+            if (status /= NF_STATUS_OK) goto 100
         end if
     end if
 
     ! Assign remaining arguments
     lda = max(1, lm)
     ! Pointer to workspace used directly by SLSQP
-    call workspace_get_ptr (ptr_work, lw, ptr_w)
+    call workspace_get_ptr (ptr_work, lw, ptr_w, status)
+    if (status /= NF_STATUS_OK) goto 100
+
     ! ACC argument: for exact linesearch this has to be the negative tolerance
     acc = ltol
     if (llinesearch == NF_LINESEARCH_EXACT) acc = - abs(ltol)
@@ -363,6 +388,7 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
                 ! Copy Jacobian into array A using a loop, otherwise
                 ! (at least) gfortran allocates a temporary array.
                 forall (k=1:lmeq) ptr_a(k,1:n) = ptr_cpx_eq(k,:)
+                ioffset = lmeq
             end if
 
             if (has_ieq) then
@@ -381,8 +407,9 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
         ! Exit in all cases when there is an error or convergence was achieved.
         if (mode /= MODE_EVAL_FUNCS .and. mode /= MODE_EVAL_JAC) then
             ! Update status code and status message on termination
-            call result_update (ptr_res, status=SLSQP_STATUS_MAP(mode), &
-                msg=SLSQP_MSG_MAP(mode), istatus=mode)
+            status = SLSQP_STATUS_MAP(mode)
+            status%code_orig = mode
+            call result_update (ptr_res, msg=SLSQP_MSG_MAP(mode))
             goto 100
         end if
     end do
@@ -392,7 +419,8 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
 
     ! Update result object only if we are returning to client code
     if (present(res)) then
-        call result_update (ptr_res, x, fx, nit=iter, nfev=fobj%nfev)
+        call result_update (ptr_res, x, fx, nit=iter, nfev=fobj%nfev, &
+            status=status)
     end if
 
     ! Clean up local WORKSPACE object if none was passed by client code
@@ -494,6 +522,7 @@ subroutine slsqp_sanitize_bounds_real64 (x, xlb_in, xub_in, xlb, xub, res)
 
     integer :: n, i
     real (PREC) :: POS_INF, NEG_INF
+    type (status_t) :: status
 
     n = size(x)
 
@@ -526,7 +555,8 @@ subroutine slsqp_sanitize_bounds_real64 (x, xlb_in, xub_in, xlb, xub, res)
     ! Check that xlb <= xub holds
     do i = 1, n
         if (xub(i) < xlb(i)) then
-            call result_update (res, status=NF_STATUS_INVALID_ARG, &
+            status = NF_STATUS_INVALID_ARG
+            call result_update (res, status=status, &
                 msg="Invalid lower and/or upper bound specified")
             return
         end if

@@ -37,7 +37,7 @@ subroutine test_rosenbrock_scipy (tests)
     type (workspace) :: work
     type (optim_result) :: res
 
-    real (PREC), parameter :: tol = 1d-10
+    real (PREC), parameter :: tol = 1d-8
     real (PREC), dimension(2) :: x, lbounds, ubounds
     real (PREC) :: dx, dfx
 
