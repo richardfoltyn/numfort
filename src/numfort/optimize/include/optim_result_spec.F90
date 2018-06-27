@@ -25,10 +25,6 @@ interface result_update
     procedure __APPEND(update,__PREC)
 end interface
 
-interface result_update
-    procedure __APPEND(update_int_status,__PREC)
-end interface
-
 interface result_reset
     procedure __APPEND(reset,__PREC)
 end interface
