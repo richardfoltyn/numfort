@@ -48,7 +48,7 @@ subroutine test_ppolyfit_bernstein (tests)
     real (PREC), dimension(:), allocatable :: knots, coefs, coefs1, x, p, xp, y1
     real (PREC), dimension(:,:), allocatable :: y
     integer :: k, ncoefs, nknots, nx, n
-    real (PREC) :: xlb, xub, left, right
+    real (PREC) :: xlb, xub, left, right, ylb, yub
     type (ppoly_bernstein) :: pp, pp1
     type (status_t) :: status
 
@@ -107,7 +107,7 @@ subroutine test_ppolyfit_bernstein (tests)
         .and. all_close (p, y1, atol=1.0e-8_PREC), &
         'Cubic: Evaluate at non-interior points')
 
-    ! Replace non-interior points with come constant values
+    ! Replace non-interior points with some constant values
     left = -10000.0
     right = 10000.0
     where (xp < xlb)
@@ -126,6 +126,23 @@ subroutine test_ppolyfit_bernstein (tests)
         status=status)
     call tc%assert_true (status == NF_STATUS_BOUNDS_ERROR, &
         'Cubic: Evaluate, raise error on non-interior points')
+
+    ! Replace non-interior points with boundary values
+    call fcn2 (xp, y1)
+    call fcn2 (xlb, ylb)
+    call fcn2 (xub, yub)
+    where (xp < xlb)
+        y1 = ylb
+    else where (xp > xub)
+        y1 = yub
+    end where
+
+    call ppolyval (pp, knots, coefs, xp, p, ext=NF_INTERP_EVAL_BOUNDARY, &
+        status=status)
+    call tc%assert_true (status == NF_STATUS_OK &
+        .and. all_close (p, y1, atol=1.0e-8_PREC), &
+        'Cubic: Evaluate, assign const to non-interior points')
+
     deallocate (xp, y1, p)
 
     ! Test evaluating first derivative
