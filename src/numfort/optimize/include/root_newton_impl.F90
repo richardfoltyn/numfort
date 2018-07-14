@@ -527,7 +527,7 @@ subroutine __APPEND(newton_bisect_impl,__PREC) (fcn, x, a, b, xtol, tol, &
     call dispatch_fcn_jac (fcn, x0, fx, fpx)
     ! Check for immediate convergence before wasting any more computation time
     if (abs(fx) < ltol) then
-        ptr_res%msg = "Convergence achieved; abs(f(x)) < ltol"
+        ptr_res%msg = "Convergence achieved; abs(f(x)) < tol"
         ptr_res%status = NF_STATUS_OK
         goto 100
     end if
@@ -572,10 +572,13 @@ subroutine __APPEND(newton_bisect_impl,__PREC) (fcn, x, a, b, xtol, tol, &
         goto 100
     end if
 
-    do iter = 1, lmaxiter
+    ! Start iteration counter at 0 as we first check for convergence, and hence
+    ! if convergence was achieved, this was already the case in the last
+    ! iteration.
+    do iter = 0, lmaxiter - 1
 
         if (abs(fx) < ltol) then
-            ptr_res%msg = "Convergence achieved; abs(f(x)) < ltol"
+            ptr_res%msg = "Convergence achieved; abs(f(x)) < tol"
             ptr_res%status = NF_STATUS_OK
             goto 100
         end if
@@ -591,6 +594,21 @@ subroutine __APPEND(newton_bisect_impl,__PREC) (fcn, x, a, b, xtol, tol, &
 
         if (has_bracket) then
             if (x < xlb .or. x > xub) then
+                ! First update bracket with newly computed function value.
+                ! This prevents that routine exits immediately if the initial
+                ! value is the exact midpoint between the initial [a,b] and
+                ! the first Newton step is outside of [a, b].
+                ! Note: FX contains function value evaluated at what is now
+                ! stored in X0.
+                s = slb * signum (fx)
+                ! Update bracket
+                if (s > 0.0_PREC) then
+                    ! f(x) has same sign as f(xlb)
+                    xlb = x0
+                else
+                    xub = x0
+                end if
+
                 x = (xlb + xub) / 2.0_PREC
             end if
         end if
@@ -602,7 +620,7 @@ subroutine __APPEND(newton_bisect_impl,__PREC) (fcn, x, a, b, xtol, tol, &
         ! Note: do this only after updating FX, we need to return correct FX=f(X)
         if (abs(x - x0) < lxtol) then
             ptr_res%status = NF_STATUS_OK
-            ptr_res%msg = "Convergence achieved: abs(x(n)-x(n-1)) < lxtol"
+            ptr_res%msg = "Convergence achieved: abs(x(n)-x(n-1)) < xtol"
             goto 100
         end if
 
