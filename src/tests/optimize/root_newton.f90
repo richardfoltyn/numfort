@@ -54,7 +54,7 @@ end subroutine
 
 
 subroutine test_linear (tests)
-    type (test_suite), intent(in out) :: tests
+    type (test_suite), intent(inout) :: tests
 
     class (test_case), pointer :: tc
 
@@ -186,7 +186,7 @@ end subroutine
 
 
 subroutine test_newton_bisect (tests)
-    type (test_suite), intent(in out) :: tests
+    type (test_suite), intent(inout) :: tests
 
     class (test_case), pointer :: tc
 
@@ -275,7 +275,7 @@ end subroutine
 
 
 subroutine test_halley (tests)
-    type (test_suite), intent(in out) :: tests
+    type (test_suite), intent(inout) :: tests
 
     class (test_case), pointer :: tc
 
@@ -310,7 +310,7 @@ end subroutine
 
 
 subroutine test_cycles (tests)
-    type (test_suite), intent(in out) :: tests
+    type (test_suite), intent(inout) :: tests
 
     class (test_case), pointer :: tc
 
@@ -456,7 +456,7 @@ end subroutine
 
 subroutine fcn_halley_args (x, args, fx, fpx, fppx)
     real (PREC), intent(in) :: x
-    real (PREC), intent(in out), dimension(:) :: args
+    real (PREC), intent(inout), dimension(:) :: args
     real (PREC), intent(out) :: fx, fpx, fppx
     fx = (x-args(1)) * (x-args(2))
     fpx = 2.0 * x - (args(1) + args(2))
