@@ -5,6 +5,7 @@ set(${COMPONENT_NAME}_FILES
     delete.f90
     indexing.f90
     insert.f90
+    kron.f90
     setops.f90
     vander.f90
     PARENT_SCOPE

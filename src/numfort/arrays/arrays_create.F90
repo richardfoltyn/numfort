@@ -1,6 +1,8 @@
 module numfort_arrays_create
 
     use, intrinsic :: iso_fortran_env
+
+    use numfort_common, only: has_shape
     use numfort_core
     implicit none
     private
@@ -8,6 +10,7 @@ module numfort_arrays_create
     public :: arange, linspace, powerspace
     public :: diag, diag_matrix, identity
     public :: vander
+    public :: kron
 
     interface arange
         procedure arange_int32, arange_int64, arange_real32, arange_real64
@@ -37,6 +40,10 @@ module numfort_arrays_create
     interface vander
         procedure vander_scalar_real32, vander_scalar_real64, &
             vander_real32, vander_real64
+    end interface
+
+    interface kron
+        procedure kron_real32, kron_real64
     end interface
 
 contains
@@ -291,5 +298,36 @@ pure subroutine vander_real64 (x, xp, increasing)
     integer, parameter :: PREC = real64
 #include "vander_impl.f90"
 end subroutine
+
+!-------------------------------------------------------------------------------
+! Kronecker product
+
+pure subroutine kron_real32 (mat1, mat2, res)
+    !*  KRON returns the Kronecker product of matrices MAT1 and MAT2.
+    integer, parameter :: PREC = real32
+    real (PREC), intent(in), dimension(:,:) :: mat1
+    real (PREC), intent(in), dimension(:,:) :: mat2
+    real (PREC), intent(out), dimension(:,:), contiguous, target :: res
+        !*  Output array. If the array size is non-conformable with
+        !   the required dimensions to store the Kronecker product of
+        !   MAT1 and MAT2, the routine leaves RES unchanged.
+
+#include "kron_impl.F90"
+end subroutine
+
+pure subroutine kron_real64 (mat1, mat2, res)
+    !*  KRON returns the Kronecker product of matrices MAT1 and MAT2.
+    integer, parameter :: PREC = real64
+    real (PREC), intent(in), dimension(:,:) :: mat1
+    real (PREC), intent(in), dimension(:,:) :: mat2
+    real (PREC), intent(out), dimension(:,:), contiguous, target :: res
+        !*  Output array. If the array size is non-conformable with
+        !   the required dimensions to store the Kronecker product of
+        !   MAT1 and MAT2, the routine leaves RES unchanged.
+
+
+#include "kron_impl.F90"
+end subroutine
+
 
 end module
