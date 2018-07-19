@@ -8,7 +8,7 @@ module numfort_arrays_create
     private
 
     public :: arange, linspace, powerspace
-    public :: diag, diag_matrix, identity
+    public :: diag, identity
     public :: vander
     public :: kron
 
@@ -29,8 +29,8 @@ module numfort_arrays_create
         procedure diag_real32, diag_real64
     end interface
 
-    interface diag_matrix
-        procedure diag_matrix_real32, diag_matrix_real64
+    interface diag
+        procedure diag_create_real32, diag_create_real64
     end interface
 
     interface identity
@@ -164,70 +164,100 @@ end subroutine
 subroutine identity_real64(mat)
     integer, parameter :: PREC = real64
     real (PREC), intent(out), dimension(:,:) :: mat
-    integer :: i
+
+    integer :: i, n
+
+    n = min(size(mat,1), size(mat,2))
 
     mat = 0_PREC
-    forall (i=1:size(mat, 1)) mat(i,i) = 1.0_PREC
+    forall (i=1:n) mat(i,i) = 1.0_PREC
 
 end subroutine
 
 subroutine identity_real32(mat)
     integer, parameter :: PREC = real32
     real (PREC), intent(out), dimension(:,:) :: mat
-    integer :: i
+
+    integer :: i, n
+
+    n = min(size(mat,1), size(mat,2))
 
     mat = 0_PREC
-    forall (i=1:size(mat, 1)) mat(i,i) = 1.0_PREC
+    forall (i=1:n) mat(i,i) = 1.0_PREC
 
 end subroutine
 
 ! ******************************************************************************
 ! DIAG - creating square matrices from diagonals
-pure subroutine diag_matrix_real64(v, mat)
+
+
+pure subroutine diag_create_real64 (v, res)
+    !*  DIAG_CREATE creates a square matrix with a diagonal given by vector V.
     integer, parameter :: PREC = real64
     real (PREC), intent(in), dimension(:) :: v
-    real (PREC), intent(out), dimension(size(v), size(v)) :: mat
+    real (PREC), intent(out), dimension(:,:) :: res
+        !*  Output array. If the size of MAT is not conformable with the
+        !   diagonal matrix to be created, MAT is left unchanged.
 
-    integer :: i
+    integer :: i, n
+    integer :: shp(2)
 
-    mat = 0.0_PREC
-    forall (i=1:size(v)) mat(i,i) = v(i)
+    n = size(v)
+    shp = n
+    if (.not. has_shape (res, shp)) return
+
+    res = 0.0_PREC
+    forall (i=1:n) res(i,i) = v(i)
 end subroutine
 
-pure subroutine diag_matrix_real32(v, mat)
+pure subroutine diag_create_real32 (v, res)
+    !*  DIAG_CREATE creates a square matrix with a diagonal given by vector V.
     integer, parameter :: PREC = real32
     real (PREC), intent(in), dimension(:) :: v
-    real (PREC), intent(out), dimension(size(v), size(v)) :: mat
+    real (PREC), intent(out), dimension(:,:) :: res
+        !*  Output array. If the size of MAT is not conformable with the
+        !   diagonal matrix to be created, MAT is left unchanged.
 
-    integer :: i
+    integer :: i, n
+    integer :: shp(2)
 
-    mat = 0.0_PREC
-    forall (i=1:size(v)) mat(i,i) = v(i)
+    n = size(v)
+    shp = n
+    if (.not. has_shape (res, shp)) return
+
+    res = 0.0_PREC
+    forall (i=1:n) res(i,i) = v(i)
 
 end subroutine
 
 ! ******************************************************************************
 ! DIAG - extracting diagonals from square matrices
 
-pure subroutine diag_real64(mat, v)
+pure subroutine diag_real64 (mat, res)
     integer, parameter :: PREC = real64
     real (PREC), intent(in), dimension(:,:) :: mat
-    real (PREC), intent(out), dimension(size(mat, 1)) :: v
+    real (PREC), intent(out), dimension(:) :: res
 
-    integer :: i
+    integer :: i, n
 
-    forall (i=1:size(mat, 1)) v(i) = mat(i,i)
+    n = min(size(mat,1), size(mat,2))
+    if (size(res) < n) return
+
+    forall (i=1:n) res(i) = mat(i,i)
 
 end subroutine
 
-pure subroutine diag_real32(mat, v)
+pure subroutine diag_real32 (mat, res)
     integer, parameter :: PREC = real32
     real (PREC), intent(in), dimension(:,:) :: mat
-    real (PREC), intent(out), dimension(size(mat, 1)) :: v
+    real (PREC), intent(out), dimension(:) :: res
 
-    integer :: i
+    integer :: i, n
 
-    forall (i=1:size(mat, 1)) v(i) = mat(i,i)
+    n = min(size(mat,1), size(mat,2))
+    if (size(res) < n) return
+
+    forall (i=1:n) res(i) = mat(i,i)
 
 end subroutine
 
@@ -324,7 +354,6 @@ pure subroutine kron_real64 (mat1, mat2, res)
         !*  Output array. If the array size is non-conformable with
         !   the required dimensions to store the Kronecker product of
         !   MAT1 and MAT2, the routine leaves RES unchanged.
-
 
 #include "kron_impl.F90"
 end subroutine
