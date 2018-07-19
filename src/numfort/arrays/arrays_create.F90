@@ -45,12 +45,12 @@ contains
 ! LINSPACE procedures
 pure subroutine linspace_real64(x, xfrom, xto, step, res_n, res_step)
     integer, parameter :: PREC = real64
-    include "include/linspace_impl.f90"
+#include "linspace_impl.f90"
 end subroutine
 
 pure subroutine linspace_real32(x, xfrom, xto, step, res_n, res_step)
     integer, parameter :: PREC = real32
-    include "include/linspace_impl.f90"
+#include "linspace_impl.f90"
 end subroutine
 
 ! ******************************************************************************
@@ -58,22 +58,22 @@ end subroutine
 
 pure subroutine arange_int32 (x, ifrom, step)
     integer, parameter :: INTSIZE = int32
-    include "include/arange_impl.f90"
+#include "arange_impl.f90"
 end subroutine
 
 pure subroutine arange_int64 (x, ifrom, step)
     integer, parameter :: INTSIZE = int64
-    include "include/arange_impl.f90"
+#include "arange_impl.f90"
 end subroutine
 
 pure subroutine arange_real32 (x, ifrom, step)
     integer, parameter :: PREC = real32
-    include "include/arange_real_impl.f90"
+#include "arange_real_impl.f90"
 end subroutine
 
 pure subroutine arange_real64 (x, ifrom, step)
     integer, parameter :: PREC = real64
-    include "include/arange_real_impl.f90"
+#include "arange_real_impl.f90"
 end subroutine
 
 
@@ -90,7 +90,7 @@ pure subroutine powerspace_real32 (x, xmin, xmax, pow)
     !   where u(i) is the corresponding element on a uniformly-spaced
     !   sequence on [0,1].
     integer, parameter :: PREC = real32
-    include "include/powerspace_impl.f90"
+#include "powerspace_impl.f90"
 end subroutine
 
 pure subroutine powerspace_real64 (x, xmin, xmax, pow)
@@ -103,7 +103,7 @@ pure subroutine powerspace_real64 (x, xmin, xmax, pow)
     !   where u(i) is the corresponding element on a uniformly-spaced
     !   sequence on [0,1].
     integer, parameter :: PREC = real64
-    include "include/powerspace_impl.f90"
+#include "powerspace_impl.f90"
 end subroutine
 
 pure subroutine powerspace_real32_int32 (x, xmin, xmax, pow)
@@ -280,7 +280,7 @@ pure subroutine vander_real32 (x, xp, increasing)
     !   at 0. Power are by default arranged in decreasing order.
 
     integer, parameter :: PREC = real32
-    include "include/vander_impl.f90"
+#include "vander_impl.f90"
 end subroutine
 
 pure subroutine vander_real64 (x, xp, increasing)
@@ -289,7 +289,7 @@ pure subroutine vander_real64 (x, xp, increasing)
     !   at 0. Power are by default arranged in decreasing order.
 
     integer, parameter :: PREC = real64
-    include "include/vander_impl.f90"
+#include "vander_impl.f90"
 end subroutine
 
 end module
