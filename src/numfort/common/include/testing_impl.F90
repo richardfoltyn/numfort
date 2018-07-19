@@ -20,7 +20,7 @@ elemental function __APPEND(is_close,__PREC) (actual, desired, rtol, atol) &
     if (present(rtol)) lrtol = rtol
 
     diff = abs(actual-desired)
-    res = diff < (latol + lrtol * abs(desired))
+    res = diff <= (latol + lrtol * abs(desired))
 
 end function
 
@@ -46,7 +46,7 @@ pure function __APPEND(all_close,__PREC) (actual, desired, rtol, atol) &
     if (present(rtol)) lrtol = rtol
 
     diff = abs(actual-desired)
-    res = diff < (latol + lrtol * abs(desired))
+    res = diff <= (latol + lrtol * abs(desired))
 
 end function
 
