@@ -2,6 +2,7 @@
 get_filename_component(COMPONENT_NAME "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
 
 set(SOURCE_FILES
+    common.f90
     random.F90
     stats_core.F90
     dlogistic.F90
