@@ -34,7 +34,7 @@ module numfort_arrays_create
     end interface
 
     interface identity
-        procedure identity_real32, identity_real64
+        procedure identity_int32, identity_int64, identity_real32, identity_real64
     end interface
 
     interface vander
@@ -161,6 +161,28 @@ end subroutine
 ! ******************************************************************************
 ! IDENTITY matrix creation
 
+subroutine identity_int32 (mat)
+    integer, parameter :: INTSIZE = int32
+    integer (INTSIZE), intent(out), dimension(:,:) :: mat
+
+    integer :: i, n
+
+    n = min(size(mat,1), size(mat,2))
+    mat = 0_INTSIZE
+    forall (i=1:n) mat(i,i) = 1_INTSIZE
+end subroutine
+
+subroutine identity_int64 (mat)
+    integer, parameter :: INTSIZE = int64
+    integer (INTSIZE), intent(out), dimension(:,:) :: mat
+
+    integer :: i, n
+
+    n = min(size(mat,1), size(mat,2))
+    mat = 0_INTSIZE
+    forall (i=1:n) mat(i,i) = 1_INTSIZE
+end subroutine
+
 subroutine identity_real64(mat)
     integer, parameter :: PREC = real64
     real (PREC), intent(out), dimension(:,:) :: mat
@@ -168,10 +190,8 @@ subroutine identity_real64(mat)
     integer :: i, n
 
     n = min(size(mat,1), size(mat,2))
-
     mat = 0_PREC
     forall (i=1:n) mat(i,i) = 1.0_PREC
-
 end subroutine
 
 subroutine identity_real32(mat)
@@ -181,10 +201,8 @@ subroutine identity_real32(mat)
     integer :: i, n
 
     n = min(size(mat,1), size(mat,2))
-
     mat = 0_PREC
     forall (i=1:n) mat(i,i) = 1.0_PREC
-
 end subroutine
 
 ! ******************************************************************************
