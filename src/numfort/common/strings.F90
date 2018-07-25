@@ -19,11 +19,11 @@ module numfort_common_strings
 
 contains
 
-subroutine lower (s)
+pure subroutine lower (s)
     !*  LOWER transforms character strings to lower case in place, leaving
     !   any characters outside of the range A-Z (in ASCII encoding) unchanged.
 
-    character (*), intent(in out) :: s
+    character (*), intent(inout) :: s
         !*  Character string that to be transformed to lower case. On exit,
         !   contains transformed string.
 
