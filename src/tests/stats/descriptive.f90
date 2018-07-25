@@ -6,6 +6,8 @@ program test_nf_stats_desc
     use numfort_arrays
     use numfort_stats
     use numfort_common
+    use numfort_common_testing
+    use numfort_interpolate
 
     implicit none
 
@@ -24,6 +26,8 @@ subroutine test_all ()
     call test_degenerate (tests)
     call test_1d (tests)
     call test_2d (tests)
+
+    call test_percentile (tests)
 
     ! print test statistics
     call tests%print ()
@@ -161,6 +165,57 @@ subroutine test_2d (tests)
     call std (x, s, m, dim=2, status=status)
     call tc%assert_true (all(abs(m-m2) < tol) .and. all(abs(s-s2) < tol) .and. (NF_STATUS_OK .in. status), &
         "Std of 2d array along dim=2")
+end subroutine
+
+
+
+subroutine test_percentile (tests)
+    class (test_suite) :: tests
+    class (test_case), pointer :: tc
+
+    real (PREC), dimension(:), allocatable :: bins, pmf
+    real (PREC), dimension(:), allocatable :: pctl_rank, pctl, pctl_ok
+    integer :: n, npctl
+    type (status_t) :: status
+
+    tc => tests%add_test ("Unit tests for PERCENTILE routine")
+
+    call set_seed (1234)
+
+    n = 8
+    npctl = 101
+    allocate (bins(n+1), pmf(n))
+    allocate (pctl_rank(npctl), pctl(npctl), pctl_ok(npctl))
+
+    ! Create bins as a linear map into [0,1]
+    call linspace (bins, 0.0_PREC, 1.0_PREC)
+    call linspace (pctl_rank, 0.0_PREC, 1.0_PREC)
+
+    ! Create uniform distribution
+    pmf(:) = 1.0_PREC / n
+
+    ! Linear interpolation
+    call percentile (bins, pmf, pctl_rank, pctl, interp='linear', status=status)
+    call interp_linear (pctl_rank, bins, bins, pctl_ok)
+    call tc%assert_true (status == NF_STATUS_OK .and. &
+        all_close (pctl, pctl_ok, atol=1.0e-10_PREC), &
+        "Uniform distribution on [0,1], interp=linear")
+
+    call percentile (bins, pmf, pctl_rank, pctl, interp='midpoint', status=status)
+    call percentile (bins, pmf, pctl_rank, pctl, interp='lower', status=status)
+    call percentile (bins, pmf, pctl_rank, pctl, interp='higher', status=status)
+
+    ! test with PMF with 0 elements
+    pmf(3:n-2) = 0.0
+    pmf(:) = pmf / sum(pmf)
+    call percentile (bins, pmf, pctl_rank, pctl, interp='midpoint', status=status)
+
+    ! Test with large pass points
+    pmf(4) = 2.0
+    pmf(:) = pmf / sum(pmf)
+    call percentile (bins, pmf, pctl_rank, pctl, interp='midpoint', status=status)
+
+
 end subroutine
 
 end program
