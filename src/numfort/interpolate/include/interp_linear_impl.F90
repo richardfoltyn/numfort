@@ -1,5 +1,5 @@
 
-subroutine __APPEND(interp_linear_impl,__PREC) (x, xp, fp, fx, wgt, ext, left, right)
+pure subroutine __APPEND(interp_linear_impl,__PREC) (x, xp, fp, fx, wgt, ext, left, right)
     !*  Implements linear interpolation for scalar input/return value
     !   and no optional arguments.
     !   Should be called from wrapper routines doing the optional argument handling,
@@ -41,6 +41,7 @@ subroutine __APPEND(interp_linear_impl,__PREC) (x, xp, fp, fx, wgt, ext, left, r
     np = size(xp)
 
     if (x < xp(1)) then
+        wgt = 1.0_PREC
         select case (ext)
         case (NF_INTERP_EVAL_CONST)
             fx = left
@@ -53,6 +54,7 @@ subroutine __APPEND(interp_linear_impl,__PREC) (x, xp, fp, fx, wgt, ext, left, r
             return
         end select
     else if (x > xp(np)) then
+        wgt = 0.0_PREC
         select case (ext)
         case (NF_INTERP_EVAL_CONST)
             fx = right
@@ -78,7 +80,7 @@ end subroutine
 
 
 
-subroutine __APPEND(interp_linear_scalar,__PREC) (x, xp, fp, fx, ext, &
+pure subroutine __APPEND(interp_linear_scalar,__PREC) (x, xp, fp, fx, ext, &
         left, right, wgt)
     !*  INTERP_LINEAR_SCALAR performs linear interpolation for scalar arguments
     integer, parameter :: PREC = __PREC
@@ -138,7 +140,7 @@ end subroutine
 
 
 
-subroutine __APPEND(interp_linear_1d,__PREC) (x, xp, fp, fx, ext, left, right, wgt)
+pure subroutine __APPEND(interp_linear_1d,__PREC) (x, xp, fp, fx, ext, left, right, wgt)
     !*  INTERP_LINEAR_1D performs linear interpolation for an array of
     !   points.
 
