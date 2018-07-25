@@ -430,52 +430,184 @@ pure subroutine __APPEND(normalize_2d,__PREC) (x, m, s, dim, center, scale, &
 end subroutine
 
 ! ------------------------------------------------------------------------------
-pure subroutine __APPEND(percentile_array,__PREC) (x, q, xq, dim, interp)
-    integer, parameter :: PREC = __PREC
 
+
+pure subroutine __APPEND(percentile_pmf_check_input,__PREC) (x, pmf, q, pctl, &
+        interp, status)
+    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:) :: x
-        !!  Data array
+    real (PREC), intent(in), dimension(:) :: pmf
     real (PREC), intent(in), dimension(:) :: q
-        !!  Percentiles to compute which must be between 0 and 100 inclusive.
-    real (PREC), intent(out), dimension(:) :: xq
-        !!  Output array storing (interpolated) values of x at q
-    integer, intent(in), optional :: dim
-        !!  Ignored for 1d input arrays, present for compatibility with higher dims.
+    real (PREC), intent(in), dimension(:) :: pctl
     character (*), intent(in), optional :: interp
-        !!  Interpolation method to use when desired percentile is between
-        !!  two data points with indices i and i+1. Valid values are
-        !!      1.  'linear': linearly interpolate between values at i, i+1
-        !!      2.  'lower': x(i)
-        !!      3.  'higher': x(i+1)
-        !!      4.  'nearest': value at index which is nearest
-        !!      5.  'midpoint': (x(i)+x(i+1))/2
+    type (status_t), intent(out) :: status
+
+    character (10) :: linterp
+
+    status = NF_STATUS_INVALID_ARG
+    linterp = ""
+
+    if (present(interp)) then
+        linterp = interp
+        call lower (linterp)
+        select case (linterp)
+        case ("linear")
+            continue
+        case ("lower")
+            continue
+        case ("higher")
+            continue
+        case ("midpoint")
+            continue
+        case default
+            goto 100
+        end select
+    end if
+
+    if ((size(x) - 1) /= size(pmf)) goto 100
+    if (size(q) /= size(pctl)) goto 100
+
+    ! Enforce percentiles to be in valid range
+    if (any(q < 0.0_PREC)) goto 100
+    if (any(q > 1.0_PREC)) goto 100
+
+    status = NF_STATUS_OK
+
+100 continue
 
 end subroutine
 
-pure subroutine __APPEND(percentile_scalar,__PREC) (x, q, xq, dim, interp)
+
+pure subroutine __APPEND(percentile_pmf,__PREC) (x, pmf, q, pctl, interp, status)
     integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in), dimension(:) :: x
-        !!  Data array
-    real (PREC), intent(in) :: q
-        !!  Percentile to compute which must be between 0 and 100 inclusive.
-    real (PREC), intent(out) :: xq
-        !!  (Interpolated) value of x at percentile q
-    integer, intent(in), optional :: dim
-        !!  Ignored for 1d input arrays, present for compatibility with higher dims.
+        !*  Array of bin edges (or bin midpoints) in increasing order
+    real (PREC), intent(in), dimension(:) :: pmf
+        !*  PMF associated with bins defined by X
+    real (PREC), intent(in), dimension(:) :: q
+        !*  Percentiles to compute which must be between 0 and 100 inclusive.
+    real (PREC), intent(out), dimension(:) :: pctl
+        !*  Output array storing (interpolated) values of x at q
     character (*), intent(in), optional :: interp
-        !!  Interpolation method to use when desired percentile is between
-        !!  two data points with indices i and i+1. Valid values are
-        !!      1.  'linear': linearly interpolate between values at i, i+1
-        !!      2.  'lower': x(i)
-        !!      3.  'higher': x(i+1)
-        !!      4.  'nearest': value at index which is nearest
-        !!      5.  'midpoint': (x(i)+x(i+1))/2
+        !*  Interpolation method to use when desired percentile is between
+        !   two data points with indices i and i+1. Valid values are
+        !      1.  'linear': linearly interpolate between values at i, i+1
+        !      2.  'lower': x(i)
+        !      3.  'higher': x(i+1)
+        !      4.  'nearest': value at index which is nearest
+        !      5.  'midpoint': (x(i)+x(i+1))/2
+    type (status_t), intent(out), optional :: status
+        !*  Optional status code
 
-    real (PREC) :: xq1(1), q1(1)
+    type (status_t) :: lstatus
+    character (10) :: linterp
+    integer (NF_ENUM_KIND) :: imode
+    integer :: n, npctl, i, imax, ncdf, ilb
+    real (PREC), dimension(:), allocatable :: cdf
+    real (PREC) :: wgt
+    type (search_cache) :: cache
+
+    lstatus = NF_STATUS_OK
+
+    call percentile_pmf_check_input (x, pmf, q, pctl, interp, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    linterp = "linear"
+    if (present(interp)) then
+        linterp = interp
+        call lower (linterp)
+    end if
+
+    ! Convert to numeric interpolation enum
+    imode = percentile_interp_to_enum (linterp)
+
+    n = size(pmf)
+    npctl = size(q)
+
+    ncdf = n + 1
+    allocate (cdf(ncdf))
+    cdf(1) = 0.0
+
+    do i = 1, n
+        cdf(i+1) = cdf(i) + pmf(i)
+    end do
+    cdf(:) = cdf / cdf(ncdf)
+
+    ! Find last bin with non-zero mass
+    do imax = n, 2, -1
+        if (pmf(imax) > 0.0_PREC) exit
+    end do
+
+    ! CDF has one additional element, so increment max. index
+    imax = imax + 1
+
+    select case (imode)
+    case (NF_PERCENTILE_LINEAR)
+        call interp_linear (q, cdf(1:imax), x(1:imax), pctl, &
+            ext=NF_INTERP_EVAL_BOUNDARY)
+    case (NF_PERCENTILE_NEAREST)
+        do i = 1, npctl
+            call interp_find_cached (q(i), cdf(1:imax), ilb, wgt, cache)
+            if (wgt >= 0.50_PREC) then
+                pctl(i) = x(ilb)
+            else
+                pctl(i) = x(ilb+1)
+            end if
+        end do
+    case default
+        ! Determine weight on lower bound
+        select case (imode)
+        case (NF_PERCENTILE_LOWER)
+            wgt = 1.0_PREC
+        case (NF_PERCENTILE_HIGHER)
+            wgt = 0.0_PREC
+        case (NF_PERCENTILE_MIDPOINT)
+            wgt = 0.5_PREC
+        end select
+
+        do i = 1, npctl
+            call bsearch_cached (q(i), cdf(1:imax), ilb, cache)
+            pctl(i) = wgt * x(ilb) + (1.0_PREC-wgt) * x(ilb+1)
+        end do
+    end select
+
+100 continue
+    if (allocated(cdf)) deallocate (cdf)
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+
+pure subroutine __APPEND(percentile_pmf_scalar,__PREC) (x, pmf, q, pctl, &
+        interp, status)
+    integer, parameter :: PREC = __PREC
+
+    real (PREC), intent(in), dimension(:) :: x
+        !*  Array of bin edges (or bin midpoints) in increasing order
+    real (PREC), intent(in), dimension(:) :: pmf
+        !*  PMF associated with bins defined by X
+    real (PREC), intent(in) :: q
+        !*  Percentile to compute which must be between 0 and 100 inclusive.
+    real (PREC), intent(out) :: pctl
+        !*  (Interpolated) value of x at percentile q
+    character (*), intent(in), optional :: interp
+        !*  Interpolation method to use when desired percentile is between
+        !   two data points with indices i and i+1. Valid values are
+        !      1.  'linear': linearly interpolate between values at i, i+1
+        !      2.  'lower': x(i)
+        !      3.  'higher': x(i+1)
+        !      4.  'nearest': value at index which is nearest
+        !      5.  'midpoint': (x(i)+x(i+1))/2
+    type (status_t), intent(out), optional :: status
+        !*  Optional status code
+
+    real (PREC) :: pctl1(1), q1(1)
 
     q1(1) = q
-    call percentile (x, q1, xq1, dim, interp)
-    xq = xq1(1)
+    call percentile (x, pmf, q1, pctl1, interp, status)
+    pctl = pctl1(1)
 
 end subroutine

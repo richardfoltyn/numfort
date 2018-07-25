@@ -4,7 +4,9 @@
 module numfort_stats_core
 
     use, intrinsic :: iso_fortran_env
+
     use numfort_common
+    use numfort_interpolate
 
     implicit none
     private
@@ -21,6 +23,11 @@ module numfort_stats_core
 #include <numfort_real64.h>
 #include "stats_core_spec.F90"
 
+    integer (NF_ENUM_KIND), parameter :: NF_PERCENTILE_LINEAR = 1
+    integer (NF_ENUM_KIND), parameter :: NF_PERCENTILE_LOWER = 2
+    integer (NF_ENUM_KIND), parameter :: NF_PERCENTILE_HIGHER = 4
+    integer (NF_ENUM_KIND), parameter :: NF_PERCENTILE_NEAREST = 8
+    integer (NF_ENUM_KIND), parameter :: NF_PERCENTILE_MIDPOINT = 16
 
     contains
 
@@ -56,6 +63,31 @@ pure subroutine mean_std_init (shp, dim, ldim, nvars, nobs, status)
     nvars = shp(3-ldim)
     nobs = shp(ldim)
 end subroutine
+
+
+pure function percentile_interp_to_enum (interp) result(res)
+    !*  PERCENTILE_INTEPR_TO_ENUM converts the character-type interpolation
+    !   method to its integer representation.
+    character (*), intent(in) :: interp
+    integer (NF_ENUM_KIND) :: res
+
+    select case (interp)
+    case ("linear")
+        res = NF_PERCENTILE_LINEAR
+    case ("lower")
+        res = NF_PERCENTILE_LOWER
+    case ("higher")
+        res = NF_PERCENTILE_HIGHER
+    case ("nearest")
+        res = NF_PERCENTILE_NEAREST
+    case ("midpoint")
+        res = NF_PERCENTILE_MIDPOINT
+    case default
+        res = 0
+    end select
+end function
+
+
 
 #include <numfort_real32.h>
 #include "stats_core_impl.F90"

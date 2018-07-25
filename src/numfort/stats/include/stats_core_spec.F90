@@ -17,5 +17,9 @@ interface normalize
 end interface
 
 interface percentile
-    procedure  __APPEND(percentile_array,__PREC), __APPEND(percentile_scalar,__PREC)
+    procedure  __APPEND(percentile_pmf,__PREC), __APPEND(percentile_pmf_scalar,__PREC)
+end interface
+
+interface percentile_pmf_check_input
+    procedure __APPEND(percentile_pmf_check_input,__PREC)
 end interface
