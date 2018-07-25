@@ -81,6 +81,26 @@ subroutine test_bsearch (tests)
 
     deallocate (haystack)
 
+    ! Test with piecewise constant haystack
+    allocate (haystack(11))
+    call linspace (haystack, 0.0_PREC, 10.0_PREC)
+    haystack(3:5) = haystack(3)
+    haystack(7:9) = haystack(7)
+
+    needle = 2.0
+    i = bsearch (needle, haystack)
+    call tc%assert_true (i == 5, "Piecewise-constant HAYSTACK, lower bound")
+
+    needle = 3.0
+    i = bsearch (needle, haystack)
+    call tc%assert_true (i == 5, "Piecewise-constant HAYSTACK, interior value")
+
+    needle = 5.0
+    i = bsearch (needle, haystack)
+    call tc%assert_true (i == 6, "Piecewise-constant HAYSTACK, upper bound")
+
+    deallocate (haystack)
+
 end subroutine
 
 
