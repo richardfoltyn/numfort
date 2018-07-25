@@ -341,7 +341,7 @@ pure subroutine __APPEND(normalize_2d,__PREC) (x, m, s, dim, center, scale, &
 
     integer, parameter :: PREC = __PREC
 
-    real (PREC), intent(in out), dimension(:,:) :: x
+    real (PREC), intent(inout), dimension(:,:) :: x
         !*  Data that should be normalized. Multiple 'variables' are supported
         !   and can be organized either in rows or columns (goverened by
         !   the dim argument)
