@@ -14,7 +14,7 @@ module numfort_stats_core
     public :: mean
     public :: std
     public :: normalize
-    public :: percentile
+    public :: quantile
 
 
 #include <numfort_real32.h>
@@ -23,11 +23,11 @@ module numfort_stats_core
 #include <numfort_real64.h>
 #include "stats_core_spec.F90"
 
-    integer (NF_ENUM_KIND), parameter :: NF_STATS_PERCENTILE_LINEAR = 1
-    integer (NF_ENUM_KIND), parameter :: NF_STATS_PERCENTILE_LOWER = 2
-    integer (NF_ENUM_KIND), parameter :: NF_STATS_PERCENTILE_HIGHER = 4
-    integer (NF_ENUM_KIND), parameter :: NF_STATS_PERCENTILE_NEAREST = 8
-    integer (NF_ENUM_KIND), parameter :: NF_STATS_PERCENTILE_MIDPOINT = 16
+    integer (NF_ENUM_KIND), parameter :: NF_STATS_QUANTILE_LINEAR = 1
+    integer (NF_ENUM_KIND), parameter :: NF_STATS_QUANTILE_LOWER = 2
+    integer (NF_ENUM_KIND), parameter :: NF_STATS_QUANTILE_HIGHER = 4
+    integer (NF_ENUM_KIND), parameter :: NF_STATS_QUANTILE_NEAREST = 8
+    integer (NF_ENUM_KIND), parameter :: NF_STATS_QUANTILE_MIDPOINT = 16
 
     contains
 
@@ -65,7 +65,7 @@ pure subroutine mean_std_init (shp, dim, ldim, nvars, nobs, status)
 end subroutine
 
 
-pure function percentile_interp_to_enum (interp) result(res)
+pure function quantile_interp_to_enum (interp) result(res)
     !*  PERCENTILE_INTEPR_TO_ENUM converts the character-type interpolation
     !   method to its integer representation.
     character (*), intent(in) :: interp
@@ -78,15 +78,15 @@ pure function percentile_interp_to_enum (interp) result(res)
 
     select case (linterp)
     case ("linear")
-        res = NF_STATS_PERCENTILE_LINEAR
+        res = NF_STATS_QUANTILE_LINEAR
     case ("lower")
-        res = NF_STATS_PERCENTILE_LOWER
+        res = NF_STATS_QUANTILE_LOWER
     case ("higher")
-        res = NF_STATS_PERCENTILE_HIGHER
+        res = NF_STATS_QUANTILE_HIGHER
     case ("nearest")
-        res = NF_STATS_PERCENTILE_NEAREST
+        res = NF_STATS_QUANTILE_NEAREST
     case ("midpoint")
-        res = NF_STATS_PERCENTILE_MIDPOINT
+        res = NF_STATS_QUANTILE_MIDPOINT
     case default
         res = 0
     end select

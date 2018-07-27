@@ -27,7 +27,7 @@ subroutine test_all ()
     call test_1d (tests)
     call test_2d (tests)
 
-    call test_percentile (tests)
+    call test_quantile (tests)
 
     ! print test statistics
     call tests%print ()
@@ -169,7 +169,7 @@ end subroutine
 
 
 
-subroutine test_percentile (tests)
+subroutine test_quantile (tests)
     class (test_suite) :: tests
     class (test_case), pointer :: tc
 
@@ -195,25 +195,25 @@ subroutine test_percentile (tests)
     pmf(:) = 1.0_PREC / n
 
     ! Linear interpolation
-    call percentile (bins, pmf, pctl_rank, pctl, interp='linear', status=status)
+    call quantile (bins, pmf, pctl_rank, pctl, interp='linear', status=status)
     call interp_linear (pctl_rank, bins, bins, pctl_ok)
     call tc%assert_true (status == NF_STATUS_OK .and. &
         all_close (pctl, pctl_ok, atol=1.0e-10_PREC), &
         "Uniform distribution on [0,1], interp=linear")
 
-    call percentile (bins, pmf, pctl_rank, pctl, interp='midpoint', status=status)
-    call percentile (bins, pmf, pctl_rank, pctl, interp='lower', status=status)
-    call percentile (bins, pmf, pctl_rank, pctl, interp='higher', status=status)
+    call quantile (bins, pmf, pctl_rank, pctl, interp='midpoint', status=status)
+    call quantile (bins, pmf, pctl_rank, pctl, interp='lower', status=status)
+    call quantile (bins, pmf, pctl_rank, pctl, interp='higher', status=status)
 
     ! test with PMF with 0 elements
     pmf(3:n-2) = 0.0
     pmf(:) = pmf / sum(pmf)
-    call percentile (bins, pmf, pctl_rank, pctl, interp='midpoint', status=status)
+    call quantile (bins, pmf, pctl_rank, pctl, interp='midpoint', status=status)
 
     ! Test with large pass points
     pmf(4) = 2.0
     pmf(:) = pmf / sum(pmf)
-    call percentile (bins, pmf, pctl_rank, pctl, interp='midpoint', status=status)
+    call quantile (bins, pmf, pctl_rank, pctl, interp='midpoint', status=status)
 
 
 end subroutine

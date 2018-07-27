@@ -432,7 +432,7 @@ end subroutine
 ! ------------------------------------------------------------------------------
 
 
-pure subroutine __APPEND(percentile_pmf_check_input,__PREC) (x, pmf, q, pctl, &
+pure subroutine __APPEND(quantile_pmf_check_input,__PREC) (x, pmf, q, pctl, &
         interp, status)
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:) :: x
@@ -448,7 +448,7 @@ pure subroutine __APPEND(percentile_pmf_check_input,__PREC) (x, pmf, q, pctl, &
     if (present(interp)) then
         ! The following routine returns 0 if INTERP does not match any of the
         ! acceptable values
-        imode = percentile_interp_to_enum (interp)
+        imode = quantile_interp_to_enum (interp)
         if (imode == 0) goto 100
     end if
 
@@ -466,17 +466,18 @@ pure subroutine __APPEND(percentile_pmf_check_input,__PREC) (x, pmf, q, pctl, &
 end subroutine
 
 
-pure subroutine __APPEND(percentile_pmf,__PREC) (x, pmf, q, pctl, interp, status)
+pure subroutine __APPEND(quantile_pmf,__PREC) (x, pmf, rnk, q, interp, status)
     integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in), dimension(:) :: x
         !*  Array of bin edges (or bin midpoints) in increasing order
     real (PREC), intent(in), dimension(:) :: pmf
         !*  PMF associated with bins defined by X
-    real (PREC), intent(in), dimension(:) :: q
-        !*  Percentiles to compute which must be between 0 and 100 inclusive.
-    real (PREC), intent(out), dimension(:) :: pctl
-        !*  Output array storing (interpolated) values of x at q
+    real (PREC), intent(in), dimension(:) :: rnk
+        !*  Array of quantiles "ranks" to compute which must be between
+        !   0 and 1 inclusive.
+    real (PREC), intent(out), dimension(:) :: q
+        !*  Output array storing (interpolated) quantiles corresponding to RNK
     character (*), intent(in), optional :: interp
         !*  Interpolation method to use when desired percentile is between
         !   two data points with indices i and i+1. Valid values are
@@ -497,17 +498,17 @@ pure subroutine __APPEND(percentile_pmf,__PREC) (x, pmf, q, pctl, interp, status
 
     lstatus = NF_STATUS_OK
 
-    call percentile_pmf_check_input (x, pmf, q, pctl, interp, lstatus)
+    call quantile_pmf_check_input (x, pmf, rnk, q, interp, lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
     ! Convert to numeric interpolation enum
-    imode = NF_STATS_PERCENTILE_LINEAR
+    imode = NF_STATS_QUANTILE_LINEAR
     if (present(interp)) then
-        imode = percentile_interp_to_enum (interp)
+        imode = quantile_interp_to_enum (interp)
     end if
 
     n = size(pmf)
-    npctl = size(q)
+    npctl = size(rnk)
 
     ncdf = n + 1
     allocate (cdf(ncdf))
@@ -527,32 +528,32 @@ pure subroutine __APPEND(percentile_pmf,__PREC) (x, pmf, q, pctl, interp, status
     imax = imax + 1
 
     select case (imode)
-    case (NF_STATS_PERCENTILE_LINEAR)
-        call interp_linear (q, cdf(1:imax), x(1:imax), pctl, &
+    case (NF_STATS_QUANTILE_LINEAR)
+        call interp_linear (rnk, cdf(1:imax), x(1:imax), q, &
             ext=NF_INTERP_EVAL_BOUNDARY)
-    case (NF_STATS_PERCENTILE_NEAREST)
+    case (NF_STATS_QUANTILE_NEAREST)
         do i = 1, npctl
-            call interp_find_cached (q(i), cdf(1:imax), ilb, wgt, cache)
+            call interp_find_cached (rnk(i), cdf(1:imax), ilb, wgt, cache)
             if (wgt >= 0.50_PREC) then
-                pctl(i) = x(ilb)
+                q(i) = x(ilb)
             else
-                pctl(i) = x(ilb+1)
+                q(i) = x(ilb+1)
             end if
         end do
     case default
         ! Determine weight on lower bound
         select case (imode)
-        case (NF_STATS_PERCENTILE_LOWER)
+        case (NF_STATS_QUANTILE_LOWER)
             wgt = 1.0_PREC
-        case (NF_STATS_PERCENTILE_HIGHER)
+        case (NF_STATS_QUANTILE_HIGHER)
             wgt = 0.0_PREC
-        case (NF_STATS_PERCENTILE_MIDPOINT)
+        case (NF_STATS_QUANTILE_MIDPOINT)
             wgt = 0.5_PREC
         end select
 
         do i = 1, npctl
-            call bsearch_cached (q(i), cdf(1:imax), ilb, cache)
-            pctl(i) = wgt * x(ilb) + (1.0_PREC-wgt) * x(ilb+1)
+            call bsearch_cached (rnk(i), cdf(1:imax), ilb, cache)
+            q(i) = wgt * x(ilb) + (1.0_PREC-wgt) * x(ilb+1)
         end do
     end select
 
@@ -565,7 +566,7 @@ end subroutine
 
 
 
-pure subroutine __APPEND(percentile_pmf_scalar,__PREC) (x, pmf, q, pctl, &
+pure subroutine __APPEND(quantile_pmf_scalar,__PREC) (x, pmf, rnk, q, &
         interp, status)
     integer, parameter :: PREC = __PREC
 
@@ -573,10 +574,10 @@ pure subroutine __APPEND(percentile_pmf_scalar,__PREC) (x, pmf, q, pctl, &
         !*  Array of bin edges (or bin midpoints) in increasing order
     real (PREC), intent(in), dimension(:) :: pmf
         !*  PMF associated with bins defined by X
-    real (PREC), intent(in) :: q
+    real (PREC), intent(in) :: rnk
         !*  Percentile to compute which must be between 0 and 100 inclusive.
-    real (PREC), intent(out) :: pctl
-        !*  (Interpolated) value of x at percentile q
+    real (PREC), intent(out) :: q
+        !*  (Interpolated) quantile corresponding to RNK
     character (*), intent(in), optional :: interp
         !*  Interpolation method to use when desired percentile is between
         !   two data points with indices i and i+1. Valid values are
@@ -588,10 +589,10 @@ pure subroutine __APPEND(percentile_pmf_scalar,__PREC) (x, pmf, q, pctl, &
     type (status_t), intent(out), optional :: status
         !*  Optional status code
 
-    real (PREC) :: pctl1(1), q1(1)
+    real (PREC) :: q1(1), rnk1(1)
 
-    q1(1) = q
-    call percentile (x, pmf, q1, pctl1, interp, status)
-    pctl = pctl1(1)
+    rnk1(1) = rnk
+    call quantile (x, pmf, rnk1, q1, interp, status)
+    q = q1(1)
 
 end subroutine

@@ -16,10 +16,10 @@ interface normalize
     procedure __APPEND(normalize_2d,__PREC)
 end interface
 
-interface percentile
-    procedure  __APPEND(percentile_pmf,__PREC), __APPEND(percentile_pmf_scalar,__PREC)
+interface quantile
+    procedure  __APPEND(quantile_pmf,__PREC), __APPEND(quantile_pmf_scalar,__PREC)
 end interface
 
-interface percentile_pmf_check_input
-    procedure __APPEND(percentile_pmf_check_input,__PREC)
+interface quantile_pmf_check_input
+    procedure __APPEND(quantile_pmf_check_input,__PREC)
 end interface
