@@ -173,47 +173,159 @@ subroutine test_quantile (tests)
     class (test_suite) :: tests
     class (test_case), pointer :: tc
 
-    real (PREC), dimension(:), allocatable :: bins, pmf
-    real (PREC), dimension(:), allocatable :: pctl_rank, pctl, pctl_ok
-    integer :: n, npctl
+    real (PREC) :: wgt_lb
+    real (PREC), dimension(:), allocatable :: bins, pmf, cdf
+    real (PREC), dimension(:), allocatable :: rnk, q, q_ok
+    integer :: n, nq, i
     type (status_t) :: status
 
     tc => tests%add_test ("Unit tests for PERCENTILE routine")
 
     call set_seed (1234)
 
-    n = 8
-    npctl = 101
+    ! ==== Test 1 =====
+    n = 5
     allocate (bins(n+1), pmf(n))
-    allocate (pctl_rank(npctl), pctl(npctl), pctl_ok(npctl))
-
-    ! Create bins as a linear map into [0,1]
-    call linspace (bins, 0.0_PREC, 1.0_PREC)
-    call linspace (pctl_rank, 0.0_PREC, 1.0_PREC)
-
-    ! Create uniform distribution
+    call linspace (bins, 0.0_PREC, real(n, PREC))
     pmf(:) = 1.0_PREC / n
 
+    allocate (cdf(n+1))
+    cdf(1) = 0.0
+    do i = 1, n
+        cdf(i+1) = cdf(i) + pmf(i)
+    end do
+
+    nq = 5
+    allocate (rnk(nq), q(nq), q_ok(nq))
+    ! Test at "interior" quantiles that do not coindice with inverse CDF
+    ! values on bin edges
+    wgt_lb = 0.25d0
+    rnk(:) = (1.0-wgt_lb) * cdf(2:n+1) + wgt_lb * cdf(1:n)
+
     ! Linear interpolation
-    call quantile (bins, pmf, pctl_rank, pctl, interp='linear', status=status)
-    call interp_linear (pctl_rank, bins, bins, pctl_ok)
+    q_ok(:) = wgt_lb * bins(1:n) + (1.0-wgt_lb) * bins(2:n+1)
+
+    call quantile (bins, pmf, rnk, q, interp='linear', status=status)
     call tc%assert_true (status == NF_STATUS_OK .and. &
-        all_close (pctl, pctl_ok, atol=1.0e-10_PREC), &
-        "Uniform distribution on [0,1], interp=linear")
+        all_close (q, q_ok, atol=1.0d-10), &
+        "Test 1: interp='linear'")
 
-    call quantile (bins, pmf, pctl_rank, pctl, interp='midpoint', status=status)
-    call quantile (bins, pmf, pctl_rank, pctl, interp='lower', status=status)
-    call quantile (bins, pmf, pctl_rank, pctl, interp='higher', status=status)
+    ! Lower "interpolation"
+    q_ok = bins(1:n)
+    call quantile (bins, pmf, rnk, q, interp='lower', status=status)
+    call tc%assert_true (status == NF_STATUS_OK .and. &
+        all_close (q, q_ok, atol=1.0d-10), &
+        "Test 1: interp='lower'")
 
-    ! test with PMF with 0 elements
-    pmf(3:n-2) = 0.0
+    ! Higher "interpolation"
+    q_ok = bins(2:n+1)
+    call quantile (bins, pmf, rnk, q, interp='higher', status=status)
+    call tc%assert_true (status == NF_STATUS_OK .and. &
+        all_close (q, q_ok, atol=1.0d-10), &
+        "Test 1: interp='higher'")
+
+    ! Midpoint interpolation
+    wgt_lb = 0.5d0
+    q_ok = wgt_lb * bins(1:n) + (1.0-wgt_lb) * bins(2:n+1)
+    call quantile (bins, pmf, rnk, q, interp='midpoint', status=status)
+    call tc%assert_true (status == NF_STATUS_OK .and. &
+        all_close (q, q_ok, atol=1.0d-10), &
+        "Test 1: interp='midpoint'")
+
+    ! ===== Test 2 =====
+    ! Test with 0 elements in PMF at the extremes
+    pmf(:) = 0.0
+    pmf(2:4) = 1.0_PREC / 3.0
+
+    ! Lower interpolation where 0, 1.0 are in RNK
+    rnk(:) = [0.0d0, 1.0d0/6.0d0, 3.0d0/6.0d0, 5.0d0/6.0d0, 1.0d0]
+    q_ok(1:2) = bins(2)
+    q_ok(3) =  bins(3)
+    q_ok(4) = bins(4)
+    q_ok(5) = bins(5)
+
+    call quantile (bins, pmf, rnk, q, interp='lower', status=status)
+    call tc%assert_true (status == NF_STATUS_OK .and. &
+        all_close (q, q_ok, atol=1.0d-10), &
+        "Test 2: interp='lower', PMF with zeros")
+
+    ! Higher interpolation where 0.0, 1.0 are in RNK
+    q_ok(1) = bins(2)
+    q_ok(2) = bins(3)
+    q_ok(3) = bins(4)
+    q_ok(4) = bins(5)
+    q_ok(5) = bins(5)
+
+    call quantile (bins, pmf, rnk, q, interp='higher', status=status)
+    call tc%assert_true (status == NF_STATUS_OK .and. &
+        all_close (q, q_ok, atol=1.0d-10), &
+        "Test 2: interp='higher', PMF with zeros")
+
+    ! Linear interpolation
+    q_ok(1) = bins(2)
+    q_ok(2:4) = (bins(2:4) + bins(3:5)) / 2.0
+    q_ok(5) = bins(5)
+
+    call quantile (bins, pmf, rnk, q, interp='linear', status=status)
+    call tc%assert_true (status == NF_STATUS_OK .and. &
+        all_close (q, q_ok, atol=1.0d-10), &
+        "Test 2: interp='linear', PMF with zeros")
+
+    ! Midpoint
+    q_ok(1) = q_ok(2)
+    q_ok(5) = q_ok(4)
+    call quantile (bins, pmf, rnk, q, interp='midpoint', status=status)
+    call tc%assert_true (status == NF_STATUS_OK .and. &
+        all_close (q, q_ok, atol=1.0d-10), &
+        "Test 2: interp='midpoint', PMF with zeros")
+
+    ! ===== Test 3 ======
+    ! PMF with zeros in middle
+    pmf(:) = 1.0
+    pmf(3:4) = 0.0
     pmf(:) = pmf / sum(pmf)
-    call quantile (bins, pmf, pctl_rank, pctl, interp='midpoint', status=status)
 
-    ! Test with large pass points
-    pmf(4) = 2.0
-    pmf(:) = pmf / sum(pmf)
-    call quantile (bins, pmf, pctl_rank, pctl, interp='midpoint', status=status)
+    rnk(:) = [0.0d0, 1.0d0/6.0d0, 3.0d0/6.0d0, 5.0d0/6.0d0, 1.0d0]
+
+    ! Linear interpolation
+    q_ok(1) = bins(1)
+    q_ok(2:3) = (bins(1:2) + bins(2:3)) / 2.0
+    q_ok(4) = (bins(5) + bins(6)) / 2.0
+    q_ok(5) = bins(6)
+    call quantile (bins, pmf, rnk, q, interp='linear', status=status)
+    call tc%assert_true (status == NF_STATUS_OK .and. &
+        all_close (q, q_ok, atol=1.0d-10), &
+        "Test 3: interp='linear', PMF with interior zeros")
+
+    ! lower "interpolation"
+    q_ok(1:2) = bins(1)
+    q_ok(3) = bins(2)
+    q_ok(4) = bins(5)
+    q_ok(5) = bins(6)
+
+    call quantile (bins, pmf, rnk, q, interp='lower', status=status)
+    call tc%assert_true (status == NF_STATUS_OK .and. &
+        all_close (q, q_ok, atol=1.0d-10), &
+        "Test 3: interp='lower', PMF with interior zeros")
+
+    ! higher "interpolation"
+    q_ok(1) = bins(1)
+    q_ok(2) = bins(2)
+    q_ok(3) = bins(3)
+    q_ok(4:5) = bins(6)
+    call quantile (bins, pmf, rnk, q, interp='higher', status=status)
+    call tc%assert_true (status == NF_STATUS_OK .and. &
+        all_close (q, q_ok, atol=1.0d-10), &
+        "Test 3: interp='higher', PMF with interior zeros")
+
+    ! midpoint interpolation
+    q_ok(1:2) = (bins(1) + bins(2)) / 2.0
+    q_ok(3) = (bins(2) + bins(3)) / 2.0
+    q_ok(4:5) = (bins(5) + bins(6)) / 2.0
+    call quantile (bins, pmf, rnk, q, interp='midpoint', status=status)
+    call tc%assert_true (status == NF_STATUS_OK .and. &
+        all_close (q, q_ok, atol=1.0d-10), &
+        "Test 3: interp='midpoint', PMF with interior zeros")
 
 
 end subroutine
