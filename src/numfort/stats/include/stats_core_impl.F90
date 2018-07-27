@@ -491,9 +491,9 @@ pure subroutine __APPEND(quantile_pmf,__PREC) (x, pmf, rnk, q, interp, status)
 
     type (status_t) :: lstatus
     integer (NF_ENUM_KIND) :: imode
-    integer :: n, npctl, i, imax, ncdf, ilb
+    integer :: n, nq, i, imax, ncdf, ilb
     real (PREC), dimension(:), allocatable :: cdf
-    real (PREC) :: wgt
+    real (PREC) :: wgt, ri
     type (search_cache) :: cache
 
     lstatus = NF_STATUS_OK
@@ -508,7 +508,7 @@ pure subroutine __APPEND(quantile_pmf,__PREC) (x, pmf, rnk, q, interp, status)
     end if
 
     n = size(pmf)
-    npctl = size(rnk)
+    nq = size(rnk)
 
     ncdf = n + 1
     allocate (cdf(ncdf))
@@ -529,10 +529,13 @@ pure subroutine __APPEND(quantile_pmf,__PREC) (x, pmf, rnk, q, interp, status)
 
     select case (imode)
     case (NF_STATS_QUANTILE_LINEAR)
+
         call interp_linear (rnk, cdf(1:imax), x(1:imax), q, &
             ext=NF_INTERP_EVAL_BOUNDARY)
+
     case (NF_STATS_QUANTILE_NEAREST)
-        do i = 1, npctl
+
+        do i = 1, nq
             call interp_find_cached (rnk(i), cdf(1:imax), ilb, wgt, cache)
             if (wgt >= 0.50_PREC) then
                 q(i) = x(ilb)
@@ -540,19 +543,41 @@ pure subroutine __APPEND(quantile_pmf,__PREC) (x, pmf, rnk, q, interp, status)
                 q(i) = x(ilb+1)
             end if
         end do
-    case default
-        ! Determine weight on lower bound
-        select case (imode)
-        case (NF_STATS_QUANTILE_LOWER)
-            wgt = 1.0_PREC
-        case (NF_STATS_QUANTILE_HIGHER)
-            wgt = 0.0_PREC
-        case (NF_STATS_QUANTILE_MIDPOINT)
-            wgt = 0.5_PREC
-        end select
 
-        do i = 1, npctl
-            call bsearch_cached (rnk(i), cdf(1:imax), ilb, cache)
+    case (NF_STATS_QUANTILE_LOWER)
+
+        do i = 1, nq
+            ri = rnk(i)
+            if (ri == 1.0_PREC) then
+                ! Take the max., ignore "lower" argument
+                q(i) = x(imax)
+            else
+                call bsearch_cached (ri, cdf(1:imax), ilb, cache)
+                q(i) = x(ilb)
+            end if
+        end do
+
+    case (NF_STATS_QUANTILE_HIGHER)
+
+        do i = 1, nq
+            ri = rnk(i)
+            call bsearch_cached (ri, cdf(1:imax), ilb, cache)
+            if (ri > 0.0_PREC) then
+                q(i) = x(ilb+1)
+            else
+                ! For 0.0 rank (ie. the min), take the lower bound
+                ! Note: we need to call BSEARCH even in this case as the
+                ! PMF could contain zero values in the beginning
+                q(i) = x(ilb)
+            end if
+        end do
+
+    case (NF_STATS_QUANTILE_MIDPOINT)
+
+        wgt = 0.5_PREC
+        do i = 1, nq
+            ri = rnk(i)
+            call bsearch_cached (ri, cdf(1:imax), ilb, cache)
             q(i) = wgt * x(ilb) + (1.0_PREC-wgt) * x(ilb+1)
         end do
     end select
