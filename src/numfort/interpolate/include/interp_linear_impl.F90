@@ -70,7 +70,7 @@ pure subroutine __APPEND(interp_linear_impl,__PREC) (x, xp, fp, fx, wgt, ext, le
 
     ! default: At this point there is either a bracketing interval, or we extrapolate
     ! values outside of domain
-    ilb = interp_find (x, xp)
+    ilb = bsearch (x, xp)
     iub = ilb + 1
     ! Weight on lower bound
     wgt = (xp(iub) - x) / (xp(iub) - xp(ilb))
@@ -262,8 +262,8 @@ pure subroutine __APPEND(interp_bilinear_impl,__PREC) (x1, x2, xp1, xp2, fp, &
 
     ! default: At this point there is either a bracketing interval, or we extrapolate
     ! values outside of domain
-    ilb1 = interp_find (x1, xp1)
-    ilb2 = interp_find (x2, xp2)
+    ilb1 = bsearch (x1, xp1)
+    ilb2 = bsearch (x2, xp2)
 
     w1 = (x1 - xp1(ilb1)) / (xp1(ilb1+1) - xp1(ilb1))
     w2 = (x2 - xp2(ilb2)) / (xp2(ilb2+1) - xp2(ilb2))

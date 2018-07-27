@@ -21,9 +21,10 @@ pure function __APPEND(bsearch,__PREC) (needle, haystack) result(ilb)
     integer :: iub, imid, n
 
     n = size(haystack)
-
-    ilb = min(1, n)
-    if (n <= 1) return
+    if (n <= 1) then
+        ilb = -1
+        return
+    end if
 
     ilb = 1
     iub = n
@@ -68,9 +69,10 @@ pure subroutine __APPEND(bsearch_cached,__PREC) (needle, haystack, ilb, cache)
     integer :: iub, imid, n, i
 
     n = size(haystack)
-
-    ilb = min(1, n)
-    if (n <= 1) goto 100
+    if (n <= 1) then
+        ilb = -1
+        return
+    end if
 
     if (present(cache)) then
         i = cache%i
@@ -108,52 +110,30 @@ end subroutine
 
 
 pure function __APPEND(interp_find,__PREC) (needle, haystack) result (res)
+    !*  INTERP_FIND is a wrapper around BSEARCH that exists only for
+    !   backwards compatibility.
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:) :: haystack
     real (PREC), intent(in) :: needle
 
-    integer :: res, n
+    integer :: res
 
-    n = size(haystack)
-
-    if (n < 2) then
-        res = -1
-    else if (needle <= haystack(1)) then
-        res = 1
-    else if (needle >= haystack(n-1)) then
-        res = n-1
-    else
-        res = bsearch (needle, haystack)
-    end if
+    res = bsearch (needle, haystack)
 
 end function
 
 
 
 pure subroutine __APPEND(interp_find_cached,__PREC) (needle, haystack, ilb, cache)
+    !*  INTERP_FIND_CACHED is a wrapper around BSEARCH that exists only for
+    !   backwards compatibility.
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: needle
     real (PREC), intent(in), dimension(:) :: haystack
     integer, intent(out) :: ilb
     type (search_cache), intent(inout), optional :: cache
 
-    integer :: n
-
-    n = size(haystack)
-
-    if (n < 2) then
-        ilb = -1
-    else if (needle <= haystack(1)) then
-        ilb = 1
-    else if (needle >= haystack(n-1)) then
-        ilb = n-1
-    else
-        call bsearch_cached (needle, haystack, ilb, cache)
-        ! Cache is updated in BSEARCH_CACHED, we can skip it here
-        return
-    end if
-
-    if (present(cache)) cache%i = ilb
+    call bsearch_cached (needle, haystack, ilb, cache)
 
 end subroutine
 
