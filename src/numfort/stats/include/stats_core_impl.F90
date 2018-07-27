@@ -442,26 +442,14 @@ pure subroutine __APPEND(percentile_pmf_check_input,__PREC) (x, pmf, q, pctl, &
     character (*), intent(in), optional :: interp
     type (status_t), intent(out) :: status
 
-    character (10) :: linterp
-
+    integer (NF_ENUM_KIND) :: imode
     status = NF_STATUS_INVALID_ARG
-    linterp = ""
 
     if (present(interp)) then
-        linterp = interp
-        call lower (linterp)
-        select case (linterp)
-        case ("linear")
-            continue
-        case ("lower")
-            continue
-        case ("higher")
-            continue
-        case ("midpoint")
-            continue
-        case default
-            goto 100
-        end select
+        ! The following routine returns 0 if INTERP does not match any of the
+        ! acceptable values
+        imode = percentile_interp_to_enum (interp)
+        if (imode == 0) goto 100
     end if
 
     if ((size(x) - 1) /= size(pmf)) goto 100
@@ -501,7 +489,6 @@ pure subroutine __APPEND(percentile_pmf,__PREC) (x, pmf, q, pctl, interp, status
         !*  Optional status code
 
     type (status_t) :: lstatus
-    character (10) :: linterp
     integer (NF_ENUM_KIND) :: imode
     integer :: n, npctl, i, imax, ncdf, ilb
     real (PREC), dimension(:), allocatable :: cdf
@@ -513,14 +500,11 @@ pure subroutine __APPEND(percentile_pmf,__PREC) (x, pmf, q, pctl, interp, status
     call percentile_pmf_check_input (x, pmf, q, pctl, interp, lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
-    linterp = "linear"
-    if (present(interp)) then
-        linterp = interp
-        call lower (linterp)
-    end if
-
     ! Convert to numeric interpolation enum
-    imode = percentile_interp_to_enum (linterp)
+    imode = NF_STATS_PERCENTILE_LINEAR
+    if (present(interp)) then
+        imode = percentile_interp_to_enum (interp)
+    end if
 
     n = size(pmf)
     npctl = size(q)
@@ -543,10 +527,10 @@ pure subroutine __APPEND(percentile_pmf,__PREC) (x, pmf, q, pctl, interp, status
     imax = imax + 1
 
     select case (imode)
-    case (NF_PERCENTILE_LINEAR)
+    case (NF_STATS_PERCENTILE_LINEAR)
         call interp_linear (q, cdf(1:imax), x(1:imax), pctl, &
             ext=NF_INTERP_EVAL_BOUNDARY)
-    case (NF_PERCENTILE_NEAREST)
+    case (NF_STATS_PERCENTILE_NEAREST)
         do i = 1, npctl
             call interp_find_cached (q(i), cdf(1:imax), ilb, wgt, cache)
             if (wgt >= 0.50_PREC) then
@@ -558,11 +542,11 @@ pure subroutine __APPEND(percentile_pmf,__PREC) (x, pmf, q, pctl, interp, status
     case default
         ! Determine weight on lower bound
         select case (imode)
-        case (NF_PERCENTILE_LOWER)
+        case (NF_STATS_PERCENTILE_LOWER)
             wgt = 1.0_PREC
-        case (NF_PERCENTILE_HIGHER)
+        case (NF_STATS_PERCENTILE_HIGHER)
             wgt = 0.0_PREC
-        case (NF_PERCENTILE_MIDPOINT)
+        case (NF_STATS_PERCENTILE_MIDPOINT)
             wgt = 0.5_PREC
         end select
 

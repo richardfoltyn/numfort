@@ -23,11 +23,11 @@ module numfort_stats_core
 #include <numfort_real64.h>
 #include "stats_core_spec.F90"
 
-    integer (NF_ENUM_KIND), parameter :: NF_PERCENTILE_LINEAR = 1
-    integer (NF_ENUM_KIND), parameter :: NF_PERCENTILE_LOWER = 2
-    integer (NF_ENUM_KIND), parameter :: NF_PERCENTILE_HIGHER = 4
-    integer (NF_ENUM_KIND), parameter :: NF_PERCENTILE_NEAREST = 8
-    integer (NF_ENUM_KIND), parameter :: NF_PERCENTILE_MIDPOINT = 16
+    integer (NF_ENUM_KIND), parameter :: NF_STATS_PERCENTILE_LINEAR = 1
+    integer (NF_ENUM_KIND), parameter :: NF_STATS_PERCENTILE_LOWER = 2
+    integer (NF_ENUM_KIND), parameter :: NF_STATS_PERCENTILE_HIGHER = 4
+    integer (NF_ENUM_KIND), parameter :: NF_STATS_PERCENTILE_NEAREST = 8
+    integer (NF_ENUM_KIND), parameter :: NF_STATS_PERCENTILE_MIDPOINT = 16
 
     contains
 
@@ -71,17 +71,22 @@ pure function percentile_interp_to_enum (interp) result(res)
     character (*), intent(in) :: interp
     integer (NF_ENUM_KIND) :: res
 
-    select case (interp)
+    character (10) :: linterp
+
+    linterp = interp
+    call lower (linterp)
+
+    select case (linterp)
     case ("linear")
-        res = NF_PERCENTILE_LINEAR
+        res = NF_STATS_PERCENTILE_LINEAR
     case ("lower")
-        res = NF_PERCENTILE_LOWER
+        res = NF_STATS_PERCENTILE_LOWER
     case ("higher")
-        res = NF_PERCENTILE_HIGHER
+        res = NF_STATS_PERCENTILE_HIGHER
     case ("nearest")
-        res = NF_PERCENTILE_NEAREST
+        res = NF_STATS_PERCENTILE_NEAREST
     case ("midpoint")
-        res = NF_PERCENTILE_MIDPOINT
+        res = NF_STATS_PERCENTILE_MIDPOINT
     case default
         res = 0
     end select
