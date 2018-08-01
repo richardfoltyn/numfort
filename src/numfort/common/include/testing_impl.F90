@@ -115,3 +115,27 @@ pure function __APPEND(all_close_2d,__PREC) (actual, desired, rtol, atol) result
     deallocate (work)
 
 end function
+
+
+pure function __APPEND(all_close_3d,__PREC) (actual, desired, rtol, atol) result(res)
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in), dimension(:,:,:) :: actual
+    real (PREC), intent(in), dimension(:,:,:) :: desired
+    real (PREC), intent(in), optional :: rtol, atol
+    logical :: res
+
+    logical, dimension(:,:,:), allocatable :: work
+
+    if (.not. shape_equal (actual, desired)) then
+        res = .false.
+        return
+    end if
+
+    allocate (work(size(actual,1), size(actual,2), size(actual,3)))
+
+    work(:,:,:) = is_close (actual, desired, rtol, atol)
+    res = all(work)
+
+    deallocate (work)
+
+end function
