@@ -2,8 +2,7 @@
 
 
 program test_io_fixed
-    !*  Unit tests for Piecewise Cubic Hermite Interpolating Polynomials
-    !   module.
+    !*  Unit tests for routines performing fixed-format text I/O.
 
     use, intrinsic :: iso_fortran_env
 
@@ -57,7 +56,7 @@ subroutine test_fixed (tests)
 
     call set_seed (1234)
 
-    ! Test with 1d- arrays
+    ! === Test with 1d- arrays ===
     m = 50
     allocate (dat1d_in(m), dat1d_out(m))
 
@@ -73,8 +72,7 @@ subroutine test_fixed (tests)
         all_close (dat1d_out, dat1d_in, atol=1.0d-3), &
         "Reading 1d data in flat form, reshaping via FMT")
 
-    ! Test with 2d-arrays
-
+    ! === Test with 2d-arrays ===
     n = 10
     m = 11
     allocate (dat2d_out(m,n), dat2d_in(m,n))
@@ -131,8 +129,7 @@ subroutine test_fixed (tests)
         all_close (dat2d_out, dat2d_in, atol=1.0d-5), &
         "Reading written file in flat form, reshaping via FMT")
 
-
-    ! Test with 3d array
+    ! === Test with 3d array ===
     m = 5
     n = 4
     k = 2
@@ -151,7 +148,6 @@ subroutine test_fixed (tests)
     call tc%assert_true (status == NF_STATUS_OK .and. &
         all_close (dat3d_out, dat3d_in, atol=1.0d-7), &
         "Reading 3d data in flat form, reshaping via FMT")
-
 
 end subroutine
 
