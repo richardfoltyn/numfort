@@ -47,6 +47,7 @@ list(APPEND COMPONENTS
     core
     integrate
     interpolate
+    io
     optimize
     polynomial
     stats
