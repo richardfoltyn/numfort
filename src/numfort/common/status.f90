@@ -27,6 +27,7 @@ module numfort_common_status
     integer (NF_ENUM_KIND), public, parameter :: NF_STATUS_OTHER = ishft(1, 19)
     integer (NF_ENUM_KIND), public, parameter :: NF_STATUS_APPROX = ishft(1, 20)
     integer (NF_ENUM_KIND), public, parameter :: NF_STATUS_NOT_IMPLEMENTED = ishft(1, 21)
+    integer (NF_ENUM_KIND), public, parameter :: NF_STATUS_IO_ERROR = ishft(1, 22)
 
     integer, public, parameter :: NF_MAX_STATUS_CODES = bit_size (NF_STATUS_OK)
 

@@ -60,6 +60,7 @@ set(COMPONENTS
     arrays
     interpolate
     integrate
+    io
     linalg
     optimize
     polynomial
