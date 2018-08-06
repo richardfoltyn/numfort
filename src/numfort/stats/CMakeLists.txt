@@ -22,6 +22,6 @@ include_directories(
 )
 
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
-add_dependencies(${COMPONENT_NAME} arrays common core linalg)
+add_dependencies(${COMPONENT_NAME} arrays common core linalg interpolate)
 # external libraries
 add_dependencies(${COMPONENT_NAME} cdflib90 random sobol_direction_num)
