@@ -12,10 +12,10 @@ subroutine __APPEND(root_broyden_check_input,__PREC) (maxiter, maxfev, &
 
     status = NF_STATUS_OK
 
-    call check_positive (0, maxiter, "maxiter", status, msg)
+    call check_nonneg (0, maxiter, "maxiter", status, msg)
     if (status /= NF_STATUS_OK) goto 100
 
-    call check_positive (0, maxfev, "maxfev", status, msg)
+    call check_nonneg (0, maxfev, "maxfev", status, msg)
     if (status /= NF_STATUS_OK) goto 100
 
     call check_positive (0.0_PREC, tol, "tol", status, msg)
@@ -532,7 +532,13 @@ recursive subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
 100 continue
 
     if (present(res)) then
-        call result_update (ptr_res, x, fxlast, status, nit=k, nfev=fcn%nfev)
+        if (associated(fxlast)) then
+            call result_update (ptr_res, x, fxlast, status, nit=k, nfev=fcn%nfev)
+        else
+            ! FXLAST may not be associated if routine exists prematurely
+            ! due to errors
+            call result_update (ptr_res, x, status=status, nit=k, nfev=fcn%nfev)
+        end if
     end if
 
     ! Clean up local WORKSPACE object if none was passed by client code
