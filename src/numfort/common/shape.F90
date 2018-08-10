@@ -141,6 +141,17 @@ module numfort_common_shape
             has_shape_6d_real64
     end interface
 
+    ! 7d-array routines
+    interface has_shape
+        procedure &
+            has_shape_7d_logical, &
+            has_shape_7d_int8, &
+            has_shape_7d_int32, &
+            has_shape_7d_int64, &
+            has_shape_7d_real32, &
+            has_shape_7d_real64
+    end interface
+
     contains
 
 !-------------------------------------------------------------------------------
@@ -926,6 +937,64 @@ pure function has_shape_6d_logical (arr, shp) result(res)
     integer, parameter :: NDIM = 6
 #include "has_shape_impl.f90"
 end function
+
+
+!-------------------------------------------------------------------------------
+! HAS_SHAPE for 7d-arrays
+
+pure function has_shape_7d_real32 (arr, shp) result(res)
+    !*  HAS_SHAPE verifies that an array argument has a given shape.
+    integer, parameter :: PREC = real32
+    real (PREC), intent(in), dimension(:,:,:,:,:,:,:) :: arr
+        !*  Input array to check
+    integer, parameter :: NDIM = 7
+#include "has_shape_impl.f90"
+end function
+
+pure function has_shape_7d_real64 (arr, shp) result(res)
+    !*  HAS_SHAPE verifies that an array argument has a given shape.
+    integer, parameter :: PREC = real64
+    real (PREC), intent(in), dimension(:,:,:,:,:,:,:) :: arr
+        !*  Input array to check
+    integer, parameter :: NDIM = 7
+#include "has_shape_impl.f90"
+end function
+
+pure function has_shape_7d_int8 (arr, shp) result(res)
+    !*  HAS_SHAPE verifies that an array argument has a given shape.
+    integer, parameter :: INTSIZE = int8
+    integer (INTSIZE), intent(in), dimension(:,:,:,:,:,:,:) :: arr
+        !*  Input array to check
+    integer, parameter :: NDIM = 7
+#include "has_shape_impl.f90"
+end function
+
+pure function has_shape_7d_int32 (arr, shp) result(res)
+    !*  HAS_SHAPE verifies that an array argument has a given shape.
+    integer, parameter :: INTSIZE = int32
+    integer (INTSIZE), intent(in), dimension(:,:,:,:,:,:,:) :: arr
+        !*  Input array to check
+    integer, parameter :: NDIM = 7
+#include "has_shape_impl.f90"
+end function
+
+pure function has_shape_7d_int64 (arr, shp) result(res)
+    !*  HAS_SHAPE verifies that an array argument has a given shape.
+    integer, parameter :: INTSIZE = int64
+    integer (INTSIZE), intent(in), dimension(:,:,:,:,:,:,:) :: arr
+        !*  Input array to check
+    integer, parameter :: NDIM = 7
+#include "has_shape_impl.f90"
+end function
+
+pure function has_shape_7d_logical (arr, shp) result(res)
+    !*  HAS_SHAPE verifies that an array argument has a given shape.
+    logical, intent(in), dimension(:,:,:,:,:,:,:) :: arr
+        !*  Input array to check
+    integer, parameter :: NDIM = 7
+#include "has_shape_impl.f90"
+end function
+
 
 
 end module
