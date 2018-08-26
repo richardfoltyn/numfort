@@ -3,7 +3,7 @@ C   Important Notice:
 C   This UPDATE are provided in the software NEWUOA, authored by M. J. D. Powell.
 C
       SUBROUTINE UPDATE (N,NPT,BMAT,ZMAT,IDZ,NDIM,VLAG,BETA,KNEW,W)
-      IMPLICIT double precision (A-H,O-Z)
+      IMPLICIT REAL (PREC) (A-H,O-Z)
       DIMENSION BMAT(NDIM,*),ZMAT(NPT,*),VLAG(*),W(*)
 C
 C     The arrays BMAT and ZMAT with IDZ are updated, in order to shift the
@@ -14,8 +14,6 @@ C     The vector W is used for working space.
 C
 C     Set some constants.
 C
-      ONE=1.0D0
-      ZERO=0.0D0
       NPTM=NPT-N-1
 C
 C     Apply the rotations that put zeros in the KNEW-th row of ZMAT.
@@ -25,7 +23,7 @@ C
       IF (J .EQ. IDZ) THEN
           JL=IDZ
       ELSE IF (ZMAT(KNEW,J) .NE. ZERO) THEN
-          TEMP=DSQRT(ZMAT(KNEW,JL)**2+ZMAT(KNEW,J)**2)
+          TEMP=SQRT(ZMAT(KNEW,JL)**2+ZMAT(KNEW,J)**2)
           TEMPA=ZMAT(KNEW,JL)/TEMP
           TEMPB=ZMAT(KNEW,J)/TEMP
           DO 10 I=1,NPT
@@ -59,7 +57,7 @@ C
       IFLAG=0
       IF (JL .EQ. 1) THEN
           TEMP=ALPHA/DENOM
-          TEMPA=DSQRT(DABS(TEMP))
+          TEMPA=SQRT(ABS(TEMP))
           TEMPB=TEMPA*TAU/ALPHA
           DO 40 I=1,NPT
    40     ZMAT(I,1)=TEMPA*VLAG(I)-TEMPB*W(I)
@@ -76,8 +74,8 @@ C
           TEMPA=TEMP*BETA
           TEMPB=TEMP*TAU
           TEMP=ZMAT(KNEW,JA)
-          SCALA=ONE/DSQRT(DABS(BETA)*TEMP*TEMP+TAUSQ)
-          SCALB=SCALA*DSQRT(DABS(DENOM))
+          SCALA=ONE/SQRT(ABS(BETA)*TEMP*TEMP+TAUSQ)
+          SCALB=SCALA*SQRT(ABS(DENOM))
           DO 50 I=1,NPT
           ZMAT(I,JA)=SCALA*(TAU*ZMAT(I,JA)-TEMP*VLAG(I))
    50     ZMAT(I,JB)=SCALB*(ZMAT(I,JB)-TEMPA*W(I)-TEMPB*VLAG(I))

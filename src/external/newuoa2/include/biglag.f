@@ -5,7 +5,7 @@ C   This GIGLAG are provided in the software NEWUOA, authored by M. J. D. Powell
 C
       SUBROUTINE BIGLAG (N,NPT,XOPT,XPT,BMAT,ZMAT,IDZ,NDIM,KOPT,
      1  KNEW,DELTA,D,ALPHA,GW,HCOL,W)
-      IMPLICIT double precision (A-H,O-Z)
+      IMPLICIT REAL (PREC) (A-H,O-Z)
       DIMENSION XOPT(*),XPT(NPT,*),BMAT(NDIM,*),ZMAT(NPT,*),D(*),
      1  GW(*),HCOL(*),W(*)
 C
@@ -29,10 +29,6 @@ C     the KNEW-th Lagrange function.
 C
 C     Set some constants.
 C
-      HALF=0.5D0
-      ONE=1.0D0
-      ZERO=0.0D0
-      TWOPI=8.0D0*DATAN(ONE)
       DSQ=DELTA*DELTA
       NPTM=NPT-N-1
 C
@@ -76,20 +72,20 @@ C
       DD=DD+D(I)**2
       DGW=DGW+D(I)*GW(I)
    60 GWSQ=GWSQ+GW(I)**2
-      SCALE=DELTA/DSQRT(DD)
+      SCALE=DELTA/SQRT(DD)
       IF (DGW*DGD .LT. ZERO) SCALE=-SCALE
       DO 70 I=1,N
    70 D(I)=SCALE*D(I)
       DGW=SCALE*DGW
       DENOM=DSQ*GWSQ-DGW*DGW
-      IF (DENOM .LE. 0.01D0*DSQ*GWSQ) GOTO 150
+      IF (DENOM .LE. 0.01_PREC*DSQ*GWSQ) GOTO 150
       VLNEW=DGW+HALF*SCALE*SCALE*DGD
-      IF (DSQ*GWSQ .LT. 0.01D0*VLNEW*VLNEW) GOTO 150
+      IF (DSQ*GWSQ .LT. 0.01_PREC*VLNEW*VLNEW) GOTO 150
 C
 C     Begin the iteration by making GW orthogonal to D and of length DELTA.
 C
    80 ITERC=ITERC+1
-      DENOM=DSQRT(DENOM)
+      DENOM=SQRT(DENOM)
       DO 90 I=1,N
    90 GW(I)=(DSQ*GW(I)-DGW*D(I))/DENOM
 C
@@ -127,13 +123,13 @@ C
       TAUOLD=TAUBEG
       ISAVE=0
       IU=49
-      TEMP=TWOPI/DFLOAT(IU+1)
+      TEMP=TWOPI/REAL(IU+1, PREC)
       DO 130 I=1,IU
-      ANGLE=DFLOAT(I)*TEMP
-      CTH=DCOS(ANGLE)
-      STH=DSIN(ANGLE)
+      ANGLE=REAL(I, PREC)*TEMP
+      CTH=COS(ANGLE)
+      STH=SIN(ANGLE)
       TAU=CF1+(CF2+CF4*CTH)*CTH+(CF3+CF5*CTH)*STH
-      IF (DABS(TAU) .GT. DABS(TAUMAX)) THEN
+      IF (ABS(TAU) .GT. ABS(TAUMAX)) THEN
           TAUMAX=TAU
           ISAVE=I
           TEMPA=TAUOLD
@@ -149,18 +145,18 @@ C
           TEMPB=TEMPB-TAUMAX
           STEP=HALF*(TEMPA-TEMPB)/(TEMPA+TEMPB)
       END IF
-      ANGLE=TEMP*(DFLOAT(ISAVE)+STEP)
+      ANGLE=TEMP*(REAL(ISAVE, PREC)+STEP)
 C
 C     Calculate the new D and test for convergence.
 C
-      CTH=DCOS(ANGLE)
-      STH=DSIN(ANGLE)
+      CTH=COS(ANGLE)
+      STH=SIN(ANGLE)
       TAU=CF1+(CF2+CF4*CTH)*CTH+(CF3+CF5*CTH)*STH
       DO 140 I=1,N
   140 D(I)=CTH*D(I)+STH*GW(I)
       IF (ITERC .GE. N) GOTO 200
       IF (ITERC .EQ. 1) TAUBEG=ZERO
-      IF (DABS(TAU) .LE. 1.1D0*DABS(TAUBEG)) GOTO 200
+      IF (ABS(TAU) .LE. 1.1_PREC*ABS(TAUBEG)) GOTO 200
 C
 C     Set GW to the gradient of LFUNC at the new displacement D from XOPT.
 C     Then branch for the next iteration unless GW and D are nearly parallel.

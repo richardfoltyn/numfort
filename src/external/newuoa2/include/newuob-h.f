@@ -2,20 +2,36 @@ C
 C   Important Notice:
 C   This NEWUOB_H are modifications and based on the subroutine NEWUOB in the software NEWUOA, authored by M. J. D. Powell.
 C 
-      SUBROUTINE NEWUOB_H(N,NPT,X,RHOBEG,RHOEND,IPRINT,MAXFUN,XBASE,
-     1  XOPT,XNEW,XPT,GQ,HQ,PQ,BMAT,ZMAT,NDIM,D,VLAG,W,mv)
-      IMPLICIT double precision (A-H,O-Z)
-      DIMENSION X(*),XBASE(*),XOPT(*),XNEW(*),XPT(NPT,*),GQ(*),
-     1  HQ(*),PQ(*),BMAT(NDIM,*),ZMAT(NPT,*),D(*),VLAG(*),W(*)
- 
-      integer nmax, mmax, nptmax
-      parameter (nmax = 100, mmax=400, nptmax=2*nmax+1)
-      dimension GQV(mmax,nmax),HQV(mmax,(nmax+1)*nmax/2),
-     &          PQV(mmax,nptmax),
-     &          WV(mmax,nmax), 
-     &          v_err(mmax), v_beg(mmax), v_temp(mmax),
-     &          DIFFV(mmax), v_opt(mmax), v_vquad(mmax),
-     &          v_base(mmax), HD1(nmax), GQV_opt(mmax,nmax)
+      SUBROUTINE NEWUOB_H(FCN,N,NPT,X,RHOBEG,RHOEND,IPRINT,MAXFUN,
+     1  XBASE,XOPT,XNEW,XPT,GQ,HQ,PQ,BMAT,ZMAT,NDIM,D,VLAG,W,mv)
+      IMPLICIT REAL (PREC) (A-H,O-Z)
+      PROCEDURE (fobj_if) :: FCN
+      INTEGER, INTENT(IN) :: N
+      INTEGER, INTENT(IN) :: NPT
+      REAL (PREC), INTENT(OUT), DIMENSION(*) :: X
+      REAL (PREC), INTENT(IN) :: RHOBEG, RHOEND
+      INTEGER, INTENT(IN) :: IPRINT
+      INTEGER, INTENT(IN) :: MAXFUN
+      REAL (PREC), INTENT(OUT), DIMENSION(*) :: XBASE
+      REAL (PREC), INTENT(OUT), DIMENSION(*) :: XOPT
+      REAL (PREC), INTENT(OUT), DIMENSION(*) :: XNEW
+      REAL (PREC), INTENT(OUT), DIMENSION(NPT,*) :: XPT
+      REAL (PREC), INTENT(OUT), DIMENSION(*) :: GQ
+      REAL (PREC), INTENT(OUT), DIMENSION(*) :: HQ
+      REAL (PREC), INTENT(OUT), DIMENSION(*) :: PQ
+      REAL (PREC), INTENT(OUT), DIMENSION(NDIM,*) :: BMAT
+      REAL (PREC), INTENT(OUT), DIMENSION(NPT,*) :: ZMAT
+      INTEGER, INTENT(IN) :: NDIM
+      REAL (PREC), INTENT(OUT), DIMENSION(*) :: D
+      REAL (PREC), INTENT(OUT), DIMENSION(*) :: VLAG
+      REAL (PREC), INTENT(OUT), DIMENSION(*) :: W
+      INTEGER, INTENT(IN) :: MV
+
+      REAL (PREC), DIMENSION(:,:), ALLOCATABLE :: GQV, HQV, PQV,
+     &      WV, GQV_OPT
+      REAL (PREC), DIMENSION(:), ALLOCATABLE :: V_ERR, V_BEG,
+     &      V_TEMP, DIFFV, V_OPT, V_VQUAD, V_BASE, HD1
+
       logical model_update, opt_update, debug
 
       if (n.gt.nmax) then
@@ -27,7 +43,15 @@ C
         print *, "in newuob_h.f increase the dimension 
      &            mmax to be at least", mv
         stop
-      endif   
+      endif
+
+      ALLOCATE (GQV(MMAX,NMAX))
+      ALLOCATE (HQV(MMAX,(NMAX+1)*NMAX/2))
+      ALLOCATE (PQV(MMAX,NPTMAX))
+      ALLOCATE (WV(MMAX,NMAX))
+      ALLOCATE (V_ERR(MMAX),V_BEG(MMAX),V_TEMP(MMAX))
+      ALLOCATE (DIFFV(MMAX),V_OPT(MMAX),V_VQUAD(MMAX))
+      ALLOCATE (V_BASE(MMAX),HD1(NMAX),GQV_OPT(MMAX,NMAX))
 
       debug = .false.
 C
@@ -35,10 +59,6 @@ C     Set some constants.
 C
       model_update = .true.
       opt_update = .true.
-      HALF=0.5D0
-      ONE=1.0D0
-      TENTH=0.1D0
-      ZERO=0.0D0
       NP=N+1
       NPTM=NPT-NP
       NFTEST=MAX0(MAXFUN,1)
@@ -69,7 +89,7 @@ C     next initial interpolation point from XBASE are set in XPT(NF,.).
 C
       RHOSQ=RHOBEG*RHOBEG
       RECIP=ONE/RHOSQ
-      RECIQ=DSQRT(HALF)/RHOSQ
+      RECIQ=SQRT(HALF)/RHOSQ
       NF=0
    50 NFM=NF
       NFMM=NF-N
@@ -162,18 +182,18 @@ C
       DSQ=ZERO
       DO 110 I=1,N
   110 DSQ=DSQ+D(I)**2
-      DNORM=DMIN1(DELTA,DSQRT(DSQ))
+      DNORM=MIN(DELTA,SQRT(DSQ))
       if (debug) then
-       print *, " After TRSAPP: ||d||=",dsqrt(dsq)," vquad1=",vquad1
+       print *, " After TRSAPP: ||d||=",sqrt(dsq)," vquad1=",vquad1
       endif
   111 IF (DNORM .LT. HALF*RHO) THEN
           KNEW=-1
           DELTA=TENTH*DELTA
-          RATIO=-1.0D0
-          IF (DELTA .LE. 1.5D0*RHO) DELTA=RHO   
+          RATIO=-1.0_PREC
+          IF (DELTA .LE. 1.5_PREC*RHO) DELTA=RHO
           IF (NF .LE. NFSAV+2) GOTO 460
-          TEMP=0.125D0*CRVMIN*RHO*RHO
-          IF (TEMP .LE. DMAX1(DIFFA,DIFFB,DIFFC)) GOTO 460
+          TEMP=0.125_PREC*CRVMIN*RHO*RHO
+          IF (TEMP .LE. MAX(DIFFA,DIFFB,DIFFC)) GOTO 460
           GOTO 490
       END IF
 C
@@ -184,7 +204,7 @@ C
       IF (DSQ .LE. 1.0D-1*XOPTSQ) THEN
           if (debug) print *, " Xbase move"
           model_update = .true.
-          TEMPQ=0.25D0*XOPTSQ
+          TEMPQ=0.25_PREC*XOPTSQ
           DO 140 K=1,NPT
           SUM=ZERO
           DO 130 I=1,N
@@ -319,7 +339,7 @@ C     working space.
 C
       IF (KNEW .GT. 0) THEN
           TEMP=ONE+ALPHA*BETA/VLAG(KNEW)**2
-          IF (DABS(TEMP) .LE. 0.8D0) THEN
+          IF (ABS(TEMP) .LE. 0.8_PREC) THEN
               CALL BIGDEN (N,NPT,XOPT,XPT,BMAT,ZMAT,IDZ,NDIM,KOPT,
      1          KNEW,DSTEP,D,VLAG,BETA,XNEW,W,W(5*NDIM+1),W)
           END IF
@@ -339,9 +359,9 @@ C
           GOTO 530
       END IF
 C
-C     dfovec(n, mv, x, v_err) provides the values of the vector function v_err(x): R^n \to R^{mv}.
+C     fcn(n, mv, x, v_err) provides the values of the vector function v_err(x): R^n \to R^{mv}.
 C     Here: n, mv, x \in R^n are input, v_err \in R^{mv} are output.
-      call dfovec(n, mv, x, v_err)
+      CALL fcn (n, mv, x, v_err)
 C
 C     f_value(mv,v_err,F) provides the value of the sum of the squres of the components of v_err(x)
 C     i.e. F = sum_{i=1}^{mv} v_err_i (x)^2
@@ -414,7 +434,7 @@ C
       DIFF = F-FOPT-VQUAD1     
       DIFFC=DIFFB
       DIFFB=DIFFA
-      DIFFA=DABS(DIFF)
+      DIFFA=ABS(DIFF)
       IF (DNORM .GT. RHO) NFSAV=NF
 C
 C     Update FOPT and XOPT if the new F is the least value of the objective
@@ -449,16 +469,16 @@ C
       endif
       IF (RATIO .LE. TENTH) THEN
           DELTA=HALF*DNORM
-      ELSE IF (RATIO. LE. 0.7D0) THEN
-          DELTA=DMAX1(HALF*DELTA,DNORM)
+      ELSE IF (RATIO .LE. 0.7_PREC) THEN
+          DELTA=MAX(HALF*DELTA,DNORM)
       ELSE
-          DELTA=DMIN1(DMAX1(2.d0*DELTA,4.d0*DNORM),1.d10)
+          DELTA=MIN(MAX(2.0_PREC*DELTA,4.0_PREC*DNORM),1.0e10_PREC)
       END IF
-      IF (DELTA .LE. 1.5D0*RHO) DELTA=RHO
+      IF (DELTA .LE. 1.5_PREC*RHO) DELTA=RHO
 C
 C     Set KNEW to the index of the next interpolation point to be deleted.
 C
-      RHOSQ=DMAX1(TENTH*DELTA,RHO)**2
+      RHOSQ=MAX(TENTH*DELTA,RHO)**2
       KTEMP=0
       DETRAT=ZERO
       IF (F .GE. FSAVE) THEN
@@ -471,7 +491,7 @@ C
       TEMP=ONE
       IF (J .LT. IDZ) TEMP=-ONE
   380 HDIAG=HDIAG+TEMP*ZMAT(K,J)**2
-      TEMP=DABS(BETA*HDIAG+VLAG(K)**2)
+      TEMP=ABS(BETA*HDIAG+VLAG(K)**2)
       DISTSQ=ZERO
       DO 390 J=1,N
   390 DISTSQ=DISTSQ+(XPT(K,J)-XOPT(J))**2
@@ -536,7 +556,7 @@ C     Alternatively, find out if the interpolation points are close enough
 C     to the best point so far.
 C
       KNEW=0
-  460 DISTSQ=4.0D0*DELTA*DELTA
+  460 DISTSQ=4.0_PREC*DELTA*DELTA
       DO 480 K=1,NPT
       SUM=ZERO
       DO 470 J=1,N
@@ -551,7 +571,7 @@ C     If KNEW is positive, then set DSTEP, and branch back for the next
 C     iteration, which will generate a "model step".
 C
       IF (KNEW .GT. 0) THEN
-          DSTEP=DMAX1(DMIN1(TENTH*DSQRT(DISTSQ),HALF*DELTA),RHO)
+          DSTEP=MAX(MIN(TENTH*SQRT(DISTSQ),HALF*DELTA),RHO)
           DSQ=DSTEP*DSTEP
           GOTO 120
       END IF
@@ -559,8 +579,8 @@ C
 c
 c Knew =-1, indicating \|d\| \le 1/2 rho
 c
-      IF (DMAX1(DELTA,DNORM) .GT. RHO) THEN
-           IF (KNEW.eq.-1.d0.and.delta.gt.dnorm) then
+      IF (MAX(DELTA,DNORM) .GT. RHO) THEN
+           IF (KNEW.eq.-1.0_PREC.and.delta.gt.dnorm) then
               KNEW = 0
               go to 111
            Endif 
@@ -573,14 +593,14 @@ C
   490 IF (RHO .GT. RHOEND) THEN
           DELTA=HALF*RHO
           RATIO=RHO/RHOEND
-          IF (RATIO .LE. 16.0D0) THEN
+          IF (RATIO .LE. 16.0_PREC) THEN
               RHO=RHOEND
-          ELSE IF (RATIO .LE. 250.0D0) THEN
-              RHO=DSQRT(RATIO)*RHOEND
+          ELSE IF (RATIO .LE. 250.0_PREC) THEN
+              RHO=SQRT(RATIO)*RHOEND
           ELSE
               RHO=TENTH*RHO
           END IF
-          DELTA=DMAX1(DELTA,RHO)       
+          DELTA=MAX(DELTA,RHO)
           IF (IPRINT .GE. 2) THEN
               IF (IPRINT .GE. 3) PRINT 500
   500         FORMAT (5X)
@@ -591,7 +611,7 @@ C
   520         FORMAT (4X,'Least value of F =',1PD23.15,9X,
      1          'The corresponding X is:'/(2X,5D15.6))
           END IF
-          IF (KNEW.eq.-1.d0.and.delta.gt.dnorm) then
+          IF (KNEW.eq.-1.0_PREC.and.delta.gt.dnorm) then
               NFSAV=NF
               KNEW = 0
               go to 111
@@ -620,10 +640,10 @@ C
 
       subroutine f_value(mv,v_err,F)
       integer mv
-      double precision v_err(*), F
+      real (PREC) v_err(*), F
       integer m1
 
-      F=0.d0
+      F=0.0_PREC
       do 5 m1=1,mv
     5 F = F + v_err(m1)**2
 

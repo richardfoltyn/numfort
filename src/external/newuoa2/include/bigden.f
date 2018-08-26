@@ -4,7 +4,7 @@ C   This BIGDEN are provided in the software NEWUOA, authored by M. J. D. Powell
 C
       SUBROUTINE BIGDEN (N,NPT,XOPT,XPT,BMAT,ZMAT,IDZ,NDIM,KOPT,
      1  KNEW,DELTA,D,VLAG,BETA,GW,W,WVEC,PROD)
-      IMPLICIT double precision (A-H,O-Z)
+      IMPLICIT REAL (PREC) (A-H,O-Z)
       DIMENSION XOPT(*),XPT(NPT,*),BMAT(NDIM,*),ZMAT(NPT,*),D(*),
      1  VLAG(*),GW(*),W(*),WVEC(NDIM,*),PROD(NDIM,*)
       DIMENSION DEN(9),DENEX(9),WW(9)
@@ -33,12 +33,6 @@ C     shifted to the new position XOPT+D.
 C
 C     Set some constants.
 C
-      HALF=0.5D0
-      ONE=1.0D0
-      QUART=0.25D0
-      TWO=2.0D0
-      ZERO=0.0D0
-      TWOPI=8.0D0*DATAN(ONE)
       NPTM=NPT-N-1
       DSQ=DELTA*DELTA
 C
@@ -99,8 +93,8 @@ C
       DO 100 I=1,N
       GW(I)=DD*GW(I)-DG*D(I)
   100 GG=GG+GW(I)**2
-      TEMPD=DELTA/DSQRT(DD)
-      TEMPG=DELTA/DSQRT(GG)
+      TEMPD=DELTA/SQRT(DD)
+      TEMPG=DELTA/SQRT(GG)
       XOPTD=ZERO
       XOPTG=ZERO
       DO 110 I=1,N
@@ -229,12 +223,12 @@ C
       DENMAX=SUM
       ISAVE=0
       IU=49
-      TEMP=TWOPI/DFLOAT(IU+1)
+      TEMP=TWOPI/REAL(IU+1, PREC)
       WW(1)=ONE
       DO 280 I=1,IU
-      ANGLE=DFLOAT(I)*TEMP
-      WW(2)=DCOS(ANGLE)
-      WW(3)=DSIN(ANGLE)
+      ANGLE=REAL(I, PREC)*TEMP
+      WW(2)=COS(ANGLE)
+      WW(3)=SIN(ANGLE)
       DO 260 J=4,8,2
       WW(J)=WW(2)*WW(J-2)-WW(3)*WW(J-1)
   260 WW(J+1)=WW(2)*WW(J-1)+WW(3)*WW(J-2)
@@ -242,7 +236,7 @@ C
       SUM=ZERO
       DO 270 J=1,9
   270 SUM=SUM+DENEX(J)*WW(J)
-      IF (DABS(SUM) .GT. DABS(DENMAX)) THEN
+      IF (ABS(SUM) .GT. ABS(DENMAX)) THEN
           DENMAX=SUM
           ISAVE=I
           TEMPA=SUMOLD
@@ -258,12 +252,12 @@ C
           TEMPB=TEMPB-DENMAX
           STEP=HALF*(TEMPA-TEMPB)/(TEMPA+TEMPB)
       END IF
-      ANGLE=TEMP*(DFLOAT(ISAVE)+STEP)
+      ANGLE=TEMP*(REAL(ISAVE, PREC)+STEP)
 C
 C     Calculate the new D and test for convergence.
 C
-      WW(2)=DCOS(ANGLE)
-      WW(3)=DSIN(ANGLE)
+      WW(2)=COS(ANGLE)
+      WW(3)=SIN(ANGLE)
       DO 290 I=1,N
   290 D(I)=WW(2)*D(I)+WW(3)*GW(I)
       DO 300 J=4,8,2
@@ -278,7 +272,7 @@ C
   310 IF (J .LE. 5) TAU=TAU+PROD(KNEW,J)*WW(J)
       IF (ITERC .GE. N) GOTO 390
       IF (ITERC .EQ. 1) DENOLD=ZERO
-      IF (DABS(DENMAX) .LE. 1.2D0*DABS(DENOLD)) GOTO 390
+      IF (ABS(DENMAX) .LE. 1.2_PREC*ABS(DENOLD)) GOTO 390
 C
 C     Set G to half the gradient of DENOM with respect to D. Then branch
 C     for the next iteration.

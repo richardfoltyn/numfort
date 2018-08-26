@@ -5,17 +5,14 @@ C
       SUBROUTINE TRSAPP_H(N,NPT,XOPT,XPT,GQ,HQ,PQ,DELTA,STEP,
      1  D,G,HD,HS,CRVMIN,GQV,HQV,PQV,XBASE,vquad,
      1  GQV_opt,v_opt,v_base,XOPTSQ,mv,model_update,opt_update)
-      IMPLICIT double precision (A-H,O-Z)
-      parameter (nmax = 100, mmax=400)
+      IMPLICIT REAL (PREC) (A-H,O-Z)
       DIMENSION XOPT(*),XPT(NPT,*),GQ(*),HQ(*),PQ(*),STEP(*),
      1  D(*),G(*),HD(*),HS(*),GQV(mmax,*),HQV(mmax,*),PQV(mmax,*),
      1  XBASE(*),v_opt(*),GQV_opt(mmax,*),v_base(*)
       logical model_update, opt_update, zero_res, debug
-      double precision v_gtemp(mmax), gbeg(nmax), gtemp(nmax)  
+      REAL (PREC) v_gtemp(mmax), gbeg(nmax), gtemp(nmax)
 
       debug = .false.
-      HALF=0.5D0
-      ZERO=0.0D0
 
       if (n.gt.nmax) then
         print *, "in trsapp_h.f increase the dimension 
@@ -33,7 +30,7 @@ C
        opt_update = .false.
 
 
-      if (dsqrt(XOPTSQ).gt.0.25d0*delta) then
+      if (SQRT(XOPTSQ).gt.0.25_PREC*delta) then
 c
 c Use the gradient at xopt to formulate J^t J
 c
@@ -76,7 +73,7 @@ c Calculate the explicite Hessian.
 c
        f_opt = zero
        call f_value(mv,v_opt,f_opt)
-       if (gnorm2.ge.1.d0.or.f_opt.le.dsqrt(gnorm2)) then
+       if (gnorm2.ge.1.0_PREC.or.f_opt.le.SQRT(gnorm2)) then
          zero_res = .true.
        else
          zero_res = .false.
@@ -91,7 +88,7 @@ c
              do m1=1,mv  
                t1 = t1+GQV_opt(m1,i)*GQV_opt(m1,j)
              enddo
-             HQ(IH) = 2.d0*t1
+             HQ(IH) = 2.0_PREC*t1
            else
              t1 = zero
              do m1=1,mv
@@ -102,7 +99,7 @@ c
                t2 = t2 + HQV(m1,IH)
                t1 = t1+(GQV_opt(m1,i)*GQV_opt(m1,j)+v_opt(m1)*t2) 
              enddo
-             HQ(IH) = 2.d0*t1
+             HQ(IH) = 2.0_PREC*t1
            endif
          enddo
        enddo
@@ -125,7 +122,7 @@ c Calculate the explicite Hessian.
 c
        f_base = zero
        call f_value(mv,v_base,f_base)
-       if (gnorm2.ge.1.d0.or.f_base.le.dsqrt(gnorm2)) then
+       if (gnorm2.ge.1.0_PREC.or.f_base.le.SQRT(gnorm2)) then
          zero_res = .true.
        else
          zero_res = .false.
@@ -140,7 +137,7 @@ c
              do m1=1,mv           
                t1 = t1+GQV(m1,i)*GQV(m1,j)
              enddo
-             HQ(IH) = 2.d0*t1
+             HQ(IH) = 2.0_PREC*t1
            else           
              t1 = zero
              do m1=1,mv
@@ -151,7 +148,7 @@ c
                t2 = t2 + HQV(m1,IH)
                t1 = t1+(GQV(m1,i)*GQV(m1,j)+v_base(m1)*t2) 
              enddo
-             HQ(IH) = 2.d0*t1
+             HQ(IH) = 2.0_PREC*t1
            endif
          enddo
        enddo
@@ -167,10 +164,7 @@ c calculte the gradient at xopt
 
       endif
 
-    8 HALF=0.5D0
-      ZERO=0.0D0
-      TWOPI=8.0D0*DATAN(1.0D0)
-      DELSQ=DELTA*DELTA
+    8 DELSQ=DELTA*DELTA
       ITERC=0
       ITERMAX=N
       ITERSW=ITERMAX
@@ -179,13 +173,13 @@ c calculte the gradient at xopt
         do i=1,n
           t = t + xopt(i)**2
         enddo
-        print *, " ||xopt||=",dsqrt(t)
+        print *, " ||xopt||=",SQRT(t)
       endif
       gnorm2 = zero
       DO 10 I=1,N
       gnorm2 = gnorm2 + GQ(i)**2
    10 D(I)=zero 
-      gnorm2 = dsqrt(gnorm2)  
+      gnorm2 = SQRT(gnorm2)
       if (debug) print *, " gnorm2=", gnorm2 
       GOTO 170
 C
@@ -213,8 +207,8 @@ C     Calculate the step to the trust region boundary and the product HD.
 C
    40 ITERC=ITERC+1
       TEMP=DELSQ-SS
-      BSTEP=TEMP/(DS+DSQRT(DS*DS+DD*TEMP))
-c      BSTEP=(-DS+DSQRT(DS*DS+DD*TEMP))/DD
+      BSTEP=TEMP/(DS+SQRT(DS*DS+DD*TEMP))
+c      BSTEP=(-DS+SQRT(DS*DS+DD*TEMP))/DD
       if (debug) print *, " BSTEP=", BSTEP
       GOTO 170
    50 DHD=ZERO
@@ -231,8 +225,8 @@ C
       IF (DHD .GT. ZERO) THEN
           TEMP=DHD/DD
           IF (ITERC .EQ. 1) CRVMIN=TEMP
-          CRVMIN=DMIN1(CRVMIN,TEMP)
-          ALPHA=DMIN1(ALPHA,GG/DHD)
+          CRVMIN=MIN(CRVMIN,TEMP)
+          ALPHA=MIN(ALPHA,GG/DHD)
       END IF
       QADD=ALPHA*(GG-HALF*ALPHA*DHD)
       QRED=QRED+QADD
@@ -280,14 +274,14 @@ C
       SG=SG+STEP(I)*G(I)
   100 SHS=SHS+STEP(I)*HS(I)
       SGK=SG+SHS
-      ANGTEST=SGK/DSQRT(GG*DELSQ)
-      IF (ANGTEST .LE. -0.99D0) GOTO 160
+      ANGTEST=SGK/SQRT(GG*DELSQ)
+      IF (ANGTEST .LE. -0.99_PREC) GOTO 160
 C
 C     Begin the alternative iteration by calculating D and HD and some
 C     scalar products.
 C
       ITERC=ITERC+1
-      TEMP=DSQRT(DELSQ*GG-SGK*SGK)
+      TEMP=SQRT(DELSQ*GG-SGK*SGK)
       TEMPA=DELSQ/TEMP
       TEMPB=SGK/TEMP
       DO 110 I=1,N
@@ -309,11 +303,11 @@ C
       QMIN=QBEG
       ISAVE=0
       IU=49
-      TEMP=TWOPI/DFLOAT(IU+1)
+      TEMP=TWOPI/REAL(IU+1, PREC)
       DO 140 I=1,IU
-      ANGLE=DFLOAT(I)*TEMP
-      CTH=DCOS(ANGLE)
-      STH=DSIN(ANGLE)
+      ANGLE=REAL(I, PREC)*TEMP
+      CTH=COS(ANGLE)
+      STH=SIN(ANGLE)
       QNEW=(SG+CF*CTH)*CTH+(DG+DHS*CTH)*STH
       IF (QNEW .LT. QMIN) THEN
           QMIN=QNEW
@@ -331,12 +325,12 @@ C
           TEMPB=TEMPB-QMIN
           ANGLE=HALF*(TEMPA-TEMPB)/(TEMPA+TEMPB)
       END IF
-      ANGLE=TEMP*(DFLOAT(ISAVE)+ANGLE)
+      ANGLE=TEMP*(REAL(ISAVE, PREC)+ANGLE)
 C
 C     Calculate the new STEP and HS. Then test for convergence.
 C
-      CTH=DCOS(ANGLE)
-      STH=DSIN(ANGLE)
+      CTH=COS(ANGLE)
+      STH=SIN(ANGLE)
       REDUC=QBEG-(SG+CF*CTH)*CTH-(DG+DHS*CTH)*STH
       GG=ZERO
       DO 150 I=1,N
@@ -345,7 +339,7 @@ C
   150 GG=GG+(G(I)+HS(I))**2
       QRED=QRED+REDUC
       RATIO=REDUC/QRED
-      IF (ITERC .LT. ITERMAX .AND. RATIO .GT. 0.01D0) GOTO 90
+      IF (ITERC .LT. ITERMAX .AND. RATIO .GT. 0.01_PREC) GOTO 90
   160 continue
       do 161 i=1,n
          HD(i) = zero
@@ -369,8 +363,8 @@ c     &        + XOPT(i)*HD(i)
          do i=1,n
            t = t + step(i)**2
          enddo
-         print *, " vquad=", vquad, " Stepsize=",dsqrt(t)
-         if (dsqrt(t).ge.half*DELTA) stop
+         print *, " vquad=", vquad, " Stepsize=",SQRT(t)
+         if (SQRT(t).ge.half*DELTA) stop
       endif
       RETURN
 C
@@ -397,11 +391,11 @@ C
 
       subroutine f_grad(mv,v_base,v_gtemp)  
       integer mv
-      double precision v_base(*), v_gtemp(*)
+      REAL (PREC) v_base(*), v_gtemp(*)
       integer m1
 
       do 10 m1=1,mv
-         v_gtemp(m1)=2.d0*v_base(m1)
+         v_gtemp(m1)=2.0_PREC*v_base(m1)
    10 continue  
 
       return

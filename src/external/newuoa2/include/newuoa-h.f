@@ -29,9 +29,17 @@ C      |Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, |
 C      |MA  02110-1301  USA                                             |
 C      -----------------------------------------------------------------|
 
-      SUBROUTINE NEWUOA_H(N,NPT,X,RHOBEG,RHOEND,IPRINT,MAXFUN,W,mv)
-      IMPLICIT double precision (A-H,O-Z)
-      DIMENSION X(*),W(*)
+      SUBROUTINE NEWUOA_H(FCN,N,NPT,X,RHOBEG,RHOEND,IPRINT,MAXFUN,W,mv)
+      IMPLICIT NONE
+      PROCEDURE (fobj_if) :: FCN
+      INTEGER, INTENT(IN) :: N
+      INTEGER, INTENT(IN) :: NPT
+      REAL (PREC), INTENT(OUT), DIMENSION(*) :: X
+      REAL (PREC), INTENT(IN) :: RHOBEG, RHOEND
+      INTEGER, INTENT(IN) :: IPRINT
+      INTEGER, INTENT(IN) :: MAXFUN
+      REAL (PREC), INTENT(OUT), DIMENSION(*) :: W
+      INTEGER, INTENT(IN) :: MV
 C
 C     N must be set to the number of variables and must be at least two.
 C     mv must be set to the lengh of the vector function v_err(x):  R^n \to R^{mv}. 
@@ -72,6 +80,10 @@ C
 C     SUBROUTINE dfovec(n, mv, x, v_err) must be provided by the user. It must provide
 C     the values of the vector function v_err(x) : R^n to R^{mv} at the variables X(1),X(2),...,X(N).
 C
+
+      INTEGER :: NP, NPTM, NDIM
+      INTEGER :: IXB, IXO, IXN, IXP, IGQ, IHQ, IPQ
+      INTEGER :: IBMAT, IZMAT, ID, IVL, IW
       NP=N+1
       NPTM=NPT-NP
       IF (NPT .LT. N+2 .OR. NPT .GT. 2*N+1) THEN
@@ -92,11 +104,11 @@ C
       IZMAT=IBMAT+NDIM*N
       ID=IZMAT+NPT*NPTM
       IVL=ID+N
-      IW=IVL+NDIM
+
 C
 C     The above settings provide a partition of W for subroutine NEWUOB_H.
 C
-      CALL NEWUOB_H (N,NPT,X,RHOBEG,RHOEND,IPRINT,MAXFUN,W(IXB),
+      CALL NEWUOB_H (FCN, N,NPT,X,RHOBEG,RHOEND,IPRINT,MAXFUN,W(IXB),
      1  W(IXO),W(IXN),W(IXP),W(IGQ),W(IHQ),W(IPQ),W(IBMAT),W(IZMAT),
      2  NDIM,W(ID),W(IVL),W(IW),mv)
    20 RETURN
