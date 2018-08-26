@@ -2,28 +2,47 @@ C
 C   Important Notice:
 C   This TRSAPP_H are modifications and based on the subroutine TRSAPP in the software NEWUOA, authored by M. J. D. Powell.
 C
-      SUBROUTINE TRSAPP_H(N,NPT,XOPT,XPT,GQ,HQ,PQ,DELTA,STEP,
-     1  D,G,HD,HS,CRVMIN,GQV,HQV,PQV,XBASE,vquad,
-     1  GQV_opt,v_opt,v_base,XOPTSQ,mv,model_update,opt_update)
+      SUBROUTINE TRSAPP_H (N,MV,NPT,XOPT,XPT,GQ,HQ,PQ,DELTA,STEP,
+     1  W,CRVMIN,GQV,HQV,PQV,XBASE,vquad,
+     1  GQV_opt,v_opt,v_base,XOPTSQ,model_update,opt_update)
       IMPLICIT REAL (PREC) (A-H,O-Z)
-      DIMENSION XOPT(*),XPT(NPT,*),GQ(*),HQ(*),PQ(*),STEP(*),
-     1  D(*),G(*),HD(*),HS(*),GQV(mmax,*),HQV(mmax,*),PQV(mmax,*),
-     1  XBASE(*),v_opt(*),GQV_opt(mmax,*),v_base(*)
-      logical model_update, opt_update, zero_res, debug
-      REAL (PREC) v_gtemp(mmax), gbeg(nmax), gtemp(nmax)
+      INTEGER, INTENT(IN) :: N
+      INTEGER, INTENT(IN) :: MV
+      INTEGER, INTENT(IN) :: NPT
+      REAL (PREC), INTENT(IN), DIMENSION(:), CONTIGUOUS :: XOPT
+      REAL (PREC), INTENT(IN), DIMENSION(:,:), CONTIGUOUS :: XPT
+      REAL (PREC), INTENT(INOUT), DIMENSION(:), CONTIGUOUS :: GQ
+      REAL (PREC), INTENT(INOUT), DIMENSION(:), CONTIGUOUS :: HQ
+      REAL (PREC), INTENT(INOUT), DIMENSION(:), CONTIGUOUS :: PQ
+      REAL (PREC), INTENT(IN) :: DELTA
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: STEP
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS, TARGET :: W
+      REAL (PREC), INTENT(INOUT) :: CRVMIN
+      REAL (PREC), INTENT(INOUT), DIMENSION(:,:), CONTIGUOUS :: GQV
+      REAL (PREC), INTENT(INOUT), DIMENSION(:,:), CONTIGUOUS :: HQV
+      REAL (PREC), INTENT(INOUT), DIMENSION(:,:), CONTIGUOUS :: PQV
+      REAL (PREC), INTENT(INOUT), DIMENSION(:), CONTIGUOUS :: XBASE
+      REAL (PREC), INTENT(INOUT) :: VQUAD
+      REAL (PREC), INTENT(INOUT), DIMENSION(:,:), CONTIGUOUS :: GQV_OPT
+      REAL (PREC), INTENT(INOUT), DIMENSION(:), CONTIGUOUS :: V_OPT
+      REAL (PREC), INTENT(INOUT), DIMENSION(:), CONTIGUOUS :: V_BASE
+      REAL (PREC), INTENT(IN) :: XOPTSQ
+      LOGICAL, INTENT(INOUT) :: model_update, opt_update
+
+      logical zero_res, debug
+      REAL (PREC) v_gtemp(MV), gbeg(N), gtemp(N)
+
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: D
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: G
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: HS
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: HD
+
+      D => W(1:N)
+      G => W(N+1:N+N)
+      HD => W(2*N+1:2*N+N)
+      HS => W(3*N+1:3*N+N)
 
       debug = .false.
-
-      if (n.gt.nmax) then
-        print *, "in trsapp_h.f increase the dimension 
-     &            nmax to be at least", n
-        stop
-      endif
-      if (mv.gt.mmax) then
-        print *, "in trsapp_h.f increase the dimension 
-     &            mmax to be at least", mv
-        stop
-      endif 
 
       if ((.not.model_update).and.(.not.opt_update)) go to 8
        model_update = .false.

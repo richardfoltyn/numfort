@@ -4,7 +4,16 @@ C   This UPDATE are provided in the software NEWUOA, authored by M. J. D. Powell
 C
       SUBROUTINE UPDATE (N,NPT,BMAT,ZMAT,IDZ,NDIM,VLAG,BETA,KNEW,W)
       IMPLICIT REAL (PREC) (A-H,O-Z)
-      DIMENSION BMAT(NDIM,*),ZMAT(NPT,*),VLAG(*),W(*)
+      INTEGER, INTENT(IN) :: N
+      INTEGER, INTENT(IN) :: NPT
+      REAL (PREC), INTENT(OUT), DIMENSION(:,:), CONTIGUOUS :: BMAT
+      REAL (PREC), INTENT(OUT), DIMENSION(:,:), CONTIGUOUS :: ZMAT
+      INTEGER, INTENT(OUT) :: IDZ
+      INTEGER, INTENT(IN) :: NDIM
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: VLAG
+      REAL (PREC), INTENT(IN) :: BETA
+      INTEGER, INTENT(IN) :: KNEW
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: W
 C
 C     The arrays BMAT and ZMAT with IDZ are updated, in order to shift the
 C     interpolation point that has index KNEW. On entry, VLAG contains the

@@ -4,11 +4,25 @@ C   Important Notice:
 C   This GIGLAG are provided in the software NEWUOA, authored by M. J. D. Powell.
 C
       SUBROUTINE BIGLAG (N,NPT,XOPT,XPT,BMAT,ZMAT,IDZ,NDIM,KOPT,
-     1  KNEW,DELTA,D,ALPHA,GW,HCOL,W)
+     &  KNEW,DELTA,D,ALPHA,GW,HCOL,W)
       IMPLICIT REAL (PREC) (A-H,O-Z)
-      DIMENSION XOPT(*),XPT(NPT,*),BMAT(NDIM,*),ZMAT(NPT,*),D(*),
-     1  GW(*),HCOL(*),W(*)
-C
+      INTEGER, INTENT(IN) :: N
+      INTEGER, INTENT(IN) :: NPT
+      REAL (PREC), INTENT(IN), DIMENSION(:), CONTIGUOUS :: XOPT
+      REAL (PREC), INTENT(IN), DIMENSION(:,:), CONTIGUOUS :: XPT
+      REAL (PREC), INTENT(IN), DIMENSION(:,:), CONTIGUOUS :: BMAT
+      REAL (PREC), INTENT(IN), DIMENSION(:,:), CONTIGUOUS :: ZMAT
+      INTEGER, INTENT(IN) :: IDZ
+      INTEGER, INTENT(IN) :: NDIM
+      INTEGER, INTENT(IN) :: KOPT
+      INTEGER, INTENT(IN) :: KNEW
+      REAL (PREC), INTENT(IN) :: DELTA
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: D
+      REAL (PREC), INTENT(OUT) :: ALPHA
+      REAL (PREC), INTENT(INOUT), DIMENSION(:), CONTIGUOUS :: GW
+      REAL (PREC), INTENT(INOUT), DIMENSION(:), CONTIGUOUS :: HCOL
+      REAL (PREC), INTENT(INOUT), DIMENSION(:), CONTIGUOUS :: W
+
 C     N is the number of variables.
 C     NPT is the number of interpolation equations.
 C     XOPT is the best interpolation point so far.

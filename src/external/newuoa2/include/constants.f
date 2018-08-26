@@ -7,6 +7,3 @@
       real (PREC), parameter :: TWO     = 2.0_PREC
       real (PREC), parameter :: TWOPI   = 8.0_PREC * ATAN(1.0_PREC)
 
-      integer, parameter :: NMAX = 100
-      integer, parameter :: MMAX = 400
-      integer, parameter :: NPTMAX = 2 * NMAX + 1

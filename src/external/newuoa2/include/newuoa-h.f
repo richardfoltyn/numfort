@@ -29,24 +29,23 @@ C      |Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, |
 C      |MA  02110-1301  USA                                             |
 C      -----------------------------------------------------------------|
 
-      SUBROUTINE NEWUOA_H(FCN,N,NPT,X,RHOBEG,RHOEND,IPRINT,MAXFUN,W,mv)
+      SUBROUTINE NEWUOA_H(FCN,N,MV,NPT,X,RHOBEG,RHOEND,IPRINT,MAXFUN,
+     &  NF,W)
       IMPLICIT NONE
       PROCEDURE (fobj_if) :: FCN
       INTEGER, INTENT(IN) :: N
+      INTEGER, INTENT(IN) :: MV
       INTEGER, INTENT(IN) :: NPT
-      REAL (PREC), INTENT(OUT), DIMENSION(*) :: X
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: X
       REAL (PREC), INTENT(IN) :: RHOBEG, RHOEND
       INTEGER, INTENT(IN) :: IPRINT
       INTEGER, INTENT(IN) :: MAXFUN
-      REAL (PREC), INTENT(OUT), DIMENSION(*) :: W
-      INTEGER, INTENT(IN) :: MV
+      INTEGER, INTENT(OUT) :: NF
+c       Contains the number of function evaluations on exit
+      REAL (PREC), INTENT(OUT), DIMENSION(:), TARGET, CONTIGUOUS :: W
 C
 C     N must be set to the number of variables and must be at least two.
 C     mv must be set to the lengh of the vector function v_err(x):  R^n \to R^{mv}. 
-C     The maximum number variables in this codes: nmax =  100
-C     The maximum lengh of the vector function v_err(x): mmax = 400
-C     If n > 100 or m > 400, the parameter nmax and mmax need to be creased in
-C     subroutine  NEWUOB_H and TRSAPP_H
 C
 C     NPT is the number of interpolation conditions. Its value must be in the
 C     interval [N+2,2N+1].  Recommended: NPT = 2*N+1
@@ -75,7 +74,7 @@ C               MAXFUN= infinity, to let the algorithm explore the lowest functi
 C                       as much as it could.
 C
 C     The array W will be used for working space. Its length must be at least
-C     (NPT+11)*(NPT+N)+N*(3*N+11)/2 
+C     (NPT+11)*(NPT+N)+N*(3*N+11)/2 + 3*MV*N + MV*(N+1)*N/2 + MV*NPT + 7*MV + N
 C
 C     SUBROUTINE dfovec(n, mv, x, v_err) must be provided by the user. It must provide
 C     the values of the vector function v_err(x) : R^n to R^{mv} at the variables X(1),X(2),...,X(N).
@@ -84,6 +83,36 @@ C
       INTEGER :: NP, NPTM, NDIM
       INTEGER :: IXB, IXO, IXN, IXP, IGQ, IHQ, IPQ
       INTEGER :: IBMAT, IZMAT, ID, IVL, IW
+      INTEGER :: IGQV, IHQV, IPQV, IWV, IVERR, IVBEG, IVTEMP, IDIFFV
+      INTEGER :: IVBASE, IVOPT, IVQUAD, IHD1, IGQVOPT
+
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: XBASE
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: XOPT
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: XNEW
+
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: GQ, HQ, PQ
+      REAL (PREC), DIMENSION(:,:), POINTER, CONTIGUOUS :: XPT
+      REAL (PREC), DIMENSION(:,:), POINTER, CONTIGUOUS :: BMAT
+      REAL (PREC), DIMENSION(:,:), POINTER, CONTIGUOUS :: ZMAT
+
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: D
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: VLAG
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: V_ERR
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: V_BEG
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: V_TEMP
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: DIFFV
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: V_OPT
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: V_VQUAD
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: V_BASE
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: HD1
+      REAL (PREC), DIMENSION(:,:), POINTER, CONTIGUOUS :: GQV
+      REAL (PREC), DIMENSION(:,:), POINTER, CONTIGUOUS :: HQV
+      REAL (PREC), DIMENSION(:,:), POINTER, CONTIGUOUS :: PQV
+      REAL (PREC), DIMENSION(:,:), POINTER, CONTIGUOUS :: WV
+      REAL (PREC), DIMENSION(:,:), POINTER, CONTIGUOUS :: GQV_OPT
+
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: W_REST
+
       NP=N+1
       NPTM=NPT-NP
       IF (NPT .LT. N+2 .OR. NPT .GT. 2*N+1) THEN
@@ -93,6 +122,7 @@ C
           GO TO 20
       END IF
       NDIM=NPT+N
+
       IXB=1
       IXO=IXB+N
       IXN=IXO+N
@@ -105,12 +135,55 @@ C
       ID=IZMAT+NPT*NPTM
       IVL=ID+N
 
+      IGQV=IVL+NDIM
+      IHQV=IGQV + MV*N
+      IPQV=IHQV + MV*(N+1)*N/2
+      IWV=IPQV + MV*NPT
+      IVERR=IWV + MV*N
+      IVBEG=IVERR + MV
+      IVTEMP=IVBEG + MV
+      IDIFFV=IVTEMP + MV
+      IVOPT=IDIFFV + MV
+      IVQUAD=IVOPT + MV
+      IVBASE=IVQUAD + MV
+      IHD1=IVBASE + MV
+      IGQVOPT=IHD1 + N
+      IW=IGQVOPT + MV*N
+
+      XBASE => W(IXB:IXB+N-1)
+      XOPT => W(IXO:IXO+N-1)
+      XNEW => W(IXN:IXN+N-1)
+      XPT(1:NPT,1:N) => W(IXP:IXP+N*NPT-1)
+      GQ => W(IGQ:IGQ+N-1)
+      HQ => W(IHQ:IHQ+N*(N+1)/2-1)
+      PQ => W(IPQ:IPQ+NPT-1)
+      BMAT(1:NDIM,1:N) => W(IBMAT:IBMAT+(NDIM*N)-1)
+      ZMAT(1:NPT,1:NPTM) => W(IZMAT:IZMAT+(NPT*NPTM)-1)
+      D => W(ID:ID+N-1)
+      VLAG => W(IVL:IVL+NDIM-1)
+
+      GQV(1:MV,1:N) => W(IGQV:IGQV+(MV*N)-1)
+      HQV(1:MV,1:(N+1)*N/2) => W(IHQV:IHQV+MV*(N+1)*N/2-1)
+      PQV(1:MV,1:NPT) => W(IPQV:IPQV+(MV*NPT)-1)
+      WV(1:MV,1:N) => W(IWV:IWV+(MV*N)-1)
+      GQV_OPT(1:MV,1:N) => W(IGQVOPT:IGQVOPT+(MV*N)-1)
+      V_ERR => W(IVERR:IVERR+MV-1)
+      V_BEG => W(IVBEG:IVBEG+MV-1)
+      V_TEMP => W(IVTEMP:IVTEMP+MV-1)
+      DIFFV => W(IDIFFV:IDIFFV+MV-1)
+      V_OPT => W(IVOPT:IVOPT+MV-1)
+      V_VQUAD => W(IVQUAD:IVQUAD+MV-1)
+      V_BASE => W(IVBASE:IVBASE+MV-1)
+      HD1 => W(IHD1:IHD1+N-1)
+      W_REST => W(IW:)
+
 C
 C     The above settings provide a partition of W for subroutine NEWUOB_H.
 C
-      CALL NEWUOB_H (FCN, N,NPT,X,RHOBEG,RHOEND,IPRINT,MAXFUN,W(IXB),
-     1  W(IXO),W(IXN),W(IXP),W(IGQ),W(IHQ),W(IPQ),W(IBMAT),W(IZMAT),
-     2  NDIM,W(ID),W(IVL),W(IW),mv)
+      CALL NEWUOB_H (FCN,N,MV,NPT,X,RHOBEG,RHOEND,IPRINT,MAXFUN,
+     &  XBASE,XOPT,XNEW,XPT,GQ,HQ,PQ,BMAT,ZMAT,
+     &  NDIM,D,VLAG,GQV,HQV,PQV,WV,V_ERR,V_BEG,V_TEMP,DIFFV,
+     &  V_OPT,V_VQUAD,V_BASE,HD1,GQV_OPT,W_REST,NF)
    20 RETURN
       END
 

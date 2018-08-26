@@ -12,10 +12,13 @@ c
 
       integer, parameter :: PREC = real64
 
-      integer nmax, nptmax, nspace
-      parameter (nmax=100,nptmax=2*nmax+1,
-     &     nspace=(nptmax+11)*(nptmax+nmax)+nmax*(3*nmax+11)/2)
-      real (PREC) w(nspace)
+      integer, parameter :: NMAX = 100
+      integer, parameter :: NPTMAX = 2 * NMAX + 1
+      integer, parameter :: MMAX = 400
+      integer, parameter :: NSPACE = (nptmax+11)*(nptmax+nmax)
+     &  + nmax*(3*nmax+11)/2 + MMAX*NMAX + MMAX*(NMAX+1)*NMAX/2
+     &  + MMAX*NPTMAX * 8 * MMAX + NMAX + MMAX*NMAX
+      real (PREC), dimension(:), allocatable ::  w
       integer version  
 C
 C     THE ARGUMENT N DENOTES THE NUMBER OF UNKNOWNS 
@@ -23,16 +26,11 @@ C     THE ARGUMENT X HAS THE STARTING GUESS FOR THE UNKNOWNS
 C
 C     SET THINGS UP AND CALL NEWOA() FUNCTION
 C
-      INTEGER N, IPRINT, MAXFUN, NPT, MV, nprob, xs, i
-      real (PREC) :: X(nmax), e_noise, factor
+      INTEGER N, IPRINT, MAXFUN, NFEV, NPT, MV, nprob, xs, i
+      real (PREC) :: X(nmax), factor
       real (PREC) :: RHOBEG, RHOEND
-      common /test/ nprob, mv
-      common /noise/e_noise
-      integer nread, nwrite
-      parameter (nread = 1, nwrite = 2 )
+      integer :: nread
 
-      integer mmax
-      parameter (mmax = 400 )
       real (PREC) :: v_err(mmax), f, f1
 c
       IPRINT = 2
@@ -45,13 +43,10 @@ c  version = 1, Original Mjdp
 c  version = 2, Modified Mjdp
 c
       version = 2
-c
-c  noise level
-c
-      e_noise = 0.d-3
 
-      open (nread,file='dfo.dat',status='old')
-      open (nwrite,file='dfo.info')
+      open (newunit=nread,file='dfo.dat',status='old')
+
+      allocate (w(NSPACE))
  
       do while (1 .eq. 1) 
 c
@@ -64,8 +59,7 @@ c      print *,  nprob, n, mv, xs
 
       if (nprob.eq.0) then
          close(nread)
-         close(nwrite)
-         return
+         goto 100
       endif
 C Set Maxfun = 100(n+1) 
 C i.e. the solver can use at most 200 (simplex) gradients
@@ -106,13 +100,14 @@ c          print *, "Have to use use original Mjdp. Set version=1."
 c          stop
 c        endif
 
-        CALL newuoa2 (FOBJ, N,NPT,X,RHOBEG,RHOEND,IPRINT,MAXFUN,W,MV)
+        CALL newuoa2 (FOBJ,N,MV,NPT,X,RHOBEG,RHOEND,IPRINT,MAXFUN,
+     &    NFEV,W)
 
       endif
 C
 C Calculate the final function value again 
 C
-        call fobj (n, mv, x, v_err)
+        call fobj (x(1:n), v_err(1:mv))
         f = 0.d0
         do i=1,mv
           f = f + v_err(i)**2
@@ -121,17 +116,21 @@ C
  
       enddo
 
+100   continue
+
       contains
 
-      subroutine fobj (n, m, x, fx)
+      subroutine fobj (x, fx)
 c       Objective functionw wrapper: selects the appropriate objective to be
 c       called based on value of NPROB.
-        integer, intent(in) :: n, m
-        real (PREC), intent(in), dimension(*) :: x
-        real (PREC), intent(out), dimension(*) :: fx
+        real (PREC), intent(in), dimension(:), contiguous :: x
+        real (PREC), intent(out), dimension(:), contiguous :: fx
 
+        integer :: m, n
 c       Note: value of NPROB is taken from outer scope
 c       Note: DFOVEC function flips the order of N, M, expects X(N), FX(M)
+        m = size(fx)
+        n = size(x)
         call dfovec (m, n, x, fx, nprob)
 
       end subroutine

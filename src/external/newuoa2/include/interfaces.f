@@ -1,9 +1,7 @@
       abstract interface
-        subroutine fobj_if (n, m, x, fx)
+        subroutine fobj_if (x, fx)
             import PREC
-            integer, intent(in) :: n
-            integer, intent(in) :: m
-            real (PREC), intent(in), dimension(*) :: x
-            real (PREC), intent(out), dimension(*) :: fx
+            real (PREC), intent(in), dimension(:), contiguous :: x
+            real (PREC), intent(out), dimension(:), contiguous :: fx
         end subroutine
       end interface

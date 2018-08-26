@@ -2,56 +2,59 @@ C
 C   Important Notice:
 C   This NEWUOB_H are modifications and based on the subroutine NEWUOB in the software NEWUOA, authored by M. J. D. Powell.
 C 
-      SUBROUTINE NEWUOB_H(FCN,N,NPT,X,RHOBEG,RHOEND,IPRINT,MAXFUN,
-     1  XBASE,XOPT,XNEW,XPT,GQ,HQ,PQ,BMAT,ZMAT,NDIM,D,VLAG,W,mv)
+      SUBROUTINE NEWUOB_H(FCN,N,MV,NPT,X,RHOBEG,RHOEND,IPRINT,MAXFUN,
+     &  XBASE,XOPT,XNEW,XPT,GQ,HQ,PQ,BMAT,ZMAT,NDIM,D,VLAG,
+     &  GQV,HQV,PQV,WV,V_ERR,V_BEG,V_TEMP,DIFFV,V_OPT,V_VQUAD,
+     &  V_BASE,HD1,GQV_OPT,W,NF)
       IMPLICIT REAL (PREC) (A-H,O-Z)
       PROCEDURE (fobj_if) :: FCN
       INTEGER, INTENT(IN) :: N
+      INTEGER, INTENT(IN) :: MV
       INTEGER, INTENT(IN) :: NPT
-      REAL (PREC), INTENT(OUT), DIMENSION(*) :: X
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: X
       REAL (PREC), INTENT(IN) :: RHOBEG, RHOEND
       INTEGER, INTENT(IN) :: IPRINT
       INTEGER, INTENT(IN) :: MAXFUN
-      REAL (PREC), INTENT(OUT), DIMENSION(*) :: XBASE
-      REAL (PREC), INTENT(OUT), DIMENSION(*) :: XOPT
-      REAL (PREC), INTENT(OUT), DIMENSION(*) :: XNEW
-      REAL (PREC), INTENT(OUT), DIMENSION(NPT,*) :: XPT
-      REAL (PREC), INTENT(OUT), DIMENSION(*) :: GQ
-      REAL (PREC), INTENT(OUT), DIMENSION(*) :: HQ
-      REAL (PREC), INTENT(OUT), DIMENSION(*) :: PQ
-      REAL (PREC), INTENT(OUT), DIMENSION(NDIM,*) :: BMAT
-      REAL (PREC), INTENT(OUT), DIMENSION(NPT,*) :: ZMAT
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: XBASE
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: XOPT
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: XNEW
+      REAL (PREC), INTENT(OUT), DIMENSION(:,:), CONTIGUOUS :: XPT
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: GQ
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: HQ
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: PQ
+      REAL (PREC), INTENT(OUT), DIMENSION(:,:), CONTIGUOUS :: BMAT
+      REAL (PREC), INTENT(OUT), DIMENSION(:,:), CONTIGUOUS :: ZMAT
       INTEGER, INTENT(IN) :: NDIM
-      REAL (PREC), INTENT(OUT), DIMENSION(*) :: D
-      REAL (PREC), INTENT(OUT), DIMENSION(*) :: VLAG
-      REAL (PREC), INTENT(OUT), DIMENSION(*) :: W
-      INTEGER, INTENT(IN) :: MV
-
-      REAL (PREC), DIMENSION(:,:), ALLOCATABLE :: GQV, HQV, PQV,
-     &      WV, GQV_OPT
-      REAL (PREC), DIMENSION(:), ALLOCATABLE :: V_ERR, V_BEG,
-     &      V_TEMP, DIFFV, V_OPT, V_VQUAD, V_BASE, HD1
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: D
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: VLAG
+      REAL (PREC), INTENT(OUT), DIMENSION(:,:), CONTIGUOUS :: GQV
+      REAL (PREC), INTENT(OUT), DIMENSION(:,:), CONTIGUOUS :: HQV
+      REAL (PREC), INTENT(OUT), DIMENSION(:,:), CONTIGUOUS :: PQV
+      REAL (PREC), INTENT(OUT), DIMENSION(:,:), CONTIGUOUS :: WV
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: V_ERR
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: V_BEG
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: V_TEMP
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: DIFFV
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: V_OPT
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: V_VQUAD
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: V_BASE
+      REAL (PREC), INTENT(OUT), DIMENSION(:), CONTIGUOUS :: HD1
+      REAL (PREC), INTENT(OUT), DIMENSION(:,:), CONTIGUOUS :: GQV_OPT
+      REAL (PREC), INTENT(OUT), DIMENSION(:), TARGET, CONTIGUOUS :: W
+      INTEGER, INTENT(OUT) :: NF
+c       Contains number of function evaluations on exit
 
       logical model_update, opt_update, debug
 
-      if (n.gt.nmax) then
-        print *, "in newuob_h.f increase the dimension 
-     &            nmax to be at least", n
-        stop
-      endif
-      if (mv.gt.mmax) then
-        print *, "in newuob_h.f increase the dimension 
-     &            mmax to be at least", mv
-        stop
-      endif
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: BIGLAG_GW
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: BIGLAG_HCOL
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: BIGLAG_W
 
-      ALLOCATE (GQV(MMAX,NMAX))
-      ALLOCATE (HQV(MMAX,(NMAX+1)*NMAX/2))
-      ALLOCATE (PQV(MMAX,NPTMAX))
-      ALLOCATE (WV(MMAX,NMAX))
-      ALLOCATE (V_ERR(MMAX),V_BEG(MMAX),V_TEMP(MMAX))
-      ALLOCATE (DIFFV(MMAX),V_OPT(MMAX),V_VQUAD(MMAX))
-      ALLOCATE (V_BASE(MMAX),HD1(NMAX),GQV_OPT(MMAX,NMAX))
+      REAL (PREC), DIMENSION(:), POINTER, CONTIGUOUS :: BIGDEN_W
+      REAL (PREC), DIMENSION(:,:), POINTER, CONTIGUOUS :: BIGDEN_WVEC
+      REAL (PREC), DIMENSION(:,:), POINTER, CONTIGUOUS :: BIGDEN_PROD
+
+      REAL (PREC) :: FBEG, FOPT
 
       debug = .false.
 C
@@ -61,7 +64,7 @@ C
       opt_update = .true.
       NP=N+1
       NPTM=NPT-NP
-      NFTEST=MAX0(MAXFUN,1)
+      NFTEST=MAX(MAXFUN,1)
  
 C
 C     Set the initial elements of XPT, BMAT, HQ, PQ and ZMAT to zero.
@@ -101,6 +104,13 @@ C
               XPT(NF,NFMM)=-RHOBEG
           END IF
       END IF
+
+c     Initialize some values to avoid runtime errors due to uninitialized
+c     variables. Reverse-engineered values required to get through the GOTO
+c     insanity the first time before these values are overwritten.
+      FBEG = 0.0_PREC
+      FOPT = HUGE(0.0_PREC)
+
 C
 C     Calculate the next value of F, label 70 being reached immediately
 C     after this calculation. The least function value so far and its index
@@ -176,9 +186,10 @@ C
       if (debug) then
         print *, " Before TRSAPP: delta=",delta, " rho=",rho
       endif
-      CALL TRSAPP_H(N,NPT,XOPT,XPT,GQ,HQ,PQ,DELTA,D,W,W(NP),
-     1  W(NP+N),W(NP+2*N),CRVMIN,GQV,HQV,PQV,XBASE,vquad1,
-     1  GQV_opt,v_opt,v_base,XOPTSQ,mv,model_update,opt_update)
+
+      CALL TRSAPP_H(N,MV,NPT,XOPT,XPT,GQ,HQ,PQ,DELTA,D,W,
+     &  CRVMIN,GQV,HQV,PQV,XBASE,vquad1,
+     &  GQV_opt,v_opt,v_base,XOPTSQ,model_update,opt_update)
       DSQ=ZERO
       DO 110 I=1,N
   110 DSQ=DSQ+D(I)**2
@@ -286,9 +297,12 @@ C     Pick the model step if KNEW is positive. A different choice of D
 C     may be made later, if the choice of D by BIGLAG causes substantial
 C     cancellation in DENOM.
 C
-      IF (KNEW .GT. 0) THEN          
+      IF (KNEW .GT. 0) THEN
+          BIGLAG_GW => W(1:N)
+          BIGLAG_HCOL => W(N+1:NDIM)
+          BIGLAG_W => W(NDIM+1:)
           CALL BIGLAG (N,NPT,XOPT,XPT,BMAT,ZMAT,IDZ,NDIM,KOPT,KNEW,
-     1      DSTEP,D,ALPHA,W,W(NP),W(NDIM+1))
+     1      DSTEP,D,ALPHA,BIGLAG_GW,BIGLAG_HCOL,BIGLAG_W)
       END IF
 C
 C     Calculate VLAG and BETA for the current choice of D. The first NPT
@@ -340,8 +354,13 @@ C
       IF (KNEW .GT. 0) THEN
           TEMP=ONE+ALPHA*BETA/VLAG(KNEW)**2
           IF (ABS(TEMP) .LE. 0.8_PREC) THEN
+              BIGDEN_W => W(1:NDIM*5)
+              BIGDEN_WVEC(1:NDIM,1:5) => W(NDIM*5+1:NDIM*5+NDIM*5)
+              BIGDEN_PROD(1:NDIM,1:5) => W(1:NDIM*5)
+
               CALL BIGDEN (N,NPT,XOPT,XPT,BMAT,ZMAT,IDZ,NDIM,KOPT,
-     1          KNEW,DSTEP,D,VLAG,BETA,XNEW,W,W(5*NDIM+1),W)
+     &          KNEW,DSTEP,D,VLAG,BETA,XNEW,BIGDEN_W,BIGDEN_WVEC,
+     &          BIGDEN_PROD)
           END IF
       END IF
 C
@@ -361,7 +380,7 @@ C
 C
 C     fcn(n, mv, x, v_err) provides the values of the vector function v_err(x): R^n \to R^{mv}.
 C     Here: n, mv, x \in R^n are input, v_err \in R^{mv} are output.
-      CALL fcn (n, mv, x, v_err)
+      CALL fcn (x(1:N), v_err(1:MV))
 C
 C     f_value(mv,v_err,F) provides the value of the sum of the squres of the components of v_err(x)
 C     i.e. F = sum_{i=1}^{mv} v_err_i (x)^2
@@ -378,8 +397,8 @@ C
         if (F.le.FOPT) iteropt = NF
       endif
 
-      if(F.le.dmax1(1.d-12,1.d-20*FBEG)) then
-         print *, " F.le.dmax1(1.d-12,1.d-20*FBEG)"
+      if(F .le. MAX(1.0e-12_PREC,1.0e-20_PREC*FBEG)) then
+         print *, " F.le.MAX(1.d-12,1.d-20*FBEG)"
          go to 530
       endif
 
