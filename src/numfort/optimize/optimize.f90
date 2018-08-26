@@ -18,6 +18,7 @@ module numfort_optimize
     use numfort_optimize_fminbound
     use numfort_optimize_lbfgsb, only: minimize_lbfgsb
     use numfort_optimize_simplex, only: minimize_simplex
+    use numfort_optimize_dfls, only: minimize_dfls
 
     use numfort_optimize_brent, only: root_brentq
     use numfort_optimize_root_broyden
