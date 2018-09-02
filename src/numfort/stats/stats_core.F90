@@ -5,6 +5,7 @@ module numfort_stats_core
 
     use, intrinsic :: iso_fortran_env
 
+    use numfort_arrays, only: argsort
     use numfort_common
     use numfort_interpolate
 

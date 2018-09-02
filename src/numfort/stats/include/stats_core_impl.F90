@@ -430,10 +430,12 @@ pure subroutine __APPEND(normalize_2d,__PREC) (x, m, s, dim, center, scale, &
 end subroutine
 
 ! ------------------------------------------------------------------------------
+! QUANTILE ROUTINES
 
-
-pure subroutine __APPEND(quantile_pmf_check_input,__PREC) (x, pmf, q, pctl, &
+pure subroutine __APPEND(quantile_bins_check_input,__PREC) (x, pmf, q, pctl, &
         interp, status)
+    !*  QUANTILE_BINS_CHECK_INPUT performs input validation for the
+    !   QUANTILE_BINS routine.
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(in), dimension(:) :: pmf
@@ -466,7 +468,36 @@ pure subroutine __APPEND(quantile_pmf_check_input,__PREC) (x, pmf, q, pctl, &
 end subroutine
 
 
-pure subroutine __APPEND(quantile_pmf,__PREC) (x, pmf, rnk, q, interp, status)
+
+pure subroutine __APPEND(quantile_discrete_check_input,__PREC) (x, pmf, q, &
+        pctl, status)
+    !*  QUANTILE_DISCRETE_CHECK_INPUT performs input validation for the
+    !   QUANTILE_DISCRETE routine.
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:) :: pmf
+    real (PREC), intent(in), dimension(:) :: q
+    real (PREC), intent(in), dimension(:) :: pctl
+    type (status_t), intent(out) :: status
+
+    status = NF_STATUS_INVALID_ARG
+
+    if (size(x) /= size(pmf)) goto 100
+    if (size(q) /= size(pctl)) goto 100
+
+    ! Enforce percentiles to be in valid range
+    if (any(q < 0.0_PREC)) goto 100
+    if (any(q > 1.0_PREC)) goto 100
+
+    status = NF_STATUS_OK
+
+100 continue
+
+end subroutine
+
+
+
+pure subroutine __APPEND(quantile_bins,__PREC) (x, pmf, rnk, q, interp, status)
     integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in), dimension(:) :: x
@@ -498,7 +529,7 @@ pure subroutine __APPEND(quantile_pmf,__PREC) (x, pmf, rnk, q, interp, status)
 
     lstatus = NF_STATUS_OK
 
-    call quantile_pmf_check_input (x, pmf, rnk, q, interp, lstatus)
+    call quantile_bins_check_input (x, pmf, rnk, q, interp, lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
     ! Convert to numeric interpolation enum
@@ -591,8 +622,126 @@ end subroutine
 
 
 
-pure subroutine __APPEND(quantile_pmf_scalar,__PREC) (x, pmf, rnk, q, &
-        interp, status)
+subroutine __APPEND(quantile_discrete,__PREC) (x, pmf, rnk, q, sort, status)
+    integer, parameter :: PREC = __PREC
+
+    real (PREC), intent(in), dimension(:) :: x
+        !*  Array containing state space of a discrete random variable.
+    real (PREC), intent(in), dimension(:) :: pmf
+        !*  PMF associated with bins defined by X
+    real (PREC), intent(in), dimension(:) :: rnk
+        !*  Array of quantiles "ranks" to compute which must be between
+        !   0 and 1 inclusive.
+    real (PREC), intent(out), dimension(:) :: q
+        !*  Output array storing (interpolated) quantiles corresponding to RNK
+    logical, intent(in), optional :: sort
+    type (status_t), intent(out), optional :: status
+        !*  Optional status code
+
+    type (status_t) :: lstatus
+    integer :: n, nq, i, j, imax, ncdf, ilb
+    real (PREC), dimension(:), allocatable :: cdf
+    real (PREC) :: ri
+    type (search_cache) :: cache
+    logical :: lsort
+    integer, dimension(:), allocatable :: idx_sort
+
+    lstatus = NF_STATUS_OK
+    lsort = .true.
+
+    if (present(sort)) lsort = sort
+
+    call quantile_discrete_check_input (x, pmf, rnk, q, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    n = size(pmf)
+    nq = size(rnk)
+
+    ncdf = n + 1
+    allocate (cdf(ncdf))
+    cdf(1) = 0.0
+
+    if (lsort) then
+        allocate (idx_sort(n))
+        call argsort (x, idx_sort)
+
+        do i = 1, n
+            j = idx_sort(i)
+            cdf(i+1) = cdf(i) + pmf(j)
+        end do
+    else
+        do i = 1, n
+            cdf(i+1) = cdf(i) + pmf(i)
+        end do
+    end if
+
+    cdf(:) = cdf / cdf(ncdf)
+
+    ! Find last bin with non-zero mass
+    do imax = n, 2, -1
+        if (pmf(imax) > 0.0_PREC) exit
+    end do
+
+    do i = 1, nq
+        ri = rnk(i)
+        call bsearch_cached (ri, cdf(1:imax), ilb, cache)
+        if (lsort) then
+            j = idx_sort(ilb)
+        else
+            j = ilb
+        end if
+        q(i) = x(j)
+    end do
+
+100 continue
+    if (allocated(cdf)) deallocate (cdf)
+    if (allocated(idx_sort)) deallocate (idx_sort)
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+
+subroutine __APPEND(quantile_dispatch,__PREC) (x, pmf, rnk, q, &
+        interp, sort, status)
+    integer, parameter :: PREC = __PREC
+
+    real (PREC), intent(in), dimension(:) :: x
+        !*  Array of bin edges (or bin midpoints) in increasing order
+    real (PREC), intent(in), dimension(:) :: pmf
+        !*  PMF associated with bins defined by X
+    real (PREC), intent(in), dimension(:) :: rnk
+        !*  Percentiles to compute which must be between 0.0 and 1.0 inclusive.
+    real (PREC), intent(out), dimension(:) :: q
+        !*  (Interpolated) quantiles corresponding to RNK
+    character (*), intent(in), optional :: interp
+        !*  Interpolation method to use when desired percentile is between
+        !   two data points with indices i and i+1. Valid values are
+        !      1.  'linear': linearly interpolate between values at i, i+1
+        !      2.  'lower': x(i)
+        !      3.  'higher': x(i+1)
+        !      4.  'nearest': value at index which is nearest
+        !      5.  'midpoint': (x(i)+x(i+1))/2
+    logical, intent(in), optional :: sort
+        !*  If true (default), assume that input array X needs to sorted
+        !   first before computing quantiles (only applicable when
+        !   array X represents the state space of a discrete RV)
+    type (status_t), intent(out), optional :: status
+        !*  Optional status code
+
+    if (size(x) == size(pmf)) then
+        call quantile_discrete (x, pmf, rnk, q, sort, status)
+    else
+        call quantile_bins (x, pmf, rnk, q, interp, status)
+    end if
+
+end subroutine
+
+
+
+subroutine __APPEND(quantile_dispatch_scalar,__PREC) (x, pmf, rnk, q, &
+        interp, sort, status)
     integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in), dimension(:) :: x
@@ -600,7 +749,7 @@ pure subroutine __APPEND(quantile_pmf_scalar,__PREC) (x, pmf, rnk, q, &
     real (PREC), intent(in), dimension(:) :: pmf
         !*  PMF associated with bins defined by X
     real (PREC), intent(in) :: rnk
-        !*  Percentile to compute which must be between 0 and 100 inclusive.
+        !*  Percentile to compute which must be between 0.0 and 1.0 inclusive.
     real (PREC), intent(out) :: q
         !*  (Interpolated) quantile corresponding to RNK
     character (*), intent(in), optional :: interp
@@ -611,13 +760,16 @@ pure subroutine __APPEND(quantile_pmf_scalar,__PREC) (x, pmf, rnk, q, &
         !      3.  'higher': x(i+1)
         !      4.  'nearest': value at index which is nearest
         !      5.  'midpoint': (x(i)+x(i+1))/2
+    logical, intent(in), optional :: sort
+        !*  If true (default), assume that input array X needs to sorted
+        !   first before computing quantiles
     type (status_t), intent(out), optional :: status
         !*  Optional status code
 
     real (PREC) :: q1(1), rnk1(1)
 
     rnk1(1) = rnk
-    call quantile (x, pmf, rnk1, q1, interp, status)
+    call quantile (x, pmf, rnk1, q1, interp, sort, status)
     q = q1(1)
 
 end subroutine

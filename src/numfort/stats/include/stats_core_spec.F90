@@ -17,9 +17,21 @@ interface normalize
 end interface
 
 interface quantile
-    procedure  __APPEND(quantile_pmf,__PREC), __APPEND(quantile_pmf_scalar,__PREC)
+    procedure __APPEND(quantile_dispatch,__PREC), __APPEND(quantile_dispatch_scalar,__PREC)
 end interface
 
-interface quantile_pmf_check_input
-    procedure __APPEND(quantile_pmf_check_input,__PREC)
+interface quantile_bins
+    procedure  __APPEND(quantile_bins,__PREC)
+end interface
+
+interface quantile_discrete
+    procedure __APPEND(quantile_discrete,__PREC)
+end interface
+
+interface quantile_bins_check_input
+    procedure __APPEND(quantile_bins_check_input,__PREC)
+end interface
+
+interface quantile_discrete_check_input
+    procedure __APPEND(quantile_discrete_check_input,__PREC)
 end interface
