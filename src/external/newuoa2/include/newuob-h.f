@@ -54,7 +54,7 @@ c       Contains number of function evaluations on exit
       REAL (PREC), DIMENSION(:,:), POINTER, CONTIGUOUS :: BIGDEN_WVEC
       REAL (PREC), DIMENSION(:,:), POINTER, CONTIGUOUS :: BIGDEN_PROD
 
-      REAL (PREC) :: FBEG, FOPT
+      REAL (PREC) :: FBEG, FOPT, F
 
       debug = .false.
 C
@@ -66,6 +66,11 @@ C
       NPTM=NPT-NP
       NFTEST=MAX(MAXFUN,1)
  
+c     Initialize some values to avoid runtime errors due to uninitialized
+c     variables. Reverse-engineered values required to get through the GOTO
+c     insanity the first time before these values are overwritten.
+      FBEG = 0.0_PREC
+      FOPT = HUGE(0.0_PREC)
 C
 C     Set the initial elements of XPT, BMAT, HQ, PQ and ZMAT to zero.
 C
@@ -104,12 +109,6 @@ C
               XPT(NF,NFMM)=-RHOBEG
           END IF
       END IF
-
-c     Initialize some values to avoid runtime errors due to uninitialized
-c     variables. Reverse-engineered values required to get through the GOTO
-c     insanity the first time before these values are overwritten.
-      FBEG = 0.0_PREC
-      FOPT = HUGE(0.0_PREC)
 
 C
 C     Calculate the next value of F, label 70 being reached immediately
@@ -659,7 +658,8 @@ C
 
       subroutine f_value(mv,v_err,F)
       integer mv
-      real (PREC) v_err(*), F
+      REAL (PREC), INTENT(IN), DIMENSION(:) :: v_err
+      REAL (PREC), INTENT(OUT) :: F
       integer m1
 
       F=0.0_PREC

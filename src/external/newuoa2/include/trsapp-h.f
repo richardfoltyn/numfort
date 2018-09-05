@@ -260,15 +260,15 @@ C
    70 GG=GG+(G(I)+HS(I))**2
       if (debug) print *, " GG=",GG
 
-      IF (GG .LE. dmin1(1.0D-4*GGBEG,1.d-16)) GOTO 160 
-      IF (GG .LE. 1.d-14*gnorm2) GOTO 160   
+      IF (GG .LE. MIN(1.0e-4_PREC*GGBEG,1.0e-16_PREC)) GOTO 160
+      IF (GG .LE. 1.0e-14_PREC*gnorm2) GOTO 160
 
       IF (ITERC .EQ. ITERMAX) GOTO 160
 C
 C     Begin another conjugate direction iteration if required.
 C
       IF (ALPHA .LT. BSTEP) THEN
-          IF (QADD .LE. 1.D-6*QRED) GOTO 160
+          IF (QADD .LE. 1.0e-6_PREC*QRED) GOTO 160
           TEMP=GG/GGSAV
           DD=ZERO
           DS=ZERO
@@ -285,7 +285,7 @@ C
 C
 C     Test whether an alternative iteration is required.
 C
-   90 IF (GG .LE. 1.0D-4*GGBEG) GOTO 160
+   90 IF (GG .LE. 1.0e-4_PREC*GGBEG) GOTO 160
       if (debug) print *, "curve search performed"
       SG=ZERO
       SHS=ZERO
@@ -408,9 +408,10 @@ C
       GOTO 120
       END
 
-      subroutine f_grad(mv,v_base,v_gtemp)  
+      subroutine f_grad (mv,v_base,v_gtemp)
       integer mv
-      REAL (PREC) v_base(*), v_gtemp(*)
+      REAL (PREC), INTENT(IN), DIMENSION(:)  :: v_base
+      REAL (PREC), INTENT(OUT), DIMENSION(:)  :: v_gtemp
       integer m1
 
       do 10 m1=1,mv
