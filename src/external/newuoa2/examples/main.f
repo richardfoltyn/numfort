@@ -46,8 +46,7 @@ c
 
       open (newunit=nread,file='dfo.dat',status='old')
 
-      allocate (w(NSPACE))
- 
+
       do while (1 .eq. 1) 
 c
 c  read problem data nprob, n, mv, xs
@@ -100,8 +99,12 @@ c          print *, "Have to use use original Mjdp. Set version=1."
 c          stop
 c        endif
 
+        allocate (W(NSPACE), source=0.0_PREC)
+
         CALL newuoa2 (FOBJ,N,MV,NPT,X,RHOBEG,RHOEND,IPRINT,MAXFUN,
      &    NFEV,W)
+
+        deallocate (W)
 
       endif
 C
