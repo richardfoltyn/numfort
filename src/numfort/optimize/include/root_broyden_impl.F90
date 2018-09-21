@@ -364,6 +364,12 @@ recursive subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
 
     call dispatch (fcn, x, fxlast)
 
+    if (.not. all(ieee_is_finite(fxlast))) then
+        ptr_res%msg = 'Invalid function value encountered'
+        status = NF_STATUS_INVALID_STATE
+        goto 100
+    end if
+
     ! Check whether initial point satisfied convergence criterion
     nrm_last = norm2(fxlast)
 
@@ -383,6 +389,12 @@ recursive subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
     ! Compute Jacobian at initial point. Reuse f(X) evaluated above in
     ! case of numerical differentiation.
     call dispatch_jac (fcn, x, jac, fxlast)
+
+    if (.not. all(ieee_is_finite(jac))) then
+        ptr_res%msg = 'Invalid value in initial Jacobian encountered'
+        status = NF_STATUS_INVALID_STATE
+        goto 100
+    end if
 
     if (iand(liprint, PRINT_JAC) == PRINT_JAC) then
         print '(tr1, a)', "ROOT_BROYDEN: initial Jacobian"
@@ -436,6 +448,12 @@ recursive subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
         dx(:) = dx_scale * dx
 
         call dumb_line_search (fcn, x, nrm_last, liprint, x_ls, fx_ls, dx, fx)
+
+        if (.not. all(ieee_is_finite(fx))) then
+            ptr_res%msg = 'Invalid function value encountered during line search'
+            status = NF_STATUS_INVALID_STATE
+            goto 100
+        end if
 
          ! 2. Check convergence in terms of function values
         nrm_upd = norm2(fx)

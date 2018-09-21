@@ -4,6 +4,7 @@
 module numfort_optimize_root_broyden
 
     use, intrinsic :: iso_fortran_env
+    use, intrinsic :: ieee_arithmetic
 
     use numfort_common
     use numfort_common_input_checks
