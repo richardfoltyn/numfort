@@ -551,8 +551,8 @@ recursive subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
         print '(tr1, a)', "ROOT_BROYDEN: routine complete"
     end if
 
-200 format (tr3, a, *(es9.2e2,:,", "))
-201 format (tr3, a, es9.2e2)
+200 format (tr3, a, *(es12.5e2,:,", "))
+201 format (tr3, a, es12.5e2)
 
 end subroutine
 
@@ -631,8 +631,8 @@ recursive subroutine __APPEND(dumb_line_search,__PREC) (fcn, x, nrm, iprint, &
         print '(tr1, a)', "ROOT_BROYDEN: LINE SEARCH complete"
     end if
 
-200 format (tr3, a, *(es9.2e2, :, ", "))
-201 format (tr3, a, es9.2e2)
+200 format (tr3, a, *(es12.5e2, :, ", "))
+201 format (tr3, a, es12.5e2)
 
 end subroutine
 
