@@ -159,3 +159,26 @@ pure subroutine __APPEND(interp_find_wgt_cached,__PREC) (needle, haystack, &
     wgt_lb = (haystack(ilb+1)-needle) / (haystack(ilb+1)-haystack(ilb))
 end subroutine
 
+
+pure subroutine __APPEND(interp_find_wgt_cached_1d,__PREC) (needle, haystack, &
+       ilb, wgt_lb)
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in), dimension(:) :: needle
+    real (PREC), intent(in), dimension(:) :: haystack
+    integer, intent(out), dimension(:) :: ilb
+        !*  Index of the lower bound of the interpolation bracket
+    real (PREC), intent(out), dimension(:) :: wgt_lb
+        !*  Interpolation weight on the lower bound of the interpolation
+        !   bracket.
+
+    type (search_cache) :: cache
+    real (PREC) :: x
+    integer :: i, j
+
+    do i = 1, size(needle)
+        x = needle(i)
+        call bsearch_cached (x, haystack, j, cache)
+        wgt_lb(i) = (haystack(j+1)-x) / (haystack(j+1)-haystack(j))
+        ilb(i) = j
+    end do
+end subroutine
