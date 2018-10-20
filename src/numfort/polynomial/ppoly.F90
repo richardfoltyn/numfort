@@ -22,6 +22,7 @@ module numfort_polynomial_ppoly
     public :: ppoly_bernstein
     public :: ppoly_get_nknots
     public :: ppoly_get_ncoefs
+    public :: ppoly_get_degree
     public :: ppolyfit
     public :: ppolyval
     public :: ppolyder
@@ -55,6 +56,10 @@ module numfort_polynomial_ppoly
 
     interface ppoly_get_ncoefs
         procedure power_get_ncoefs, bernstein_get_ncoefs
+    end interface
+
+    interface ppoly_get_degree
+        procedure power_get_degree, bernstein_get_degree
     end interface
 
 #include <numfort_real32.h>
@@ -105,6 +110,14 @@ pure function power_get_nknots (self, n, k) result(res)
 end function
 
 
+pure function power_get_degree (self) result(res)
+    type (ppoly), intent(in) :: self
+    integer :: res
+
+    res = self%degree
+end function
+
+
 pure function bernstein_get_ncoefs (self, n, k) result(res)
     type (ppoly_bernstein), intent(in) :: self
     integer, intent(in), optional :: n
@@ -132,6 +145,14 @@ pure function bernstein_get_nknots (self, n, k) result(res)
     ln = self%nknots
     if (present(n)) ln = n
     res = ln
+end function
+
+
+pure function bernstein_get_degree (self) result(res)
+    type (ppoly_bernstein), intent(in) :: self
+    integer :: res
+
+    res = self%degree
 end function
 
 
