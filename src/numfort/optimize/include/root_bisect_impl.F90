@@ -81,16 +81,26 @@ end subroutine
 
 
 
-subroutine __APPEND(root_bisect_impl,__PREC) (fcn, a, b, x0, xtol, tol, maxiter, res)
+subroutine __APPEND(root_bisect_impl,__PREC) (fcn, a, b, x0, xtol, tol, &
+        maxiter, res)
+    !*  ROOT_BISECT_IMPL implements a bisection root-finding algorithm.
     integer, parameter :: PREC = __PREC
     type (__APPEND(fwrapper_ss,__PREC)), intent(inout) :: fcn
     real (PREC), intent(in) :: a
+        !*  Lower bound of bracketing interval
     real (PREC), intent(in) :: b
+        !*  Upper bound of bracketing interval
     real (PREC), intent(in), optional :: xtol
+        !*  Termination criterion in terms of changes in X values in function domain.
+        !   Routine will exit when abs(X_n - X_{n-1}) < XTOL.
     real (PREC), intent(in), optional :: tol
+        !*  Tolerance level. Routine will exit when abs(f(X)) < TOL
     integer, intent(in), optional :: maxiter
+        !*  Maximum number of iterations
     real (PREC), intent(out), optional :: x0
+        !*  If present, contains the root on successful exit.
     type (__APPEND(optim_result,__PREC)), intent(out), optional :: res
+        !*  Result object
 
     type (__APPEND(optim_result,__PREC)), pointer :: ptr_res
     real (PREC) :: lxtol, ltol
@@ -102,9 +112,15 @@ subroutine __APPEND(root_bisect_impl,__PREC) (fcn, a, b, x0, xtol, tol, maxiter,
     call assert_alloc_ptr (res, ptr_res)
     call result_reset (ptr_res)
 
+    ! Don't leave uninitialized as these will be passed to RESULT_UPDATE
+    ! even if nothing is computed.
+    ptr_res%msg = ''
+    iter = 0
+    x = 0.0
+    fx = huge(0.0_PREC)
+
     call bisect_check_inputs (a, b, xtol, tol, maxiter, res=ptr_res)
     if (ptr_res%status /= NF_STATUS_OK) goto 100
-
 
     lmaxiter = 50
     ltol = 1.0e-6_PREC
@@ -123,7 +139,7 @@ subroutine __APPEND(root_bisect_impl,__PREC) (fcn, a, b, x0, xtol, tol, maxiter,
     sub = signum (fub)
 
     if (slb == sub) then
-        ptr_res%msg = 'Invalid initial bounds do not bracket root'
+        ptr_res%msg = 'Initial bounds do not bracket root'
         ptr_res%status = NF_STATUS_INVALID_ARG
         goto 100
     end if
@@ -135,13 +151,13 @@ subroutine __APPEND(root_bisect_impl,__PREC) (fcn, a, b, x0, xtol, tol, maxiter,
         call dispatch (fcn, x, fx)
 
         if (abs(fx) < ltol) then
-            ptr_res%msg = "Convergence achieved: abs(f(x)) < TOL"
+            ptr_res%msg = 'Convergence achieved: abs(f(x)) < TOL'
             ptr_res%status = NF_STATUS_OK
             goto 100
         end if
 
         if (abs(x-xlast) < lxtol) then
-            ptr_res%msg = "Convergence achieved: abs. change in x small than XTOL"
+            ptr_res%msg = 'Convergence achieved: abs. change in x small than XTOL'
             ptr_res%status = NF_STATUS_OK
             goto 100
         end if
@@ -159,9 +175,12 @@ subroutine __APPEND(root_bisect_impl,__PREC) (fcn, a, b, x0, xtol, tol, maxiter,
         xlast = x
     end do
 
+    ptr_res%msg = 'Max. number of iterations exceeded'
+    ptr_res%status = NF_STATUS_MAX_ITER
+
 100 continue
 
-    call result_update (ptr_res, x, fx, nit=iter, nfev=iter)
+    call result_update (ptr_res, x, fx, nit=iter, nfev=fcn%nfev)
 
     if (present(x0)) x0 = x
 
