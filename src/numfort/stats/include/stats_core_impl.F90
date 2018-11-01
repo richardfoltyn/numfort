@@ -684,7 +684,7 @@ subroutine __APPEND(quantile_discrete,__PREC) (x, pmf, rnk, q, sort, status)
 
     do i = 1, nq
         ri = rnk(i)
-        call bsearch_cached (ri, cdf(1:imax), ilb, cache)
+        call bsearch_cached (ri, cdf(1:imax+1), ilb, cache)
         if (lsort) then
             j = idx_sort(ilb)
         else
