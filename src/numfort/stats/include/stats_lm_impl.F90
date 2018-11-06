@@ -337,7 +337,26 @@ subroutine __APPEND(pca,__PREC) (x, scores, ncomp, center, scale, trans_x, &
     allocate (lmean_x(nvars), lstd_x(nvars))
 
     if (lcenter .or. lscale) then
-        call normalize (x_n, m=lmean_x, s=lstd_x, scale=lscale, center=lcenter, dof=0, dim=1)
+        ! Compute mean and std. dev. for each variable
+        call std (x_n, s=lstd_x, m=lmean_x, dof=0, dim=1, status=lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+
+        ! de-mean variables
+        if (lcenter) then
+            do i = 1, nvars
+                x_n(:,i) = x_n(:,i) - lmean_x(i)
+            end do
+        end if
+
+        ! rescale variables to have std. dev. of 1
+        if (lscale) then
+            do i = 1, nvars
+                ! Skip constant variables to avoid generating NaNs
+                if (lstd_x(i) > 0.0_PREC) then
+                    x_n(:,i) = x_n(:,i) / lstd_x(i)
+                end if
+            end do
+        end if
     end if
 
     m = nobs
@@ -594,7 +613,15 @@ subroutine __APPEND(pcr_2d,__PREC) (lhs, scores, sval, loadings, coefs, mean_x, 
 
     ! Scale back betas if explanatory variables were normalized
     do i = 1, nlhs
-        lcoefs(:, i) = lcoefs(:, i) / std_x
+        ! Prevent NaN's due to constant RHS variables
+        allocate (work(size(std_x)), source=std_x)
+        where (work == 0.0)
+            work = 1.0
+        end where
+
+        lcoefs(:, i) = lcoefs(:, i) / work
+
+        deallocate (work)
     end do
 
     ! Add intercept if requested
@@ -988,8 +1015,11 @@ subroutine __APPEND(lm_post_estim,__PREC) (model, lhs, rhs, rsq, status)
         ! Compute variable of LHS variable Y
         call std (lhs, s=var_y, dof=0)
         var_y = var_y ** 2.0_PREC
-        
-        rsq = 1.0_PREC - var_u / var_y
+
+        rsq = 0.0_PREC
+        if (var_y > 0.0_PREC) then
+            rsq = 1.0_PREC - var_u / var_y
+        end if
     end if
 
     
