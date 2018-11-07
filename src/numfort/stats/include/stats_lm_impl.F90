@@ -297,10 +297,11 @@ subroutine __APPEND(pca,__PREC) (x, scores, ncomp, center, scale, trans_x, &
 
     ! Argument for GESDD
     real (PREC), dimension(:), allocatable :: ls
-    real (PREC), dimension(:,:), allocatable :: vt, u
+    real (PREC), dimension(:,:), allocatable :: vt
     real (PREC), dimension(1) :: qwork
     integer, dimension(:), allocatable :: iwork
-    character (1), parameter :: jobz = 'A'
+    character (1), parameter :: jobz = 'O'
+    real (PREC), dimension(0,0) :: u
     integer :: lda, ldu, ldvt, lwork, info, m, n, mn
 
     ! Arguments for GEMM
@@ -359,6 +360,13 @@ subroutine __APPEND(pca,__PREC) (x, scores, ncomp, center, scale, trans_x, &
         end if
     end if
 
+    ! Notes on calling GESDD: we are using JOBZ='O' so that only the first
+    ! NVARS columns of the matrix U in the SVD X=USV' will be computed and
+    ! stored in the array X_TMP.
+    ! The input checks ensure that NOBS >= NVARS, so the matrix V' will always
+    ! be written into the array VT and never into X_TMP.
+    ! For JOBZ='O' and m >= n, the array U will never be referenced, so we
+    ! can just pass a size-0 dummy array.
     m = nobs
     n = nvars
     lda = nobs
@@ -369,13 +377,13 @@ subroutine __APPEND(pca,__PREC) (x, scores, ncomp, center, scale, trans_x, &
     allocate (iwork(8*mn))
     allocate (vt(n, n))
     allocate (ls(mn))
-    allocate (u(m,m))
-    ! Contents of x_n would be overwritten by GESDD, make copy
+    ! Contents of x_n will be overwritten by GESDD, make copy
     allocate (x_tmp(nobs,nvars), source=x_n)
 
     ! workspace query
     lwork = -1
-    call LAPACK_GESDD (jobz, m, n, x_tmp, lda, ls, u, ldu, vt, ldvt, qwork, lwork, iwork, info)
+    call LAPACK_GESDD (jobz, m, n, x_tmp, lda, ls, u, ldu, vt, ldvt, qwork, &
+        lwork, iwork, info)
 
     ! Recover minimal work space size
     if (info /= 0) then
@@ -387,7 +395,8 @@ subroutine __APPEND(pca,__PREC) (x, scores, ncomp, center, scale, trans_x, &
     ! perform actual SVD
     allocate (work(lwork))
 
-    call LAPACK_GESDD (jobz, m, n, x_tmp, lda, ls, u, ldu, vt, ldvt, work, lwork, iwork, info)
+    call LAPACK_GESDD (jobz, m, n, x_tmp, lda, ls, u, ldu, vt, ldvt, work, &
+        lwork, iwork, info)
     deallocate (x_tmp)
 
     if (info /= 0) then
@@ -746,7 +755,7 @@ pure subroutine __APPEND(pcr_pca_check_input,__PREC) (lhs, rhs, ncomp_min, &
         if (ncomp_min > nvars + nconst) return
         if (nobs < ncomp_min) return
     end if
-    
+
     if (size(lhs,1) /= nobs .or. size(lhs,2) /= nlhs) return
     ! Check that coefficient array can hold coefs for all components
     ! Allow for more columns to be present, but not for more rows.
@@ -755,7 +764,7 @@ pure subroutine __APPEND(pcr_pca_check_input,__PREC) (lhs, rhs, ncomp_min, &
     if (present(var_min)) then
         if (var_min < 0.0_PREC .or. var_min > 1.0_PREC) return
     end if
-    
+
     ! Make sure there is a LM_DATA object for each LHS variable
     if (present(res)) then
         if (size(res) /= nlhs) return
@@ -864,7 +873,7 @@ subroutine __APPEND(pcr_pca_2d,__PREC) (lhs, rhs, coefs, ncomp_min, add_const, &
                 add_const=ladd_const, trans_rhs=ltrans_rhs)
         end do
     end if
-    
+
 100 continue
 
     if (allocated(scores)) deallocate (scores)
@@ -901,15 +910,15 @@ subroutine __APPEND(pcr_pca_1d,__PREC) (lhs, rhs, coefs, ncomp_min, add_const, &
 
     integer :: nobs, ncoefs, nconst, nvars, nlhs
     logical :: ladd_const, ltrans_rhs
-    
+
     ladd_const = .false.
     ltrans_rhs = .false.
     if (present(add_const)) ladd_const = add_const
     if (present(trans_rhs)) ltrans_rhs = trans_rhs
-    
+
     nobs = size(lhs)
     ptr_lhs(1:nobs,1:1) => lhs
-    
+
     call pcr_pca_get_dims (ptr_lhs, rhs, ladd_const, ltrans_rhs, &
         nobs, nvars, nlhs, ncoefs, nconst)
 
@@ -923,15 +932,15 @@ subroutine __APPEND(pcr_pca_1d,__PREC) (lhs, rhs, coefs, ncomp_min, add_const, &
         call pcr (ptr_lhs, rhs, coefs2d, ncomp_min, add_const, center, &
             trans_rhs, var_min, status=status)
     end if
-    
+
     if (present(coefs)) coefs = coefs2d(:,1)
 
 end subroutine
 
 
 subroutine __APPEND(lm_post_estim,__PREC) (model, lhs, rhs, rsq, status)
-    !*  LM_POST_ESTIM computes common post-estimation statistics such as 
-    !   R^2 for a given linear model. The model must have been estimated 
+    !*  LM_POST_ESTIM computes common post-estimation statistics such as
+    !   R^2 for a given linear model. The model must have been estimated
     !   using before invoking this routine.
     integer, parameter :: PREC = __PREC
     type (__APPEND(lm_data,__PREC)), intent(in) :: model
@@ -941,7 +950,7 @@ subroutine __APPEND(lm_post_estim,__PREC) (model, lhs, rhs, rsq, status)
         !   model.
     real (PREC), intent(in), dimension(:,:), contiguous :: rhs
         !*  Array of explanatory (RHS) variables used to estimate model.
-        !   Array is assumed to have shape [NOBS, NVARS], unless 
+        !   Array is assumed to have shape [NOBS, NVARS], unless
         !   TRANS_RHS is present and has value .TRUE.
     real (PREC), intent(out), optional :: rsq
         !*  If present, contains the model's R^2 on exit.
@@ -949,37 +958,37 @@ subroutine __APPEND(lm_post_estim,__PREC) (model, lhs, rhs, rsq, status)
 
     logical :: need_resid
     real (PREC), dimension(:), allocatable :: resid
-    
+
     type (status_t) :: lstatus
     real (PREC) :: var_u, var_y
     real (PREC), dimension(:), allocatable :: coefs
     integer :: ncoefs
-    
+
     ! Variables used for BLAS routines
     integer, parameter :: incx = 1, incy = 1
-    character (1) :: trans 
+    character (1) :: trans
     real (PREC) :: alpha, beta
     integer :: m, n, lda
-    
+
     lstatus = NF_STATUS_OK
-    
+
     ! List of outputs that require predicted values to compute
     need_resid = present(rsq)
-    
+
     ! Check whether model has been estimated
     if (.not. allocated(model%coefs)) then
         lstatus = NF_STATUS_INVALID_ARG
         goto 100
     end if
-    
+
     ncoefs = size(model%coefs)
-    
+
     if (need_resid) then
         ! Compute YHAT using GEMV BLAS routine
         allocate (resid(model%nobs), source=lhs)
-        
+
         if (model%add_const) then
-            ! Constant was added during estimation process but is not present 
+            ! Constant was added during estimation process but is not present
             ! in RHS array
             allocate (coefs(model%nvars), source=model%coefs(2:ncoefs))
             ! Adjust LHS variable to compensate for "lacking" intercept in YHAT
@@ -989,7 +998,7 @@ subroutine __APPEND(lm_post_estim,__PREC) (model, lhs, rhs, rsq, status)
         else
             allocate (coefs(model%nvars), source=model%coefs)
         end if
-    
+
         if (model%trans_rhs) then
             trans = 'T'
             m = model%nvars
@@ -999,7 +1008,7 @@ subroutine __APPEND(lm_post_estim,__PREC) (model, lhs, rhs, rsq, status)
             m = model%nobs
             n = model%nvars
         end if
-        
+
         lda = m
         ! Set up ALPHA, BETA such that result of GEMV will be resid = -yhat + y
         alpha = -1.0_PREC
@@ -1007,11 +1016,11 @@ subroutine __APPEND(lm_post_estim,__PREC) (model, lhs, rhs, rsq, status)
         call BLAS_GEMV (trans, m, n, alpha, rhs, lda, coefs, incx, beta, resid, incy)
         deallocate (coefs)
     end if
-    
+
     if (present(rsq)) then
         ! Compute variance of residuals
         var_u = BLAS_DOT (model%nobs, resid, incx, resid, incy) / model%nobs
-        
+
         ! Compute variable of LHS variable Y
         call std (lhs, s=var_y, dof=0)
         var_y = var_y ** 2.0_PREC
@@ -1022,8 +1031,8 @@ subroutine __APPEND(lm_post_estim,__PREC) (model, lhs, rhs, rsq, status)
         end if
     end if
 
-    
-100 continue 
+
+100 continue
 
     if (allocated(resid)) deallocate (resid)
     if (present(status)) status  = lstatus
