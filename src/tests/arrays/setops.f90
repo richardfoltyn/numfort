@@ -23,6 +23,7 @@ subroutine test_all ()
     call test_setdiff (tests)
     call test_intersect (tests)
     call test_union (tests)
+    call test_in (tests)
 
     ! print test statistics
     call tests%print ()
@@ -346,6 +347,50 @@ subroutine test_union (tests)
 
 end subroutine
 
+
+
+
+subroutine test_in (tests)
+    class (test_suite) :: tests
+    class (test_case), pointer :: tc
+
+    integer, parameter :: INTSIZE = int64
+    integer (INTSIZE), dimension(:), allocatable :: haystack
+    integer (INTSIZE) :: needle
+    logical :: res
+
+    tc => tests%add_test ("set IN operator")
+
+    allocate (haystack(0))
+    needle = 1
+    res = needle .in. haystack
+    call tc%assert_false (res, 'size-zero HAYSTACK')
+    deallocate (haystack)
+
+
+    allocate (haystack(1), source=0_INTSIZE)
+    needle = 1
+    res = needle .in. haystack
+    call tc%assert_false (res, 'size-one HAYSTACK, NEEDLE not in HAYSTACK')
+
+    needle = 0
+    res = needle .in. haystack
+    call tc%assert_true (res, 'size-one HAYSTACK, NEEDLE in HAYSTACK')
+    deallocate (haystack)
+
+
+    allocate (haystack(5))
+    call arange (haystack, 1_INTSIZE)
+    needle = 0
+    res = needle .in. haystack
+    call tc%assert_false (res, 'sorted HAYSTACK, NEEDLE not in HAYSTACK')
+
+    needle = 3
+    res = needle .in. haystack
+    call tc%assert_true (res, 'sorted HAYSTACK, NEEDLE in HAYSTACK')
+    deallocate (haystack)
+
+end subroutine
 
 
 end program
