@@ -9,6 +9,7 @@ module numfort_arrays_setops
     private
 
     public :: unique, setdiff, intersect, union
+    public :: operator(.in.)
 
     interface unique
         module procedure unique_real32, unique_real64, unique_int32
@@ -24,6 +25,10 @@ module numfort_arrays_setops
 
     interface union
         module procedure union_real32, union_real64, union_int32
+    end interface
+
+    interface operator(.in.)
+        procedure set_in_int32, set_in_int64
     end interface
 
     contains
@@ -265,6 +270,55 @@ subroutine union_int32 (arr1, arr2, res, n, assume_unique)
 #include "union_impl.f90"
 end subroutine
 
+
+
+!-------------------------------------------------------------------------------
+! SET_IN routines
+
+pure function set_in_int32 (needle, haystack) result(res)
+    !*  SET_IN operator returns .TRUE. whenever a given element
+    !   is in a given set.
+    !   No attempt has been made to optimize this routine, it is assumed
+    !   that it's called only for small set arrays.
+    integer, parameter :: INTSIZE = int32
+    integer (INTSIZE), intent(in) :: needle
+    integer (INTSIZE), intent(in), dimension(:) :: haystack
+    logical :: res
+
+    integer :: i
+
+    res = .false.
+    do i = 1, size(haystack)
+        if (needle == haystack(i)) then
+            res = .true.
+            return
+        end if
+    end do
+
+end function
+
+
+pure function set_in_int64 (needle, haystack) result(res)
+    !*  SET_IN operator returns .TRUE. whenever a given element
+    !   is in a given set.
+    !   No attempt has been made to optimize this routine, it is assumed
+    !   that it's called only for small set arrays.
+    integer, parameter :: INTSIZE = int64
+    integer (INTSIZE), intent(in) :: needle
+    integer (INTSIZE), intent(in), dimension(:) :: haystack
+    logical :: res
+
+    integer :: i
+
+    res = .false.
+    do i = 1, size(haystack)
+        if (needle == haystack(i)) then
+            res = .true.
+            return
+        end if
+    end do
+
+end function
 
 
 end module
