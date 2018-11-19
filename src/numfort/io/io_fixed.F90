@@ -18,8 +18,16 @@ module numfort_io_fixed
         procedure read_fixed_1d_real32, read_fixed_1d_real64
     end interface
 
+    interface read_fixed
+        procedure read_fixed_1d_int32, read_fixed_1d_int64
+    end interface
+
     interface write_fixed
         procedure write_fixed_1d_real32, write_fixed_1d_real64
+    end interface
+
+    interface write_fixed
+        procedure write_fixed_1d_int32, write_fixed_1d_int64
     end interface
 
     interface read_fixed
@@ -92,19 +100,45 @@ subroutine read_fixed_1d_real64 (path, fmt, dat, transform, status, msg)
 end subroutine
 
 
+subroutine read_fixed_1d_int32 (path, fmt, dat, transform, status, msg)
+    integer, parameter :: INTSIZE = int32
+    integer (INTSIZE), intent(inout), dimension(:) :: dat
+#include "read_fixed_impl.F90"
+end subroutine
+
+
+subroutine read_fixed_1d_int64 (path, fmt, dat, transform, status, msg)
+    integer, parameter :: INTSIZE = int64
+    integer (INTSIZE), intent(inout), dimension(:) :: dat
+#include "read_fixed_impl.F90"
+end subroutine
+
+
 subroutine write_fixed_1d_real32 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real32
-    real (PREC), intent(inout), dimension(:) :: dat
+    real (PREC), intent(in), dimension(:) :: dat
 #include "write_fixed_impl.F90"
 end subroutine
 
 
 subroutine write_fixed_1d_real64 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real64
-    real (PREC), intent(inout), dimension(:) :: dat
+    real (PREC), intent(in), dimension(:) :: dat
 #include "write_fixed_impl.F90"
 end subroutine
 
+subroutine write_fixed_1d_int32 (path, fmt, dat, transform, status, msg)
+    integer, parameter :: INTSIZE = int32
+    integer (INTSIZE), intent(in), dimension(:) :: dat
+#include "write_fixed_impl.F90"
+end subroutine
+
+
+subroutine write_fixed_1d_int64 (path, fmt, dat, transform, status, msg)
+    integer, parameter :: INTSIZE = int64
+    integer (INTSIZE), intent(in), dimension(:) :: dat
+#include "write_fixed_impl.F90"
+end subroutine
 
 !-------------------------------------------------------------------------------
 ! Routines for 2d-arrays

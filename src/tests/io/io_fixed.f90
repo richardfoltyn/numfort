@@ -42,7 +42,9 @@ subroutine test_fixed (tests)
 
     class (test_case), pointer :: tc
 
+    real (PREC), dimension(:), allocatable :: rwork1d
     real (PREC), dimension(:), allocatable :: dat1d_out, dat1d_in
+    integer, dimension(:), allocatable :: idat1d_out, idat1d_in
     real (PREC), dimension(:,:), allocatable :: dat2d_out, dat2d_in
     real (PREC), dimension(:,:,:), allocatable :: dat3d_out, dat3d_in
     integer :: n, m, k
@@ -56,7 +58,7 @@ subroutine test_fixed (tests)
 
     call set_seed (1234)
 
-    ! === Test with 1d- arrays ===
+    ! === Test with REAL 1d-arrays ===
     m = 50
     allocate (dat1d_in(m), dat1d_out(m))
 
@@ -65,12 +67,33 @@ subroutine test_fixed (tests)
     fmt = '(*(5(f8.4),:,/))'
     call write_fixed (path, fmt, dat1d_out, msg=msg, status=status)
     call tc%assert_true (status == NF_STATUS_OK, &
-        "Writing 1d data in flat form, reshaping via FMT")
+        "Writing 1d REAL data in flat form, reshaping via FMT")
 
     call read_fixed (path, fmt, dat1d_in, msg=msg, status=status)
     call tc%assert_true (status == NF_STATUS_OK .and. &
         all_close (dat1d_out, dat1d_in, atol=1.0d-3), &
-        "Reading 1d data in flat form, reshaping via FMT")
+        "Reading 1d REAL data in flat form, reshaping via FMT")
+
+    deallocate (dat1d_in, dat1d_out)
+
+    ! === Test with INTEGER 1d-arrays ===
+    m = 50
+    allocate (idat1d_in(m), idat1d_out(m), rwork1d(m))
+
+    call random_number (rwork1d)
+    idat1d_out(:) = int(100.0d0 * rwork1d)
+
+    fmt = '(*(5(i3),:,/))'
+    call write_fixed (path, fmt, idat1d_out, msg=msg, status=status)
+    call tc%assert_true (status == NF_STATUS_OK, &
+        "Writing 1d INTEGER data in flat form, reshaping via FMT")
+
+    call read_fixed (path, fmt, idat1d_in, msg=msg, status=status)
+    call tc%assert_true (status == NF_STATUS_OK .and. &
+        all(idat1d_out == idat1d_in), &
+        "Reading 1d INTEGER data in flat form, reshaping via FMT")
+
+    deallocate (idat1d_out, idat1d_in, rwork1d)
 
     ! === Test with 2d-arrays ===
     n = 10
