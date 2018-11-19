@@ -93,18 +93,22 @@ MODULE random
 !     Phone: (+61) 3 9545-8016      Fax: (+61) 3 9545-8080
 !     e-mail: amiller @ bigpond.net.au
 
+  USE, INTRINSIC :: ISO_FORTRAN_ENV
+
 IMPLICIT NONE
 REAL, PRIVATE      :: zero = 0.0, half = 0.5, one = 1.0, two = 2.0,   &
                       vsmall = TINY(1.0), vlarge = HUGE(1.0)
 PRIVATE            :: integral
 INTEGER, PARAMETER :: dp = SELECTED_REAL_KIND(12, 60)
 
+  INTERFACE random_normal
+    PROCEDURE random_normal_real32
+  END INTERFACE
 
 CONTAINS
 
 
-FUNCTION random_normal() RESULT(fn_val)
-
+FUNCTION random_normal_real32() RESULT(fn_val)
 ! Adapted from the following Fortran 77 code
 !      ALGORITHM 712, COLLECTED ALGORITHMS FROM ACM.
 !      THIS WORK PUBLISHED IN TRANSACTIONS ON MATHEMATICAL SOFTWARE,
@@ -116,38 +120,94 @@ FUNCTION random_normal() RESULT(fn_val)
 !  The algorithm uses the ratio of uniforms method of A.J. Kinderman
 !  and J.F. Monahan augmented with quadratic bounding curves.
 
-REAL :: fn_val
+  INTEGER, PARAMETER :: PREC = real32
+  REAL (PREC) :: fn_val
 
-!     Local variables
-REAL     :: s = 0.449871, t = -0.386595, a = 0.19600, b = 0.25472,           &
-            r1 = 0.27597, r2 = 0.27846, u, v, x, y, q
+  REAL (PREC), parameter :: s   =  0.449871_PREC
+  REAL (PREC), parameter :: t   = -0.386595_PREC
+  REAL (PREC), parameter :: a   =  0.19600_PREC
+  REAL (PREC), parameter :: b   =  0.25472_PREC
+  REAL (PREC), parameter :: r1  =  0.27597_PREC
+  REAL (PREC), parameter :: r2  =  0.27846_PREC
+  REAL (PREC), parameter :: half = 0.5_PREC
+  !     Local variables
+  REAL (PREC) :: u, v, x, y, q
 
 !     Generate P = (u,v) uniform in rectangle enclosing acceptance region
 
 DO
   CALL RANDOM_NUMBER(u)
   CALL RANDOM_NUMBER(v)
-  v = 1.7156 * (v - half)
+  v = 1.7156_PREC * (v - half)
 
 !     Evaluate the quadratic form
   x = u - s
   y = ABS(v) - t
-  q = x**2 + y*(a*y - b*x)
+  q = x**2.0_PREC + y*(a*y - b*x)
 
 !     Accept P if inside inner ellipse
   IF (q < r1) EXIT
 !     Reject P if outside outer ellipse
   IF (q > r2) CYCLE
 !     Reject P if outside acceptance region
-  IF (v**2 < -4.0*LOG(u)*u**2) EXIT
+  IF (v**2.0_PREC < -4.0_PREC*LOG(u)*u**2.0_PREC) EXIT
 END DO
 
 !     Return ratio of P's coordinates as the normal deviate
 fn_val = v/u
-RETURN
 
-END FUNCTION random_normal
+END FUNCTION
 
+
+FUNCTION random_normal_real64() RESULT(fn_val)
+! Adapted from the following Fortran 77 code
+!      ALGORITHM 712, COLLECTED ALGORITHMS FROM ACM.
+!      THIS WORK PUBLISHED IN TRANSACTIONS ON MATHEMATICAL SOFTWARE,
+!      VOL. 18, NO. 4, DECEMBER, 1992, PP. 434-435.
+
+!  The function random_normal() returns a normally distributed pseudo-random
+!  number with zero mean and unit variance.
+
+!  The algorithm uses the ratio of uniforms method of A.J. Kinderman
+!  and J.F. Monahan augmented with quadratic bounding curves.
+
+  INTEGER, PARAMETER :: PREC = real64
+  REAL (PREC) :: fn_val
+
+  REAL (PREC), parameter :: s   =  0.449871_PREC
+  REAL (PREC), parameter :: t   = -0.386595_PREC
+  REAL (PREC), parameter :: a   =  0.19600_PREC
+  REAL (PREC), parameter :: b   =  0.25472_PREC
+  REAL (PREC), parameter :: r1  =  0.27597_PREC
+  REAL (PREC), parameter :: r2  =  0.27846_PREC
+  REAL (PREC), parameter :: half = 0.5_PREC
+  !     Local variables
+  REAL (PREC) :: u, v, x, y, q
+
+!     Generate P = (u,v) uniform in rectangle enclosing acceptance region
+
+DO
+  CALL RANDOM_NUMBER(u)
+  CALL RANDOM_NUMBER(v)
+  v = 1.7156_PREC * (v - half)
+
+!     Evaluate the quadratic form
+  x = u - s
+  y = ABS(v) - t
+  q = x**2.0_PREC + y*(a*y - b*x)
+
+!     Accept P if inside inner ellipse
+  IF (q < r1) EXIT
+!     Reject P if outside outer ellipse
+  IF (q > r2) CYCLE
+!     Reject P if outside acceptance region
+  IF (v**2.0_PREC < -4.0_PREC*LOG(u)*u**2.0_PREC) EXIT
+END DO
+
+!     Return ratio of P's coordinates as the normal deviate
+fn_val = v/u
+
+END FUNCTION
 
 
 FUNCTION random_gamma(s, first) RESULT(fn_val)
