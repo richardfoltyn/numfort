@@ -15,6 +15,7 @@ module lapack_interfaces
     public :: GESDD
     public :: GESV
     public :: GESVD
+    public :: SYEVD
 
     interface GETRF
         procedure sgetrf, dgetrf, cgetrf, zgetrf
@@ -48,6 +49,10 @@ module lapack_interfaces
 
     interface GELSD
         procedure SGELSD, DGELSD, CGELSD, ZGELSD
+    end interface
+
+    interface SYEVD
+        procedure SSYEVD, DSYEVD
     end interface
     
     interface
@@ -303,6 +308,25 @@ module lapack_interfaces
             integer                 :: iwork(*)
             real (DP)               :: rwork(*), s(*)
             complex (COMPLEX_DP)    :: a(lda,*), b(ldb,*), work(*)
+        end subroutine
+    end interface
+
+
+    interface
+        subroutine SSYEVD (jobz, uplo, n, a, lda, w, work, lwork, iwork, liwork, info)
+            import
+            integer                 :: lda, liwork, lwork, n, info
+            character               :: jobz, uplo
+            integer                 :: iwork(*)
+            real (SP)               :: a(lda,*), w(*), work(*)
+        end subroutine
+
+        subroutine DSYEVD (jobz, uplo, n, a, lda, w, work, lwork, iwork, liwork, info)
+            import
+            integer                 :: lda, liwork, lwork, n, info
+            character               :: jobz, uplo
+            integer                 :: iwork(*)
+            real (DP)               :: a(lda,*), w(*), work(*)
         end subroutine
     end interface
 
