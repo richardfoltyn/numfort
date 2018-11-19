@@ -2,6 +2,7 @@
 get_filename_component(COMPONENT_NAME "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
 
 set(SOURCE_FILES
+    hermite_e.F90
     polynomial.f90
     poly_create.F90
     polyfit.F90
