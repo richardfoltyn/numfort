@@ -1,4 +1,4 @@
-#include "numfort.h"
+#include <numfort.h>
 
 module numfort_stats_dnorm
 
@@ -6,7 +6,7 @@ module numfort_stats_dnorm
 
     ! actual implementations from external libraries
     use cdf_normal_mod, only: cdf_normal
-    use random, only: random_normal
+    use random, only: random_normal, random_normal_real32, random_normal_real64
 
     use numfort_core, only : PI
 
@@ -18,7 +18,7 @@ module numfort_stats_dnorm
 
     real (real64), parameter :: NORM_CONST = 1/sqrt(2 * PI)
 
-#include "numfort_real64.h"
+#include <numfort_real64.h>
 #include "cont/dnorm_types.F90"
 
     type (dnorm_real64), parameter :: norm = dnorm_real64(loc=0.0d0, scale=1.0d0)
@@ -26,7 +26,7 @@ module numfort_stats_dnorm
 
 contains
 
-#include "numfort_real64.h"
+#include <numfort_real64.h>
 #include "cont/dnorm_impl.F90"
 
 end module

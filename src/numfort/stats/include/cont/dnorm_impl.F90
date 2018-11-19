@@ -95,7 +95,7 @@ impure elemental subroutine __APPEND(dnorm_rvs,__PREC) (obj, x, loc, scale)
     call get_dist_params (obj, loc, scale, lloc, lscale)
 
     ! random draw from std. normal distribution
-    z = real(random_normal (), PREC)
+    z = __APPEND(random_normal,__PREC) ()
     x = lloc + z*lscale
 end subroutine
 
