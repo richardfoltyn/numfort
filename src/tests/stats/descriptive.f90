@@ -487,7 +487,7 @@ subroutine test_cov (tests)
     deallocate (x, vcv)
 
     ! === CORRCOEF tests with several variables
-    nobs = 50000
+    nobs = 100000
     nvars = 3
     allocate (x(nobs,nvars), vcv(nvars,nvars), eps(nobs))
     allocate (var_x(nvars))

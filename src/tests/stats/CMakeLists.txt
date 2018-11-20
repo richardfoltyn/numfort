@@ -6,6 +6,7 @@ set(${COMPONENT_NAME}_FILES
     descriptive.f90
     dfrechet.f90
     dlogistic.f90
+    dmvnorm.f90
     dnorm.f90
     markov.f90
     PARENT_SCOPE
