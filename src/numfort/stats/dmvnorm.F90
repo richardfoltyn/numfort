@@ -5,6 +5,7 @@ module numfort_stats_dmvnorm
     use, intrinsic :: iso_fortran_env
 
     use numfort_common
+    use numfort_common_input_checks
 
     use random, only: random_normal_real32, random_normal_real64
 
@@ -17,6 +18,7 @@ module numfort_stats_dmvnorm
     private
 
     public :: rvs
+    public :: dist_set_params
     public :: dmvnorm_real64
 
 #include <numfort_real64.h>
