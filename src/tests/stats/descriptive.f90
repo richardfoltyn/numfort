@@ -21,11 +21,12 @@ contains
 subroutine test_all ()
     type (test_suite) :: tests
 
-    call tests%set_label ("numfort_stats_dnorm unit tests")
+    call tests%set_label ("numfort_stats_core unit tests")
 
     call test_degenerate (tests)
     call test_1d (tests)
     call test_2d (tests)
+    call test_cov (tests)
 
     call test_quantile (tests)
 
@@ -45,7 +46,7 @@ subroutine test_degenerate (tests)
     real (PREC) :: s, s1(2)
     type (status_t) :: status
 
-    tc => tests%add_test ("Mean/SD degenerator inputs")
+    tc => tests%add_test ("Mean/SD degenerate inputs")
 
     call mean (x, m, status=status)
     call tc%assert_true (NF_STATUS_INVALID_ARG .in. status, &
@@ -329,5 +330,212 @@ subroutine test_quantile (tests)
 
 
 end subroutine
+
+
+
+subroutine test_cov (tests)
+    !*  Unit tests for COV and CORRCOEF routines
+    class (test_suite) :: tests
+
+    class (test_case), pointer :: tc
+    real (PREC), dimension(:,:), allocatable :: x, vcv, vcv_desired
+    real (PREC), dimension(:), allocatable :: eps, var_x
+    integer :: nvars, nobs
+    real (PREC) :: s, alpha, beta1, beta2, var_eps1, var_eps2, diff
+    type (status_t) :: status
+    logical :: vcv_ok
+
+    tc => tests%add_test ('Unit tests for COV and CORRCOEF routines')
+
+    call set_seed (1234)
+
+    ! === Input validation tests ===
+    nobs = 1
+    nvars = 1
+    allocate (x(nobs, nvars), vcv(nvars, nvars+1))
+    status = NF_STATUS_UNDEFINED
+    call cov (x, vcv, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
+        'Invalid input: non-conformable X and COV')
+
+    deallocate (x, vcv)
+
+    ! Invalid DIM argument
+    nobs = 1
+    nvars = 1
+    allocate (x(nobs,nvars), vcv(nobs,nobs))
+
+    status = NF_STATUS_UNDEFINED
+    call cov (x, vcv, dim=0, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
+        'Invalid input: DIM=0')
+
+    status = NF_STATUS_UNDEFINED
+    call cov (x, vcv, dim=3, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
+        'Invalid input: DIM=3')
+
+    ! Invalid DOF argument
+    status = NF_STATUS_UNDEFINED
+    call cov (x, vcv, dof=-1, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
+        'Invalid input: DOF=0')
+
+    status = NF_STATUS_UNDEFINED
+    call cov (x, vcv, dof=2, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
+        'Invalid input: DOF=2')
+
+    deallocate (x, vcv)
+
+    ! === Degenerate input data ===
+    nobs = 1
+    nvars = 1
+    allocate (x(nobs,nvars), vcv(nvars,nvars))
+    x(:,:) = 1.0
+    status = NF_STATUS_UNDEFINED
+    call cov (x, vcv, status=status)
+    call tc%assert_true (status == NF_STATUS_OK .and. all(vcv == 0.0), &
+        'COV called with a single observation')
+    deallocate (x, vcv)
+
+    ! Single input variable, multiple observations
+    nobs = 10
+    nvars = 1
+    allocate (x(nobs,nvars), vcv(nvars,nvars))
+    call random_number (x)
+    status = NF_STATUS_UNDEFINED
+    call cov (x, vcv, status=status)
+    call std (x(:,1), s)
+    vcv_ok = all(abs(vcv - s**2.0_PREC) < 1.0e-8_PREC)
+    call tc%assert_true (status == NF_STATUS_OK .and. vcv_ok, &
+        'COV called with single variable, multiple observations')
+    deallocate (x, vcv)
+
+    ! Single input variable, swapped dimensions
+    nobs = 2
+    nvars = 1
+    allocate (x(nvars,nobs), vcv(nvars,nvars))
+    call random_number(x)
+    status = NF_STATUS_UNDEFINED
+    call cov (x, vcv, dim=2, status=status)
+    call std (x(1,:), s)
+    vcv_ok = all(abs(vcv - s**2.0_PREC) < 1.0e-8_PREC)
+    call tc%assert_true (status == NF_STATUS_OK .and. vcv_ok, &
+        'COV called with single variable, DIM=2')
+    deallocate (x, vcv)
+
+    ! === Input data with many variables/obs ===
+    ! v2 is exact linear function of v1
+    nobs = 100
+    nvars = 2
+    allocate (x(nobs,nvars), vcv(nvars,nvars))
+    call random_number (x(:,1))
+    alpha = 0.123d0
+    beta1 = 0.456d0
+    x(:,2) = alpha + beta1 * x(:,1)
+    status = NF_STATUS_UNDEFINED
+    call cov (x, vcv, status=status)
+    ! Correct value of Cov(x1,x2) = Cov(x1,alpha+beta1*x1) = beta1*Var(x1)
+    vcv_ok = abs(beta1*vcv(1,1) - vcv(1,2)) < 1.0e-8_PREC
+    call tc%assert_true (status == NF_STATUS_OK .and. vcv_ok, &
+        'COV called with X2 = alpha + beta1*X1')
+    deallocate (x, vcv)
+
+    ! Add some noise such that
+    ! X2 = alpha + beta1 * X1 + eps
+    nobs = 10000
+    nvars = 2
+    allocate (x(nvars,nobs), vcv(nvars,nvars), eps(nobs))
+    call random_number (x(1,:))
+    call rvs (norm, eps, scale=0.1_PREC)
+    alpha = -0.2345d0
+    beta1 = 1.234d0
+    x(2,:) = alpha + beta1 * x(1,:) + eps
+    status = NF_STATUS_UNDEFINED
+    call cov (x, vcv, dim=2, status=status)
+    ! Correct value of Cov(x1,x2) = Cov(x1,alpha+beta1*x1+eps) = beta1*Var(x1)
+    ! as eps and x1 are uncorrelated
+    vcv_ok = abs(beta1*vcv(1,1) - vcv(1,2)) < 1.0e-3_PREC
+    call tc%assert_true (status == NF_STATUS_OK .and. vcv_ok, &
+        'COV called with X2 = alpha + beta1*X1 + eps, DIM=2')
+    deallocate (x, vcv, eps)
+
+    ! === CORRCOEF tests ===
+    ! Degenerate input data
+    nobs = 1
+    nvars = 1
+    allocate (x(nobs, nvars), vcv(nvars,nvars))
+    x(:,:) = 1.0
+    status = NF_STATUS_UNDEFINED
+    call corrcoef (x, vcv, status=status)
+    vcv_ok = all(vcv == 1.0)
+    call tc%assert_true (status == NF_STATUS_OK .and. vcv_ok, &
+        'CORRCOEF called with 1 variable / 1 obs.')
+    deallocate (x, vcv)
+
+    ! Call with one variable, multiple obs.
+    nobs = 21343
+    nvars = 1
+    allocate (x(nobs, nvars), vcv(nvars,nvars))
+    call random_number (x)
+    status = NF_STATUS_UNDEFINED
+    call corrcoef (x, vcv, status=status)
+    vcv_ok = all(vcv == 1.0)
+    call tc%assert_true (status == NF_STATUS_OK .and. vcv_ok, &
+        'CORRCOEF called with 1 variable, multiple obs.')
+    deallocate (x, vcv)
+
+    ! === CORRCOEF tests with several variables
+    nobs = 50000
+    nvars = 3
+    allocate (x(nobs,nvars), vcv(nvars,nvars), eps(nobs))
+    allocate (var_x(nvars))
+    call random_number (x(:,1))
+    call rvs (norm, eps, scale=0.1_PREC)
+    call std (eps, var_eps1)
+    var_eps1 = var_eps1**2.0
+
+    beta1 = 0.234d0
+    beta2 = -7.2389d0
+    x(:,2) = 0.213d0 + beta1 * x(:,1) + eps
+
+    call rvs (norm, eps, scale=0.05_PREC)
+    call std (eps, var_eps2)
+    var_eps2 = var_eps2**2.0
+
+    x(:,3) = -12.234d0 + beta2 * x(:,1) + eps
+    call std (x, var_x)
+    var_x(:) = var_x**2.0
+
+    status = NF_STATUS_UNDEFINED
+    call corrcoef (x, vcv, status=status)
+    ! Cov(x1,x2) = beta1 * var(x1) as above
+    ! Var(x2) = beta1^2 * Var(x1) + Var(eps)
+    ! Corr(x1,x2) = beta1 * Var(x1) / sqrt(Var(x1) * (beta^2*Var(x1) + Var(eps))
+    ! For correlations between X2, X3:
+    !   Cov(x2,x3)  = Cov(alpha1+beta1*x1+eps1, alpha2+beta2*x1+eps2) =
+    !               = beta1 * beta2 * Var(x1)
+    !   Corr(x2,x3) = (beta1*beta2*Var(X1))/sqrt((beta1^2*Var(x1)+Var(eps1)) *
+    !                   (beta2^2*Var(X1)+Var(eps2))
+    allocate (vcv_desired(nvars,nvars), source=1.0_PREC)
+    vcv_desired(1,3) = beta2 * var_x(1) / sqrt(var_x(1) * (beta2**2.0*var_x(1) + var_eps2))
+    vcv_desired(3,1) = vcv_desired(1,3)
+    vcv_desired(2,1) = beta1 * var_x(1) / sqrt(var_x(1) * (beta1**2.0*var_x(1) + var_eps1))
+    vcv_desired(1,2) = vcv_desired(2,1)
+    vcv_desired(2,3) = beta1*beta2*var_x(1)/sqrt((beta1**2.0*var_x(1) + var_eps1)) &
+        / sqrt(beta2**2.0 * var_x(1) + var_eps2)
+    vcv_desired(3,2) = vcv_desired(2,3)
+
+    diff = maxval(abs(vcv - vcv_desired))
+
+    vcv_ok = diff < 1.0e-3_PREC
+    call tc%assert_true (status == NF_STATUS_OK .and. vcv_ok, &
+        'CORRCOEF called with X2, X3 linear functions of X1 with error terms')
+
+
+end subroutine
+
+
 
 end program
