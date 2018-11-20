@@ -94,18 +94,17 @@ pure subroutine __APPEND(mean_2d,__PREC) (x, m, dim, status)
     !*  MEAN computes the mean of array elements along a dimension.
 
     integer, parameter :: PREC = __PREC
-
-    ! Input data. Multiple 'variables' are supported
-    ! and can be organized either in rows or columns (goverened by the dim argument)
     real (PREC), intent(in), dimension(:,:) :: x
-    ! Contains variable means on exit.
-    ! Array needs to be at least as large as the number of variables.
+        !*  Input data. Variables can either be stored column-wise (default)
+        !   or row-wise. (see DIM argument)
     real (PREC), intent(out), dimension(:) :: m
-    ! If present, specifies the dimension along which to normalize (default: dim=1)
+        !*  Array of means, needs to be at least as large as the number of
+        !   variables.
     integer, intent(in), optional :: dim
-    ! If present, returns 0 on exit if normalization was successful,
-    ! and status > 0 if an error was encountered
+        !*  If present, specifies the dimension along which to compute means
+        !   (default: dim=1 implies that variables are stored column-wise)
     type (status_t), intent(out), optional :: status
+        !*  Optional exit status
 
     real (PREC), dimension(:), allocatable :: m_old, m_new
     type (status_t) :: lstatus
@@ -771,5 +770,164 @@ subroutine __APPEND(quantile_dispatch_scalar,__PREC) (x, pmf, rnk, q, &
     rnk1(1) = rnk
     call quantile (x, pmf, rnk1, q1, interp, sort, status)
     q = q1(1)
+
+end subroutine
+
+
+
+subroutine __APPEND(cov_check_input,__PREC) (x, cov, dim, dof, status)
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in), dimension(:,:) :: x
+    real (PREC), intent(in), dimension(:,:) :: cov
+    integer, intent(in), optional :: dim
+    integer, intent(in), optional :: dof
+    type (status_t), intent(out) :: status
+
+    integer :: shp(2), nvars, nobs, ldim
+
+    ldim = 1
+    if (present(dim)) ldim = dim
+
+    if (ldim < 1 .or. ldim > 2) goto 100
+    if (present(dof)) then
+        if (dof < 0 .or. dof  > 1) goto 100
+    end if
+
+    shp = shape(x)
+    nvars = shp(3-ldim)
+    nobs = shp(ldim)
+
+    if (size(cov,1) /= nvars) goto 100
+    if (size(cov,1) /= size(cov,2)) goto 100
+
+    status = NF_STATUS_OK
+    return
+
+100 continue
+
+    status = NF_STATUS_INVALID_ARG
+
+end subroutine
+
+
+
+
+subroutine __APPEND(cov,__PREC) (x, cov, dim, dof, status)
+    !*  COV estimates the variance-covariance matrix for a given set of
+    !   variables.
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in), dimension(:,:), contiguous :: x
+        !*  Array of input data. If DIM=1 (the default), it is assumed that
+        !   each column contains a variable, while for DIM=2 each column
+        !   contains one (multivariate) observation.
+    real (PREC), intent(out), dimension(:,:), contiguous :: cov
+        !*  Estimated variance-covariance matrix
+    integer, intent(in), optional :: dim
+        !*  Dimension along which covariances should be computed (default: dim=1
+        !   which implies that each column corresponds to one variable)
+    integer, intent(in), optional :: dof
+        !*  Degrees-of-freedom correction to apply (default: dof=1)
+    type (status_t), intent(out), optional :: status
+        !*  Optional exit status
+
+    integer :: ldim, ldof, nvars, nobs
+    type (status_t) :: lstatus
+    real (PREC) :: alpha, beta
+    integer :: shp(2)
+    real (PREC), dimension(:), allocatable :: m
+
+    ldim = 1
+    ldof = 1
+    if (present(dim)) ldim = dim
+    if (present(dof)) ldof = dof
+
+    lstatus = NF_STATUS_OK
+
+    call cov_check_input (x, cov, dim, dof, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    shp = shape(x)
+    nvars = shp(3-ldim)
+    nobs = shp(ldim)
+
+    cov = 0.0
+    ! Covariance is zero in degenerate cases
+    if (nobs < 2) goto 100
+
+    ! Compute vector of means
+    allocate (m(nvars))
+    m(:) = sum(x, dim=ldim)
+    m(:) = m / nobs
+
+    ! Compute outer product m x m' = E[X] * E[X']
+    call BLAS_GER (m=nvars, n=nvars, alpha=1.0_PREC, x=m, incx=1, y=m, &
+        incy=1, a=cov, lda=nvars)
+
+    alpha = 1.0_PREC / (nobs - ldof)
+    beta = - real(nobs, PREC) / (nobs - ldof)
+    ! Compute covariance E[XX'] - E[X]E[X']
+    if (ldim == 1) then
+        ! X has shape [NOBS, NVARS], need to compute X'X
+        call BLAS_GEMM (transa='T', transb='N', m=nvars, n=nvars, k=nobs, &
+            alpha=alpha, a=x, lda=nobs, b=x, ldb=nobs, beta=beta, &
+            c=cov, ldc=nvars)
+    else
+        ! X has shape [NVARS, NOBS], need to compute XX'
+        call BLAS_GEMM (transa='N', transb='T', m=nvars, n=nvars, k=nobs, &
+            alpha=alpha, a=x, lda=nvars, b=x, ldb=nvars, beta=beta, &
+            c=cov, ldc=nvars)
+    end if
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+
+
+subroutine __APPEND(corrcoef,__PREC) (x, corr, dim, dof, status)
+    !*  CORRCOEF estimates the Pearson's correlation coefficient for a given
+    !   set of vaiables.
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in), dimension(:,:), contiguous :: x
+        !*  Array of input data. If DIM=1 (the default), it is assumed that
+        !   each column contains a variable, while for DIM=2 each column
+        !   contains one (multivariate) observation.
+    real (PREC), intent(out), dimension(:,:), contiguous :: corr
+        !*  Estimated variance-covariance matrix
+    integer, intent(in), optional :: dim
+        !*  Dimension along which covariances should be computed (default: dim=1
+        !   which implies that each column corresponds to one variable)
+    integer, intent(in), optional :: dof
+        !*  Degrees-of-freedom correction to apply (default: dof=1)
+    type (status_t), intent(out), optional :: status
+        !*  Optional exit status
+
+    type (status_t) :: lstatus
+    real (PREC) :: s
+    integer :: i, ldim, shp(2), nvars
+
+    ! Compute VCV matrix (input checks are also performed by COV routine
+    call cov (x, corr, dim, dof, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ldim = 1
+    if (present(dim)) ldim = dim
+
+    shp = shape(x)
+    nvars = shp(3-ldim)
+
+    do i = 1, nvars
+        s = sqrt(corr(i,i))
+        corr(:,i) = corr(:,i) / s
+        corr(i,:) = corr(i,:) / s
+        ! Make sure diagonal elements are identically 1.0
+        corr(i,i) = 1.0
+    end do
+
+100 continue
+    if (present(status)) status = lstatus
 
 end subroutine

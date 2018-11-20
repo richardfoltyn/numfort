@@ -9,11 +9,15 @@ module numfort_stats_core
     use numfort_common
     use numfort_interpolate
 
+    use blas_interfaces, only: BLAS_GER => GER, BLAS_GEMM => GEMM
+
     implicit none
     private
 
     public :: mean
     public :: std
+    public :: cov
+    public :: corrcoef
     public :: normalize
     public :: quantile
 

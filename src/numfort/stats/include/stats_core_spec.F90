@@ -35,3 +35,15 @@ end interface
 interface quantile_discrete_check_input
     procedure __APPEND(quantile_discrete_check_input,__PREC)
 end interface
+
+interface cov
+    procedure __APPEND(cov,__PREC)
+end interface
+
+interface cov_check_input
+    procedure __APPEND(cov_check_input,__PREC)
+end interface
+
+interface corrcoef
+    procedure __APPEND(corrcoef,__PREC)
+end interface
