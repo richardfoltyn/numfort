@@ -863,8 +863,16 @@ subroutine __APPEND(cov,__PREC) (x, cov, dim, dof, status)
     call BLAS_GER (m=nvars, n=nvars, alpha=1.0_PREC, x=m, incx=1, y=m, &
         incy=1, a=cov, lda=nvars)
 
+    ! Note on DOF correction: Assume we are computing the sample
+    ! Covariance as
+    !   Cov(x,y) = 1/(n-1) * sum((x_i-mu_x)(y_i-mu_y))
+    ! Then this equals
+    !   Cov(x,y) = 1/(n-1) * sum(x_i * y_i) - n/(n-1) * mu_x * mu_y
+    ! thus we have to rescale the product of means by n/(n-1).
     alpha = 1.0_PREC / (nobs - ldof)
+    ! Scaling factor on product of means, as computed above
     beta = - real(nobs, PREC) / (nobs - ldof)
+
     ! Compute covariance E[XX'] - E[X]E[X']
     if (ldim == 1) then
         ! X has shape [NOBS, NVARS], need to compute X'X

@@ -1,11 +1,18 @@
 
 
 subroutine __APPEND(dist_set_params,__PREC) (obj, mean, cov, status)
+    !*  DIST_SET_PARAMS copies the given distribution parametes
+    !   (arrays in the case of the MV normal distribution) into the
+    !   corresponding object attributes
     integer, parameter :: PREC = __PREC
     type (__APPEND(dmvnorm,__PREC)), intent(inout) :: obj
     real (PREC), intent(in), dimension(:) :: mean
+        !*  Vector of means
     real (PREC), intent(in), dimension(:,:) :: cov
+        !*  Variance-covariance matrix
     type (status_t), intent(out), optional :: status
+        !*  Optional exit code. Returns NF_STATUS_OK input arrays are
+        !   non-empty and have conformable shapes.
 
     type (status_t) :: lstatus
     integer :: nd, shp(2)
@@ -38,6 +45,8 @@ end subroutine
 
 
 subroutine __APPEND(rvs_check_input,__PREC) (obj, x, mean, cov, dim, tol, status)
+    !*  RVS_CHECK_INPUT performs input validation for arguments to
+    !   RVS routine for MV-normal distribution.
     integer, parameter :: PREC = __PREC
     type (__APPEND(dmvnorm,__PREC)), intent(in) :: obj
     real (PREC), intent(in), dimension(:,:) :: x
@@ -77,6 +86,12 @@ end subroutine
 
 
 subroutine __APPEND(dist_get_params,__PREC) (obj, mean, cov, ptr_mean, ptr_cov)
+    !*  DIST_GET_PARAMS returns pointers to the MV-normal parameter
+    !   arrays that should be used.
+    !
+    !   If MEAN or COV arguments are provided by the caller, it is assumed
+    !   that these should override the attributes of the OBJ distribution
+    !   object, and hence pointers the the former will be returned.
     integer, parameter :: PREC = __PREC
     type (__APPEND(dmvnorm,__PREC)), intent(in), target :: obj
     real (PREC), intent(in), dimension(:), optional, target, contiguous :: mean
@@ -104,6 +119,8 @@ end subroutine
 
 subroutine __APPEND(dmvnorm_rvs_1d,__PREC) (obj, x, mean, cov, &
         check_cov, tol, status)
+    !*  DMVNORM_RVS_1D returns one (vector-valued) draw from a MV-normal
+    !   distribution.
     integer, parameter :: PREC = __PREC
     type (__APPEND(dmvnorm,__PREC)), intent(in) :: obj
     real (PREC), intent(out), dimension(:), target, contiguous :: x
@@ -125,15 +142,42 @@ end subroutine
 
 subroutine __APPEND(dmvnorm_rvs_2d,__PREC) (obj, x, mean, cov, dim, &
         check_cov, tol, status)
+    !*  DMVNORM_RVS_2D draw samples from a multivariate normal distribution.
+    !
+    !   The distribution can either be parametrized by the MEAN and COV
+    !   attributes of the OBJ distribution object, or by explicitly passing
+    !   MEAN and/or COV arguments which override the corresponding attributes
+    !   in OBJ.
     integer, parameter :: PREC = __PREC
     type (__APPEND(dmvnorm,__PREC)), intent(in) :: obj
+        !*  DMVNORM distribution object
     real (PREC), intent(out), dimension(:,:), contiguous :: x
+        !*  Array containing the desired sample draw on exit
     real (PREC), intent(in), dimension(:), contiguous, optional :: mean
+        !*  Optional vector of means. If present, overrides values in
+        !   OBJ%MEAN.
     real (PREC), intent(in), dimension(:,:), contiguous, optional :: cov
+        !*  Optional variance-covariance matrix. If present, overrides values
+        !   in OBJ%COV.
     integer, intent(in), optional :: dim
+        !*  Optional DIM argument, controlling along which dimension
+        !   observations are stacked.
+        !   For DIM=1 (default), each row in X corresponds to one
+        !   (multivariate) draw, and thus each column represents one
+        !   (univariate) random variable.
+        !   The interpretation of DIM is analogous to its usage in
+        !   various routines computing sample moments, such as MEAN, STD and COV.
     logical, intent(in), optional :: check_cov
+        !*  Optional. If true (the default), the given variance-covariance matrix
+        !   is verified to be postive semi-definite using the given tolerance
+        !   TOL. If the VCV matrix is not p.d.s., the routine exists immediately.
     real (PREC), intent(in), optional :: tol
+        !*  Optional tolerance level when checking positive semi-definiteness
+        !   of variance-covariance matrix. COV is assumed to be p.s.d. if
+        !       |V*S*V' - COV| < TOL
+        !   where COV = U*S*V' is the SVD factorization of COV.
     type (status_t), intent(out), optional :: status
+        !*  Optional exit code.
 
     type (status_t) :: lstatus
     logical :: lcheck_cov
