@@ -224,7 +224,15 @@ set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${_FFLAGS_DEBUG}")
 # compiler flags.
 
 add_subdirectory(external)
+
+################################################################################
+# Stand-alone interface definitions for F77 routines and their wrappers
+
 add_subdirectory(interfaces)
+
+if (NOT USE_MKL)
+    add_subdirectory(wrappers)
+endif()
 
 ################################################################################
 # Targets
@@ -368,6 +376,15 @@ install(DIRECTORY "${${PROJECT_NAME}_MODDIR}/"
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${NUMFORT_INSTALL_DIR}"
     FILES_MATCHING PATTERN "numfort*.mod"
 )
+
+if (NOT USE_MKL)
+    # Install blas95 wrappers mod file if not built against MKL; otherwise
+    # client code is expected to use the interfaces provided by MKL.
+    install(FILES
+        "${${PROJECT_NAME}_MODDIR}/blas95.mod"
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${NUMFORT_INSTALL_DIR}"
+    )
+endif()
 
 install(FILES
         "${${PROJECT_NAME}_MODDIR}/blas_interfaces.mod"
