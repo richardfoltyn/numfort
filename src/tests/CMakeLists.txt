@@ -53,6 +53,10 @@ list(APPEND COMPONENTS
     stats
 )
 
+if (NOT USE_MKL)
+    list(APPEND COMPONENTS wrappers)
+endif()
+
 # keep only child items that are directories
 foreach (_comp IN LISTS COMPONENTS)
     # subdirectory stores source files (without directory prefix) in
@@ -84,6 +88,11 @@ foreach (_comp IN LISTS COMPONENTS)
             "${_comp}/${test_source}"
             ${${_comp}_aux_source}
         )
+
+        if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/${_comp}/include")
+            target_include_directories(${target_name} PRIVATE "${_comp}/include")
+        endif()
+
         target_link_libraries(${target_name} ${${CMAKE_PROJECT_NAME}_LIBRARIES})
         target_link_libraries(${target_name} fcore::fcore)
         set_target_properties(${target_name} PROPERTIES
