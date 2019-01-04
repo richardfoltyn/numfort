@@ -18,6 +18,8 @@ type :: __APPEND(lm_data,__PREC)
         !   before estimation.
     integer :: ncomp = 0
         !*  Actual number of principal components used in PCR (PCR only)
+    integer :: rank_rhs = 0
+        !*  Effective rank of regressor matrix
     integer :: nobs = 0
         !*  Number of observations
     integer :: nvars = 0

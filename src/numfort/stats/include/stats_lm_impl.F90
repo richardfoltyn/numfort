@@ -4,23 +4,24 @@
 !-------------------------------------------------------------------------------
 ! OLS
 
-pure subroutine __APPEND(ols_check_input,__PREC) (x, y, beta, add_const, trans_x, &
-        rcond, status)
+pure subroutine __APPEND(ols_check_input,__PREC) (y, x, beta, add_const, trans_x, &
+        rcond, res, status)
     integer, parameter :: PREC = __PREC
 
-    real (PREC), intent(in), dimension(:,:) :: x
     real (PREC), intent(in), dimension(:,:) :: y
+    real (PREC), intent(in), dimension(:,:) :: x
     real (PREC), intent(in), dimension(:,:) :: beta
     logical, intent(in) :: add_const
     logical, intent(in) :: trans_x
     real (PREC), intent(in) :: rcond
+    type (__APPEND(lm_data,__PREC)), intent(in), dimension(:), optional :: res
     type (status_t), intent(out) :: status
 
     integer :: nvars, nobs, nconst, nlhs, ncoefs
 
     status = NF_STATUS_INVALID_ARG
 
-    call ols_get_dims (x, y, add_const, trans_x, nobs, nvars, nlhs, ncoefs, nconst)
+    call ols_get_dims (y, x, add_const, trans_x, nobs, nvars, nlhs, ncoefs, nconst)
 
     if (nobs < ncoefs) return
     if (size(y, 1) /= nobs) return
@@ -28,11 +29,17 @@ pure subroutine __APPEND(ols_check_input,__PREC) (x, y, beta, add_const, trans_x
     if (size(beta, 1) /= ncoefs) return
     if (rcond < 0) return
 
+    if (present(res)) then
+        if (size(res) /= nlhs) return
+    end if
+
     status = NF_STATUS_OK
 
 end subroutine
 
-pure subroutine __APPEND(ols_get_dims,__PREC) (x, y, add_const, trans_x, &
+
+
+pure subroutine __APPEND(ols_get_dims,__PREC) (y, x, add_const, trans_x, &
         nobs, nvars, nlhs, ncoefs, nconst)
     !*  OLS_GET_DIMS returns the number of various dimensions of the least-squares
     !   problem, depending on input data arrays and whether these should be
@@ -63,8 +70,8 @@ end subroutine
 
 
 
-subroutine __APPEND(ols_2d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
-        rank, status)
+subroutine __APPEND(ols_2d,__PREC) (y, x, beta, add_const, trans_x, rcond, &
+        rank, res, status)
     !*  OLS_2D computes the ordinary least-squares problem for given independent
     !   data X and (potentially multiple) dependent variables Y.
     !
@@ -79,11 +86,11 @@ subroutine __APPEND(ols_2d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
 
     integer, parameter :: PREC = __PREC
 
-    real (PREC), intent(in), dimension(:,:) :: x
-        !*  Array of RHS variables
     real (PREC), intent(in), dimension(:,:) :: y
         !*  Array of LHS variables (separate regression is performed for each
         !   LHS variables using the same set of RHS variables)
+    real (PREC), intent(in), dimension(:,:) :: x
+        !*  Array of RHS variables
     real (PREC), intent(out), dimension(:,:) :: beta
         !*  Array of estimated coefficients
     logical, intent(in), optional :: add_const
@@ -95,11 +102,14 @@ subroutine __APPEND(ols_2d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
         !   control the effective rank of the regressor matrix.
     integer, intent(out), optional :: rank
         !*  Contains effective rank of regressor matrix
+    type (__APPEND(lm_data,__PREC)), dimension(:), optional :: res
+        !*  Optional result objects for linear models. Note that a separate
+        !   object is returned for each LHS variable.
     type (status_t), intent(out), optional :: status
         !*  Optional exit code
 
     logical :: ladd_const, ltrans_x
-    real (PREC) :: lrcond
+    real (PREC) :: lrcond, var_rhs
     integer :: nobs, nvars, ncoefs, nconst, nlhs, i
     type (status_t) :: lstatus
 
@@ -122,10 +132,10 @@ subroutine __APPEND(ols_2d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
     lrcond = 100 * epsilon(1.0_PREC)
     if (present(rcond)) lrcond = rcond
 
-    call ols_check_input (x, y, beta, ladd_const, ltrans_x, lrcond, lstatus)
+    call ols_check_input (y, x, beta, ladd_const, ltrans_x, lrcond, res, lstatus)
     if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
-    call ols_get_dims (x, y, ladd_const, ltrans_x, nobs, nvars, nlhs, ncoefs, nconst)
+    call ols_get_dims (y, x, ladd_const, ltrans_x, nobs, nvars, nlhs, ncoefs, nconst)
 
     ! Allocate (possibly transposed) array to store X variables; will be
     ! overwritten by GELSD, so we have to allocate in any case.
@@ -185,6 +195,20 @@ subroutine __APPEND(ols_2d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
     ! Copy over optional output arguments
     if (present(rank)) rank = lrank
 
+    if (present(res)) then
+        ! Update LM_DATA result objects for OLS model
+
+        ! Fraction of RHS variance used, analogous to PCR regression
+        ! (only applicable if RHS matrix does not have full rank)
+        var_rhs = sum(sval(1:lrank) ** 2.0_PREC) / sum(sval**2.0_PREC)
+
+        do i = 1, nlhs
+            call lm_data_update (res(i), model=NF_STATS_LM_OLS, &
+                coefs=beta(:,i), nobs=nobs, nvars=nvars, var_expl=var_rhs, &
+                rank_rhs=lrank, trans_rhs=ltrans_x, add_const=ladd_const)
+        end do
+    end if
+
 100 continue
     if (present(status)) status = lstatus
 
@@ -192,27 +216,29 @@ end subroutine
 
 
 
-subroutine __APPEND(ols_1d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
-        rank, status)
+subroutine __APPEND(ols_1d,__PREC) (y, x, beta, add_const, trans_x, rcond, &
+        rank, res, status)
     !*  OLS_1D provides a convenient wrapper for OLS_2D for one-dimensional
     !   input data (ie for regressions with a single dependent variable).
     !
     !   See the documentation for OLS_2D for details.
     integer, parameter :: PREC = __PREC
 
-    real (PREC), intent(in), dimension(:,:) :: x
     real (PREC), intent(in), dimension(:), target :: y
+    real (PREC), intent(in), dimension(:,:) :: x
     real (PREC), intent(out), dimension(:) :: beta
     logical, intent(in), optional :: add_const
     logical, intent(in), optional :: trans_x
     real (PREC), intent(in), optional :: rcond
     integer, intent(out), optional :: rank
+    type (__APPEND(lm_data,__PREC)), intent(out), optional :: res
     type (status_t), intent(out), optional :: status
 
     real (PREC), dimension(:,:), pointer :: ptr_y
     real (PREC), dimension(:,:), allocatable :: beta2d
     integer :: nobs, ncoefs
     type (status_t) :: lstatus
+    type (__APPEND(lm_data,__PREC)), dimension(1) :: res1d
 
     nobs = size(y)
     ncoefs = size(beta)
@@ -220,12 +246,19 @@ subroutine __APPEND(ols_1d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
     ptr_y(1:nobs,1:1) => y
     allocate (beta2d(ncoefs,1), source=0.0_PREC)
 
-    call ols (x, ptr_y, beta2d, add_const, trans_x, rcond, rank, lstatus)
+    if (present(res)) then
+        call ols (ptr_y, x, beta2d, add_const, trans_x, rcond, rank, &
+            res=res1d, status=lstatus)
+    else
+        call ols (ptr_y, x, beta2d, add_const, trans_x, rcond, rank, &
+            status=lstatus)
+    end if
 
     ! Leave output array unmodified if OLS could not be performed correctly
     ! to be consistent with behavior of OLS_2D.
     if (lstatus == NF_STATUS_OK) then
         beta(:) = beta2d(:,1)
+        if (present(res)) res = res1d(1)
     end if
 
     if (present(status)) status = lstatus
@@ -550,6 +583,8 @@ pure subroutine __APPEND(pcr_get_dims,__PREC) (lhs, scores, coefs, add_const, &
     nlhs = size(lhs, 2)
 
 end subroutine
+
+
 
 subroutine __APPEND(pcr_2d,__PREC) (lhs, scores, sval, loadings, coefs, mean_x, std_x, &
         center, add_const, status)

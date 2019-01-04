@@ -89,7 +89,7 @@ subroutine example1 ()
     y = y + shocks
 
     ! Run regular OLS
-    call ols (x, y, coefs(:,1), add_const=.true., status=status)
+    call ols (y, x, coefs(:,1), add_const=.true., status=status)
 
     ! Allocate array to store residuals for OLS and for PCR with 1,2,3 components
     allocate (resid(nobs, nvars+1))
