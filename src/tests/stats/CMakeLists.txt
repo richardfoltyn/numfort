@@ -8,6 +8,7 @@ set(${COMPONENT_NAME}_FILES
     dlogistic.f90
     dmvnorm.f90
     dnorm.f90
+    lm.f90
     markov.f90
     PARENT_SCOPE
 )
