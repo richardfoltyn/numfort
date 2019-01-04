@@ -86,7 +86,7 @@ subroutine test_OLS_1d_args (tests)
 
     deallocate (x, y, beta)
 
-    ! === incompabible X, BETA ===
+    ! === incompabible X, COEFS ===
     nrhs = 3
     nobs = 5
     ! Note: constant added by default
@@ -96,11 +96,11 @@ subroutine test_OLS_1d_args (tests)
     status = NF_STATUS_UNDEFINED
     call ols (y, x, beta, status=status)
     call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
-        "Non-conformable arrays X, BETA")
+        "Non-conformable arrays X, COEFS")
 
     deallocate (x, y, beta)
 
-    ! === incompabible X^T, BETA ===
+    ! === incompabible X^T, COEFS ===
     nrhs = 3
     nobs = 5
     ! Note: constant added by default
@@ -110,11 +110,11 @@ subroutine test_OLS_1d_args (tests)
     status = NF_STATUS_UNDEFINED
     call ols (y, x, beta, trans_x=.true., status=status)
     call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
-        "Non-conformable arrays X^T, BETA")
+        "Non-conformable arrays X^T, COEFS")
 
     deallocate (x, y, beta)
 
-    ! === incompabible X, BETA with ADD_CONST=.FALSE. ===
+    ! === incompabible X, COEFS with ADD_CONST=.FALSE. ===
     nrhs = 3
     nobs = 5
     ncoefs = nrhs + 1
@@ -123,7 +123,7 @@ subroutine test_OLS_1d_args (tests)
     status = NF_STATUS_UNDEFINED
     call ols (y, x, beta, add_const=.false., status=status)
     call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
-        "Non-conformable arrays X, BETA with ADD_CONST=.FALSE.")
+        "Non-conformable arrays X, COEFS with ADD_CONST=.FALSE.")
 
     deallocate (x, y, beta)
 
@@ -200,7 +200,7 @@ subroutine test_OLS_2d_args (tests)
 
     deallocate (x, y, beta)
 
-    ! === incompabible X, BETA ===
+    ! === incompabible X, COEFS ===
     nrhs = 3
     nlhs = 1
     nobs = 5
@@ -211,11 +211,11 @@ subroutine test_OLS_2d_args (tests)
     status = NF_STATUS_UNDEFINED
     call ols (y, x, beta, status=status)
     call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
-        "Non-conformable arrays X, BETA")
+        "Non-conformable arrays X, COEFS")
 
     deallocate (x, y, beta)
 
-    ! === incompabible X^T, BETA ===
+    ! === incompabible X^T, COEFS ===
     nrhs = 3
     nlhs = 1
     nobs = 5
@@ -226,11 +226,11 @@ subroutine test_OLS_2d_args (tests)
     status = NF_STATUS_UNDEFINED
     call ols (y, x, beta, trans_x=.true., status=status)
     call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
-        "Non-conformable arrays X^T, BETA")
+        "Non-conformable arrays X^T, COEFS")
 
     deallocate (x, y, beta)
 
-    ! === incompabible X, BETA with ADD_CONST=.FALSE. ===
+    ! === incompabible X, COEFS with ADD_CONST=.FALSE. ===
     nrhs = 3
     nlhs = 1
     nobs = 5
@@ -240,11 +240,11 @@ subroutine test_OLS_2d_args (tests)
     status = NF_STATUS_UNDEFINED
     call ols (y, x, beta, add_const=.false., status=status)
     call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
-        "Non-conformable arrays X, BETA with ADD_CONST=.FALSE.")
+        "Non-conformable arrays X, COEFS with ADD_CONST=.FALSE.")
 
     deallocate (x, y, beta)
 
-    ! === incompabible Y, BETA ===
+    ! === incompabible Y, COEFS ===
     nrhs = 3
     nlhs = 1
     nobs = 5
@@ -254,7 +254,7 @@ subroutine test_OLS_2d_args (tests)
     status = NF_STATUS_UNDEFINED
     call ols (y, x, beta, status=status)
     call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
-        "Non-conformable arrays Y, BETA")
+        "Non-conformable arrays Y, COEFS")
 
     deallocate (x, y, beta)
 
@@ -330,6 +330,18 @@ subroutine test_OLS_2d (tests)
     call tc%assert_true (status == NF_STATUS_OK .and. &
         all_close (beta, beta_ok, rtol=RTOL, atol=ATOL), &
         'Exactly identified system: estimation')
+
+    ! Test without optional COEFS argument
+    deallocate (lm)
+    allocate (lm(nlhs))
+    status = NF_STATUS_UNDEFINED
+    call ols (y, x, add_const=.false., rank=rank, res=lm, status=status)
+    all_ok = .true.
+    do i = 1, nlhs
+        all_ok = all_ok .and. all_close (lm(i)%coefs, beta_ok(:,i), rtol=RTOL, atol=ATOL)
+    end do
+    call tc%assert_true (status == NF_STATUS_OK .and. all_ok, &
+        'Exactly identified system: estimation w/o COEFS argument')
 
     ! Compute R^2 which must be 1.0 in this case
     all_ok = .true.
@@ -444,7 +456,7 @@ subroutine test_OLS_1d (tests)
         ! Arguments for ALL_CLOSE()
     real (PREC) :: rsq
     type (status_t) :: status
-    type (lm_data) :: lm
+    type (lm_data), allocatable :: lm
 
     tc => tests%add_test ('OLS[1d] unit tests')
 
@@ -463,10 +475,20 @@ subroutine test_OLS_1d (tests)
     call BLAS95_GEMV (x, beta_ok, y)
 
     status = NF_STATUS_UNDEFINED
+    allocate (lm)
     call ols (y, x, beta, add_const=.false., rank=rank, res=lm, status=status)
     call tc%assert_true (status == NF_STATUS_OK .and. &
         all_close (beta, beta_ok, rtol=RTOL, atol=ATOL), &
         'Exactly identified system: estimation')
+
+    ! Test w/o optional COEFS argument, coefs are stored in LM_DATA
+    deallocate (lm)
+    allocate (lm)
+    status = NF_STATUS_UNDEFINED
+    call ols (y, x, add_const=.false., rank=rank, res=lm, status=status)
+    call tc%assert_true (status == NF_STATUS_OK .and. &
+        all_close (lm%coefs, beta_ok, rtol=RTOL, atol=ATOL), &
+        'Exactly identifies system: estimation w/o COEFS argument')
 
     ! Compute R^2 which must be 1.0 in this case
     status = NF_STATUS_UNDEFINED

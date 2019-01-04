@@ -1,16 +1,15 @@
 
-! Define LAPACK routines for given precision
 
 !-------------------------------------------------------------------------------
 ! OLS
 
-pure subroutine __APPEND(ols_check_input,__PREC) (y, x, beta, add_const, trans_x, &
+pure subroutine __APPEND(ols_check_input,__PREC) (y, x, coefs, add_const, trans_x, &
         rcond, res, status)
     integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in), dimension(:,:) :: y
     real (PREC), intent(in), dimension(:,:) :: x
-    real (PREC), intent(in), dimension(:,:) :: beta
+    real (PREC), intent(in), dimension(:,:), optional :: coefs
     logical, intent(in) :: add_const
     logical, intent(in) :: trans_x
     real (PREC), intent(in) :: rcond
@@ -25,8 +24,10 @@ pure subroutine __APPEND(ols_check_input,__PREC) (y, x, beta, add_const, trans_x
 
     if (nobs < ncoefs) return
     if (size(y, 1) /= nobs) return
-    if (size(beta, 2) /= nlhs) return
-    if (size(beta, 1) /= ncoefs) return
+    if (present(coefs)) then
+        if (size(coefs, 2) /= nlhs) return
+        if (size(coefs, 1) /= ncoefs) return
+    end if
     if (rcond < 0) return
 
     if (present(res)) then
@@ -70,7 +71,7 @@ end subroutine
 
 
 
-subroutine __APPEND(ols_2d,__PREC) (y, x, beta, add_const, trans_x, rcond, &
+subroutine __APPEND(ols_2d,__PREC) (y, x, coefs, add_const, trans_x, rcond, &
         rank, res, status)
     !*  OLS_2D computes the ordinary least-squares problem for given independent
     !   data X and (potentially multiple) dependent variables Y.
@@ -91,8 +92,9 @@ subroutine __APPEND(ols_2d,__PREC) (y, x, beta, add_const, trans_x, rcond, &
         !   LHS variables using the same set of RHS variables)
     real (PREC), intent(in), dimension(:,:) :: x
         !*  Array of RHS variables
-    real (PREC), intent(out), dimension(:,:) :: beta
-        !*  Array of estimated coefficients
+    real (PREC), intent(out), dimension(:,:), optional :: coefs
+        !*  Array of estimated coefficients. Argument is optional in case
+        !   coefficients should only be stored in RES argument.
     logical, intent(in), optional :: add_const
         !*  If present and .TRUE., add constant to RHS variables (default: .TRUE.)
     logical, intent(in), optional :: trans_x
@@ -132,7 +134,7 @@ subroutine __APPEND(ols_2d,__PREC) (y, x, beta, add_const, trans_x, rcond, &
     lrcond = 100 * epsilon(1.0_PREC)
     if (present(rcond)) lrcond = rcond
 
-    call ols_check_input (y, x, beta, ladd_const, ltrans_x, lrcond, res, lstatus)
+    call ols_check_input (y, x, coefs, ladd_const, ltrans_x, lrcond, res, lstatus)
     if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
     call ols_get_dims (y, x, ladd_const, ltrans_x, nobs, nvars, nlhs, ncoefs, nconst)
@@ -191,7 +193,10 @@ subroutine __APPEND(ols_2d,__PREC) (y, x, beta, add_const, trans_x, rcond, &
     end if
 
     ! Copy coefficients
-    forall (i=1:nlhs) beta(1:ncoefs,i) = lhs(1:ncoefs,i)
+    if (present(coefs)) then
+        forall (i=1:nlhs) coefs(1:ncoefs,i) = lhs(1:ncoefs,i)
+    end if
+
     ! Copy over optional output arguments
     if (present(rank)) rank = lrank
 
@@ -204,7 +209,7 @@ subroutine __APPEND(ols_2d,__PREC) (y, x, beta, add_const, trans_x, rcond, &
 
         do i = 1, nlhs
             call lm_data_update (res(i), model=NF_STATS_LM_OLS, &
-                coefs=beta(:,i), nobs=nobs, nvars=nvars, var_expl=var_rhs, &
+                coefs=lhs(1:ncoefs,i), nobs=nobs, nvars=nvars, var_expl=var_rhs, &
                 rank_rhs=lrank, trans_rhs=ltrans_x, add_const=ladd_const)
         end do
     end if
@@ -216,7 +221,7 @@ end subroutine
 
 
 
-subroutine __APPEND(ols_1d,__PREC) (y, x, beta, add_const, trans_x, rcond, &
+subroutine __APPEND(ols_1d,__PREC) (y, x, coefs, add_const, trans_x, rcond, &
         rank, res, status)
     !*  OLS_1D provides a convenient wrapper for OLS_2D for one-dimensional
     !   input data (ie for regressions with a single dependent variable).
@@ -226,7 +231,7 @@ subroutine __APPEND(ols_1d,__PREC) (y, x, beta, add_const, trans_x, rcond, &
 
     real (PREC), intent(in), dimension(:), target :: y
     real (PREC), intent(in), dimension(:,:) :: x
-    real (PREC), intent(out), dimension(:) :: beta
+    real (PREC), intent(out), dimension(:), optional :: coefs
     logical, intent(in), optional :: add_const
     logical, intent(in), optional :: trans_x
     real (PREC), intent(in), optional :: rcond
@@ -235,29 +240,30 @@ subroutine __APPEND(ols_1d,__PREC) (y, x, beta, add_const, trans_x, rcond, &
     type (status_t), intent(out), optional :: status
 
     real (PREC), dimension(:,:), pointer :: ptr_y
-    real (PREC), dimension(:,:), allocatable :: beta2d
+    real (PREC), dimension(:,:), allocatable :: coefs2d
     integer :: nobs, ncoefs
     type (status_t) :: lstatus
-    type (__APPEND(lm_data,__PREC)), dimension(1) :: res1d
+    type (__APPEND(lm_data,__PREC)), dimension(:), allocatable :: res1d
 
     nobs = size(y)
-    ncoefs = size(beta)
+    ncoefs = size(coefs)
 
     ptr_y(1:nobs,1:1) => y
-    allocate (beta2d(ncoefs,1), source=0.0_PREC)
+
+    if (present(coefs)) then
+        allocate (coefs2d(ncoefs,1))
+    end if
 
     if (present(res)) then
-        call ols (ptr_y, x, beta2d, add_const, trans_x, rcond, rank, &
-            res=res1d, status=lstatus)
-    else
-        call ols (ptr_y, x, beta2d, add_const, trans_x, rcond, rank, &
-            status=lstatus)
+        allocate (res1d(1))
     end if
+
+    call ols (ptr_y, x, coefs2d, add_const, trans_x, rcond, rank, res1d, lstatus)
 
     ! Leave output array unmodified if OLS could not be performed correctly
     ! to be consistent with behavior of OLS_2D.
     if (lstatus == NF_STATUS_OK) then
-        beta(:) = beta2d(:,1)
+        if (present(coefs)) coefs = coefs2d(:,1)
         if (present(res)) res = res1d(1)
     end if
 
