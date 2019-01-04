@@ -61,19 +61,42 @@ pure subroutine __APPEND(ols_get_dims,__PREC) (x, y, add_const, trans_x, &
 
 end subroutine
 
+
+
 subroutine __APPEND(ols_2d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
         rank, status)
+    !*  OLS_2D computes the ordinary least-squares problem for given independent
+    !   data X and (potentially multiple) dependent variables Y.
+    !
+    !   Note that a regression constant is added by default.
+    !
+    !   The LS problem is solved using SVD as implemented in LAPACK's GELSD
+    !   routine. The optional arguments RCOND and RANK are passed directly
+    !   to/from GELSD.
+    !
+    !   Note that the routine creates copies for input arrays X and Y as these
+    !   will be overwritten by GELSD.
 
     integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in), dimension(:,:) :: x
+        !*  Array of RHS variables
     real (PREC), intent(in), dimension(:,:) :: y
+        !*  Array of LHS variables (separate regression is performed for each
+        !   LHS variables using the same set of RHS variables)
     real (PREC), intent(out), dimension(:,:) :: beta
+        !*  Array of estimated coefficients
     logical, intent(in), optional :: add_const
+        !*  If present and .TRUE., add constant to RHS variables (default: .TRUE.)
     logical, intent(in), optional :: trans_x
+        !*  If present and .TRUE., transpose array X of RHS variables.
     real (PREC), intent(in), optional :: rcond
+        !*  Optional argument RCOND passed to LAPACK's GELSD that allows to
+        !   control the effective rank of the regressor matrix.
     integer, intent(out), optional :: rank
+        !*  Contains effective rank of regressor matrix
     type (status_t), intent(out), optional :: status
+        !*  Optional exit code
 
     logical :: ladd_const, ltrans_x
     real (PREC) :: lrcond
@@ -152,8 +175,6 @@ subroutine __APPEND(ols_2d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
         lwork, iwork, info)
 
     ! Check whether algorithm for computing SVD failed to converge
-    ! Note: Does GESDD return some approximate solution in this case, and
-    ! should we return it to the user?
     if (info > 0) then
         lstatus = NF_STATUS_NOT_CONVERGED
         goto 100
@@ -169,32 +190,49 @@ subroutine __APPEND(ols_2d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
 
 end subroutine
 
+
+
 subroutine __APPEND(ols_1d,__PREC) (x, y, beta, add_const, trans_x, rcond, &
         rank, status)
-
+    !*  OLS_1D provides a convenient wrapper for OLS_2D for one-dimensional
+    !   input data (ie for regressions with a single dependent variable).
+    !
+    !   See the documentation for OLS_2D for details.
     integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in), dimension(:,:) :: x
     real (PREC), intent(in), dimension(:), target :: y
-    real (PREC), intent(out), dimension(:), target :: beta
+    real (PREC), intent(out), dimension(:) :: beta
     logical, intent(in), optional :: add_const
     logical, intent(in), optional :: trans_x
     real (PREC), intent(in), optional :: rcond
     integer, intent(out), optional :: rank
     type (status_t), intent(out), optional :: status
 
-    real (PREC), dimension(:,:), pointer :: ptr_y, ptr_beta
+    real (PREC), dimension(:,:), pointer :: ptr_y
+    real (PREC), dimension(:,:), allocatable :: beta2d
     integer :: nobs, ncoefs
+    type (status_t) :: lstatus
 
     nobs = size(y)
     ncoefs = size(beta)
 
     ptr_y(1:nobs,1:1) => y
-    ptr_beta(1:ncoefs,1:1) => beta
+    allocate (beta2d(ncoefs,1), source=0.0_PREC)
 
-    call ols (x, ptr_y, ptr_beta, add_const, trans_x, rcond, rank, status)
+    call ols (x, ptr_y, beta2d, add_const, trans_x, rcond, rank, lstatus)
+
+    ! Leave output array unmodified if OLS could not be performed correctly
+    ! to be consistent with behavior of OLS_2D.
+    if (lstatus == NF_STATUS_OK) then
+        beta(:) = beta2d(:,1)
+    end if
+
+    if (present(status)) status = lstatus
 
 end subroutine
+
+
 
 !-------------------------------------------------------------------------------
 ! PCA (Principal component analysis)
