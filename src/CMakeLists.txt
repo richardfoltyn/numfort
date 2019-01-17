@@ -89,7 +89,13 @@ endif()
 # MKL
 if (USE_MKL)
     # find_package(MKL REQUIRED)
-    find_package(MKL REQUIRED SEQUENTIAL)
+    list(APPEND MKL_COMPONENTS SEQUENTIAL)
+    if (BUILD_TESTS OR BUILD_EXAMPLES)
+        # Fortran 95 interfaces to BLAS and LAPACK are used by some unit tests
+        # so require these components.
+        list(APPEND MKL_COMPONENTS BLAS95 LAPACK95)
+    endif ()
+    find_package(MKL REQUIRED ${MKL_COMPONENTS})
     set(${PROJECT_NAME}_BLA_LIBRARIES ${MKL_LIBRARIES})
 else ()
     find_package(LAPACK REQUIRED)

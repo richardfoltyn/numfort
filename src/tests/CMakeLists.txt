@@ -39,6 +39,16 @@ string(TOUPPER "${CMAKE_BUILD_TYPE}" _CONFIG)
 message(STATUS "Flags for TESTS: ${CMAKE_Fortran_FLAGS} ${CMAKE_Fortran_FLAGS_${_CONFIG}}")
 
 ################################################################################
+# MKL include directories
+# Unit test code is permitted to rely on MKL Fortran95 interfaces even though
+# we avoid this dependency in the main library.
+
+if (USE_MKL)
+    include_directories(${MKL_BLAS95_INCLUDE_DIR} ${MKL_LAPACK95_INCLUDE_DIR})
+endif ()
+
+
+################################################################################
 
 
 list(APPEND COMPONENTS
