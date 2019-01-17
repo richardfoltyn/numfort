@@ -6,6 +6,7 @@ set(SOURCE_FILES
     core.F90
     constants.f90
     combinatorics.F90
+    erfinv.F90
     misc.F90
 )
 
