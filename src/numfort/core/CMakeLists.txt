@@ -4,6 +4,7 @@ set(COMPONENT_NAME core)
 
 set(SOURCE_FILES
     core.F90
+    constants.f90
     combinatorics.F90
     misc.F90
 )

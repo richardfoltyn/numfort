@@ -10,17 +10,11 @@ module numfort_core_misc
     private
 
     public :: signum
-    public :: PI, PI_real32, PI_real64
 
     interface signum
-        module procedure signum_real32, signum_real64, signum_int32, signum_int64
+        procedure signum_real32, signum_real64, signum_int32, signum_int64
     end interface
 
-    ! Math constants
-    real (real64), parameter :: PI_real64 = 3.141592653589793238462643383279502884d0
-    real (real32), parameter :: PI_real32 = 3.141592653589793238462643383279502884
-
-    real (real64), parameter :: PI = PI_real64
 
 contains
 
