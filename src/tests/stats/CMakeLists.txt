@@ -6,6 +6,7 @@ set(${COMPONENT_NAME}_FILES
     descriptive.f90
     dfrechet.f90
     dlogistic.f90
+    dlognorm.F90
     dmvnorm.f90
     dnorm.f90
     lm.f90
