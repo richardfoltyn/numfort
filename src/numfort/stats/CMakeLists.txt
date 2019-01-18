@@ -11,6 +11,7 @@ set(SOURCE_FILES
     duniform.F90
     dfrechet.F90
     dgenpareto.F90
+    dlognorm.F90
     markov.F90
     stats.f90
     stats_lm.F90

@@ -11,6 +11,7 @@ module numfort_stats
     use numfort_stats_dfrechet
     use numfort_stats_dgenpareto
     use numfort_stats_dlogistic
+    use numfort_stats_dlognorm
     use numfort_stats_dmvnorm
     use numfort_stats_dnorm
     use numfort_stats_duniform
