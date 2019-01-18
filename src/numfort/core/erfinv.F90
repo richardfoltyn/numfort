@@ -3,7 +3,7 @@
 #include <numfort.h>
 
 module numfort_core_erfinv
-    !*  Module implements inverse of ERF function.
+    !*  Module implements inverse of ERF() and some other related functions.
     !   The code here is a port of the C implementation in Scipy, which
     !   is an adapted version of the code in the Cephes math library.
 

@@ -1,6 +1,17 @@
 
 
 elemental function __APPEND(erfinv,__PREC) (y) result(res)
+    !*  ERFINV returns the value X for a given value Y such that
+    !   Y = ERF(x), ie ERFINV implements the inverse function of the
+    !   Error function ERF.
+    !
+    !   Note on implementation: ERFINV calls the inverse CDF of a
+    !   standard-normal random variable implemented in NDTRI ported from
+    !   the Cephes math library.
+    !   We use the relationship
+    !       NDTRI(z) = sqrt(2) * ERFINV(2*y - 1)
+    !   to compute ERFINV as
+    !       ERFINV(y) = NDTRI((y+1)/2) / sqrt(2)
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: y
     real (PREC) :: res
@@ -107,7 +118,7 @@ elemental function __APPEND(ndtri,__PREC) (y) result(res)
     if (y1 > EXPM2) then
         y1 = y1 - 0.5_PREC
         y2 = y1 * y1
-        x = y1 + y1 * (y2 * polevl(y2, P0(1:4)) / p1evl(y2, Q0(1:8)))
+        x = y1 + y1 * (y2 * polevl(y2, P0(1:5)) / p1evl(y2, Q0(1:8)))
         x = x * S2PI
         goto 100
     end if
@@ -118,9 +129,9 @@ elemental function __APPEND(ndtri,__PREC) (y) result(res)
     z = 1.0_PREC / x
     if (x < 8.0_PREC) then
         !* y1 > exp(-32) = 1.26e-14
-        x1 = z * polevl(z, P1(1:8)) / p1evl(z, Q1(1:8))
+        x1 = z * polevl(z, P1(1:9)) / p1evl(z, Q1(1:8))
     else
-        x1 = z * polevl(z, P2(1:8)) / p1evl(z, Q2(1:8))
+        x1 = z * polevl(z, P2(1:9)) / p1evl(z, Q2(1:8))
     end if
 
     x = x0 - x1
