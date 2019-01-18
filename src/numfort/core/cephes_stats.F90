@@ -18,6 +18,7 @@ module numfort_core_cephes_stats
     private
 
     public :: erfinv
+    public :: ndtr
     public :: ndtri
 
 #include <numfort_real32.h>

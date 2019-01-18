@@ -8,6 +8,10 @@ interface ndtri
     procedure __APPEND(ndtri,__PREC)
 end interface
 
+interface ndtr
+    procedure __APPEND(ndtr,__PREC)
+end interface
+
 interface polevl
     procedure __APPEND(polevl,__PREC)
 end interface

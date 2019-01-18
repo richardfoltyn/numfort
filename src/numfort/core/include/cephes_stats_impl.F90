@@ -20,6 +20,36 @@ elemental function __APPEND(erfinv,__PREC) (y) result(res)
 end function
 
 
+
+elemental function __APPEND(ndtr,__PREC) (x) result(res)
+    !*  NDTR return the area under the (standard normal) Gaussian PDF,
+    !   integrated from minus infinity to X.
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in) :: x
+        !*  Upper bound of integration
+    real (PREC) :: res
+
+    real (PREC), parameter :: SQRT1_2 = 1.0_PREC / sqrt(2.0_PREC)
+    real (PREC) :: x1, z, y
+
+    x1 = x * SQRT1_2
+    z = abs(x1)
+
+    if (z < SQRT1_2) then
+        y = 0.5_PREC + 0.5_PREC * erf (x1)
+    else
+        y = 0.5 * erfc (z)
+        if (x1 > 0.0_PREC) then
+            y = 1.0_PREC - y
+        end if
+    end if
+
+    res = y
+
+end function
+
+
+
 elemental function __APPEND(ndtri,__PREC) (y) result(res)
     !*  NDTRI returns the argument x for which the area under the Gaussian
     !   probability density function (integrated from -inf to x) is equal to
