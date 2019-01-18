@@ -1,7 +1,8 @@
 
 
-program numfort_test_core_erfinv
-    !*  Unit tests for inverse ERF function (ERFINV)
+program numfort_test_core_cephes_stats
+    !*  Unit tests for selected stats-related functions ported from the
+    !   the Cephes math library.
 
     use, intrinsic :: iso_fortran_env
     use, intrinsic :: ieee_arithmetic
