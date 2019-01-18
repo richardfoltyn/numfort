@@ -6,4 +6,5 @@ build*/
 *.o
 docs/
 .idea/
-
+__pycache__/
+*.pyc
