@@ -260,10 +260,6 @@ pure subroutine __APPEND(bernstein_ppolyval,__PREC) (self, knots, coefs, x, y, &
 
     lstatus = NF_STATUS_OK
 
-    ! Perform common input checks
-    call bernstein_check_input (self, knots, coefs, status=lstatus)
-    if (lstatus /= NF_STATUS_OK) goto 100
-
     ! Perform input checks specific to evaluating polynomials
     call ppolyval_check_input (self, x, y, ext, left, right, lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
