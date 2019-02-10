@@ -16,6 +16,7 @@ pure function __APPEND(is_trans_matrix,__PREC) (mat, tol, transposed) result(res
     real (PREC) :: ltol
     integer :: dim
     logical :: ltransposed
+    real (PREC), dimension(:), allocatable :: rwork1d
 
     ltol = 1e-12_PREC
     ltransposed = .false.
@@ -29,7 +30,12 @@ pure function __APPEND(is_trans_matrix,__PREC) (mat, tol, transposed) result(res
 
     ! Check that all elements are non-negative and that rows (or columns if
     ! transposed=.true.) approximately sum to 1.0
-    res = all(mat >= 0.0_PREC) .and. all(abs(sum(mat, dim=dim) - 1.0_PREC) < ltol)
+    ! Explicitly allocate array to prevent temp. array compiler warnings.
+    allocate (rwork1d(size(mat,3-dim)))
+    rwork1d(:) = sum(mat, dim=dim)
+    res = all(mat >= 0.0_PREC) .and. all(abs(rwork1d - 1.0_PREC) < ltol)
+
+    deallocate (rwork1d)
 
 end function
 
