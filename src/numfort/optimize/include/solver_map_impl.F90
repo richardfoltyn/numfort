@@ -88,6 +88,7 @@ pure subroutine __APPEND(solver_map_init,__PREC) (self, lb, ub, y0, dy, dx, stat
 
     ylb = lb
     if (present(ub)) yub = ub
+    if (present(dx)) ldx = dx
 
     ! Input validation
     call check_nonzero (0.0_PREC, dy, 'dy', status=lstatus)
@@ -180,7 +181,7 @@ pure subroutine __APPEND(solver_map_eval_scalar,__PREC) (self, x, y, jac)
         continue
     case (TRANSFORM_LOGISTIC)
         y = lb + (ub-lb)/(1.0_PREC + exp(x/s))
-        dydx = (ub-lb)/(1.0_PREC + exp(x/s))**2.0_PREC * exp(x/s) / s
+        dydx = - (ub-lb)/(1.0_PREC + exp(x/s))**2.0_PREC * exp(x/s) / s
     end select
 
     if (present(jac)) then
