@@ -11,7 +11,7 @@ set(SOURCE_FILES
     kinds.f90
     status.f90
     workspace.F90
-    input_checks.f90
+    input_checks.F90
     shape.F90
     strings.F90
     swap.F90

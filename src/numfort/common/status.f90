@@ -20,6 +20,7 @@ module numfort_common_status
     integer (NF_ENUM_KIND), public, parameter :: NF_STATUS_UNSUPPORTED_OP = ishft(1, 12)
     integer (NF_ENUM_KIND), public, parameter :: NF_STATUS_INVALID_STATE = ishft(1, 13)
     integer (NF_ENUM_KIND), public, parameter :: NF_STATUS_BOUNDS_ERROR = ishft(1, 14)
+        !*  Indicates array bounds violations
     integer (NF_ENUM_KIND), public, parameter :: NF_STATUS_MAX_ITER = ishft(1, 15)
     integer (NF_ENUM_KIND), public, parameter :: NF_STATUS_MAX_EVAL = ishft(1, 16)
     integer (NF_ENUM_KIND), public, parameter :: NF_STATUS_NOT_CONVERGED = ishft(1, 17)
@@ -28,6 +29,7 @@ module numfort_common_status
     integer (NF_ENUM_KIND), public, parameter :: NF_STATUS_APPROX = ishft(1, 20)
     integer (NF_ENUM_KIND), public, parameter :: NF_STATUS_NOT_IMPLEMENTED = ishft(1, 21)
     integer (NF_ENUM_KIND), public, parameter :: NF_STATUS_IO_ERROR = ishft(1, 22)
+    integer (NF_ENUM_KIND), public, parameter :: NF_STATUS_DOMAIN_ERROR = ishft(1, 23)
 
     integer, public, parameter :: NF_MAX_STATUS_CODES = bit_size (NF_STATUS_OK)
 

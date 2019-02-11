@@ -8,15 +8,22 @@ module numfort_common_input_checks
 
     private
 
-    public :: check_positive, check_nonneg, check_enum
+    public :: check_positive
+    public :: check_nonneg
+    public :: check_nonzero
+    public :: check_enum
 
     interface check_positive
-        module procedure check_positive_real32, check_positive_real64, &
+        procedure check_positive_real32, check_positive_real64, &
             check_positive_int32
     end interface
 
     interface check_nonneg
-        module procedure check_nonneg_real64, check_nonneg_int32
+        procedure check_nonneg_real32, check_nonneg_real64, check_nonneg_int32
+    end interface
+
+    interface check_nonzero
+        procedure check_nonzero_real32, check_nonzero_real64
     end interface
 
 contains
@@ -29,7 +36,7 @@ pure subroutine check_positive_real64 (dummy, val, name, status, msg)
     real (PREC), intent(in) :: dummy
     real (PREC), intent(in), optional :: val
 
-    include "include/check_positive.f90"
+#include "check_positive.f90"
 end subroutine
 
 pure subroutine check_positive_real32 (dummy, val, name, status, msg)
@@ -37,7 +44,7 @@ pure subroutine check_positive_real32 (dummy, val, name, status, msg)
     real (PREC), intent(in) :: dummy
     real (PREC), intent(in), optional :: val
 
-    include "include/check_positive.f90"
+#include "check_positive.f90"
 end subroutine
 
 pure subroutine check_positive_int32 (dummy, val, name, status, msg)
@@ -45,18 +52,26 @@ pure subroutine check_positive_int32 (dummy, val, name, status, msg)
     integer (INTSIZE), intent(in) :: dummy
     integer (INTSIZE), intent(in), optional :: val
 
-    include "include/check_positive.f90"
+#include "check_positive.f90"
 end subroutine
 
 ! ------------------------------------------------------------------------------
 ! CHECK_NONNEG implementations
+
+pure subroutine check_nonneg_real32 (dummy, val, name, status, msg)
+    integer, parameter :: PREC = real32
+    real (PREC), intent(in) :: dummy
+    real (PREC), intent(in), optional :: val
+
+#include "check_nonneg.f90"
+end subroutine
 
 pure subroutine check_nonneg_real64 (dummy, val, name, status, msg)
     integer, parameter :: PREC = real64
     real (PREC), intent(in) :: dummy
     real (PREC), intent(in), optional :: val
 
-    include "include/check_nonneg.f90"
+#include "check_nonneg.f90"
 end subroutine
 
 pure subroutine check_nonneg_int32 (dummy, val, name, status, msg)
@@ -64,8 +79,29 @@ pure subroutine check_nonneg_int32 (dummy, val, name, status, msg)
     integer (INTSIZE), intent(in) :: dummy
     integer (INTSIZE), intent(in), optional :: val
 
-    include "include/check_nonneg.f90"
+#include "check_nonneg.f90"
 end subroutine
+
+
+! ------------------------------------------------------------------------------
+! CHECK_NONZERO implementations
+
+pure subroutine check_nonzero_real32 (dummy, val, name, status, msg)
+    integer, parameter :: PREC = real32
+    real (PREC), intent(in) :: dummy
+    real (PREC), intent(in), optional :: val
+
+#include "check_nonzero.f90"
+end subroutine
+
+pure subroutine check_nonzero_real64 (dummy, val, name, status, msg)
+    integer, parameter :: PREC = real64
+    real (PREC), intent(in) :: dummy
+    real (PREC), intent(in), optional :: val
+
+#include "check_nonzero.f90"
+end subroutine
+
 
 ! ------------------------------------------------------------------------------
 
