@@ -29,6 +29,8 @@ module numfort_optimize
 
     use numfort_optimize_slsqp
 
+    use numfort_optimize_solver_map
+
     implicit none
 
 end module

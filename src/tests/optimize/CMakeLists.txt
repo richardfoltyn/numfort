@@ -9,5 +9,6 @@ set(${COMPONENT_NAME}_FILES
     minpack.f90
     root_broyden.f90
     root_newton.f90
+    solver_map.f90
     PARENT_SCOPE
 )

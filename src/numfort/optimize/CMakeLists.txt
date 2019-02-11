@@ -17,6 +17,7 @@ set(SOURCE_FILES
     root_brent.F90
     root_broyden.F90
     root_newton.F90
+    solver_map.F90
 )
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
