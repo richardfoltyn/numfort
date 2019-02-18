@@ -63,16 +63,12 @@ module numfort_polynomial_ppoly
     end interface
 
 #include <numfort_real32.h>
-#include "ppoly_common_spec.F90"
-#include "ppolyfit_spec.F90"
-#include "ppolyval_spec.F90"
-#include "ppolyder_spec.F90"
+#include "ppoly_power_spec.F90"
+#include "ppoly_bernstein_spec.F90"
 
 #include <numfort_real64.h>
-#include "ppoly_common_spec.F90"
-#include "ppolyfit_spec.F90"
-#include "ppolyval_spec.F90"
-#include "ppolyder_spec.F90"
+#include "ppoly_power_spec.F90"
+#include "ppoly_bernstein_spec.F90"
 
     contains
 
@@ -157,15 +153,11 @@ end function
 
 
 #include <numfort_real32.h>
-#include "ppoly_common_impl.F90"
-#include "ppolyfit_impl.F90"
-#include "ppolyval_impl.F90"
-#include "ppolyder_impl.F90"
+#include "ppoly_power_impl.F90"
+#include "ppoly_bernstein_impl.F90"
 
 #include <numfort_real64.h>
-#include "ppoly_common_impl.F90"
-#include "ppolyfit_impl.F90"
-#include "ppolyval_impl.F90"
-#include "ppolyder_impl.F90"
+#include "ppoly_power_impl.F90"
+#include "ppoly_bernstein_impl.F90"
 
 end module
