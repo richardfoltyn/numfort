@@ -33,6 +33,8 @@ subroutine test_all ()
     call test_ppolyfit_bernstein_input (tests)
     call test_ppolyfit_bernstein (tests)
 
+    call test_ppolyval_power_cubic (tests)
+
     call tests%print ()
 
 end subroutine
@@ -252,5 +254,107 @@ elemental subroutine fcn2 (x, fx, fpx)
 end subroutine
 
 
+
+subroutine test_ppolyval_power_cubic (tests)
+    !*  Unit tests for evaluating cubic polynomials and their derivatives
+    !   using a power basis.
+    class (test_suite) :: tests
+
+    type (ppoly) :: pp, pp_d1
+    type (ppoly_bernstein) :: pp_bern, pp_bern_d1
+
+    real (PREC), dimension(:), allocatable :: xx, yy, yy_bern
+    real (PREC), dimension(:,:), allocatable :: ydat
+    real (PREC), dimension(:), allocatable :: knots, coefs_bern, coefs
+    real (PREC), dimension(:), allocatable :: coefs_bern_d1, coefs_d1
+    real (PREC) :: lb, ub
+    integer :: n, deg, nknots, ncoefs, ncoefs_bern
+    type (status_t) :: status
+    logical :: is_ok
+
+    class (test_case), pointer :: tc
+
+    tc => tests%add_test ('Unit tests for eval. cubic polynomials (power basis)')
+
+    ! Fit some polynomial using the Bernstein basis
+    nknots = 20
+    deg = 3
+    allocate (xx(nknots), ydat(2,nknots))
+
+    lb = 0.0
+    ub = 10.0
+    call linspace (xx, 0.0_PREC, 10.0_PREC)
+    ydat(1,:) = sin(xx)
+    ydat(2,:) = cos(xx)
+
+    ncoefs = ppoly_get_ncoefs (pp_bern, n=nknots, k=deg)
+    allocate (knots(nknots), coefs_bern(ncoefs))
+
+    call ppolyfit (pp_bern, xx, ydat, deg, knots, coefs_bern, status)
+
+    deallocate (xx)
+
+    ncoefs = ppoly_get_ncoefs (pp, n=nknots, k=deg)
+    allocate (coefs(ncoefs))
+
+    ! Convert to power-basis
+    call ppoly_transform_basis (pp_bern, coefs_bern, pp, coefs, status)
+
+    ! Evaluate at original points
+    allocate (yy(nknots))
+    call ppolyval (pp, knots, coefs, knots, yy, status=status)
+
+    is_ok = all_close (yy, ydat(1,:), atol=1.0e-10_PREC, rtol=0.0_PREC)
+    call tc%assert_true (status == NF_STATUS_OK .and. is_ok, &
+        'Eval at original points')
+
+    deallocate (yy)
+
+    ! Compare to points evaluated via bernstein basis at points other
+    ! than original
+    n = 101
+    allocate (xx(n), yy(n), yy_bern(n))
+
+    call linspace (xx, lb, ub)
+    call ppolyval (pp_bern, knots, coefs_bern, xx, yy_bern, status=status)
+    call ppolyval (pp, knots, coefs, xx, yy, status=status)
+
+    is_ok = all_close (yy, yy_bern, atol=1.0e-10_PREC, rtol=0.0_PREC)
+    call tc%assert_true (status == NF_STATUS_OK .and. is_ok, &
+        'Eval at non-original points, comparing to Bernstein basis')
+
+    deallocate (xx, yy, yy_bern)
+
+    ! Compare 1st derivatives
+    ncoefs_bern = ppoly_get_ncoefs (pp_bern_d1, n=nknots, k=deg-1)
+    ncoefs = ppoly_get_ncoefs (pp_d1, n=nknots, k=deg-1)
+    allocate (coefs_d1(ncoefs), coefs_bern_d1(ncoefs_bern))
+
+    call ppolyder (pp_bern, knots, coefs_bern, pp_bern_d1, coefs_bern_d1, m=1, status=status)
+    call ppolyder (pp, knots, coefs, pp_d1, coefs_d1, m=1, status=status)
+
+    ! Compare values to bernstein values
+    n = 201
+    allocate (xx(n), yy(n), yy_bern(n))
+    call linspace (xx, lb, ub)
+
+    call ppolyval (pp_bern_d1, knots, coefs_bern_d1, xx, yy_bern, status=status)
+    call ppolyval (pp_d1, knots, coefs_d1, xx, yy, status=status)
+
+    is_ok = all_close (yy, yy_bern, atol=1.0e-10_PREC, rtol=0.0_PREC)
+    call tc%assert_true (status == NF_STATUS_OK .and. is_ok, &
+        'D1: Comparing to Bernstein value at non-original points')
+
+    deallocate (xx, yy, yy_bern)
+
+    ! Compute first deratives to true values at original knots as these
+    ! were used to fit the data.
+    allocate (yy(nknots))
+    call ppolyval (pp_d1, knots, coefs_d1, knots, yy, status=status)
+    is_ok = all_close (yy, ydat(2,:), atol=1.0e-8_PREC, rtol=0.0_PREC)
+    call tc%assert_true (status == NF_STATUS_OK .and. is_ok, &
+        'D1: Comparing to true values at original knots')
+
+end subroutine
 
 end
