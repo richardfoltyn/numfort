@@ -439,9 +439,9 @@ pure subroutine __APPEND(bernstein_ppolyder,__PREC) (self, knots, coefs, &
     type (ppoly_bernstein), intent(in) :: self
     real (PREC), intent(in), dimension(:) :: knots
     real (PREC), intent(in), dimension(:), contiguous :: coefs
-    integer, intent(in), optional :: m
     type (ppoly_bernstein), intent(out) :: ppoly_out
     real (PREC), intent(out), dimension(:), contiguous :: coefs_out
+    integer, intent(in), optional :: m
     type (status_t), intent(out), optional :: status
 
     type (status_t) :: lstatus
@@ -535,4 +535,87 @@ pure subroutine __APPEND(bernstein_ppolyder_impl,__PREC) (self, knots, coefs, &
     end do
 end subroutine
 
+
+
+subroutine __APPEND(bernstein2power,__PREC) (self, coefs, poly_out, coefs_out, status)
+    !*  BERNSTEIN2POWER converts a piecewise polynomial with coefficients
+    !   defined wrt. the Bernstein basis into a piecewise polynomial
+    !   wrt. to the standard power basis.
+    integer, parameter :: PREC = __PREC
+    type (ppoly_bernstein), intent(in) :: self
+        !*  Bernstein-basis polynomial
+    real (PREC), intent(in), dimension(:), contiguous, target :: coefs
+        !*  Coefficient array of the Bernstein-basis polynomial
+    type (ppoly), intent(inout) :: poly_out
+        !*  Resulting power basis polynomial
+    real (PREC), intent(inout), dimension(:), contiguous, target :: coefs_out
+        !*  Coefficient array of the piecewise polynomial translated onto
+        !   the power basis
+    type (status_t), intent(out), optional :: status
+        !*  Optional exit code
+
+    type (status_t) :: lstatus
+    integer :: deg, ncoefs
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_coefs, ptr_coefs_out
+
+    ! Arguments to GEMM
+    character (1), parameter :: transa = 'N', transb = 'N'
+    real (PREC), parameter :: alpha = 1.0, beta = 0.0
+    integer :: m, n, k, lda, ldb, ldc
+
+    real (PREC), dimension(4,4), parameter :: tm3 = reshape([ integer :: &
+                1, 0, 0, 0, -3, 3, 0, 0, 3, -6, 3, 0, -1, 3, -3, 1], &
+            shape=[4,4], order=[2,1])
+        !*  Matrix to transform polynomial deg 3 coefficients
+
+    nullify (ptr_coefs, ptr_coefs_out)
+
+    lstatus = NF_STATUS_OK
+
+    deg = ppoly_get_degree (self)
+    ncoefs = ppoly_get_ncoefs (self)
+
+    if (size(coefs) /= ncoefs) then
+        lstatus = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+
+    if (size(coefs) /= size(coefs_out)) then
+        lstatus = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+
+    poly_out%degree = self%degree
+    poly_out%nknots = self%nknots
+
+    select case (deg)
+    case (0)
+        ! piecewise constant function has identical coefficients for any basis
+        coefs_out = coefs
+    case (3)
+        m = deg + 1
+        n = ncoefs / (deg + 1)
+        k = deg + 1
+        lda = m
+        ldb = k
+        ldc = m
+
+        ptr_coefs(1:k,1:n) => coefs
+        ptr_coefs_out(1:m,1:n) => coefs_out
+
+        call GEMM (transa, transb, m, n, k, alpha, tm3, lda, ptr_coefs, ldb, &
+            beta, ptr_coefs_out, ldc)
+
+    case default
+        lstatus = NF_STATUS_NOT_IMPLEMENTED
+        goto 100
+
+    end select
+
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
 

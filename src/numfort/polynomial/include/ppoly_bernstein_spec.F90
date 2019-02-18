@@ -45,3 +45,8 @@ end interface
 interface bernstein_polyval
     procedure __APPEND(bernstein_polyval,__PREC)
 end interface
+
+interface ppoly_transform_basis
+    procedure __APPEND(bernstein2power,__PREC)
+end interface
+

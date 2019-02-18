@@ -15,6 +15,8 @@ module numfort_polynomial_ppoly
     use numfort_common_input_checks
     use numfort_interpolate
 
+    use blas_interfaces, only: GEMM
+
     implicit none
     private
 
@@ -33,6 +35,8 @@ module numfort_polynomial_ppoly
     public :: ppolyval_impl
     public :: bernstein_fit_deriv_impl
     public :: ppolyder_impl
+
+    public :: ppoly_transform_basis
 
     type :: ppoly_abc
         private
