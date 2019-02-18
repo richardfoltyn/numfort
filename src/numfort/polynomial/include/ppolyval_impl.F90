@@ -343,6 +343,7 @@ pure subroutine __APPEND(bernstein_ppolyval_impl,__PREC) (self, knots, coefs, &
 
     integer :: i, nx, k, nknots, j, jj
     real (PREC) :: xi, s, xlb, xub
+    type (search_cache) :: bcache
 
     status = NF_STATUS_OK
 
@@ -369,7 +370,7 @@ pure subroutine __APPEND(bernstein_ppolyval_impl,__PREC) (self, knots, coefs, &
             case default
                 ! Find interval j that will be used to intropolate/extrapolate
                 ! y-value
-                j = interp_find (xi, knots)
+                call bsearch_cached (xi, knots, j, bcache)
             end select
         else if (xi > xub) then
             select case (ext)
@@ -386,11 +387,11 @@ pure subroutine __APPEND(bernstein_ppolyval_impl,__PREC) (self, knots, coefs, &
                 goto 100
             case default
                 ! Find interval j such that knots(j) <= x(i)
-                j = interp_find (xi, knots)
+                call bsearch_cached (xi, knots, j, bcache)
             end select
         else
             ! Find interval j such that knots(j) <= x(i)
-            j = interp_find (xi, knots)
+            call bsearch_cached (xi, knots, j, bcache)
         end if
 
         ! Offset of coefficient block for interval j
@@ -418,6 +419,8 @@ pure function __APPEND(bernstein_polyval,__PREC) (k, s, coefs) result(res)
     real (PREC) :: res
         !*  Polynomial value in given interval.
 
+!    real (PREC), dimension(0:3) :: lcoefs3
+!    integer :: i
     real (PREC) :: s1, comb
     integer :: j
 
@@ -433,6 +436,16 @@ pure function __APPEND(bernstein_polyval,__PREC) (k, s, coefs) result(res)
         res = coefs(0) * s1**2.0_PREC + coefs(1) * 2.0_PREC*s1*s &
             + coefs(2) * s**2.0_PREC
     case (3)
+!        lcoefs3(0) = coefs(0)
+!        lcoefs3(1) = - 3.0_PREC * coefs(0) + 3.0_PREC * coefs(1)
+!        lcoefs3(2) = 3.0_PREC * coefs(0) - 6.0_PREC * coefs(1) + 3.0_PREC * coefs(2)
+!        lcoefs3(3) = -coefs(0) + 3.0_PREC * coefs(1) - 3.0_PREC * coefs(2) + coefs(3)
+!        res = lcoefs3(3) * s
+!        do i = 2, 1, -1
+!            res = (res + lcoefs3(i)) * s
+!        end do
+!        res = res + lcoefs3(0)
+
         res = coefs(0) * s1**3.0 + coefs(1) * 3.0_PREC * s1**2.0_PREC * s &
             + coefs(2) * 3.0_PREC * s1 * s**2.0_PREC + coefs(3) * s**3.0_PREC
     case default
