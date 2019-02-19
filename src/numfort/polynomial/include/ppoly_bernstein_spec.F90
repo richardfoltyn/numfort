@@ -34,8 +34,12 @@ interface ppolyval
     procedure __APPEND(bernstein_ppolyval_scalar,__PREC)
 end interface
 
-interface ppolyval_impl
+interface bernstein_ppolyval_impl
     procedure __APPEND(bernstein_ppolyval_impl,__PREC)
+end interface
+
+interface bernstein_ppolyval_impl_cubic
+    procedure __APPEND(bernstein_ppolyval_impl_cubic,__PREC)
 end interface
 
 interface ppolyval_check_input

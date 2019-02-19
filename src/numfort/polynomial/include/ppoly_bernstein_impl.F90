@@ -75,14 +75,14 @@ pure subroutine __APPEND(bernstein_ppolyval,__PREC) (self, knots, coefs, x, y, &
         ext, left, right, status)
     integer, parameter :: PREC = __PREC
     type (ppoly_bernstein), intent(in) :: self
-    real (PREC), intent(in), dimension(:) :: knots
+    real (PREC), intent(in), dimension(:), contiguous :: knots
         !*  x-values of data points (knots) that define the breakpoints of
         !   the piecewise polynomial
     real (PREC), intent(in), dimension(:), contiguous :: coefs
         !*  Stacked array of polynomial coefficients for each segment
-    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: x
         !*  x-coordinates of points where function should be interpolating.
-    real (PREC), intent(out), dimension(:) :: y
+    real (PREC), intent(out), dimension(:), contiguous :: y
         !*  On exit, contains interpolated function values for x-coordinates
         !   given in X.
     integer (NF_ENUM_KIND), intent(in), optional :: ext
@@ -109,7 +109,12 @@ pure subroutine __APPEND(bernstein_ppolyval,__PREC) (self, knots, coefs, x, y, &
     lext = NF_INTERP_EVAL_EXTRAPOLATE
     if (present(ext)) lext = ext
 
-    call ppolyval_impl (self, knots, coefs, x, y, lext, left, right, lstatus)
+    select case (self%degree)
+    case (3)
+        call bernstein_ppolyval_impl_cubic (self, knots, coefs, x, y, lext, left, right, lstatus)
+    case default
+        call bernstein_ppolyval_impl (self, knots, coefs, x, y, lext, left, right, lstatus)
+    end select
 
 100 continue
 
@@ -122,7 +127,7 @@ pure subroutine __APPEND(bernstein_ppolyval_scalar,__PREC) (self, knots, coefs, 
         x, y, ext, left, right, status)
     integer, parameter :: PREC = __PREC
     type (ppoly_bernstein), intent(in) :: self
-    real (PREC), intent(in), dimension(:) :: knots
+    real (PREC), intent(in), dimension(:), contiguous :: knots
         !*  x-values of data points (knots) that define the breakpoints of
         !   the piecewise polynomial
     real (PREC), intent(in), dimension(:), contiguous :: coefs
@@ -162,14 +167,14 @@ pure subroutine __APPEND(bernstein_ppolyval_impl,__PREC) (self, knots, coefs, &
         x, y, ext, left, right, status)
     integer, parameter :: PREC = __PREC
     type (ppoly_bernstein), intent(in) :: self
-    real (PREC), intent(in), dimension(:) :: knots
+    real (PREC), intent(in), dimension(:), contiguous :: knots
         !*  x-values of data points (knots) that define the breakpoints of
         !   the piecewise polynomial
     real (PREC), intent(in), dimension(0:), contiguous :: coefs
         !*  Stacked array of polynomial coefficients for each segment
-    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: x
         !*  x-coordinates of points where function should be interpolated
-    real (PREC), intent(out), dimension(:) :: y
+    real (PREC), intent(out), dimension(:), contiguous :: y
         !*  On exit, contains interpolated function values for x-coordinates
         !   given in X.
     integer (NF_ENUM_KIND), intent(in) :: ext
@@ -246,6 +251,93 @@ pure subroutine __APPEND(bernstein_ppolyval_impl,__PREC) (self, knots, coefs, &
 100 continue
 
 end subroutine
+
+
+
+pure subroutine __APPEND(bernstein_ppolyval_impl_cubic,__PREC) (self, knots, &
+        coefs, x, y, ext, left, right, status)
+    !*  BERNSTEIN_PPOLYVAL_IMPL_CUBIC implements the evaluation of
+    !   piecewise cubic polynomials wrt. the Bernstein basis.
+    integer, parameter :: PREC = __PREC
+    type (ppoly_bernstein), intent(in) :: self
+    real (PREC), intent(in), dimension(:), contiguous :: knots
+    real (PREC), intent(in), dimension(0:), contiguous :: coefs
+    real (PREC), intent(in), dimension(:), contiguous :: x
+    real (PREC), intent(out), dimension(:), contiguous :: y
+    integer (NF_ENUM_KIND), intent(in) :: ext
+    real (PREC), intent(in), optional :: left
+    real (PREC), intent(in), optional :: right
+    type (status_t), intent(out) :: status
+
+    integer, parameter :: k = 3
+    integer :: i, nx, nknots, j, jj
+    real (PREC) :: xi, s, xlb, xub, s1
+    type (search_cache) :: bcache
+
+    status = NF_STATUS_OK
+
+    nknots = size(knots)
+    nx = size(x)
+
+    xlb = knots(1)
+    xub = knots(nknots)
+
+    do i = 1, nx
+        xi = x(i)
+        if (xi < xlb) then
+            select case (ext)
+            case (NF_INTERP_EVAL_BOUNDARY)
+                j = 1
+                xi = xlb
+            case (NF_INTERP_EVAL_CONST)
+                y(i) = left
+                cycle
+            case (NF_INTERP_EVAL_ERROR)
+                status = NF_STATUS_BOUNDS_ERROR
+                goto 100
+            case default
+                ! Find interval j that will be used to intropolate/extrapolate
+                ! y-value
+                call bsearch_cached (xi, knots, j, bcache)
+            end select
+        else if (xi > xub) then
+            select case (ext)
+            case (NF_INTERP_EVAL_BOUNDARY)
+                ! Upper bound: set corresponding interpolation interval to the
+                ! last one. Correct boundary value will be interpolated below.
+                j = nknots - 1
+                xi = xub
+            case (NF_INTERP_EVAL_CONST)
+                y(i) = right
+                cycle
+            case (NF_INTERP_EVAL_ERROR)
+                status = NF_STATUS_BOUNDS_ERROR
+                goto 100
+            case default
+                ! Find interval j such that knots(j) <= x(i)
+                call bsearch_cached (xi, knots, j, bcache)
+            end select
+        else
+            ! Find interval j such that knots(j) <= x(i)
+            call bsearch_cached (xi, knots, j, bcache)
+        end if
+
+        ! Offset of coefficient block for interval j
+        jj = (j-1) * (k+1)
+
+        s = (xi - knots(j))/(knots(j+1) - knots(j))
+        s1 = 1.0_PREC - s
+
+        y(i) = coefs(jj) * s1**3.0 &
+            + coefs(jj+1) * 3.0_PREC * s1**2.0_PREC * s &
+            + coefs(jj+2) * 3.0_PREC * s1 * s**2.0_PREC &
+            + coefs(jj+3) * s**3.0_PREC
+    end do
+
+100 continue
+
+end subroutine
+
 
 
 pure function __APPEND(bernstein_polyval,__PREC) (k, s, coefs) result(res)

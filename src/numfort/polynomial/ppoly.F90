@@ -32,7 +32,6 @@ module numfort_polynomial_ppoly
     ! The following routines contain the implementations of the more
     ! userfriendly routines exported above, but do not perform any input checks.
     ! For NUMFORT-internal use only!
-    public :: ppolyval_impl
     public :: bernstein_fit_deriv_impl
     public :: ppolyder_impl
 
