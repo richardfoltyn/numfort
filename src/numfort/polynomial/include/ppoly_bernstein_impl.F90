@@ -110,6 +110,8 @@ pure subroutine __APPEND(bernstein_ppolyval,__PREC) (self, knots, coefs, x, y, &
     if (present(ext)) lext = ext
 
     select case (self%degree)
+    case (2)
+        call bernstein_ppolyval_impl_quadratic (self, knots, coefs, x, y, lext, left, right, lstatus)
     case (3)
         call bernstein_ppolyval_impl_cubic (self, knots, coefs, x, y, lext, left, right, lstatus)
     case default
@@ -121,6 +123,7 @@ pure subroutine __APPEND(bernstein_ppolyval,__PREC) (self, knots, coefs, x, y, &
     if (present(status)) status = lstatus
 
 end subroutine
+
 
 
 pure subroutine __APPEND(bernstein_ppolyval_scalar,__PREC) (self, knots, coefs, &
@@ -254,7 +257,7 @@ end subroutine
 
 
 
-pure subroutine __APPEND(bernstein_ppolyval_impl_cubic,__PREC) (self, knots, &
+pure subroutine __APPEND(bernstein_ppolyval_impl_quadratic,__PREC) (self, knots, &
         coefs, x, y, ext, left, right, status)
     !*  BERNSTEIN_PPOLYVAL_IMPL_CUBIC implements the evaluation of
     !   piecewise cubic polynomials wrt. the Bernstein basis.
@@ -269,10 +272,11 @@ pure subroutine __APPEND(bernstein_ppolyval_impl_cubic,__PREC) (self, knots, &
     real (PREC), intent(in), optional :: right
     type (status_t), intent(out) :: status
 
-    integer, parameter :: k = 3
-    integer :: i, nx, nknots, j, jj
-    real (PREC) :: xi, s, xlb, xub, s1
+    integer, parameter :: k = 2
+    integer :: i, nx, nknots, j, jj, ik
+    real (PREC) :: xi, s, xlb, xub, si, yi
     type (search_cache) :: bcache
+    real (PREC) :: lcoefs(2)
 
     status = NF_STATUS_OK
 
@@ -326,12 +330,112 @@ pure subroutine __APPEND(bernstein_ppolyval_impl_cubic,__PREC) (self, knots, &
         jj = (j-1) * (k+1)
 
         s = (xi - knots(j))/(knots(j+1) - knots(j))
-        s1 = 1.0_PREC - s
 
-        y(i) = coefs(jj) * s1**3.0 &
-            + coefs(jj+1) * 3.0_PREC * s1**2.0_PREC * s &
-            + coefs(jj+2) * 3.0_PREC * s1 * s**2.0_PREC &
-            + coefs(jj+3) * s**3.0_PREC
+        lcoefs(1) = 2.0_PREC * (coefs(jj+1) - coefs(jj))
+        lcoefs(2) = coefs(jj) - 2.0_PREC * coefs(jj+1) + coefs(jj+2)
+
+        si = 1.0
+        yi = coefs(jj)
+        do ik = 1, k
+            si = si * s
+            yi = yi + lcoefs(ik) * si
+        end do
+
+        y(i) = yi
+    end do
+
+100 continue
+
+end subroutine
+
+
+
+pure subroutine __APPEND(bernstein_ppolyval_impl_cubic,__PREC) (self, knots, &
+        coefs, x, y, ext, left, right, status)
+    !*  BERNSTEIN_PPOLYVAL_IMPL_CUBIC implements the evaluation of
+    !   piecewise cubic polynomials wrt. the Bernstein basis.
+    integer, parameter :: PREC = __PREC
+    type (ppoly_bernstein), intent(in) :: self
+    real (PREC), intent(in), dimension(:), contiguous :: knots
+    real (PREC), intent(in), dimension(0:), contiguous :: coefs
+    real (PREC), intent(in), dimension(:), contiguous :: x
+    real (PREC), intent(out), dimension(:), contiguous :: y
+    integer (NF_ENUM_KIND), intent(in) :: ext
+    real (PREC), intent(in), optional :: left
+    real (PREC), intent(in), optional :: right
+    type (status_t), intent(out) :: status
+
+    integer, parameter :: k = 3
+    integer :: i, nx, nknots, j, jj, ik
+    real (PREC) :: xi, s, xlb, xub, si, yi
+    type (search_cache) :: bcache
+    real (PREC), dimension(k) :: lcoefs
+
+    status = NF_STATUS_OK
+
+    nknots = size(knots)
+    nx = size(x)
+
+    xlb = knots(1)
+    xub = knots(nknots)
+
+    do i = 1, nx
+        xi = x(i)
+        if (xi < xlb) then
+            select case (ext)
+            case (NF_INTERP_EVAL_BOUNDARY)
+                j = 1
+                xi = xlb
+            case (NF_INTERP_EVAL_CONST)
+                y(i) = left
+                cycle
+            case (NF_INTERP_EVAL_ERROR)
+                status = NF_STATUS_BOUNDS_ERROR
+                goto 100
+            case default
+                ! Find interval j that will be used to intropolate/extrapolate
+                ! y-value
+                call bsearch_cached (xi, knots, j, bcache)
+            end select
+        else if (xi > xub) then
+            select case (ext)
+            case (NF_INTERP_EVAL_BOUNDARY)
+                ! Upper bound: set corresponding interpolation interval to the
+                ! last one. Correct boundary value will be interpolated below.
+                j = nknots - 1
+                xi = xub
+            case (NF_INTERP_EVAL_CONST)
+                y(i) = right
+                cycle
+            case (NF_INTERP_EVAL_ERROR)
+                status = NF_STATUS_BOUNDS_ERROR
+                goto 100
+            case default
+                ! Find interval j such that knots(j) <= x(i)
+                call bsearch_cached (xi, knots, j, bcache)
+            end select
+        else
+            ! Find interval j such that knots(j) <= x(i)
+            call bsearch_cached (xi, knots, j, bcache)
+        end if
+
+        ! Offset of coefficient block for interval j
+        jj = (j-1) * (k+1)
+
+        s = (xi - knots(j))/(knots(j+1) - knots(j))
+
+        lcoefs(1) = - 3.0_PREC * coefs(jj) + 3.0_PREC * coefs(jj+1)
+        lcoefs(2) = 3.0_PREC * coefs(jj) - 6.0_PREC * coefs(jj+1) + 3.0_PREC * coefs(jj+2)
+        lcoefs(3) = -coefs(jj) + 3.0_PREC * coefs(jj+1) - 3.0_PREC * coefs(jj+2) + coefs(jj+3)
+
+        si = 1.0_PREC
+        yi = coefs(jj)
+        do ik = 1, k
+            si = si * s
+            yi = yi + lcoefs(ik) * si
+        end do
+
+        y(i) = yi
     end do
 
 100 continue
@@ -353,37 +457,45 @@ pure function __APPEND(bernstein_polyval,__PREC) (k, s, coefs) result(res)
     real (PREC) :: res
         !*  Polynomial value in given interval.
 
-!    real (PREC), dimension(0:3) :: lcoefs3
-!    integer :: i
-    real (PREC) :: s1, comb
+    real (PREC), dimension(3) :: lcoefs3
+    real (PREC) :: s1, si, comb
     integer :: j
-
-    s1 = 1.0_PREC - s
 
     ! Hardcode values for lower polynomial degrees
     select case (k)
     case (0)
        res = coefs(0)
     case (1)
+        s1 = 1.0_PREC - s
         res = coefs(0) * s1 + coefs(1) * s
-    case (2)
-        res = coefs(0) * s1**2.0_PREC + coefs(1) * 2.0_PREC*s1*s &
-            + coefs(2) * s**2.0_PREC
-    case (3)
-!        lcoefs3(0) = coefs(0)
-!        lcoefs3(1) = - 3.0_PREC * coefs(0) + 3.0_PREC * coefs(1)
-!        lcoefs3(2) = 3.0_PREC * coefs(0) - 6.0_PREC * coefs(1) + 3.0_PREC * coefs(2)
-!        lcoefs3(3) = -coefs(0) + 3.0_PREC * coefs(1) - 3.0_PREC * coefs(2) + coefs(3)
-!        res = lcoefs3(3) * s
-!        do i = 2, 1, -1
-!            res = (res + lcoefs3(i)) * s
-!        end do
-!        res = res + lcoefs3(0)
 
-        res = coefs(0) * s1**3.0 + coefs(1) * 3.0_PREC * s1**2.0_PREC * s &
-            + coefs(2) * 3.0_PREC * s1 * s**2.0_PREC + coefs(3) * s**3.0_PREC
+    case (2)
+        lcoefs3(1) = 2.0_PREC * (coefs(1) - coefs(0))
+        lcoefs3(2) = coefs(0) - 2.0_PREC * coefs(1) + coefs(2)
+
+        si = 1.0
+        res = coefs(0)
+        do j = 1, 2
+            si = si * s
+            res = res + lcoefs3(j) * si
+        end do
+!        res = coefs(0) * s1**2.0_PREC + coefs(1) * 2.0_PREC*s1*s &
+!            + coefs(2) * s**2.0_PREC
+    case (3)
+        lcoefs3(1) = - 3.0_PREC * coefs(0) + 3.0_PREC * coefs(1)
+        lcoefs3(2) = 3.0_PREC * coefs(0) - 6.0_PREC * coefs(1) + 3.0_PREC * coefs(2)
+        lcoefs3(3) = -coefs(0) + 3.0_PREC * coefs(1) - 3.0_PREC * coefs(2) + coefs(3)
+
+        si = 1.0
+        res = coefs(0)
+        do j = 1, 3
+            si = si * s
+            res = res + lcoefs3(j) * si
+        end do
+
     case default
         ! TODO: Could be replaced with Casteljau's algorithm
+        s1 = 1.0_PREC - s
         res = 0.0_PREC
         comb = 1.0_PREC
         do j = 0, k

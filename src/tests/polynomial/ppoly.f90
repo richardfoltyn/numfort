@@ -47,11 +47,12 @@ subroutine test_ppolyfit_bernstein (tests)
     class (test_suite) :: tests
 
     class (test_case), pointer :: tc
-    real (PREC), dimension(:), allocatable :: knots, coefs, coefs1, x, p, xp, y1
-    real (PREC), dimension(:,:), allocatable :: y
-    integer :: k, ncoefs, nknots, nx, n
+    real (PREC), dimension(:), allocatable :: knots, coefs, coefs1, xx, xp, yp, yy
+    real (PREC), dimension(:,:), allocatable :: ydat
+    integer :: k, ncoefs, nknots, nx, n, i
     real (PREC) :: xlb, xub, left, right, ylb, yub
     type (ppoly_bernstein) :: pp, pp1
+    logical :: all_ok
     type (status_t) :: status
 
     tc => tests%add_test ('PPOLYFIT tests using Bernstein basis')
@@ -60,119 +61,195 @@ subroutine test_ppolyfit_bernstein (tests)
     xlb = 1.0d-8
     xub = 100
     k = 3
-    allocate (x(n), y(2, n))
+    allocate (xx(n), ydat(2, n))
 
     ! Compute function values and first derivatives
-    call linspace (x, xlb, xub)
-    call fcn2 (x, y(1,:), y(2,:))
+    call linspace (xx, xlb, xub)
+    call fcn2 (xx, ydat(1,:), ydat(2,:))
 
     ncoefs = ppoly_get_ncoefs (pp, n, k)
     nknots = ppoly_get_nknots (pp, n, k)
     allocate (knots(nknots), coefs(ncoefs))
 
     ! Fit piecewise polynomial to 0th and 1st derivative data
-    call ppolyfit (pp, x, y, k, knots, coefs, status=status)
+    call ppolyfit (pp, xx, ydat, k, knots, coefs, status=status)
     call tc%assert_true (status == NF_STATUS_OK, &
         'Cubic: fit piecewise polynomial')
 
-    allocate (p(n))
-    call ppolyval (pp, knots, coefs, x, p, status=status)
+    allocate (yy(n))
+    call ppolyval (pp, knots, coefs, xx, yy, status=status)
     call tc%assert_true (status == NF_STATUS_OK &
-        .and. all_close (p, y(1,:), atol=1.0e-8_PREC), &
+        .and. all_close (yy, ydat(1,:), atol=1.0e-8_PREC), &
         'Cubic: evaluate at original knots')
-    deallocate (p)
+    deallocate (yy)
 
-    ! Allocate at different points than knots
+    ! Evaluate using scalar interface
+    allocate (yy(n))
+    all_ok = .true.
+    status = NF_STATUS_UNDEFINED
+    do i = 1, size(xx)
+        call ppolyval (pp, knots, coefs, xx(i), yy(i), status=status)
+        all_ok = all_ok .and. (status == NF_STATUS_OK)
+    end do
+    call tc%assert_true (all_ok .and. all_close (yy, ydat(1,:), atol=1.0e-8_PREC), &
+        'Cubic: evaluate at original knots (scalar interface)')
+    deallocate (yy)
+
+    ! === Evaluate at different points than knots ===
     nx = 107
-    allocate (p(nx), xp(nx), y1(nx))
+    allocate (yp(nx), xp(nx), yy(nx))
     call linspace (xp, xlb, xub)
     ! True function values
-    call fcn2 (xp, y1)
-    call ppolyval (pp, knots, coefs, xp, p, status=status)
+    call fcn2 (xp, yp)
+    call ppolyval (pp, knots, coefs, xp, yy, status=status)
     call tc%assert_true (status == NF_STATUS_OK &
-        .and. all_close (p, y1, atol=1.0e-8_PREC), &
+        .and. all_close (yy, yp, atol=1.0e-8_PREC), &
         'Cubic: Evaluate at points other than knots')
-    deallocate (p, xp, y1)
+    deallocate (yy)
 
-    ! Extrapolation
+    ! Evaluate using scalar interface
+    allocate (yy(nx), source=0.0_PREC)
+    all_ok = .true.
+    status = NF_STATUS_UNDEFINED
+    do i = 1, size(xp)
+        call ppolyval (pp, knots, coefs, xp(i), yy(i), status=status)
+        all_ok = all_ok .and. (status == NF_STATUS_OK)
+    end do
+    call tc%assert_true (all_ok .and. all_close (yy, yp, atol=1.0e-8_PREC), &
+        'Cubic: Evaluate at points other than knots (scalar interface)')
+    deallocate (yp, xp, yy)
+
+    ! === Extrapolation ===
     nx = 17
-    allocate (p(nx), xp(nx), y1(nx))
+    allocate (yp(nx), xp(nx), yy(nx))
     call linspace(xp, xlb-1.0, xub+1.0)
     ! Some additional non-interior points
     xp(5) = xlb - 10.0_PREC
     xp(15) = xub + 10.0_PREC
     ! Correct function values
-    call fcn2 (xp, y1)
-    call ppolyval (pp, knots, coefs, xp, p, ext=NF_INTERP_EVAL_EXTRAPOLATE, &
+    call fcn2 (xp, yp)
+    call ppolyval (pp, knots, coefs, xp, yy, ext=NF_INTERP_EVAL_EXTRAPOLATE, &
         status=status)
     call tc%assert_true (status == NF_STATUS_OK &
-        .and. all_close (p, y1, atol=1.0e-8_PREC), &
+        .and. all_close (yy, yp, atol=1.0e-8_PREC), &
         'Cubic: Evaluate at non-interior points')
+    deallocate (yy)
 
-    ! Replace non-interior points with some constant values
+    ! Scalar interface
+    allocate (yy(nx), source=0.0_PREC)
+    all_ok = .true.
+    status = NF_STATUS_UNDEFINED
+    do i = 1, size(xp)
+        call ppolyval (pp, knots, coefs, xp(i), yy(i), &
+            ext=NF_INTERP_EVAL_EXTRAPOLATE, status=status)
+        all_ok = all_ok .and. (status == NF_STATUS_OK)
+    end do
+    call tc%assert_true (all_ok .and. all_close (yy, yp, atol=1.0e-8_PREC), &
+        'Cubic: Evaluate at non-interior points (scalar interface)')
+
+    ! === Replace non-interior points with some constant values ===
     left = -10000.0
     right = 10000.0
     where (xp < xlb)
-        y1 = left
+        yp = left
     else where (xp > xub)
-        y1 = right
+        yp = right
     end where
-    call ppolyval (pp, knots, coefs, xp, p, ext=NF_INTERP_EVAL_CONST, &
+    call ppolyval (pp, knots, coefs, xp, yy, ext=NF_INTERP_EVAL_CONST, &
         left=left, right=right, status=status)
     call tc%assert_true (status == NF_STATUS_OK &
-        .and. all_close (p, y1, atol=1.0e-8_PREC), &
+        .and. all_close (yy, yp, atol=1.0e-8_PREC), &
         'Cubic: Evaluate, assign const to non-interior points')
+    deallocate (yy)
 
-    ! Raise error on encountering non-interior points
-    call ppolyval (pp, knots, coefs, xp, p, ext=NF_INTERP_EVAL_ERROR, &
+    ! Scalar interface
+    allocate (yy(nx))
+    all_ok = .true.
+    status = NF_STATUS_UNDEFINED
+    do i = 1, size(xp)
+        call ppolyval (pp, knots, coefs, xp(i), yy(i), ext=NF_INTERP_EVAL_CONST, &
+            left=left, right=right, status=status)
+        all_ok = all_ok .and. (status == NF_STATUS_OK)
+    end do
+    call tc%assert_true (all_ok .and. all_close (yy, yp, atol=1.0e-8_PREC), &
+        'Cubic: Evaluate, assign const to non-interior points (scalar interface)')
+
+    ! === Raise error on encountering non-interior points ===
+    call ppolyval (pp, knots, coefs, xp, yy, ext=NF_INTERP_EVAL_ERROR, &
         status=status)
     call tc%assert_true (status == NF_STATUS_BOUNDS_ERROR, &
         'Cubic: Evaluate, raise error on non-interior points')
 
     ! Replace non-interior points with boundary values
-    call fcn2 (xp, y1)
+    call fcn2 (xp, yp)
     call fcn2 (xlb, ylb)
     call fcn2 (xub, yub)
     where (xp < xlb)
-        y1 = ylb
+        yp = ylb
     else where (xp > xub)
-        y1 = yub
+        yp = yub
     end where
 
-    call ppolyval (pp, knots, coefs, xp, p, ext=NF_INTERP_EVAL_BOUNDARY, &
+    call ppolyval (pp, knots, coefs, xp, yy, ext=NF_INTERP_EVAL_BOUNDARY, &
         status=status)
     call tc%assert_true (status == NF_STATUS_OK &
-        .and. all_close (p, y1, atol=1.0e-8_PREC), &
+        .and. all_close (yp, yy, atol=1.0e-8_PREC), &
         'Cubic: Evaluate, assign const to non-interior points')
 
-    deallocate (xp, y1, p)
+    deallocate (xp, yy, yp)
 
-    ! Test evaluating first derivative
+    ! === Test evaluating first derivative ===
     ncoefs = ppoly_get_ncoefs (pp, k=k-1)
     allocate (coefs1(ncoefs))
     call ppolyder (pp, knots, coefs, pp1, coefs1, m=1, status=status)
 
     nx = 13
     status = NF_STATUS_UNDEFINED
-    allocate (xp(nx), y1(nx), p(nx))
+    allocate (xp(nx), yy(nx), yp(nx))
     call linspace (xp, xlb, xub)
     ! True first derivative
-    call fcn2 (xp, fpx=y1)
-    call ppolyval (pp1, knots, coefs1, xp, p, status=status)
+    call fcn2 (xp, fpx=yp)
+    call ppolyval (pp1, knots, coefs1, xp, yy, status=status)
     call tc%assert_true (status == NF_STATUS_OK &
-        .and. all_close (p, y1, atol=1.0e-8_PREC), &
+        .and. all_close (yy, yp, atol=1.0e-8_PREC), &
         'Cubic: Evaluate first derivative')
+    deallocate (yy)
 
-    ! Extrapolate first derivative
+    ! Scalar interface
+    allocate (yy(nx), source=0.0_PREC)
+    status = NF_STATUS_UNDEFINED
+    all_ok = .true.
+    do i = 1, size(xp)
+        call ppolyval (pp1, knots, coefs1, xp(i), yy(i), status=status)
+        all_ok = all_ok .and. (status == NF_STATUS_OK)
+    end do
+    call tc%assert_true (all_ok .and. all_close (yy, yp, atol=1.0e-8_PREC), &
+        'Cubic: Evaluate first derivative (scalar interface)')
+
+    ! === Extrapolate first derivative ===
     status = NF_STATUS_UNDEFINED
     call linspace (xp, xlb-10.0, xub+10.0)
-    call fcn2 (xp, fpx=y1)
+    call fcn2 (xp, fpx=yp)
     ! Note: extrapolates by default
-    call ppolyval (pp1, knots, coefs1, xp, p, status=status)
+    call ppolyval (pp1, knots, coefs1, xp, yy, status=status)
     call tc%assert_true (status == NF_STATUS_OK &
-        .and. all_close (p, y1, atol=1.0e-8_PREC), &
+        .and. all_close (yy, yp, atol=1.0e-8_PREC), &
         'Cubic: Evaluate first derivative at non-interior points')
-    deallocate (xp, p, y1)
+    deallocate (yy)
+
+    ! Scalar interface
+    allocate (yy(nx), source=0.0_PREC)
+    status = NF_STATUS_UNDEFINED
+    all_ok = .true.
+    do i = 1, size(xp)
+        call ppolyval (pp1, knots, coefs1, xp(i), yy(i), status=status)
+        all_ok = all_ok .and. (status == NF_STATUS_OK)
+    end do
+    call tc%assert_true (all_ok .and. all_close (yy, yp, atol=1.0e-8_PREC), &
+        'Cubic: Evaluate first derivaitve at non-interior points (scalar interface)')
+
+    deallocate (xp, yp, yy)
+
 end subroutine
 
 

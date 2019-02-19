@@ -38,6 +38,10 @@ interface bernstein_ppolyval_impl
     procedure __APPEND(bernstein_ppolyval_impl,__PREC)
 end interface
 
+interface bernstein_ppolyval_impl_quadratic
+    procedure __APPEND(bernstein_ppolyval_impl_quadratic,__PREC)
+end interface
+
 interface bernstein_ppolyval_impl_cubic
     procedure __APPEND(bernstein_ppolyval_impl_cubic,__PREC)
 end interface
