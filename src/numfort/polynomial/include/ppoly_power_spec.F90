@@ -5,11 +5,19 @@ interface  ppoly_power_check_input
 end interface
 
 interface ppolyval
-    procedure __APPEND(ppolyval,__PREC)
+    procedure __APPEND(power_ppolyval,__PREC)
 end interface
 
 interface ppolyval
-    procedure __APPEND(ppolyval_scalar,__PREC)
+    procedure __APPEND(power_ppolyval_scalar,__PREC)
+end interface
+
+interface power_ppolyval_impl
+    procedure __APPEND(power_ppolyval_impl,__PREC)
+end interface
+
+interface power_ppolyval_impl_cubic
+    procedure __APPEND(power_ppolyval_impl_cubic,__PREC)
 end interface
 
 interface ppolyval_check_input

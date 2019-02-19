@@ -78,7 +78,8 @@ pure subroutine __APPEND(ppolyval_check_input,__PREC) (self, knots, coefs, x, y,
 end subroutine
 
 
-pure subroutine __APPEND(ppolyval,__PREC) (self, knots, coefs, x, y, ext, &
+
+pure subroutine __APPEND(power_ppolyval,__PREC) (self, knots, coefs, x, y, ext, &
         left, right, status)
     !*  PPOLYVAL evaluates the fitted piecewise cubic polynomial at
     !   a set of given points.
@@ -89,9 +90,9 @@ pure subroutine __APPEND(ppolyval,__PREC) (self, knots, coefs, x, y, ext, &
         !   the piecewise polynomial
     real (PREC), intent(in), dimension(:), contiguous :: coefs
         !*  Stacked array of polynomial coefficients for each segment
-    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: x
         !*  x-coordinates of points where function should be interpolating.
-    real (PREC), intent(out), dimension(:) :: y
+    real (PREC), intent(out), dimension(:), contiguous :: y
         !*  On exit, contains interpolated function values for x-coordinates
         !   given in X.
     integer (NF_ENUM_KIND), intent(in), optional :: ext
@@ -108,9 +109,6 @@ pure subroutine __APPEND(ppolyval,__PREC) (self, knots, coefs, x, y, ext, &
 
     type (status_t) :: lstatus
     integer (NF_ENUM_KIND) :: lext
-    real (PREC) :: xlb, xub, xi, yi, si
-    integer :: i, j, jj, ik, n, nxp, k
-    type (search_cache) :: bcache
 
     lstatus = NF_STATUS_OK
 
@@ -120,17 +118,53 @@ pure subroutine __APPEND(ppolyval,__PREC) (self, knots, coefs, x, y, ext, &
     lext = NF_INTERP_EVAL_EXTRAPOLATE
     if (present(ext)) lext = ext
 
-    nxp = size(knots)
+    select case (self%degree)
+    case (3)
+        call power_ppolyval_impl_cubic (self, knots, coefs, x, y, lext, left, right, lstatus)
+    case default
+        call power_ppolyval_impl (self, knots, coefs, x, y, lext, left, right, lstatus)
+    end select
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+
+pure subroutine __APPEND(power_ppolyval_impl,__PREC) (self, knots, coefs, x, y, &
+        ext, left, right, status)
+    !*  PPOLYVAL evaluates the fitted piecewise cubic polynomial at
+    !   a set of given points.
+    integer, parameter :: PREC = __PREC
+    type (ppoly), intent(in) :: self
+    real (PREC), intent(in), dimension(:), contiguous :: knots
+    real (PREC), intent(in), dimension(:), contiguous :: coefs
+    real (PREC), intent(in), dimension(:), contiguous :: x
+    real (PREC), intent(out), dimension(:), contiguous :: y
+    integer (NF_ENUM_KIND), intent(in) :: ext
+    real (PREC), intent(in), optional :: left
+    real (PREC), intent(in), optional :: right
+    type (status_t), intent(out) :: status
+
+    real (PREC) :: xlb, xub, xi, yi, si
+    integer :: i, j, jj, ik, n, nk, k
+    type (search_cache) :: bcache
+
+    status = NF_STATUS_OK
+
+    nk = size(knots)
     n = size(x)
     k = self%degree
 
     xlb = knots(1)
-    xub = knots(nxp)
+    xub = knots(nk)
 
     do i = 1, n
         xi = x(i)
         if (xi < xlb) then
-            select case (lext)
+            select case (ext)
             case (NF_INTERP_EVAL_BOUNDARY)
                 ! Lower bound: set corresponding interpolation interval to the
                 ! first one. Correct boundary value will be interpolated below.
@@ -140,24 +174,24 @@ pure subroutine __APPEND(ppolyval,__PREC) (self, knots, coefs, x, y, ext, &
                 y(i) = left
                 cycle
             case (NF_INTERP_EVAL_ERROR)
-                lstatus = NF_STATUS_BOUNDS_ERROR
+                status = NF_STATUS_BOUNDS_ERROR
                 goto 100
             case default
                 ! Find interval j such that knots(j) <= x(i)
                 call bsearch_cached (xi, knots, j, bcache)
             end select
         else if (xi > xub) then
-            select case (lext)
+            select case (ext)
             case (NF_INTERP_EVAL_BOUNDARY)
                 ! Upper bound: set corresponding interpolation interval to the
                 ! last one. Correct boundary value will be interpolated below.
-                j = nxp - 1
+                j = nk - 1
                 xi = xub
             case (NF_INTERP_EVAL_CONST)
                 y(i) = right
                 cycle
             case (NF_INTERP_EVAL_ERROR)
-                lstatus = NF_STATUS_BOUNDS_ERROR
+                status = NF_STATUS_BOUNDS_ERROR
                 goto 100
             case default
                 ! Find interval j such that knots(j) <= x(i)
@@ -191,12 +225,104 @@ pure subroutine __APPEND(ppolyval,__PREC) (self, knots, coefs, x, y, ext, &
     end do
 
 100 continue
-    if (present(status)) status = lstatus
 
 end subroutine
 
 
-pure subroutine __APPEND(ppolyval_scalar,__PREC) (self, knots, coefs, x, y, &
+
+pure subroutine __APPEND(power_ppolyval_impl_cubic,__PREC) (self, knots, coefs, x, y, &
+        ext, left, right, status)
+    integer, parameter :: PREC = __PREC
+    type (ppoly), intent(in) :: self
+    real (PREC), intent(in), dimension(:), contiguous :: knots
+    real (PREC), intent(in), dimension(:), contiguous :: coefs
+    real (PREC), intent(in), dimension(:), contiguous :: x
+    real (PREC), intent(out), dimension(:), contiguous :: y
+    integer (NF_ENUM_KIND), intent(in) :: ext
+    real (PREC), intent(in), optional :: left
+    real (PREC), intent(in), optional :: right
+    type (status_t), intent(out) :: status
+
+    integer :: nk, n, i, j, jj
+    integer, parameter :: k = 3
+    real (PREC) :: xlb, xub, xi, yi, si
+    type (search_cache) :: bcache
+
+    status = NF_STATUS_OK
+
+    nk = size(knots)
+    n = size(x)
+
+    xlb = knots(1)
+    xub = knots(nk)
+
+    do i = 1, n
+        xi = x(i)
+        if (xi < xlb) then
+            select case (ext)
+            case (NF_INTERP_EVAL_BOUNDARY)
+                ! Lower bound: set corresponding interpolation interval to the
+                ! first one. Correct boundary value will be interpolated below.
+                j = 1
+                xi = xlb
+            case (NF_INTERP_EVAL_CONST)
+                y(i) = left
+                cycle
+            case (NF_INTERP_EVAL_ERROR)
+                status = NF_STATUS_BOUNDS_ERROR
+                goto 100
+            case default
+                ! Find interval j such that knots(j) <= x(i)
+                call bsearch_cached (xi, knots, j, bcache)
+            end select
+        else if (xi > xub) then
+            select case (ext)
+            case (NF_INTERP_EVAL_BOUNDARY)
+                ! Upper bound: set corresponding interpolation interval to the
+                ! last one. Correct boundary value will be interpolated below.
+                j = nk - 1
+                xi = xub
+            case (NF_INTERP_EVAL_CONST)
+                y(i) = right
+                cycle
+            case (NF_INTERP_EVAL_ERROR)
+                status = NF_STATUS_BOUNDS_ERROR
+                goto 100
+            case default
+                ! Find interval j such that knots(j) <= x(i)
+                call bsearch_cached (xi, knots, j, bcache)
+            end select
+        else
+            ! Find interval j such that knots(j) <= x(i)
+            call bsearch_cached (xi, knots, j, bcache)
+        end if
+
+        ! At this point we have one of three cases:
+        !   1. interpolation as XLB <= X(i) <= XUB
+        !   2. pseudo-interpolation that assigs the boundary value y(XLB) or y(XUB)
+        !       as x(i) was outside of the interval defined by XP.
+        !   3. Extrapolation for non-interior X(i) requested by user.
+
+        ! Index of coefficient block for interval j
+        jj = (j-1) * (k+1) + 1
+
+        ! Normalize to unit interval length
+        si = (xi - knots(j)) / (knots(j+1)-knots(j))
+        ! Start with k-th degree term
+        yi = coefs(jj+3) * si
+        yi = (yi + coefs(jj+2)) * si
+        yi = (yi + coefs(jj+1)) * si + coefs(jj)
+
+        y(i) = yi
+    end do
+
+100 continue
+
+end subroutine
+
+
+
+pure subroutine __APPEND(power_ppolyval_scalar,__PREC) (self, knots, coefs, x, y, &
         ext, left, right, status)
     !*  PPOLYVAL evaluates the fitted piecewise cubic polynomial at
     !   a given (scalar!) point.
