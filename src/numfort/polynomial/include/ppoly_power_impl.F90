@@ -302,12 +302,12 @@ subroutine __APPEND(power_ppolyder,__PREC) (self, knots, coefs, poly_out, &
     k = deg
     allocate (tm_der(0:k1,0:k), source=0.0_PREC)
 
-    if (k >= m) then
-        kk = poch (k-m+1, m)
-        tm_der(k-m,k) = kk
-        do i = 0, k-m-1
-            kk = kk / (k-i) * (k-m-i)
-            ir = k - m - i - 1
+    if (k >= lm) then
+        kk = poch (k-lm+1, lm)
+        tm_der(k-lm,k) = kk
+        do i = 0, k-lm-1
+            kk = kk / (k-i) * (k-lm-i)
+            ir = k - lm - i - 1
             ic = k - i - 1
             tm_der(ir,ic) = kk
         end do
@@ -322,7 +322,7 @@ subroutine __APPEND(power_ppolyder,__PREC) (self, knots, coefs, poly_out, &
     ldc = m1
 
     ptr_coefs(0:deg,1:n) => coefs
-    ptr_coefs_out(0:deg-m,1:n) => coefs_out
+    ptr_coefs_out(0:deg-lm,1:n) => coefs_out
 
     call GEMM (transa, transb, m1, n, k, alpha, tm_der, lda, ptr_coefs, ldb, &
         beta, ptr_coefs_out, ldc)
