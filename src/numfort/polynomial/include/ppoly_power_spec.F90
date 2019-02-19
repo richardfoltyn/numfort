@@ -16,6 +16,10 @@ interface power_ppolyval_impl
     procedure __APPEND(power_ppolyval_impl,__PREC)
 end interface
 
+interface power_ppolyval_impl_quadratic
+    procedure __APPEND(power_ppolyval_impl_quadratic,__PREC)
+end interface
+
 interface power_ppolyval_impl_cubic
     procedure __APPEND(power_ppolyval_impl_cubic,__PREC)
 end interface

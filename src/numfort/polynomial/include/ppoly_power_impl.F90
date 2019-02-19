@@ -119,6 +119,8 @@ pure subroutine __APPEND(power_ppolyval,__PREC) (self, knots, coefs, x, y, ext, 
     if (present(ext)) lext = ext
 
     select case (self%degree)
+    case (2)
+        call power_ppolyval_impl_quadratic (self, knots, coefs, x, y, lext, left, right, lstatus)
     case (3)
         call power_ppolyval_impl_cubic (self, knots, coefs, x, y, lext, left, right, lstatus)
     case default
@@ -148,7 +150,7 @@ pure subroutine __APPEND(power_ppolyval_impl,__PREC) (self, knots, coefs, x, y, 
     real (PREC), intent(in), optional :: right
     type (status_t), intent(out) :: status
 
-    real (PREC) :: xlb, xub, xi, yi, si
+    real (PREC) :: xlb, xub, xi, yi, si, s
     integer :: i, j, jj, ik, n, nk, k
     type (search_cache) :: bcache
 
@@ -212,14 +214,13 @@ pure subroutine __APPEND(power_ppolyval_impl,__PREC) (self, knots, coefs, x, y, 
         jj = (j-1) * (k+1) + 1
 
         ! Normalize to unit interval length
-        si = (xi - knots(j)) / (knots(j+1)-knots(j))
-        ! Start with k-th degree term
-        yi = coefs(jj+k) * si
-        do ik = k-1, 1, -1
-            yi = (yi + coefs(jj+ik)) * si
+        s = (xi - knots(j)) / (knots(j+1)-knots(j))
+        si = 1.0_PREC
+        yi = coefs(jj)
+        do ik = 1, k
+            si = si * s
+            yi = yi + coefs(jj+ik) * si
         end do
-        ! Add constant term
-        yi = yi + coefs(jj)
 
         y(i) = yi
     end do
@@ -230,8 +231,8 @@ end subroutine
 
 
 
-pure subroutine __APPEND(power_ppolyval_impl_cubic,__PREC) (self, knots, coefs, x, y, &
-        ext, left, right, status)
+pure subroutine __APPEND(power_ppolyval_impl_quadratic,__PREC) (self, knots, &
+        coefs, x, y, ext, left, right, status)
     integer, parameter :: PREC = __PREC
     type (ppoly), intent(in) :: self
     real (PREC), intent(in), dimension(:), contiguous :: knots
@@ -243,9 +244,9 @@ pure subroutine __APPEND(power_ppolyval_impl_cubic,__PREC) (self, knots, coefs, 
     real (PREC), intent(in), optional :: right
     type (status_t), intent(out) :: status
 
-    integer :: nk, n, i, j, jj
-    integer, parameter :: k = 3
-    real (PREC) :: xlb, xub, xi, yi, si
+    integer :: nk, n, i, j, jj, ik
+    integer, parameter :: k = 2
+    real (PREC) :: xlb, xub, xi, yi, si, s
     type (search_cache) :: bcache
 
     status = NF_STATUS_OK
@@ -307,11 +308,109 @@ pure subroutine __APPEND(power_ppolyval_impl_cubic,__PREC) (self, knots, coefs, 
         jj = (j-1) * (k+1) + 1
 
         ! Normalize to unit interval length
-        si = (xi - knots(j)) / (knots(j+1)-knots(j))
-        ! Start with k-th degree term
-        yi = coefs(jj+3) * si
-        yi = (yi + coefs(jj+2)) * si
-        yi = (yi + coefs(jj+1)) * si + coefs(jj)
+        s = (xi - knots(j)) / (knots(j+1)-knots(j))
+
+        si = 1.0_PREC
+        yi = coefs(jj)
+        do ik = 1, k
+            si = si * s
+            yi = yi + coefs(jj+ik) * si
+        end do
+
+        y(i) = yi
+    end do
+
+100 continue
+
+end subroutine
+
+
+
+pure subroutine __APPEND(power_ppolyval_impl_cubic,__PREC) (self, knots, coefs, x, y, &
+        ext, left, right, status)
+    integer, parameter :: PREC = __PREC
+    type (ppoly), intent(in) :: self
+    real (PREC), intent(in), dimension(:), contiguous :: knots
+    real (PREC), intent(in), dimension(:), contiguous :: coefs
+    real (PREC), intent(in), dimension(:), contiguous :: x
+    real (PREC), intent(out), dimension(:), contiguous :: y
+    integer (NF_ENUM_KIND), intent(in) :: ext
+    real (PREC), intent(in), optional :: left
+    real (PREC), intent(in), optional :: right
+    type (status_t), intent(out) :: status
+
+    integer :: nk, n, i, j, jj, ik
+    integer, parameter :: k = 3
+    real (PREC) :: xlb, xub, xi, yi, si, s
+    type (search_cache) :: bcache
+
+    status = NF_STATUS_OK
+
+    nk = size(knots)
+    n = size(x)
+
+    xlb = knots(1)
+    xub = knots(nk)
+
+    do i = 1, n
+        xi = x(i)
+        if (xi < xlb) then
+            select case (ext)
+            case (NF_INTERP_EVAL_BOUNDARY)
+                ! Lower bound: set corresponding interpolation interval to the
+                ! first one. Correct boundary value will be interpolated below.
+                j = 1
+                xi = xlb
+            case (NF_INTERP_EVAL_CONST)
+                y(i) = left
+                cycle
+            case (NF_INTERP_EVAL_ERROR)
+                status = NF_STATUS_BOUNDS_ERROR
+                goto 100
+            case default
+                ! Find interval j such that knots(j) <= x(i)
+                call bsearch_cached (xi, knots, j, bcache)
+            end select
+        else if (xi > xub) then
+            select case (ext)
+            case (NF_INTERP_EVAL_BOUNDARY)
+                ! Upper bound: set corresponding interpolation interval to the
+                ! last one. Correct boundary value will be interpolated below.
+                j = nk - 1
+                xi = xub
+            case (NF_INTERP_EVAL_CONST)
+                y(i) = right
+                cycle
+            case (NF_INTERP_EVAL_ERROR)
+                status = NF_STATUS_BOUNDS_ERROR
+                goto 100
+            case default
+                ! Find interval j such that knots(j) <= x(i)
+                call bsearch_cached (xi, knots, j, bcache)
+            end select
+        else
+            ! Find interval j such that knots(j) <= x(i)
+            call bsearch_cached (xi, knots, j, bcache)
+        end if
+
+        ! At this point we have one of three cases:
+        !   1. interpolation as XLB <= X(i) <= XUB
+        !   2. pseudo-interpolation that assigs the boundary value y(XLB) or y(XUB)
+        !       as x(i) was outside of the interval defined by XP.
+        !   3. Extrapolation for non-interior X(i) requested by user.
+
+        ! Index of coefficient block for interval j
+        jj = (j-1) * (k+1) + 1
+
+        ! Normalize to unit interval length
+        s = (xi - knots(j)) / (knots(j+1)-knots(j))
+
+        si = 1.0_PREC
+        yi = coefs(jj)
+        do ik = 1, k
+            si = si * s
+            yi = yi + coefs(jj+ik) * si
+        end do
 
         y(i) = yi
     end do
