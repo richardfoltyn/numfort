@@ -119,7 +119,7 @@ subroutine test_bsearch_cached (tests)
     n = 0
     allocate (haystack(n), source=0.0_PREC)
     needle = 0.0
-    call bsearch_cached (needle, haystack, i)
+    i = bsearch (needle, haystack)
     call tc%assert_true (i == 0, "size(HAYSTACK) = 0")
 
     call bsearch_cached (needle, haystack, i, cache)
@@ -134,7 +134,7 @@ subroutine test_bsearch_cached (tests)
     allocate (haystack(n), source=0.0_PREC)
     needle = 0.0
 
-    call bsearch_cached (needle, haystack, i)
+    i = bsearch (needle, haystack)
     call tc%assert_true (i == 1, "size(HAYSTACK) = 1")
 
     call bsearch_cached (needle, haystack, i, cache)
@@ -150,7 +150,7 @@ subroutine test_bsearch_cached (tests)
     call linspace (haystack, 0.0_PREC, 10.0_PREC)
 
     needle = -1.0
-    call bsearch_cached (needle, haystack, i)
+    i = bsearch (needle, haystack)
     call tc%assert_true (i == 1, "needle < HAYSTACK(1)")
 
     call bsearch_cached (needle, haystack, i, cache)
@@ -160,7 +160,7 @@ subroutine test_bsearch_cached (tests)
     call tc%assert_true (i == 1, "needle < HAYSTACK(1) with cache, repeat call")
 
     needle = 11.0
-    call bsearch_cached (needle, haystack, i)
+    i = bsearch (needle, haystack)
     call tc%assert_true (i == 10, "needle > HAYSTACK(size(HAYSTACK))")
 
     call bsearch_cached (needle, haystack, i, cache)
@@ -170,7 +170,7 @@ subroutine test_bsearch_cached (tests)
     call tc%assert_true (i == 10, "needle > HAYSTACK(size(HAYSTACK)) with cache, repeat call")
 
     needle = 0.5d0
-    call bsearch_cached (needle, haystack, i)
+    i = bsearch (needle, haystack)
     call tc%assert_true (i == 1, "needle in first interval")
 
     call bsearch_cached (needle, haystack, i, cache)
@@ -179,7 +179,7 @@ subroutine test_bsearch_cached (tests)
     call tc%assert_true (i == 1, "needle in first interval with cache, repeat call")
 
     needle = 9.5d0
-    call bsearch_cached (needle, haystack, i)
+    i = bsearch (needle, haystack)
     call tc%assert_true (i == 10, "needle in last interval")
 
     call bsearch_cached (needle, haystack, i, cache)

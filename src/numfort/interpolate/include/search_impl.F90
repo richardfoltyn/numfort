@@ -59,7 +59,7 @@ pure subroutine __APPEND(bsearch_cached,__PREC) (needle, haystack, ilb, cache)
         !*  Index of array element that is the lower bound of the bracketing
         !   interval such that HAYSTACK(ilb) <= NEEDLE < HAYSTACK(ilb+1),
         !   if such a bracket exists.
-    type (search_cache), intent(inout), optional :: cache
+    type (search_cache), intent(inout) :: cache
         !*  Optional search cache. If present, initially the routine checks
         !   whether the interval HAYSTACK(i) <= NEEDLE < HAYSTACK(i+1)),
         !   where i is the cached index and returns immediately
@@ -74,24 +74,19 @@ pure subroutine __APPEND(bsearch_cached,__PREC) (needle, haystack, ilb, cache)
         return
     end if
 
-    if (present(cache)) then
-        i = cache%i
-        i = max(min(i, n), 1)
-        if (haystack(i) <= needle) then
-            ilb = i
-            if (i == (n-1)) then
-                goto 100
-            else if (haystack(i+1) > needle) then
-                goto 100
-            end if
-            iub = n
-        else
-            ilb = 1
-            iub = i
+    i = cache%i
+    i = max(min(i, n), 1)
+    if (haystack(i) <= needle) then
+        ilb = i
+        if (i == (n-1)) then
+            goto 100
+        else if (haystack(i+1) > needle) then
+            goto 100
         end if
+        iub = n
     else
         ilb = 1
-        iub = n
+        iub = i
     end if
 
     do while (iub > (ilb + 1))
@@ -104,7 +99,7 @@ pure subroutine __APPEND(bsearch_cached,__PREC) (needle, haystack, ilb, cache)
     end do
 
 100 continue
-    if (present(cache)) cache%i = ilb
+    cache%i = ilb
 
 end subroutine
 
@@ -131,7 +126,7 @@ pure subroutine __APPEND(interp_find_cached,__PREC) (needle, haystack, ilb, cach
     real (PREC), intent(in) :: needle
     real (PREC), intent(in), dimension(:) :: haystack
     integer, intent(out) :: ilb
-    type (search_cache), intent(inout), optional :: cache
+    type (search_cache), intent(inout) :: cache
 
     call bsearch_cached (needle, haystack, ilb, cache)
 
@@ -151,7 +146,7 @@ pure subroutine __APPEND(interp_find_wgt_cached,__PREC) (needle, haystack, &
     real (PREC), intent(out) :: wgt_lb
         !*  Interpolation weight on the lower bound of the interpolation
         !   bracket.
-    type (search_cache), intent(inout), optional :: cache
+    type (search_cache), intent(inout) :: cache
 
     call interp_find_cached (needle, haystack, ilb, cache)
 
