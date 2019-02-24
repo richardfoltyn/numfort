@@ -51,13 +51,13 @@ pure subroutine __APPEND(solver_map_init,__PREC) (self, lb, ub, y0, dy, dx, stat
     !   Additionally, the initial point y0 is given by
     !       (y0 - y_lb)/(y_ub - y_lb) = F(x0,s)
     !   so from the definition of the logistic CDF we get
-    !       x0 = s * log(1/z - 1)
+    !       x0 = - s * log(1/z - 1)
     !   where z = (y0 - y_lb)/(y_ub - y_lb)
     !
     !   Combining these expressions, we find that s must satisfy
-    !       dy/(y_ub - y_lb) = 1/(1 + (1/z-1)exp(dx/s)) - z
+    !       dy/(y_ub - y_lb) = 1/(1 + (1/z-1)exp(-dx/s)) - z
     !   which implies that
-    !       dx/s = [log(y_ub - y0 - dy) - log(y0 - y_lb + dy)] /
+    !       dx/s = - [log(y_ub - y0 - dy) - log(y0 - y_lb + dy)] +
     !               [log(y_ub - y0) - log(y0 - y_lb)]
     type (solver_map), intent(inout) :: self
     real (PREC), intent(in) :: lb
@@ -131,18 +131,18 @@ pure subroutine __APPEND(solver_map_init,__PREC) (self, lb, ub, y0, dy, dx, stat
                 goto 100
             end if
 
-            a1 = log(yub - y0 - dy) - log(y0 + dy - ylb)
+            a1 = log(y0 + dy - ylb) - log(yub - y0 - dy)
             a2 = log(yub - y0) - log(y0 - ylb)
 
-            s = ldx/(a1 - a2)
+            s = ldx/(a1 + a2)
 
             if (.not. ieee_is_finite (s)) then
                 lstatus = NF_STATUS_INVALID_STATE
                 goto 100
             end if
-
-            transform = TRANSFORM_LOGISTIC
         end if
+
+        transform = TRANSFORM_LOGISTIC
     end if
 
     self%transform = transform
@@ -164,7 +164,7 @@ pure subroutine __APPEND(solver_map_eval_scalar,__PREC) (self, x, y, jac)
     real (PREC), intent(out) :: y
     real (PREC), intent(out), optional :: jac
 
-    real (PREC) :: s, lb, ub, dydx
+    real (PREC) :: s, lb, ub, dydx, cdf
 
     s = real(self%scale, PREC)
     lb = real(self%lb, PREC)
@@ -180,8 +180,9 @@ pure subroutine __APPEND(solver_map_eval_scalar,__PREC) (self, x, y, jac)
     case (TRANSFORM_NEG_EXP)
         continue
     case (TRANSFORM_LOGISTIC)
-        y = lb + (ub-lb)/(1.0_PREC + exp(x/s))
-        dydx = - (ub-lb)/(1.0_PREC + exp(x/s))**2.0_PREC * exp(x/s) / s
+        cdf = 1.0_PREC/(1.0_PREC + exp(-x/s))
+        y = lb + cdf * (ub-lb)
+        dydx = (ub-lb)*cdf**2.0_PREC * exp(-x/s) / s
     end select
 
     if (present(jac)) then
@@ -320,8 +321,8 @@ pure subroutine __APPEND(solver_map_eval_inverse_scalar,__PREC) (self, y, x, jac
         end if
 
         a = (ub-lb)/(y-lb) - 1.0_PREC
-        x = s * log(a)
-        dxdy = - s / a * (ub-lb) / (y-lb)**2.0_PREC
+        x = - s * log(a)
+        dxdy = s / a * (ub-lb) / (y-lb)**2.0_PREC
     end select
 
     if (present(jac)) then

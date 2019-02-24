@@ -347,7 +347,7 @@ subroutine test_logistic (tests)
     real (PREC), dimension(:,:), allocatable :: jac, jac_inv, eye, mat
     real (PREC), dimension(:), allocatable :: lb_flat, ub_flat
     real (PREC) :: dx, dy, lb, ub, y0, x0, y, diff
-    integer :: i, j, k, n, nmax
+    integer :: i, j, k, n, nmax, ii
     type (status_t) :: status
     type (str) :: msg
 
@@ -381,8 +381,16 @@ subroutine test_logistic (tests)
 
             do k = 1, 10
 
-                call random_number (y0)
-                y0 = lb + (ub-lb) * y0
+                ii = (i - 1)*size(lb_all) + (j-1)*size(dx_all) + k
+                if (modulo(ii, 2) == 0) then
+                    ! Position y0 at some random interior point
+                    call random_number (y0)
+                    y0 = lb + (ub-lb) * y0
+                else
+                    ! Position y0 exactly at midpoint as this can lead to
+                    ! additional complications
+                    y0 = (ub + lb) / 2.0_PREC
+                end if
 
                 ! dy needs to satisfy: (y0+dy) > lb, (y0+dy) < ub
                 ! and thus dy > lb-y0, dy < ub-y0
