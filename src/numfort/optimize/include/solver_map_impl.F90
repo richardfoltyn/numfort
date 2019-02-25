@@ -164,7 +164,7 @@ pure subroutine __APPEND(solver_map_eval_scalar,__PREC) (self, x, y, jac)
     real (PREC), intent(out) :: y
     real (PREC), intent(out), optional :: jac
 
-    real (PREC) :: s, lb, ub, dydx, cdf
+    real (PREC) :: s, lb, ub, dydx, z
 
     s = real(self%scale, PREC)
     lb = real(self%lb, PREC)
@@ -180,9 +180,9 @@ pure subroutine __APPEND(solver_map_eval_scalar,__PREC) (self, x, y, jac)
     case (TRANSFORM_NEG_EXP)
         continue
     case (TRANSFORM_LOGISTIC)
-        cdf = 1.0_PREC/(1.0_PREC + exp(-x/s))
-        y = lb + cdf * (ub-lb)
-        dydx = (ub-lb)*cdf**2.0_PREC * exp(-x/s) / s
+        z = 1.0_PREC/(1.0_PREC + exp(-x/s))
+        y = lb + z * (ub-lb)
+        dydx = (ub-lb)*z**2.0_PREC * exp(-x/s) / s
     end select
 
     if (present(jac)) then
@@ -288,7 +288,7 @@ pure subroutine __APPEND(solver_map_eval_inverse_scalar,__PREC) (self, y, x, jac
     type (status_t), intent(out), optional :: status
 
     type (status_t) :: lstatus
-    real (PREC) :: dxdy, s, a, lb, ub
+    real (PREC) :: dxdy, s, a, lb, ub, z
 
     lstatus = NF_STATUS_OK
     s = real(self%scale,PREC)
@@ -320,9 +320,14 @@ pure subroutine __APPEND(solver_map_eval_inverse_scalar,__PREC) (self, y, x, jac
             goto 100
         end if
 
-        a = (ub-lb)/(y-lb) - 1.0_PREC
+        z = (y-lb)/(ub-lb)
+        a = 1.0_PREC/z - 1.0_PREC
         x = - s * log(a)
-        dxdy = s / a * (ub-lb) / (y-lb)**2.0_PREC
+        ! Derivative : dx/dy = -s/a * da/dz * dz/dy
+        ! where
+        !   da/dz = -1/z^2
+        !   dz/dy = 1/(ub-lb)
+        dxdy = s / a / z**2.0_PREC / (ub-lb)
     end select
 
     if (present(jac)) then
