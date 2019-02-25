@@ -146,9 +146,9 @@ pure subroutine __APPEND(solver_map_init,__PREC) (self, lb, ub, y0, dy, dx, stat
     end if
 
     self%transform = transform
-    self%scale = real(s,PREC)
-    self%lb = real(ylb,PREC)
-    self%ub = real(yub,PREC)
+    self%scale = s
+    self%lb = ylb
+    self%ub = yub
 
 100 continue
     if (present(status)) status = lstatus
@@ -184,7 +184,12 @@ pure subroutine __APPEND(solver_map_eval_scalar,__PREC) (self, x, y, jac)
     case (TRANSFORM_LOGISTIC)
         z = 1.0_PREC/(1.0_PREC + exp(-x/s))
         y = lb + z * (ub-lb)
-        dydx = (ub-lb)*z**2.0_PREC * exp(-x/s) / s
+        ! Prevent indeterminate expression for "large" X that lead
+        ! to z = 0.0
+        ! Otherwise leave dydx = 0 as initialized
+        if (z > 0.0_PREC) then
+            dydx = (ub-lb)*z**2.0_PREC * exp(-x/s) / s
+        end if
     end select
 
     if (present(jac)) then
