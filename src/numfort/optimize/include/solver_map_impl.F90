@@ -170,6 +170,8 @@ pure subroutine __APPEND(solver_map_eval_scalar,__PREC) (self, x, y, jac)
     lb = real(self%lb, PREC)
     ub = real(self%ub, PREC)
 
+    dydx = 0.0_PREC
+
     select case (self%transform)
     case (TRANSFORM_LINEAR)
         y = x / s
@@ -294,6 +296,8 @@ pure subroutine __APPEND(solver_map_eval_inverse_scalar,__PREC) (self, y, x, jac
     s = real(self%scale,PREC)
     lb = real(self%lb, PREC)
     ub = real(self%ub, PREC)
+
+    dxdy = 0.0_PREC
 
     select case (self%transform)
     case (TRANSFORM_LINEAR)
