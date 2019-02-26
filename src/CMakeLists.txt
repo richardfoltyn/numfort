@@ -187,12 +187,12 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     # explicitly add -cpp to run C preprocessor if required
     # By default set -Wall, but disable warnings when comparing reals
     # and -Wsurpsiring, as this generates numerous warnings about finalizers.
-    set(GNU_WARN "-Wall -Wno-compare-reals -Wno-surprising -frecursive")
+    set(GNU_WARN "-Wall -Wno-compare-reals -Wno-surprising")
     if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER 6)
         # breaks compilation with gfortran 5.x, possibly with 6.x as well.
         set(GNU_WARN "${GNU_WARN} -Wno-unused-dummy-argument")
     endif()
-    set(_FFLAGS "${GNU_WARN}")
+    set(_FFLAGS "${GNU_WARN} -frecursive")
     set(_FFLAGS_DEBUG "-fcheck=all -O0")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
