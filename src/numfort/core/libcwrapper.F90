@@ -1,6 +1,8 @@
 
 
 module numfort_core_libc
+    !*  Module implements wrappers around various math functions defined in
+    !   the C standard library.
 
     use, intrinsic :: iso_c_binding
     use, intrinsic :: iso_fortran_env
@@ -37,6 +39,7 @@ module numfort_core_libc
 
 
 impure elemental function log1p_real32 (x) result(res)
+    !*  LOG1P implements the LOG(1+x) function
     integer, parameter :: PREC = real32
     real (PREC), intent(in) :: x
     real (PREC) :: res
@@ -45,6 +48,7 @@ impure elemental function log1p_real32 (x) result(res)
 end function
 
 impure elemental function log1p_real64 (x) result(res)
+    !*  LOG1P implements the LOG(1+x) function
     integer, parameter :: PREC = real64
     real (PREC), intent(in) :: x
     real (PREC) :: res

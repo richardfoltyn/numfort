@@ -4,6 +4,8 @@
 
 
 module numfort_core_logexp
+    !*  Module implements various special functions related to log and
+    !   exponentials.
 
     use, intrinsic :: iso_fortran_env
 

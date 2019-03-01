@@ -2,6 +2,10 @@
 
 
 impure elemental function __APPEND(logaddexp,__PREC) (x, y) result(res)
+    !*  LOGADDEXP implements the function log(exp(x) + exp(y)) that should
+    !   perform better for inputs negative X and Y that are sufficiently
+    !   large (in absolute terms) such that exp(X) or exp(Y) evaluates
+    !   to zero.
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: x
     real (PREC), intent(in) :: y
