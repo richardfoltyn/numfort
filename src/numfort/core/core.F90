@@ -6,4 +6,8 @@ module numfort_core
 
     use numfort_core_cephes_stats
 
+    use numfort_core_libc
+
+    use numfort_core_logexp
+
 end module
