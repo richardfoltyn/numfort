@@ -37,6 +37,7 @@ else ()
     option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 endif ()
 option(USE_MKL "Build against Intel MKL" ON)
+option(BUILD_BLAS95 "Build Fortran 95 wrappers for BLAS" OFF)
 option(BUILD_TESTS "Build (unit) tests" OFF)
 option(BUILD_EXAMPLES "Build examples/demo code" OFF)
 option(BUILD_BENCHMARKS "Build benchmarks" OFF)
@@ -86,25 +87,29 @@ if(BUILD_TESTS)
 endif()
 
 ################################################################################
-# MKL
-if (USE_MKL)
-    # find_package(MKL REQUIRED)
-    list(APPEND MKL_COMPONENTS SEQUENTIAL)
-    if (BUILD_TESTS OR BUILD_EXAMPLES)
-        # Fortran 95 interfaces to BLAS and LAPACK are used by some unit tests
-        # so require these components.
-        list(APPEND MKL_COMPONENTS BLAS95 LAPACK95)
-    endif ()
-    find_package(MKL REQUIRED ${MKL_COMPONENTS})
-    set(${PROJECT_NAME}_BLA_LIBRARIES ${MKL_LIBRARIES})
-else ()
-    find_package(LAPACK REQUIRED)
-    set(${PROJECT_NAME}_BLA_LIBRARIES ${LAPACK_LIBRARIES})
-    set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${LAPACK_LINKER_FLAGS})
-    set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${LAPACK_LINKER_FLAGS})
-endif ()
+# BLAS / LAPACK libraries
+# These are only needed if building examples or unit tests, otherwise the
+# library itself can be compiled without them as the core library does not
+# use the BLAS95 or LAPACK95 interface.
 
-list(APPEND ${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_BLA_LIBRARIES})
+if (BUILD_TESTS OR BUILD_EXAMPLES)
+    if (USE_MKL)
+        # find_package(MKL REQUIRED)
+        list(APPEND MKL_COMPONENTS SEQUENTIAL BLAS95 LAPACK95)
+        find_package(MKL REQUIRED ${MKL_COMPONENTS})
+        set(${PROJECT_NAME}_BLA_LIBRARIES ${MKL_LIBRARIES})
+    else ()
+        find_package(LAPACK REQUIRED)
+        set(${PROJECT_NAME}_BLA_LIBRARIES ${LAPACK_LIBRARIES})
+        set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${LAPACK_LINKER_FLAGS})
+        set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${LAPACK_LINKER_FLAGS})
+        # Examples / unit tests use blas95 interfaces, so build these
+        # in case we are not using MKL Fortran95 interfaces.
+        set(BUILD_BLAS95 ON)
+    endif ()
+
+    list(APPEND ${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_BLA_LIBRARIES})
+endif()
 
 ###############################################################################
 # Path suffixes beneath CMAKE_INSTALL_PREFIX
@@ -235,10 +240,7 @@ add_subdirectory(external)
 # Stand-alone interface definitions for F77 routines and their wrappers
 
 add_subdirectory(interfaces)
-
-if (NOT USE_MKL)
-    add_subdirectory(wrappers)
-endif()
+add_subdirectory(wrappers)
 
 ################################################################################
 # Targets
