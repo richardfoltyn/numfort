@@ -25,6 +25,7 @@ module numfort_stats_markov
     public :: markov_simulate
     public :: markov_simulate_advanced
     public :: is_trans_matrix
+    public :: truncate_trans_matrix
 
     interface rouwenhorst
         procedure rouwenhorst_real64
@@ -48,6 +49,10 @@ module numfort_stats_markov
 
     interface is_trans_matrix
         procedure is_trans_matrix_real64
+    end interface
+
+    interface truncate_trans_matrix
+        procedure truncate_trans_matrix_real64
     end interface
     
     interface markov_approx_input_checks

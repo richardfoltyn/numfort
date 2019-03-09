@@ -40,6 +40,57 @@ pure function __APPEND(is_trans_matrix,__PREC) (mat, tol, transposed) result(res
 end function
 
 
+
+subroutine __APPEND(truncate_trans_matrix,__PREC) (mat, tol, transposed)
+    !*  TRUNCATE_TRANS_MATRIX truncates low-probability transition in a
+    !   Markov transition matrix towards zero and re-normalizes the
+    !   rows or columns such that probabilities sum to 1.0.
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(inout), dimension(:,:) :: mat
+        !*  Markov transition matrix with elements MAT(i,j) = Prob[x'=j | x=i]
+    real (PREC), intent(in) :: tol
+        !*  Tolerance level for low probabilities such that all probabilities
+        !   smaller than TOL will be truncated to zero.
+    logical, intent(in), optional :: transposed
+        !*  If present and true, assume that the matrix MAT is a transposed
+        !   transition matrix, ie MAT(i,j) = Prob[x'=i | x=j]
+        !   (default: false)
+
+    integer :: n, dim, i
+    logical :: ltransposed
+    real (PREC), dimension(:), allocatable :: rwork
+
+    ltransposed = .false.
+    if (present(transposed)) ltransposed = transposed
+
+    dim = 2
+    if (ltransposed) then
+        dim = 1
+    end if
+
+    where (mat < tol)
+        mat = 0.0
+    end where
+
+    n = size(mat,dim)
+    allocate (rwork(n))
+    rwork(:) = sum(mat, dim=dim)
+
+    ! Normalize such that conditional trans. probabilities sum to 1.0
+    if (ltransposed) then
+        do i = 1, size(mat, 2)
+            mat(:,i) = mat(:,i) / rwork(i)
+        end do
+    else
+        do i = 1, size(mat, 2)
+            mat(:,i) = mat(:,i) / rwork
+        end do
+    end if
+
+end subroutine
+
+
+
 subroutine __APPEND(markov_approx_input_checks,__PREC) (rho, sigma, states, &
         tm, status)
     !*  MARKOV_APPROX_INPUT_CHECKS validates inputs for the ROUWENHORST
