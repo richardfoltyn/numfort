@@ -49,7 +49,7 @@ module numfort_optimize_slsqp
             "Singular matrix E in LSQ subproblem                ", &
             "Singular matrix C in LSQ subproblem                ", &
             "Rank-deficient equality constraint in HFTI         ", &
-            "Positive directional derivative in line searc      ", &
+            "Positive directional derivative in line search     ", &
             "Iteration limit exceeded                           "  &
         ]
         !*  Mapping of SLSQP status codes to status messages. Note: no msg
