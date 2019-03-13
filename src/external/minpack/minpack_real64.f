@@ -15,12 +15,12 @@
           end subroutine
 
           subroutine hybrd_fcn_real64 (n, x, fvec, iflag)
-              integer :: n, iflat
+              integer :: n, iflag
               double precision :: x(n), fvec(n)
           end subroutine
 
           subroutine hybrj_fcn_real64 (n,x,fvec,fjac,ldfjac,iflag)
-              integer :: n, iflag
+              integer :: n, iflag, ldfjac
               double precision  :: x(n), fvec(n), fjac(ldfjac, n)
           end subroutine
         end interface
