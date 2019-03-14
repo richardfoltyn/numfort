@@ -74,6 +74,7 @@ subroutine test_2d (tests)
 
     integer, parameter :: n = 2
     integer, dimension(n,n) :: arr
+    integer, dimension(:), allocatable :: shp
     logical :: res, res0
     integer :: i, j, k, l
     type (str) :: msg
@@ -92,6 +93,19 @@ subroutine test_2d (tests)
                 end do
             end do
         end do
+    end do
+
+    ! Check with incompatible shape parameter, should return .false.
+    ! instead of crashing the application
+    do i = 0, 5
+        if (i == size(shape(arr))) cycle
+
+        allocate (shp(i), source=0)
+        res = has_shape (arr, shp)
+        msg = '2d-array, shape argument of length ' // str(i)
+        call tc%assert_false (res, msg)
+
+        deallocate (shp)
     end do
 
 end subroutine

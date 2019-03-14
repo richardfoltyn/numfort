@@ -10,5 +10,9 @@ integer, dimension(NDIM) :: arr_shp
 logical, dimension(NDIM) :: dim_equal
 
 arr_shp = shape(arr)
-dim_equal = (arr_shp == shp)
-res = all(dim_equal)
+if (size(arr_shp) == size(shp)) then
+    dim_equal = (arr_shp == shp)
+    res = all(dim_equal)
+else
+    res = .false.
+end if
