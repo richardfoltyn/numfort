@@ -8,6 +8,9 @@ module numfort_common_cond_alloc
 
     private
 
+    integer, parameter :: COND_ALLOC_STAT_IS_ALLOCATED = -1
+    integer, parameter :: COND_ALLOC_STAT_INVALID_ARG = -2
+
     public :: cond_alloc
 
     ! COND_ALLOC for 1d-arrays

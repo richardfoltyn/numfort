@@ -9,9 +9,15 @@ integer, intent(out), optional :: stat
     !   contains the value of STAT returned by the underlying ALLOCATE otherwise.
     !   In particular, if ARR was successfully allocated STAT has value 0.
 
+integer, parameter :: NDIM = 5
 integer :: lstat
 
-lstat = -1
+lstat = COND_ALLOC_STAT_IS_ALLOCATED
+
+if (size(shp) /= NDIM) then
+    lstat = COND_ALLOC_STAT_INVALID_ARG
+    goto 100
+end if
 
 if (allocated(arr)) then
     if (.not. has_shape (arr, shp)) deallocate (arr)
@@ -25,4 +31,5 @@ if (.not. allocated(arr)) then
     end if
 end if
 
-if (present(stat)) stat = lstat
+100 continue
+    if (present(stat)) stat = lstat

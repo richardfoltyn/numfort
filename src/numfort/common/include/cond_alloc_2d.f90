@@ -7,12 +7,13 @@ integer, intent(out), optional :: stat
     !   contains the value of STAT returned by the underlying ALLOCATE otherwise.
     !   In particular, if ARR was successfully allocated STAT has value 0.
 
-integer, dimension(2) :: shp
+integer, parameter :: NDIM = 2
+integer, dimension(NDIM) :: shp
 integer :: lstat
 
-lstat = -1
-shp = shape(source)
+lstat = COND_ALLOC_STAT_IS_ALLOCATED
 
+shp = shape(source)
 if (allocated(arr)) then
     if (.not. shape_equal (arr, source)) deallocate (arr)
 end if

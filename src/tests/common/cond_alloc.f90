@@ -116,6 +116,7 @@ subroutine test_2d (tests)
     integer, parameter :: n = 2
     integer, dimension(:,:), allocatable :: arr, src
     integer, dimension(2) :: shp
+    integer, dimension(:), allocatable :: shp2
     integer :: source, stat
     type (str) :: msg
     integer :: i, j, k, l
@@ -160,7 +161,23 @@ subroutine test_2d (tests)
             call tc%assert_true (all(shape(arr)==shp) .and. stat==0 .and. &
                 all(arr==src), msg)
 
-            deallocate (src, arr)
+            ! Test with non-conformable shape argument
+            do k = 0, 3
+                if (i == 2) cycle
+
+                allocate (shp2(i), source=0)
+                if (allocated(arr)) deallocate (arr)
+                call cond_alloc (arr, shp2, stat=stat)
+
+                msg = 'Array API: passing incompatible SHP argument of size ' // str(i)
+                call tc%assert_true (stat < 0 .and. .not. allocated(arr), msg)
+
+                deallocate (shp2)
+            end do
+
+            if (allocated(arr)) deallocate (arr)
+
+            deallocate (src)
         end do
     end do
 
