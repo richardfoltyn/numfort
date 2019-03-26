@@ -43,7 +43,7 @@ endif ()
 # Target definitions
 
 set(SOURCE_FILES
-    slsqp_mod_real64.f
+    slsqp_mod_real64.F
     slsqp_mod.f90
 )
 

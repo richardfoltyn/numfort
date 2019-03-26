@@ -38,14 +38,14 @@ C       Interfaces for BLAS 1 routines used in SLSQP implementation
                 import real64
                 integer, intent(in) :: n, incx, incy
                 real (real64), intent(in) :: da, dx(*)
-                real (real64), intent(in out) :: dy(*)
+                real (real64), intent(inout) :: dy(*)
             end subroutine
 
             subroutine dscal (n, da, dx, incx)
                 import real64
                 integer, intent(in) :: n, incx
                 real (real64), intent(in) :: da
-                real (real64), intent(in out) :: dx(*)
+                real (real64), intent(inout) :: dx(*)
             end subroutine
         end interface
 
@@ -101,5 +101,5 @@ C           SAVE or initialized in a DATA statement in routine LINMIN.
 
         contains
 
-        include "slsqp_optmz.f"
+#include "slsqp_optmz.f"
       end module
