@@ -213,20 +213,20 @@ C*  Copyright 1991: Dieter Kraft, FHM                                  *
 C*                                                                     *
 C***********************************************************************
 
-      type (slsqp_data), intent(in out) :: dat
+      type (slsqp_data), intent(inout) :: dat
 C       Container object used to store variables that were originally
 C       declared with the SAVE attribute in SLSQPB.
-      type (linmin_data), intent(in out) :: dat_lm
+      type (linmin_data), intent(inout) :: dat_lm
 C       Container object used to store variables that should have been
 C       declared with the SAVE attribute in LINMIN.
 
       integer, intent(in) :: m, meq, la, n, l_w, l_jw
-      integer, intent(in out) :: iter, mode
-      integer, intent(in out) :: jw(l_jw)
+      integer, intent(inout) :: iter, mode
+      integer, intent(inout) :: jw(l_jw)
       real (PREC), intent(in) :: xl(n), xu(n)
       real (PREC), intent(in) :: a(la,n+1), c(la), f, g(n+1)
-      real (PREC), intent(in out) :: acc
-      real (PREC), intent(in out) :: x(n), w(l_w)
+      real (PREC), intent(inout) :: acc
+      real (PREC), intent(inout) :: x(n), w(l_w)
 
       INTEGER          il, im, ir, is, iu, iv, iw, ix, mineq, n1
 
@@ -279,8 +279,8 @@ C   NONLINEAR PROGRAMMING BY SOLVING SEQUENTIALLY QUADRATIC PROGRAMS
 C        -  L1 - LINE SEARCH,  POSITIVE DEFINITE  BFGS UPDATE  -
 
 C                      BODY SUBROUTINE FOR SLSQP
-      type (slsqp_data), intent(in out) :: dat
-      type (linmin_data), intent(in out) :: dat_lm
+      type (slsqp_data), intent(inout) :: dat
+      type (linmin_data), intent(inout) :: dat_lm
 
       INTEGER          iw(*), i, iter, k, j, la, m, meq, mode, n
 
@@ -1628,10 +1628,10 @@ C   STATUS: 31. AUGUST  1984
 
 C   SUBROUTINES REQUIRED: NONE
 
-      type (linmin_data), intent(in out) :: dat
+      type (linmin_data), intent(inout) :: dat
 C       Container object to store variables that need to be persistent
 C       across calls.
-      integer, intent(in out) :: mode
+      integer, intent(inout) :: mode
       real (PREC), intent(in) :: ax, bx
       real (PREC), intent(in) :: f
       real (PREC), intent(in) :: tol
