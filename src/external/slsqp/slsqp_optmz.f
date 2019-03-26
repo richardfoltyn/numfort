@@ -295,6 +295,11 @@ c                     +(N1+MINEQ)*(N1-MEQ) + 2*MEQ + N1       for LSEI
 c                      with MINEQ = M - MEQ + 2*N1  &  N1 = N+1
 
       real (PREC), parameter :: alfmin = 1.0d-1
+      logical :: badlin
+
+C     The badlin flag keeps track whether the SQP problem on the current
+C     iteration was inconsistent or not.
+      badlin = .FALSE.
 
       IF (mode) 260, 100, 220
 
@@ -345,13 +350,19 @@ C   SEARCH DIRECTION AS SOLUTION OF QP - SUBPROBLEM
      *   mode)
 
 C   AUGMENTED PROBLEM FOR INCONSISTENT LINEARIZATION
+C
+C   If it turns out that the original SQP problem is inconsistent,
+C   disallow termination with convergence on this iteration,
+C   even if the augmented problem was solved.
 
+      badlin = .FALSE.
       IF (mode.EQ.6) THEN
           IF (n.EQ.meq) THEN
               mode = 4
           ENDIF
       ENDIF
       IF (mode.EQ.4) THEN
+          badlin = .TRUE.
           DO 140 j=1,m
              IF (j.LE.meq) THEN
                  a(j,dat%n1) = -c(j)
@@ -408,7 +419,8 @@ C   UPDATE MULTIPLIERS FOR L1-TEST
 C   CHECK CONVERGENCE
 
       mode = 0
-      IF (dat%h1.LT.acc .AND. dat%h2.LT.acc) GO TO 330
+      IF (dat%h1.LT.acc .AND. dat%h2.LT.acc .AND.
+     *      .NOT. badlin) GO TO 330
       dat%h1 = ZERO
       DO 180 j=1,m
          IF (j.LE.meq) THEN
@@ -481,7 +493,7 @@ C   CHECK CONVERGENCE
          dat%h3 = dat%h3 + MAX(-c(j),dat%h1)
   250 CONTINUE
       IF ((ABS(f-dat%f0).LT.acc .OR. dnrm2(n,s,1).LT.acc)
-     *          .AND. dat%h3.LT.acc)
+     *      .AND. dat%h3.LT.acc .AND. .NOT. badlin)
      *   THEN
             mode = 0
          ELSE
@@ -493,7 +505,7 @@ C   CHECK relaxed CONVERGENCE in case of positive directional derivative
 
   255 CONTINUE
       IF ((ABS(f-dat%f0).LT.dat%tol .OR. dnrm2(n,s,1).LT.dat%tol)
-     *      .AND. dat%h3.LT.dat%tol)
+     *      .AND. dat%h3.LT.dat%tol .AND. .NOT. badlin)
      *   THEN
             mode = 0
          ELSE
