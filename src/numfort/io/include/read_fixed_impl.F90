@@ -10,33 +10,23 @@
     character (*), intent(out), optional :: msg
 
     integer :: iostat, uid
-    character (100) :: iomsg
+    character (100) :: lmsg
     type (status_t) :: lstatus
 
-    lstatus = NF_STATUS_OK
-    if (present(msg)) msg = ""
+    lstatus = NF_STATUS_IO_ERROR
+    lmsg = ""
 
     open (newunit=uid, file=path, status='old', action='read', &
-        access='sequential', iostat=iostat, iomsg=iomsg)
+        access='sequential', iostat=iostat, iomsg=lmsg, err=100)
 
-    if (iostat /= 0) then
-        lstatus = NF_STATUS_IO_ERROR
-        if (present(msg)) msg = iomsg
-        goto 100
-    end if
+    read (unit=uid, fmt=fmt, iomsg=lmsg, iostat=iostat, err=50) dat
 
-    read (unit=uid, fmt=fmt, iomsg=iomsg, iostat=iostat) dat
-
-    if (iostat /= 0) then
-        lstatus = NF_STATUS_IO_ERROR
-        if (present(msg)) msg = iomsg
-        goto 50
-    end if
+    lstatus = NF_STATUS_OK
 
 50  continue
 
     close (unit=uid)
 
 100 continue
-
+    if (present(msg)) msg = lmsg
     if (present(status)) status = lstatus

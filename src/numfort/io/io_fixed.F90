@@ -12,6 +12,7 @@ module numfort_io_fixed
     private
 
     public :: read_fixed
+    public :: read_fixed_alloc
     public :: write_fixed
 
     interface read_fixed
@@ -46,6 +47,10 @@ module numfort_io_fixed
         procedure write_fixed_3d_real32, write_fixed_3d_real64
     end interface
 
+    interface read_fixed_alloc
+        procedure read_fixed_alloc_2d_real32, read_fixed_alloc_2d_real64
+    end interface
+
     contains
 
 
@@ -75,8 +80,8 @@ pure function parse_transform (x) result(res)
         res = NF_IO_TRANSFORM_NONE
     case ('transpose')
         res = NF_IO_TRANSFORM_TRANSPOSE
-    case ('flatten')
-        res = NF_IO_TRANSFORM_FLATTEN
+    case ('format')
+        res = NF_IO_TRANSFORM_FORMAT
     case default
         res = 0
     end select
@@ -154,6 +159,21 @@ subroutine read_fixed_2d_real64 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real64
     real (PREC), intent(inout), dimension(:,:) :: dat
 #include "read_fixed_2d_impl.F90"
+end subroutine
+
+
+subroutine read_fixed_alloc_2d_real32 (path, fmt, dat, transform, status, msg)
+    integer, parameter :: PREC = real32
+    real (PREC), intent(inout), dimension(:,:), allocatable :: dat
+    type (data_chunk_real32), pointer :: ptr_first, ptr_curr
+#include "read_fixed_alloc_2d_impl.F90"
+end subroutine
+
+subroutine read_fixed_alloc_2d_real64 (path, fmt, dat, transform, status, msg)
+    integer, parameter :: PREC = real64
+    real (PREC), intent(inout), dimension(:,:), allocatable :: dat
+    type (data_chunk_real64), pointer :: ptr_first, ptr_curr
+#include "read_fixed_alloc_2d_impl.F90"
 end subroutine
 
 
