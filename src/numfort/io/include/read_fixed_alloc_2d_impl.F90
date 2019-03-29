@@ -10,7 +10,7 @@
 
     integer, parameter :: LINE_BUFFER_LEN = 2**14
     integer :: linelen, fwidth, nrec, nlines, i, n, ioffset
-    character (LINE_BUFFER_LEN) :: buf
+    character (:), allocatable :: buf
     integer :: shp(2)
     integer, parameter :: CHUNK_NCOL = 100
     character (:), allocatable :: lfmt, fmt_field
@@ -20,7 +20,7 @@
     character (100) :: lmsg
     type (status_t) :: lstatus
 
-    nullify (ptr_first, ptr_curr)
+    nullify (ptr_first, ptr_curr, ptr_next)
 
     ! Default exit status
     lstatus = NF_STATUS_IO_ERROR
@@ -53,8 +53,11 @@
         access='sequential', iostat=iostat, iomsg=lmsg, err=100)
 
     ! ---- Determine line length -----
+    allocate (character (LINE_BUFFER_LEN) :: buf)
     read (unit=uid, fmt='(a)', iomsg=lmsg, iostat=iostat, size=linelen, &
         advance='no', err=50) buf
+
+    deallocate (buf)
 
     nrec = linelen / fwidth
 
@@ -157,10 +160,13 @@
 
     do while (associated(ptr_curr))
         if (allocated(ptr_curr%dat)) deallocate (ptr_curr%dat)
-        ptr_curr => ptr_curr%ptr_next
+        ptr_next => ptr_curr%ptr_next
+        ! Deallocate container object itself
+        deallocate (ptr_curr)
+        ptr_curr => ptr_next
     end do
 
-    nullify (ptr_curr, ptr_first)
+    nullify (ptr_curr, ptr_first, ptr_next)
 
 
 50  continue
@@ -169,5 +175,9 @@
     close (unit=uid)
 
 100 continue
+
+    if (allocated(fmt_field)) deallocate (fmt_field)
+    if (allocated(lfmt)) deallocate (lfmt)
+
     if (present(status)) status = lstatus
     if (present(msg)) msg = lmsg

@@ -265,7 +265,7 @@ subroutine __APPEND(test_fixed_alloc,__PREC) (tests)
     ! === Test with n-by-n arrays of various sizes ===
     nrow = 6
     ncol = 3
-    do i = 1, 6
+    do i = 1, 7
         nrow = nrow * 2
         ncol = ncol * 2
         allocate (dat(nrow, ncol))

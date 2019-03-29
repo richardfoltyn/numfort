@@ -165,14 +165,14 @@ end subroutine
 subroutine read_fixed_alloc_2d_real32 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real32
     real (PREC), intent(inout), dimension(:,:), allocatable :: dat
-    type (data_chunk_real32), pointer :: ptr_first, ptr_curr
+    type (data_chunk_real32), pointer :: ptr_first, ptr_curr, ptr_next
 #include "read_fixed_alloc_2d_impl.F90"
 end subroutine
 
 subroutine read_fixed_alloc_2d_real64 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real64
     real (PREC), intent(inout), dimension(:,:), allocatable :: dat
-    type (data_chunk_real64), pointer :: ptr_first, ptr_curr
+    type (data_chunk_real64), pointer :: ptr_first, ptr_curr, ptr_next
 #include "read_fixed_alloc_2d_impl.F90"
 end subroutine
 
