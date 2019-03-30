@@ -93,55 +93,55 @@ end function
 
 subroutine read_fixed_1d_real32 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real32
-    real (PREC), intent(inout), dimension(:) :: dat
+    real (PREC), intent(inout), dimension(:), contiguous :: dat
 #include "read_fixed_impl.F90"
 end subroutine
 
 
 subroutine read_fixed_1d_real64 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real64
-    real (PREC), intent(inout), dimension(:) :: dat
+    real (PREC), intent(inout), dimension(:), contiguous :: dat
 #include "read_fixed_impl.F90"
 end subroutine
 
 
 subroutine read_fixed_1d_int32 (path, fmt, dat, transform, status, msg)
     integer, parameter :: INTSIZE = int32
-    integer (INTSIZE), intent(inout), dimension(:) :: dat
+    integer (INTSIZE), intent(inout), dimension(:), contiguous :: dat
 #include "read_fixed_impl.F90"
 end subroutine
 
 
 subroutine read_fixed_1d_int64 (path, fmt, dat, transform, status, msg)
     integer, parameter :: INTSIZE = int64
-    integer (INTSIZE), intent(inout), dimension(:) :: dat
+    integer (INTSIZE), intent(inout), dimension(:), contiguous :: dat
 #include "read_fixed_impl.F90"
 end subroutine
 
 
 subroutine write_fixed_1d_real32 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real32
-    real (PREC), intent(in), dimension(:) :: dat
+    real (PREC), intent(in), dimension(:), contiguous :: dat
 #include "write_fixed_impl.F90"
 end subroutine
 
 
 subroutine write_fixed_1d_real64 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real64
-    real (PREC), intent(in), dimension(:) :: dat
+    real (PREC), intent(in), dimension(:), contiguous :: dat
 #include "write_fixed_impl.F90"
 end subroutine
 
 subroutine write_fixed_1d_int32 (path, fmt, dat, transform, status, msg)
     integer, parameter :: INTSIZE = int32
-    integer (INTSIZE), intent(in), dimension(:) :: dat
+    integer (INTSIZE), intent(in), dimension(:), contiguous :: dat
 #include "write_fixed_impl.F90"
 end subroutine
 
 
 subroutine write_fixed_1d_int64 (path, fmt, dat, transform, status, msg)
     integer, parameter :: INTSIZE = int64
-    integer (INTSIZE), intent(in), dimension(:) :: dat
+    integer (INTSIZE), intent(in), dimension(:), contiguous :: dat
 #include "write_fixed_impl.F90"
 end subroutine
 
@@ -150,14 +150,14 @@ end subroutine
 
 subroutine read_fixed_2d_real32 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real32
-    real (PREC), intent(inout), dimension(:,:) :: dat
+    real (PREC), intent(inout), dimension(:,:), contiguous :: dat
 #include "read_fixed_2d_impl.F90"
 end subroutine
 
 
 subroutine read_fixed_2d_real64 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real64
-    real (PREC), intent(inout), dimension(:,:) :: dat
+    real (PREC), intent(inout), dimension(:,:), contiguous :: dat
 #include "read_fixed_2d_impl.F90"
 end subroutine
 
@@ -179,14 +179,14 @@ end subroutine
 
 subroutine write_fixed_2d_real32 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real32
-    real (PREC), intent(inout), dimension(:,:) :: dat
+    real (PREC), intent(in), dimension(:,:), contiguous :: dat
 #include "write_fixed_2d_impl.F90"
 end subroutine
 
 
 subroutine write_fixed_2d_real64 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real64
-    real (PREC), intent(inout), dimension(:,:) :: dat
+    real (PREC), intent(in), dimension(:,:), contiguous :: dat
 #include "write_fixed_2d_impl.F90"
 end subroutine
 
@@ -196,28 +196,28 @@ end subroutine
 
 subroutine read_fixed_3d_real32 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real32
-    real (PREC), intent(inout), dimension(:,:,:) :: dat
+    real (PREC), intent(inout), dimension(:,:,:), contiguous :: dat
 #include "read_fixed_impl.F90"
 end subroutine
 
 
 subroutine read_fixed_3d_real64 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real64
-    real (PREC), intent(inout), dimension(:,:,:) :: dat
+    real (PREC), intent(inout), dimension(:,:,:), contiguous :: dat
 #include "read_fixed_impl.F90"
 end subroutine
 
 
 subroutine write_fixed_3d_real32 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real32
-    real (PREC), intent(inout), dimension(:,:,:) :: dat
+    real (PREC), intent(inout), dimension(:,:,:), contiguous :: dat
 #include "write_fixed_impl.F90"
 end subroutine
 
 
 subroutine write_fixed_3d_real64 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real64
-    real (PREC), intent(inout), dimension(:,:,:) :: dat
+    real (PREC), intent(in), dimension(:,:,:), contiguous :: dat
 #include "write_fixed_impl.F90"
 end subroutine
 

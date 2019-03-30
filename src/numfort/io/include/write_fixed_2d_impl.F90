@@ -7,6 +7,7 @@
     type (status_t), intent(out), optional :: status
     character (*), intent(out), optional :: msg
 
+    real (PREC), dimension(:), allocatable :: buf
     integer :: iostat, n, uid, i, nlines, ncol
     integer (NF_ENUM_KIND) :: itransform
     character (100) :: lmsg
@@ -59,10 +60,15 @@
         ncol = size(dat, 2)
         write (lfmt, '("(", i0, "(", a, "))")') ncol, trim(fmt_field)
 
+        ! Use contiguous buffer for I/O calls to prevent temp. array creation
+        allocate (buf(ncol))
+
         do i = 1, nlines
-            write (unit=uid, fmt=lfmt, iomsg=lmsg, iostat=iostat, err=50) dat(i,:)
+            buf(:) = dat(i,:)
+            write (unit=uid, fmt=lfmt, iomsg=lmsg, iostat=iostat, err=50)  buf
         end do
 
+        deallocate (buf)
 
     case (NF_IO_TRANSFORM_FORMAT)
         ! Use unmodified user-provided format specifier, write stuff in

@@ -86,7 +86,8 @@
     allocate (character (n+20) :: lfmt)
     allocate (character (n) :: fmt_field)
     call format_strip_parenthesis (fmt, fmt_field)
-    write (lfmt, '("(*(", a, "),:,/)")') trim(fmt_field)
+    ! Do not add any EOR character at the end, this breaks ifort
+    write (lfmt, '("(*(", a, "))")') trim(fmt_field)
 
     do while (.true.)
         do i = 1, CHUNK_NCOL
