@@ -49,14 +49,14 @@ subroutine test_bsearch (tests)
     allocate (haystack(n), source=0.0_PREC)
     needle = 0.0
     i = bsearch (needle, haystack)
-    call tc%assert_true (i == 0, "size(HAYSTACK) = 0")
+    call tc%assert_true (i == -1, "size(HAYSTACK) = 0")
     deallocate (haystack)
 
     n = 1
     allocate (haystack(n), source=0.0_PREC)
     needle = 0.0
     i = bsearch (needle, haystack)
-    call tc%assert_true (i == 1, "size(HAYSTACK) = 1")
+    call tc%assert_true (i == -1, "size(HAYSTACK) = 1")
     deallocate (haystack)
 
     n = 11
@@ -120,13 +120,13 @@ subroutine test_bsearch_cached (tests)
     allocate (haystack(n), source=0.0_PREC)
     needle = 0.0
     i = bsearch (needle, haystack)
-    call tc%assert_true (i == 0, "size(HAYSTACK) = 0")
+    call tc%assert_true (i == -1, "size(HAYSTACK) = 0")
 
     call bsearch_cached (needle, haystack, i, cache)
-    call tc%assert_true (i == 0, "size(HAYSTACK) = 0 with cache")
+    call tc%assert_true (i == -1, "size(HAYSTACK) = 0 with cache")
 
     call bsearch_cached (needle, haystack, i, cache)
-    call tc%assert_true (i == 0, "size(HAYSTACK) = 0 with cache, repeat call")
+    call tc%assert_true (i == -1, "size(HAYSTACK) = 0 with cache, repeat call")
 
     deallocate (haystack)
 
@@ -135,13 +135,13 @@ subroutine test_bsearch_cached (tests)
     needle = 0.0
 
     i = bsearch (needle, haystack)
-    call tc%assert_true (i == 1, "size(HAYSTACK) = 1")
+    call tc%assert_true (i == -1, "size(HAYSTACK) = 1")
 
     call bsearch_cached (needle, haystack, i, cache)
-    call tc%assert_true (i == 1, "size(HAYSTACK) = 1 with cache")
+    call tc%assert_true (i == -1, "size(HAYSTACK) = 1 with cache")
 
     call bsearch_cached (needle, haystack, i, cache)
-    call tc%assert_true (i == 1, "size(HAYSTACK) = 1 with cache, repeat call")
+    call tc%assert_true (i == -1, "size(HAYSTACK) = 1 with cache, repeat call")
 
     deallocate (haystack)
 
