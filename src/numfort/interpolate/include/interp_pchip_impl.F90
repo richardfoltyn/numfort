@@ -229,14 +229,14 @@ pure subroutine __APPEND(interp_pchip_eval,__PREC) (xp, coef, x, y, order, ext, 
     !*  INTERP_PCHIP_EVAL evaluates the fitted piecewise cubic polynomial at
     !   a set of given points.
     integer, parameter :: PREC = __PREC
-    real (PREC), intent(in), dimension(:) :: xp
+    real (PREC), intent(in), dimension(:), contiguous :: xp
         !*  x-values of data points. These must be the same points that were
         !   previously passed to INTERP_PCHIP_FIT.
-    real (PREC), intent(in), dimension(:) :: coef
+    real (PREC), intent(in), dimension(:), contiguous :: coef
         !*  Polynomial coefficients obtained from INTERP_PCHIP_FIT.
-    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: x
         !*  x-coordinates of points where function should be interpolating.
-    real (PREC), intent(out), dimension(:) :: y
+    real (PREC), intent(out), dimension(:), contiguous :: y
         !*  On exit, contains interpolated function values for x-coordinates
         !   given in X.
     integer, intent(in), optional :: order
@@ -354,10 +354,10 @@ pure subroutine __APPEND(interp_pchip_eval_scalar,__PREC) (xp, coef, x, y, &
     !*  INTERP_PCHIP_EVAL evaluates the fitted piecewise cubic polynomial at
     !   a given (scalar!) point.
     integer, parameter :: PREC = __PREC
-    real (PREC), intent(in), dimension(:) :: xp
+    real (PREC), intent(in), dimension(:), contiguous :: xp
         !*  x-values of data points. These must be the same points that were
         !   previously passed to INTERP_PCHIP_FIT.
-    real (PREC), intent(in), dimension(:) :: coef
+    real (PREC), intent(in), dimension(:), contiguous :: coef
     real (PREC), intent(in) :: x
     real (PREC), intent(out) :: y
     integer, intent(in), optional :: order

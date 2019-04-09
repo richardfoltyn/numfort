@@ -499,14 +499,14 @@ end subroutine
 pure subroutine __APPEND(quantile_bins,__PREC) (x, pmf, rnk, q, interp, status)
     integer, parameter :: PREC = __PREC
 
-    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: x
         !*  Array of bin edges (or bin midpoints) in increasing order
-    real (PREC), intent(in), dimension(:) :: pmf
+    real (PREC), intent(in), dimension(:), contiguous :: pmf
         !*  PMF associated with bins defined by X
-    real (PREC), intent(in), dimension(:) :: rnk
+    real (PREC), intent(in), dimension(:), contiguous :: rnk
         !*  Array of quantiles "ranks" to compute which must be between
         !   0 and 1 inclusive.
-    real (PREC), intent(out), dimension(:) :: q
+    real (PREC), intent(out), dimension(:), contiguous :: q
         !*  Output array storing (interpolated) quantiles corresponding to RNK
     character (*), intent(in), optional :: interp
         !*  Interpolation method to use when desired percentile is between
@@ -706,13 +706,13 @@ subroutine __APPEND(quantile_dispatch,__PREC) (x, pmf, rnk, q, &
         interp, sort, status)
     integer, parameter :: PREC = __PREC
 
-    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: x
         !*  Array of bin edges (or bin midpoints) in increasing order
-    real (PREC), intent(in), dimension(:) :: pmf
+    real (PREC), intent(in), dimension(:), contiguous :: pmf
         !*  PMF associated with bins defined by X
-    real (PREC), intent(in), dimension(:) :: rnk
+    real (PREC), intent(in), dimension(:), contiguous :: rnk
         !*  Percentiles to compute which must be between 0.0 and 1.0 inclusive.
-    real (PREC), intent(out), dimension(:) :: q
+    real (PREC), intent(out), dimension(:), contiguous :: q
         !*  (Interpolated) quantiles corresponding to RNK
     character (*), intent(in), optional :: interp
         !*  Interpolation method to use when desired percentile is between
@@ -743,9 +743,9 @@ subroutine __APPEND(quantile_dispatch_scalar,__PREC) (x, pmf, rnk, q, &
         interp, sort, status)
     integer, parameter :: PREC = __PREC
 
-    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: x
         !*  Array of bin edges (or bin midpoints) in increasing order
-    real (PREC), intent(in), dimension(:) :: pmf
+    real (PREC), intent(in), dimension(:), contiguous :: pmf
         !*  PMF associated with bins defined by X
     real (PREC), intent(in) :: rnk
         !*  Percentile to compute which must be between 0.0 and 1.0 inclusive.

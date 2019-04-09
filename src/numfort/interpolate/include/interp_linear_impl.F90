@@ -9,9 +9,9 @@ pure subroutine __APPEND(interp_linear_impl,__PREC) (x, xp, fp, fx, wgt, ext, le
 
     real (PREC), intent(in) :: x
         !*  x-coordinate of the interpolated value
-    real (PREC), intent(in), dimension(:) :: xp
+    real (PREC), intent(in), dimension(:), contiguous :: xp
         !*  x-coordinates of data points in increasing order
-    real (PREC), intent(in), dimension(:) :: fp
+    real (PREC), intent(in), dimension(:), contiguous :: fp
         !*  y-coordinates of the data points, same length as xp.
     real (PREC), intent(out) :: fx
         !*  Interpolated value
@@ -87,9 +87,9 @@ pure subroutine __APPEND(interp_linear_scalar,__PREC) (x, xp, fp, fx, ext, &
 
     real (PREC), intent(in) :: x
         !*  The x-coordinate of the interpolated value.
-    real (PREC), intent(in), dimension(:) :: xp
+    real (PREC), intent(in), dimension(:), contiguous :: xp
         !*  The x-coordinates of data points in increasing order.
-    real (PREC), intent(in), dimension(:) :: fp
+    real (PREC), intent(in), dimension(:), contiguous :: fp
         !*  The y-coordinates of data points, same length as xp.
     real (PREC), intent(out) :: fx
         !*  Interpolated value
@@ -147,13 +147,13 @@ pure subroutine __APPEND(interp_linear_1d,__PREC) (x, xp, fp, fx, ext, left, rig
     integer, parameter :: PREC = __PREC
     integer, parameter :: INTSIZE = int32
 
-    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: x
         !*  The x-coordinates of the interpolated values.
-    real (PREC), intent(in), dimension(:) :: xp
+    real (PREC), intent(in), dimension(:), contiguous :: xp
         !*  The x-coordinates of data points in increasing order.
-    real (PREC), intent(in), dimension(:) :: fp
+    real (PREC), intent(in), dimension(:), contiguous :: fp
         !*  The y-coordinates of data points, same length as xp.
-    real (PREC), intent(out), dimension(:) :: fx
+    real (PREC), intent(out), dimension(:), contiguous :: fx
         !*  Array of interpolated values, same shape as x.
     integer (NF_ENUM_KIND), intent(in), optional :: ext
         !*  Defines behavious in case function should be evaluated at point x
@@ -222,11 +222,11 @@ pure subroutine __APPEND(interp_bilinear_impl,__PREC) (x1, x2, xp1, xp2, fp, &
 
     real (PREC), intent(in) :: x1
     real (PREC), intent(in) :: x2
-    real (PREC), intent(in), dimension(:) :: xp1
+    real (PREC), intent(in), dimension(:), contiguous :: xp1
         !*  Grid points in dimension 1
-    real (PREC), intent(in), dimension(:) :: xp2
+    real (PREC), intent(in), dimension(:), contiguous :: xp2
         !*  Grid points in dimension 2
-    real (PREC), intent(in), dimension(:,:) :: fp
+    real (PREC), intent(in), dimension(:,:), contiguous :: fp
         !*  Function evaluated at given grid points, ie FP(i,j) = f(xp1(i),xp2(j))
     integer (NF_ENUM_KIND), intent(in) :: ext
         !*  Defines behavious in case function should be evaluated at point (x1,x2)
@@ -320,17 +320,17 @@ pure subroutine __APPEND(interp_bilinear_1d,__PREC) (x1, x2, xp1, xp2, fp, fx, &
     integer, parameter :: PREC = __PREC
     integer, parameter :: INTSIZE = int32
 
-    real (PREC), intent(in), dimension(:) :: x1
+    real (PREC), intent(in), dimension(:), contiguous :: x1
         !*  Array of dimension-1 values where function should be interpolated
-    real (PREC), intent(in), dimension(:) :: x2
+    real (PREC), intent(in), dimension(:), contiguous :: x2
         !*  Array of dimension-2 values where function should be interpolated
-    real (PREC), intent(in), dimension(:) :: xp1
+    real (PREC), intent(in), dimension(:), contiguous :: xp1
         !*  Grid points in dimension 1
-    real (PREC), intent(in), dimension(:) :: xp2
+    real (PREC), intent(in), dimension(:), contiguous :: xp2
         !*  Grid points in dimension 2
-    real (PREC), intent(in), dimension(:,:) :: fp
+    real (PREC), intent(in), dimension(:,:), contiguous :: fp
         !*  Function evaluated at given grid points, ie FP(i,j) = f(xp1(i),xp2(j))
-    real (PREC), intent(out), dimension(:) :: fx
+    real (PREC), intent(out), dimension(:), contiguous :: fx
         !*  Array of interpolated values
     integer (NF_ENUM_KIND), intent(in), optional :: ext
         !*  Defines behavious in case function should be evaluated at point (x1,x2)
@@ -408,11 +408,11 @@ pure subroutine __APPEND(interp_bilinear_scalar,__PREC) (x1, x2, xp1, xp2, fp, f
         !*  Dimension-1 value where function should be interpolated
     real (PREC), intent(in) :: x2
         !*  Dimension-2 value where function should be interpolated
-    real (PREC), intent(in), dimension(:) :: xp1
+    real (PREC), intent(in), dimension(:), contiguous :: xp1
         !*  Grid points in dimension 1
-    real (PREC), intent(in), dimension(:) :: xp2
+    real (PREC), intent(in), dimension(:), contiguous :: xp2
         !*  Grid points in dimension 2
-    real (PREC), intent(in), dimension(:,:) :: fp
+    real (PREC), intent(in), dimension(:,:), contiguous :: fp
         !*  Function evaluated at given grid points, ie FP(i,j) = f(xp1(i),xp2(j))
     real (PREC), intent(out) :: fx
         !*  Array of interpolated values

@@ -11,7 +11,7 @@ pure function __APPEND(bsearch,__PREC) (needle, haystack) result(ilb)
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: needle
         !*  Value to bracket
-    real (PREC), intent(in), dimension(:) :: haystack
+    real (PREC), intent(in), dimension(:), contiguous :: haystack
         !*  Array of sorted (!) values that are interpreted as the boundaries
         !   of a sequence of bracketing intervals.
     integer :: ilb
@@ -52,7 +52,7 @@ pure subroutine __APPEND(bsearch_cached,__PREC) (needle, haystack, ilb, cache)
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: needle
         !*  Value to bracket
-    real (PREC), intent(in), dimension(:) :: haystack
+    real (PREC), intent(in), dimension(:), contiguous :: haystack
         !*  Array of sorted (!) values that are interpreted as the boundaries
         !   of a sequence of bracketing intervals.
     integer, intent(out) :: ilb
@@ -75,12 +75,12 @@ pure subroutine __APPEND(bsearch_cached,__PREC) (needle, haystack, ilb, cache)
     end if
 
     i = cache%i
-    i = max(min(i, n), 1)
+    i = max(min(i, n-1), 1)
     if (haystack(i) <= needle) then
         ilb = i
-        if (i == (n-1)) then
+        if (haystack(i+1) > needle) then
             goto 100
-        else if (haystack(i+1) > needle) then
+        else if (i == (n-1)) then
             goto 100
         end if
         iub = n
@@ -108,7 +108,7 @@ pure function __APPEND(interp_find,__PREC) (needle, haystack) result (res)
     !*  INTERP_FIND is a wrapper around BSEARCH that exists only for
     !   backwards compatibility.
     integer, parameter :: PREC = __PREC
-    real (PREC), intent(in), dimension(:) :: haystack
+    real (PREC), intent(in), dimension(:), contiguous :: haystack
     real (PREC), intent(in) :: needle
 
     integer :: res
@@ -124,7 +124,7 @@ pure subroutine __APPEND(interp_find_cached,__PREC) (needle, haystack, ilb, cach
     !   backwards compatibility.
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: needle
-    real (PREC), intent(in), dimension(:) :: haystack
+    real (PREC), intent(in), dimension(:), contiguous :: haystack
     integer, intent(out) :: ilb
     type (search_cache), intent(inout) :: cache
 
@@ -140,7 +140,7 @@ pure subroutine __APPEND(interp_find_wgt_cached,__PREC) (needle, haystack, &
     !   using a search cache.
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: needle
-    real (PREC), intent(in), dimension(:) :: haystack
+    real (PREC), intent(in), dimension(:), contiguous :: haystack
     integer, intent(out) :: ilb
         !*  Index of the lower bound of the interpolation bracket
     real (PREC), intent(out) :: wgt_lb
@@ -158,11 +158,11 @@ end subroutine
 pure subroutine __APPEND(interp_find_wgt_cached_1d,__PREC) (needle, haystack, &
        ilb, wgt_lb)
     integer, parameter :: PREC = __PREC
-    real (PREC), intent(in), dimension(:) :: needle
-    real (PREC), intent(in), dimension(:) :: haystack
-    integer, intent(out), dimension(:) :: ilb
+    real (PREC), intent(in), dimension(:), contiguous :: needle
+    real (PREC), intent(in), dimension(:), contiguous :: haystack
+    integer, intent(out), dimension(:), contiguous :: ilb
         !*  Index of the lower bound of the interpolation bracket
-    real (PREC), intent(out), dimension(:) :: wgt_lb
+    real (PREC), intent(out), dimension(:), contiguous :: wgt_lb
         !*  Interpolation weight on the lower bound of the interpolation
         !   bracket.
 
