@@ -72,7 +72,7 @@ end subroutine
 
 
 pure subroutine __APPEND(bernstein_ppolyval,__PREC) (self, knots, coefs, x, y, &
-        ext, left, right, status)
+        ext, left, right, cache, status)
     integer, parameter :: PREC = __PREC
     type (ppoly_bernstein), intent(in) :: self
     real (PREC), intent(in), dimension(:), contiguous :: knots
@@ -94,6 +94,7 @@ pure subroutine __APPEND(bernstein_ppolyval,__PREC) (self, knots, coefs, x, y, &
     real (PREC), intent(in), optional :: right
         !*  Constant value assigned to x-coordinates larger than KNOTS(-1), if
         !   EXT = NF_INTERP_EVAL_CONST.
+    type (search_cache), intent(inout), dimension(:), optional, contiguous :: cache
     type (status_t), intent(out), optional :: status
         !   Exit code (optional)
 
@@ -111,11 +112,14 @@ pure subroutine __APPEND(bernstein_ppolyval,__PREC) (self, knots, coefs, x, y, &
 
     select case (self%degree)
     case (2)
-        call bernstein_ppolyval_impl_quadratic (self, knots, coefs, x, y, lext, left, right, lstatus)
+        call bernstein_ppolyval_impl_quadratic (self, knots, coefs, x, y, &
+            lext, left, right, cache, lstatus)
     case (3)
-        call bernstein_ppolyval_impl_cubic (self, knots, coefs, x, y, lext, left, right, lstatus)
+        call bernstein_ppolyval_impl_cubic (self, knots, coefs, x, y, lext, &
+            left, right, cache, lstatus)
     case default
-        call bernstein_ppolyval_impl (self, knots, coefs, x, y, lext, left, right, lstatus)
+        call bernstein_ppolyval_impl (self, knots, coefs, x, y, lext, left, &
+            right, lstatus)
     end select
 
 100 continue
@@ -159,7 +163,7 @@ pure subroutine __APPEND(bernstein_ppolyval_scalar,__PREC) (self, knots, coefs, 
     ! if POLYVAL exits with an error.
     y1 = 0.0
 
-    call ppolyval (self, knots, coefs, x1, y1, ext, left, right, status)
+    call ppolyval (self, knots, coefs, x1, y1, ext, left, right, status=status)
     y = y1(1)
 
 end subroutine
@@ -258,7 +262,7 @@ end subroutine
 
 
 pure subroutine __APPEND(bernstein_ppolyval_impl_quadratic,__PREC) (self, knots, &
-        coefs, x, y, ext, left, right, status)
+        coefs, x, y, ext, left, right, cache, status)
     !*  BERNSTEIN_PPOLYVAL_IMPL_CUBIC implements the evaluation of
     !   piecewise cubic polynomials wrt. the Bernstein basis.
     integer, parameter :: PREC = __PREC
@@ -270,6 +274,7 @@ pure subroutine __APPEND(bernstein_ppolyval_impl_quadratic,__PREC) (self, knots,
     integer (NF_ENUM_KIND), intent(in) :: ext
     real (PREC), intent(in), optional :: left
     real (PREC), intent(in), optional :: right
+    type (search_cache), intent(inout), dimension(:), optional, contiguous :: cache
     type (status_t), intent(out) :: status
 
     integer, parameter :: k = 2
@@ -302,7 +307,7 @@ pure subroutine __APPEND(bernstein_ppolyval_impl_quadratic,__PREC) (self, knots,
             case default
                 ! Find interval j that will be used to intropolate/extrapolate
                 ! y-value
-                call bsearch_cached (xi, knots, j, bcache)
+                call bsearch_proxy (xi, knots, i, cache, bcache, j)
             end select
         else if (xi > xub) then
             select case (ext)
@@ -319,11 +324,11 @@ pure subroutine __APPEND(bernstein_ppolyval_impl_quadratic,__PREC) (self, knots,
                 goto 100
             case default
                 ! Find interval j such that knots(j) <= x(i)
-                call bsearch_cached (xi, knots, j, bcache)
+                call bsearch_proxy (xi, knots, i, cache, bcache, j)
             end select
         else
             ! Find interval j such that knots(j) <= x(i)
-            call bsearch_cached (xi, knots, j, bcache)
+            call bsearch_proxy (xi, knots, i, cache, bcache, j)
         end if
 
         ! Offset of coefficient block for interval j
@@ -351,7 +356,7 @@ end subroutine
 
 
 pure subroutine __APPEND(bernstein_ppolyval_impl_cubic,__PREC) (self, knots, &
-        coefs, x, y, ext, left, right, status)
+        coefs, x, y, ext, left, right, cache, status)
     !*  BERNSTEIN_PPOLYVAL_IMPL_CUBIC implements the evaluation of
     !   piecewise cubic polynomials wrt. the Bernstein basis.
     integer, parameter :: PREC = __PREC
@@ -363,6 +368,7 @@ pure subroutine __APPEND(bernstein_ppolyval_impl_cubic,__PREC) (self, knots, &
     integer (NF_ENUM_KIND), intent(in) :: ext
     real (PREC), intent(in), optional :: left
     real (PREC), intent(in), optional :: right
+    type (search_cache), intent(inout), dimension(:), optional, contiguous :: cache
     type (status_t), intent(out) :: status
 
     integer, parameter :: k = 3
@@ -395,7 +401,7 @@ pure subroutine __APPEND(bernstein_ppolyval_impl_cubic,__PREC) (self, knots, &
             case default
                 ! Find interval j that will be used to intropolate/extrapolate
                 ! y-value
-                call bsearch_cached (xi, knots, j, bcache)
+                call bsearch_proxy (xi, knots, i, cache, bcache, j)
             end select
         else if (xi > xub) then
             select case (ext)
@@ -412,11 +418,11 @@ pure subroutine __APPEND(bernstein_ppolyval_impl_cubic,__PREC) (self, knots, &
                 goto 100
             case default
                 ! Find interval j such that knots(j) <= x(i)
-                call bsearch_cached (xi, knots, j, bcache)
+                call bsearch_proxy (xi, knots, i, cache, bcache, j)
             end select
         else
             ! Find interval j such that knots(j) <= x(i)
-            call bsearch_cached (xi, knots, j, bcache)
+            call bsearch_proxy (xi, knots, i, cache, bcache, j)
         end if
 
         ! Offset of coefficient block for interval j
@@ -823,3 +829,25 @@ subroutine __APPEND(bernstein2power,__PREC) (self, coefs, poly_out, coefs_out, s
 
 end subroutine
 
+
+
+pure subroutine __APPEND(bsearch_proxy,__PREC) (xi, knots, i, cache_arr, cache, j)
+    !*  BSEARCH_PROXY is a helper routine that uses the appropriate search
+    !   cache depending on which arguments are present.
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in) :: xi
+    real (PREC), intent(in), dimension(:), contiguous :: knots
+    integer, intent(in) :: i
+    type (search_cache), intent(inout), dimension(:), optional, contiguous :: cache_arr
+        !*  Array of interpolation-point-specific search cache objects
+    type (search_cache), intent(inout) :: cache
+        !*  Fallback shared search cache object
+    integer, intent(out) :: j
+
+    if (present(cache_arr)) then
+        call bsearch_cached (xi, knots, j, cache_arr(i))
+    else
+        call bsearch_cached (xi, knots, j, cache)
+    end if
+
+end subroutine
