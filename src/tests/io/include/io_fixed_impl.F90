@@ -137,6 +137,7 @@ subroutine __APPEND(test_fixed,__PREC) (tests)
 
     call random_number (dat3d_out)
 
+    ! --- Full format string ---
     fmt = '(*(4(f15.8),:,/))'
     call write_fixed (path, fmt, dat3d_out, transform='format', &
         msg=iomsg, status=status)
@@ -148,6 +149,35 @@ subroutine __APPEND(test_fixed,__PREC) (tests)
     call tc%assert_true (status == NF_STATUS_OK .and. &
         all_close (dat3d_out, dat3d_in, atol=1.0e-7_PREC), &
         "Reading 3d data in flat form, reshaping via FMT")
+
+    ! --- Element-specific format string ---
+    fmt = 'f15.9'
+    call write_fixed (path, fmt, dat3d_out, transform='format', &
+        msg=iomsg, status=status)
+    call tc%assert_true (status == NF_STATUS_OK, &
+        "Writing 3d data in flat form, element-only FMT argument")
+
+    fmt = '(5(f15.9))'
+    call read_fixed (path, fmt, dat3d_in, transform='format', &
+        msg=iomsg, status=status)
+    call tc%assert_true (status == NF_STATUS_OK .and. &
+        all_close (dat3d_out, dat3d_in, atol=1.0e-7_PREC), &
+        "Reading 3d data in flat form, element-only FMT argument")
+
+    ! --- Default formatting ---
+    call write_fixed (path, dat=dat3d_out, transform='format', &
+        msg=iomsg, status=status)
+    call tc%assert_true (status == NF_STATUS_OK, &
+        "Writing 3d data in flat form, missing FMT argument")
+
+    ! Use default formatting that is chosen in WRITE_FIXED
+    fmt = '(5(g16.8))'
+    call read_fixed (path, fmt, dat3d_in, transform='format', &
+        msg=iomsg, status=status)
+    call tc%assert_true (status == NF_STATUS_OK .and. &
+        all_close (dat3d_out, dat3d_in, atol=1.0e-7_PREC), &
+        "Reading 3d data in flat form, element-only FMT argument")
+
 
 end subroutine
 
