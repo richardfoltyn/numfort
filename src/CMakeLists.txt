@@ -94,10 +94,16 @@ endif()
 
 if (BUILD_TESTS OR BUILD_EXAMPLES)
     if (USE_MKL)
-        # find_package(MKL REQUIRED)
-        list(APPEND MKL_COMPONENTS SEQUENTIAL BLAS95 LAPACK95)
-        find_package(MKL REQUIRED ${MKL_COMPONENTS})
+        list(APPEND MKL_COMPONENTS SEQUENTIAL)
+        find_package(MKL REQUIRED ${MKL_COMPONENTS}
+            OPTIONAL_COMPONENTS BLAS95 LAPACK95
+        )
         set(${PROJECT_NAME}_BLA_LIBRARIES ${MKL_LIBRARIES})
+
+        if (NOT MKL_BLAS95_FOUND)
+            message(WARNING "No BLAS Fortran 95 interfaces found, building NUMFORT wrapper")
+            set(BUILD_BLAS95 ON)
+        endif()
     else ()
         find_package(LAPACK REQUIRED)
         set(${PROJECT_NAME}_BLA_LIBRARIES ${LAPACK_LIBRARIES})
