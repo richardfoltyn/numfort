@@ -77,11 +77,14 @@ compile time:
                 -DBUILD_TESTS=ON \
                 -DBUILD_EXAMPLES=ON \
                 <NUMFORT_REPOSITORY>/src
+                
     2.  If another BLAS/LAPACK implementation should be used, set
         `USE_MKL=OFF` and NUMFORT will use whichever library is found 
          by CMake.
          
          #### Linux ####
+         
+         On Linux, the CMake invocation could be something like
          
             cmake -DCMAKE_PREFIX_PATH=/path/to/fcore \
                 -DUSE_MKL=OFF \
