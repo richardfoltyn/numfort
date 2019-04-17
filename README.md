@@ -11,7 +11,7 @@ models in Fortran easier.
 
 1. To clone the git repository, run 
     
-        git clone  https://bitbucket.org/richardfoltyn/numfort.git --recursive
+        git clone https://bitbucket.org/richardfoltyn/numfort.git --recursive
         
 1.  NUMFORT contains a git submodule with CMake scripts required to build the 
     library. This can be updated to the latest version at any point in
@@ -45,6 +45,7 @@ code for the host machine architecture, you could run
     FC=ifort FFLAGS="-xHost" cmake -DCMAKE_INSTALL_PREFIX=/path/to/install/ <NUMFORT_REPOSITORY>/src
 
 NUMFORT was tested with the following compilers:
+
 -   Intel ifort 2018 and 2019
 -   GNU gfortran 7 and 8
 
