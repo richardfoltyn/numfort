@@ -389,7 +389,7 @@ install(DIRECTORY "${${PROJECT_NAME}_MODDIR}/"
     FILES_MATCHING PATTERN "numfort*.mod"
 )
 
-if (NOT USE_MKL)
+if (NOT USE_MKL OR BUILD_BLAS95)
     # Install blas95 wrappers mod file if not built against MKL; otherwise
     # client code is expected to use the interfaces provided by MKL.
     install(FILES
