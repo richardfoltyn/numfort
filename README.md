@@ -26,8 +26,8 @@ models in Fortran easier.
 ### Linux ###
 
 The library itself does not have any compile-time dependencies, but 
-requires BLAS and LAPACK libraries to be present at runtime (these need 
-to be linked when compiling any client application using NUMFORT).
+requires BLAS and LAPACK libraries to be present when linking
+any client application using NUMFORT.
 
 To compile the library, create a build directory and run
 
