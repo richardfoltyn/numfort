@@ -170,7 +170,7 @@ subroutine get_temp_directory (path, status)
     end if
 #elif defined(_WIN32)
     path = 'C:/Temp'
-    if (len(path) < 'C:/Temp') then
+    if (len(path) < len('C:/Temp')) then
         lstatus = NF_STATUS_STORAGE_ERROR
     end if
 #endif
