@@ -1,7 +1,8 @@
+# Sample CMake file illustrating how to reference the NUMFORT library
+
 cmake_minimum_required(VERSION 3.1)
 
 project(numfort_consumer Fortran)
-
 
 find_package(numfort REQUIRED)
 
