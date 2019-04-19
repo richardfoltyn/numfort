@@ -36,7 +36,7 @@ set(MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/include")
 if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
     set(BUILD_STANDALONE OFF)
 	set(EXAMPLES_DIRECTORY
-		"${${CMAKE_PROJECT_NAME}_EXAMPLES_DIRECTORY}/external/${PROJECT_NAME}"
+		"${NUMFORT_EXAMPLES_DIRECTORY}/external/${PROJECT_NAME}"
 	)
     # add to list of object libraries that will be used to create ultimate
     # numfort library
@@ -46,7 +46,7 @@ if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
     )
 
     # Store module files in global module directory
-    set(MODULE_DIRECTORY ${${CMAKE_PROJECT_NAME}_MODDIR}/external)
+    set(MODULE_DIRECTORY ${NUMFORT_MODULE_DIRECTORY}/external)
 
     message(STATUS "Building ${PROJECT_NAME_PRETTY} as sub-project")
 else ()
@@ -58,7 +58,7 @@ endif ()
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     # explicitly add -cpp to run C preprocessor if required
-    set(GNU_WARN "-Wextra -Warray-temporaries -Wrealloc-lhs -pedantic -Wsurprising")
+    set(GNU_WARN "-Wall -Wextra -Warray-temporaries -Wrealloc-lhs -pedantic -Wuninitialized")
     set(F08_FLAGS "${GNU_WARN} -std=f2008")
 
     # Disable "surprising" warnings for older GFORTRAN version as this
@@ -78,6 +78,8 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
         endif ()
     else ()
         set(F08_FLAGS "-warn all -standard-semantics -std08")
+        # NOTE: When setting -standard-semantics, resets any previously
+        # given -assume std_mod_proc_name, so we need to append it again!
         if (NOT IFORT_STD_MOD_PROC_NAME)
             set(F08_FLAGS "${F08_FLAGS} -assume nostd_mod_proc_name")
         else ()

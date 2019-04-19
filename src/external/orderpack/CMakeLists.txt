@@ -42,7 +42,7 @@ if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
     )
 
     # Store module files in global module directory
-    set(MODULE_DIRECTORY ${${CMAKE_PROJECT_NAME}_MODDIR}/external)
+    set(MODULE_DIRECTORY ${NUMFORT_MODULE_DIRECTORY}/external)
 
     message(STATUS "Building ${PROJECT_NAME_PRETTY} as sub-project")
 else ()

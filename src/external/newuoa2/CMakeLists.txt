@@ -36,7 +36,7 @@ set(MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/include")
 if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
     set(BUILD_STANDALONE OFF)
 	set(EXAMPLES_DIRECTORY
-		"${${CMAKE_PROJECT_NAME}_EXAMPLES_DIRECTORY}/external/${PROJECT_NAME}"
+		"${NUMFORT_EXAMPLES_DIRECTORY}/external/${PROJECT_NAME}"
 	)
     # add to list of object libraries that will be used to create ultimate
     # numfort library
@@ -46,7 +46,7 @@ if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
     )
 
     # Store module files in global module directory
-    set(MODULE_DIRECTORY ${${CMAKE_PROJECT_NAME}_MODDIR}/external)
+    set(MODULE_DIRECTORY ${NUMFORT_MODULE_DIRECTORY}/external)
 
     message(STATUS "Building ${PROJECT_NAME_PRETTY} as sub-project")
 else ()

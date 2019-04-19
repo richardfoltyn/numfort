@@ -10,7 +10,7 @@ set(SOURCE_FILES
 )
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY
-    "${${PROJECT_NAME}_TESTS_DIRECTORY}/${_dir}"
+    "${NUMFORT_TESTS_DIRECTORY}/${_dir}"
 )
 
 if (OPENMP_FOUND)
@@ -18,11 +18,21 @@ if (OPENMP_FOUND)
         get_filename_component(exe_name "${test_source}" NAME_WE)
         set(target_name ${_dir}_${exe_name})
         add_executable(${target_name} "${test_source}")
-        target_link_libraries(${target_name} ${${CMAKE_PROJECT_NAME}_LIBRARIES})
-        target_link_libraries(${target_name} fcore::fcore)
+
+        target_link_libraries(${target_name} ${NUMFORT_LIBRARY_NAME}
+            fcore::fcore
+            ${BLA_LIBRARIES}
+        )
+
+        target_include_directories(${target_name} PRIVATE
+            ${NUMFORT_MODULE_DIRECTORY}
+            ${BLA_INCLUDE_DIRS}
+        )
+
         set_target_properties(${target_name} PROPERTIES
             OUTPUT_NAME ${exe_name}
         )
+
         add_test(NAME ${exe_name} COMMAND ${exe_name}
             WORKING_DIRECTORY "${${PROJECT_NAME}_TESTS_DIRECTORY}/${_dir}"
         )

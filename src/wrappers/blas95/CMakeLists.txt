@@ -7,9 +7,7 @@ set(SOURCE_FILES
     blas95.F90
 )
 
-include_directories(
-    ${${CMAKE_PROJECT_NAME}_INCLUDE_DIRS}
-)
+include_directories(${NUMFORT_HEADER_INCLUDE_DIR})
 
 message(STATUS "Building BLAS95 wrappers")
 
@@ -20,3 +18,12 @@ add_dependencies(${COMPONENT_NAME} interfaces)
 set_property(GLOBAL APPEND
     PROPERTY ${CMAKE_PROJECT_NAME}_COMPONENT_TARGETS ${COMPONENT_NAME}
 )
+
+if (BUILD_BLAS95)
+    # Install blas95 wrappers mod file if not built against MKL; otherwise
+    # client code is expected to use the interfaces provided by MKL.
+    install(FILES
+        "${NUMFORT_MODULE_DIRECTORY}/blas95.mod"
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${NUMFORT_INSTALL_DIR}"
+    )
+endif()

@@ -18,6 +18,4 @@ set(SOURCE_FILES
     testing.F90
 )
 
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
-
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})

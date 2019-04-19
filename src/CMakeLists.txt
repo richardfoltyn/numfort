@@ -3,9 +3,7 @@
 
 cmake_minimum_required(VERSION 3.0)
 
-# include C in project languages, needed for LAPACK detection
 project(numfort C Fortran)
-set(${PROJECT_NAME}_LIBRARY_NAME ${CMAKE_PROJECT_NAME})
 set(NUMFORT_LIBRARY_NAME ${CMAKE_PROJECT_NAME})
 
 # number of version components
@@ -16,10 +14,6 @@ set(NUMFORT_VERSION_PATCH 0)
 set(NUMFORT_VERSION
     "${NUMFORT_VERSION_MAJOR}.${NUMFORT_VERSION_MINOR}.${NUMFORT_VERSION_PATCH}"
 )
-
-# list of libraries for targets that link against the final numfort library
-# (for examples, benchmarks, etc.)
-list(APPEND ${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_LIBRARY_NAME}_static)
 
 # make sure that the default is a RELEASE
 if (NOT CMAKE_BUILD_TYPE)
@@ -40,7 +34,6 @@ option(USE_MKL "Build against Intel MKL" ON)
 option(BUILD_BLAS95 "Build Fortran 95 wrappers for BLAS" OFF)
 option(BUILD_TESTS "Build (unit) tests" OFF)
 option(BUILD_EXAMPLES "Build examples/demo code" OFF)
-option(BUILD_BENCHMARKS "Build benchmarks" OFF)
 
 # If enabled, pass -assume std_mod_proc_name to ifort such that module
 # names will use _MP_ as module name / procedure name separator.
@@ -58,17 +51,6 @@ list(APPEND CMAKE_MODULE_PATH
 
 ################################################################################
 # Detect features supported by Fortran compiler
-
-include(CheckFortranPDT)
-
-# check_Fortran_PDT()
-# if (Fortran_SUPPORTS_PDT_KIND)
-#   add_definitions(-D__NUMFORT_SUPPORTS_PDT_KIND__)
-# endif()
-#
-# if (Fortran_SUPPORTS_PDT_LEN)
-#   add_definitions(-D__NUMFORT_SUPPORTS_PDT_LEN__)
-# endif()
 
 include(CheckFortranKinds)
 check_Fortran_kinds()
@@ -88,34 +70,60 @@ endif()
 
 ################################################################################
 # BLAS / LAPACK libraries
-# These are only needed if building examples or unit tests, otherwise the
-# library itself can be compiled without them as the core library does not
-# use the BLAS95 or LAPACK95 interface.
+
+# 1. Determine if we need a BLAS/LAPACK library
+# Note that to compile a static NUMFORT library without any unit tests,
+# examples, etc. does not require BLAS/LAPACK.
+
+set(NEED_BLAS_LAPACK OFF)
 
 if (BUILD_TESTS OR BUILD_EXAMPLES)
+    set(NEED_BLAS_LAPACK ON)
+endif()
+
+# Dynamically-linked libraries need to be linked
+if (BUILD_SHARED_LIBS)
+    set(NEED_BLAS_LAPACK ON)
+endif()
+
+# 2. Try to find a BLAS / LAPACK library
+if (NEED_BLAS_LAPACK)
     if (USE_MKL)
-        list(APPEND MKL_COMPONENTS SEQUENTIAL)
-        find_package(MKL REQUIRED ${MKL_COMPONENTS}
-            OPTIONAL_COMPONENTS BLAS95 LAPACK95
-        )
-        set(${PROJECT_NAME}_BLA_LIBRARIES ${MKL_LIBRARIES})
+        find_package(MKL OPTIONAL_COMPONENTS SEQUENTIAL BLAS95 LAPACK95)
+
+        if (NOT MKL_FOUND)
+            message(WARNING "Intel MKL requested but NOT FOUND.")
+        else()
+            set(BLA_LIBRARIES ${MKL_LIBRARIES})
+        endif()
+
+        if (MKL_BLAS95_FOUND)
+            list(APPEND BLA_INCLUDE_DIRS ${MKL_BLAS95_INCLUDE_DIR})
+        endif()
+
+        if (MKL_LAPACK95_FOUND)
+            list(APPEND BLA_INCLUDE_DIRS ${MKL_LAPACK95_INCLUDE_DIR})
+        endif()
 
         if (NOT MKL_BLAS95_FOUND)
             message(WARNING "No BLAS Fortran 95 interfaces found, building NUMFORT wrapper")
             set(BUILD_BLAS95 ON)
         endif()
-    else ()
+    endif ()
+
+    # Fallback: if MKL was not found or no MKL requested, try to find whatever
+    # BLAS/LAPACK library is present on the system.
+    if (NOT USE_MKL OR NOT MKL_FOUND)
         find_package(LAPACK REQUIRED)
-        set(${PROJECT_NAME}_BLA_LIBRARIES ${LAPACK_LIBRARIES})
+        set(BLA_LIBRARIES ${LAPACK_LIBRARIES})
         set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${LAPACK_LINKER_FLAGS})
         set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${LAPACK_LINKER_FLAGS})
         # Examples / unit tests use blas95 interfaces, so build these
         # in case we are not using MKL Fortran95 interfaces.
         set(BUILD_BLAS95 ON)
     endif ()
-
-    list(APPEND ${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_BLA_LIBRARIES})
 endif()
+
 
 ###############################################################################
 # Path suffixes beneath CMAKE_INSTALL_PREFIX
@@ -144,166 +152,8 @@ elseif (NOT CMAKE_INSTALL_INCLUDEDIR)
 endif()
 
 ################################################################################
-# Output directories
+# Installation path
 
-set(${PROJECT_NAME}_MODDIR "${CMAKE_BINARY_DIR}/include")
-set(CMAKE_Fortran_MODULE_DIRECTORY "${${PROJECT_NAME}_MODDIR}")
-
-# set include directory to directory where MOD files are stored
-list(APPEND ${PROJECT_NAME}_INCLUDE_DIRS
-    "${${PROJECT_NAME}_MODDIR}"
-    "${CMAKE_BINARY_DIR}/include/external"
-    "${CMAKE_CURRENT_SOURCE_DIR}/numfort/include"
-)
-
-# store test executables in this root directory
-set(${PROJECT_NAME}_TESTS_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")
-set(${PROJECT_NAME}_EXAMPLES_DIRECTORY "${CMAKE_BINARY_DIR}/bin/examples")
-set(${PROJECT_NAME}_BENCHMARKS_DIRECTORY "${CMAKE_BINARY_DIR}/bin/benchmarks")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
-
-
-
-###############################################################################
-# Report options and settings
-if (BUILD_SHARED_LIBS)
-    message(STATUS "Building SHARED libraries")
-else(BUILD_SHARED_LIBS)
-    message(STATUS "Building STATIC libraries")
-endif(BUILD_SHARED_LIBS)
-
-if (USE_MKL)
-    message(STATUS "Building against Intel MKL")
-endif (USE_MKL)
-
-if (BUILD_TESTS)
-    message(STATUS "Building unit tests")
-endif ()
-
-if (BUILD_BENCHMARKS)
-    message(STATUS "Building benchmarks")
-endif ()
-
-message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "Library install directory: ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
-message(STATUS "MOD file install directory: ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}")
-
-################################################################################
-# Compiler FLAGS
-
-# Notes on the floating point model used by ifort:
-# https://software.intel.com/en-us/articles/consistency-of-floating-point-results-using-the-intel-compiler/
-
-if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
-    # explicitly add -cpp to run C preprocessor if required
-    # By default set -Wall, but disable warnings when comparing reals
-    # and -Wsurpsiring, as this generates numerous warnings about finalizers.
-    set(GNU_WARN "-Wall -Wno-compare-reals -Wno-surprising")
-    if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER 6)
-        # breaks compilation with gfortran 5.x, possibly with 6.x as well.
-        set(GNU_WARN "${GNU_WARN} -Wno-unused-dummy-argument")
-    endif()
-    set(_FFLAGS "${GNU_WARN} -frecursive")
-    set(_FFLAGS_DEBUG "-fcheck=all -O0")
-elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
-    if (WIN32)
-        set(_FFLAGS "/warn:all,nounused /auto")
-        set(_FFLAGS_DEBUG "/check:all")
-
-        if (NOT IFORT_STD_MOD_PROC_NAME)
-            set(_FFLAGS "${_FFLAGS} /assume:nostd_mod_proc_name")
-        else ()
-            set(_FFLAGS "${_FFLAGS} /assume:std_mod_proc_name")
-        endif ()
-    else ()
-        set(_FFLAGS " -warn all,nounused -auto")
-        set(_FFLAGS_DEBUG "-check all")
-
-        if (NOT IFORT_STD_MOD_PROC_NAME)
-            set(_FFLAGS "${_FFLAGS} -assume nostd_mod_proc_name")
-        else ()
-            set(_FFLAGS "${_FFLAGS} -assume std_mod_proc_name")
-        endif ()
-    endif (WIN32)
-endif ()
-
-set_property(DIRECTORY PROPERTY INTERPROCEDURAL_OPTIMIZATION 1)
-
-set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS}")
-set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${_FFLAGS_DEBUG}")
-
-################################################################################
-# External projects
-
-# Add these subdirectories before setting any compiler numfort-specifc
-# compiler flags.
-
-add_subdirectory(external)
-
-################################################################################
-# Stand-alone interface definitions for F77 routines and their wrappers
-
-add_subdirectory(interfaces)
-add_subdirectory(wrappers)
-
-################################################################################
-# Targets
-# Create single numfort library by merging all object libraries
-
-include_directories(${${PROJECT_NAME}_INCLUDE_DIRS})
-
-add_subdirectory(numfort)
-
-# Update fortran version module with current version information
-configure_file(numfort/numfort.f90.in
-    ${CMAKE_BINARY_DIR}/numfort.f90
-)
-
-# Add a few general source files, makes it easier in case generator does
-# not support targets w/o source files.
-set(SOURCE_FILES
-    ${CMAKE_BINARY_DIR}/numfort.f90
-)
-
-# get list of targets the ultimate library depends on. This list is populated
-# in the sub-components' directories
-get_property(_TARGETS GLOBAL PROPERTY ${CMAKE_PROJECT_NAME}_COMPONENT_TARGETS)
-
-set(COMPONENT_OBJECTS)
-foreach (_comp IN LISTS _TARGETS)
-    list(APPEND COMPONENT_OBJECTS $<TARGET_OBJECTS:${_comp}>)
-endforeach ()
-
-add_library(${NUMFORT_LIBRARY_NAME} ${SOURCE_FILES} ${COMPONENT_OBJECTS})
-target_link_libraries(${NUMFORT_LIBRARY_NAME} PUBLIC
-    ${${PROJECT_NAME}_BLA_LIBRARIES}
-)
-
-target_include_directories(${NUMFORT_LIBRARY_NAME} PRIVATE
-    ${${PROJECT_NAME}_INCLUDE_DIRS}
-)
-
-set_target_properties(${NUMFORT_LIBRARY_NAME} PROPERTIES
-    Fortran_MODULE_DIRECTORY "${${PROJECT_NAME}_MODDIR}"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-)
-
-set_target_properties(${NUMFORT_LIBRARY_NAME} PROPERTIES
-    VERSION ${NUMFORT_VERSION}
-)
-
-# for benchmarks, examples, etc
-add_library(${NUMFORT_LIBRARY_NAME}_static STATIC ${SOURCE_FILES} ${COMPONENT_OBJECTS})
-
-
-
-################################################################################
-# INSTALLATION
-
-include(CMakePackageConfigHelpers)
 
 # Allow for installing ifort and gfortran version of libraries side-by-side by
 # appending compiler suffix
@@ -327,96 +177,99 @@ if (NOT DEFINED NUMFORT_INSTALL_DIR)
     )
 endif()
 
-# Path there cmake config files will be installed
-set(NUMFORT_INSTALL_CONFIG_PATH
-    ${CMAKE_INSTALL_LIBDIR}/${NUMFORT_INSTALL_DIR}/cmake
-)
-set(NUMFORT_INSTALL_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/install")
 
-set(NUMFORT_INSTALL_NAMESPACE ${NUMFORT_LIBRARY_NAME})
+################################################################################
+# Output directories
 
-set(NUMFORT_CONFIG_FILE ${NUMFORT_LIBRARY_NAME}-config.cmake)
-set(NUMFORT_CONFIG_VERSION_FILE ${NUMFORT_LIBRARY_NAME}-config-version.cmake)
-set(NUMFORT_TARGETS_FILE ${NUMFORT_LIBRARY_NAME}Targets.cmake)
+set(NUMFORT_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/include/numfort")
+set(CMAKE_Fortran_MODULE_DIRECTORY "${NUMFORT_MODULE_DIRECTORY}")
 
-configure_file("${NUMFORT_INSTALL_SOURCE_DIR}/config-version.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/${NUMFORT_CONFIG_VERSION_FILE}"
-    @ONLY
-)
+# include directory containing CPP header files
+set(NUMFORT_HEADER_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/numfort/include")
 
-configure_package_config_file("${NUMFORT_INSTALL_SOURCE_DIR}/config.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/${NUMFORT_CONFIG_FILE}"
-    INSTALL_DESTINATION "${NUMFORT_INSTALL_CONFIG_PATH}"
-    PATH_VARS NUMFORT_INSTALL_CONFIG_PATH
+# set include directory to directory where MOD files are stored
+list(APPEND NUMFORT_INCLUDE_DIRS
+    "${NUMFORT_MODULE_DIRECTORY}"
+    "${CMAKE_BINARY_DIR}/include/numfort/external"
+    "${NUMFORT_HEADER_INCLUDE_DIR}"
 )
 
-# Note: INCLUDES DESTINATION is equivalent to adding
-# INTERFACE_INCLUDE_DIRECTORIES property on every exported target
-install(TARGETS ${NUMFORT_LIBRARY_NAME}
-    EXPORT ${NUMFORT_LIBRARY_NAME}_targets
-    RUNTIME DESTINATION "${CMAKE_INSTALL_LIBDIR}/${NUMFORT_INSTALL_DIR}"
-    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}/${NUMFORT_INSTALL_DIR}"
-    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}/${NUMFORT_INSTALL_DIR}"
-    INCLUDES DESTINATION
-        "${CMAKE_INSTALL_INCLUDEDIR}/${NUMFORT_INSTALL_DIR}"
-)
-
-export(EXPORT ${NUMFORT_LIBRARY_NAME}_targets
-    FILE "${CMAKE_CURRENT_BINARY_DIR}/${NUMFORT_TARGETS_FILE}"
-    NAMESPACE ${NUMFORT_INSTALL_NAMESPACE}
-)
-
-install(EXPORT ${NUMFORT_LIBRARY_NAME}_targets
-    FILE "${NUMFORT_TARGETS_FILE}"
-    NAMESPACE ${NUMFORT_INSTALL_NAMESPACE}::
-    DESTINATION "${NUMFORT_INSTALL_CONFIG_PATH}"
-)
-
-# Install CMake config files that were generated above
-install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/${NUMFORT_CONFIG_FILE}"
-    "${CMAKE_CURRENT_BINARY_DIR}/${NUMFORT_CONFIG_VERSION_FILE}"
-    "${NUMFORT_INSTALL_SOURCE_DIR}/compiler_test.f90"
-    DESTINATION "${NUMFORT_INSTALL_CONFIG_PATH}"
-    COMPONENT devel
-)
+# store test executables in this root directory
+set(NUMFORT_TESTS_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")
+set(NUMFORT_EXAMPLES_DIRECTORY "${CMAKE_BINARY_DIR}/bin/examples")
+set(NUMFORT_BENCHMARKS_DIRECTORY "${CMAKE_BINARY_DIR}/bin/benchmarks")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 
-# Install only numfort's MOD files, ignore any modules potentially created
-# by external projects
-# TODO: Do not install MOD files that are used only internally.
-install(DIRECTORY "${${PROJECT_NAME}_MODDIR}/"
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${NUMFORT_INSTALL_DIR}"
-    FILES_MATCHING PATTERN "numfort*.mod"
-)
+###############################################################################
+# Report options and settings
+if (BUILD_SHARED_LIBS)
+    message(STATUS "Building SHARED libraries")
+else(BUILD_SHARED_LIBS)
+    message(STATUS "Building STATIC libraries")
+endif(BUILD_SHARED_LIBS)
 
-if (NOT USE_MKL OR BUILD_BLAS95)
-    # Install blas95 wrappers mod file if not built against MKL; otherwise
-    # client code is expected to use the interfaces provided by MKL.
-    install(FILES
-        "${${PROJECT_NAME}_MODDIR}/blas95.mod"
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${NUMFORT_INSTALL_DIR}"
-    )
-endif()
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "Library install directory: ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+message(STATUS "MOD file install directory: ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}")
 
-install(FILES
-        "${${PROJECT_NAME}_MODDIR}/blas_interfaces.mod"
-        "${${PROJECT_NAME}_MODDIR}/lapack_interfaces.mod"
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${NUMFORT_INSTALL_DIR}"
-)
+################################################################################
+# Compiler FLAGS
 
+# Notes on the floating point model used by ifort:
+# https://software.intel.com/en-us/articles/consistency-of-floating-point-results-using-the-intel-compiler/
 
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
+    set(_FFLAGS "-frecursive")
+    set(_FFLAGS_DEBUG "-fcheck=all -O0")
+elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+    if (WIN32)
+        set(_FFLAGS "/warn:all,nounused /auto")
+        set(_FFLAGS_DEBUG "/check:all")
+
+        if (NOT IFORT_STD_MOD_PROC_NAME)
+            set(_FFLAGS "${_FFLAGS} /assume:nostd_mod_proc_name")
+        else ()
+            set(_FFLAGS "${_FFLAGS} /assume:std_mod_proc_name")
+        endif ()
+    else ()
+        set(_FFLAGS " -warn all,nounused -auto")
+        set(_FFLAGS_DEBUG "-check all")
+
+        if (NOT IFORT_STD_MOD_PROC_NAME)
+            set(_FFLAGS "${_FFLAGS} -assume nostd_mod_proc_name")
+        else ()
+            set(_FFLAGS "${_FFLAGS} -assume std_mod_proc_name")
+        endif ()
+    endif (WIN32)
+endif ()
+
+#set_property(DIRECTORY PROPERTY INTERPROCEDURAL_OPTIMIZATION 1)
+
+set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS}")
+set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${_FFLAGS_DEBUG}")
 
 
 ################################################################################
-# Tests, examples, etc.
+# Required targets
+
+# External third-party projects
+add_subdirectory(external)
+
+# Stand-alone interface definitions for F77 routines and F95 wrappers
+add_subdirectory(interfaces)
+add_subdirectory(wrappers)
+
+# Numfort library code
+add_subdirectory(numfort)
+
+
+################################################################################
+# Optional targets: tests, examples, etc.
 
 if (BUILD_TESTS)
     add_subdirectory(tests)
-endif()
-
-if (BUILD_BENCHMARKS)
-    add_subdirectory(benchmarks)
 endif()
 
 if (BUILD_EXAMPLES)

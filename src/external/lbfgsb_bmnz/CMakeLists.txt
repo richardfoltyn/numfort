@@ -35,7 +35,7 @@ set(MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/include")
 if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
     set(BUILD_STANDALONE OFF)
 	set(EXAMPLES_DIRECTORY
-		"${${CMAKE_PROJECT_NAME}_EXAMPLES_DIRECTORY}/external/${PROJECT_NAME}"
+		"${NUMFORT_EXAMPLES_DIRECTORY}/external/${PROJECT_NAME}"
 	)
     # add to list of object libraries that will be used to create ultimate
     # numfort library
@@ -45,22 +45,13 @@ if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
     )
 
     # Store module files in global module directory
-    set(MODULE_DIRECTORY ${${CMAKE_PROJECT_NAME}_MODDIR}/external)
+    set(MODULE_DIRECTORY ${NUMFORT_MODULE_DIRECTORY}/external)
 
     message(STATUS "Building ${PROJECT_NAME_PRETTY} as sub-project")
 else ()
 	message(STATUS "Building ${PROJECT_NAME_PRETTY} as standalone project")
 endif ()
 
-################################################################################
-# BLAS libraries
-
-if (BUILD_EXAMPLES)
-    find_package(BLAS REQUIRED)
-    list(APPEND ${PROJECT_NAME}_LIBRARIES ${BLAS_LIBRARIES})
-    set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${BLAS_LINKER_FLAGS})
-    set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${BLAS_LINKER_FLAGS})
-endif ()
 
 ################################################################################
 # Target definitions

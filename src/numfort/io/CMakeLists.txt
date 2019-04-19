@@ -8,8 +8,6 @@ set(SOURCE_FILES
     io_fixed.F90
 )
 
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
-
 unset(CPP_DEFINITIONS)
 if(UNIX)
     list(APPEND CPP_DEFINITIONS _LINUX)

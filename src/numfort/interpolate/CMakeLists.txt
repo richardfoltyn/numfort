@@ -1,4 +1,4 @@
-# src/numfort/numfort/interp/CMakeLists.txt
+# src/numfort/numfort/interpolate/CMakeLists.txt
 
 set(COMPONENT_NAME interpolate)
 
@@ -11,6 +11,5 @@ set(SOURCE_FILES
 	search.F90
 )
 
-include_directories("${CMAKE_CURRENT_LIST_DIR}/include")
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
 add_dependencies(${COMPONENT_NAME} common core fitpack)
