@@ -57,7 +57,7 @@ endif ()
 # Target definitions
 
 set(SOURCE_FILES
-    lbfgsb_real64.f
+    lbfgsb_real64.F
 )
 
 set(_name ${LIBRARY_NAME})
