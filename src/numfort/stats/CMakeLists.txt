@@ -18,10 +18,7 @@ set(SOURCE_FILES
     stats_qrng.F90
 )
 
-include_directories(
-    "${CMAKE_CURRENT_SOURCE_DIR}/include"
-    ${${CMAKE_PROJECT_NAME}_INCLUDE_DIRS}
-)
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
 add_dependencies(${COMPONENT_NAME} arrays common core linalg interpolate)

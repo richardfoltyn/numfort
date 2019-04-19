@@ -6,11 +6,17 @@ set(SOURCE_FILES
 )
 
 # set output directory to examples directory
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${${PROJECT_NAME}_EXAMPLES_DIRECTORY}")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${EXAMPLES_DIRECTORY}")
+
+include_directories("${MODULE_DIRECTORY}")
 
 set(_target example_external_${PROJECT_NAME})
-add_executable(${_target} ${SOURCE_FILES}
-    $<TARGET_OBJECTS:${${PROJECT_NAME}_LIBRARY_NAME}>
-)
-target_link_libraries(${_target} ${${PROJECT_NAME}_LIBRARIES})
 
+if (BUILD_STANDALONE)
+	add_executable(${_target} ${SOURCE_FILES})
+	target_link_libraries(${_target} ${LIBRARY_NAME})
+else ()
+	add_executable(${_target} ${SOURCE_FILES}
+    	$<TARGET_OBJECTS:${LIBRARY_NAME}>
+	)
+endif ()

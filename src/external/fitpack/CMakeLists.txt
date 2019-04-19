@@ -1,11 +1,11 @@
-# fitpack/CMakeLists.txt
+# src/external/fitpack/CMakeLists.txt
 # CMake configuration for FITPACK library
 
 cmake_minimum_required(VERSION 3.0)
 
 project(fitpack Fortran)
 set(PROJECT_NAME_PRETTY FITPACK)
-set(${PROJECT_NAME}_LIBRARY_NAME ${PROJECT_NAME})
+set(LIBRARY_NAME ${PROJECT_NAME})
 
 # make sure that the default is a RELEASE
 if (NOT CMAKE_BUILD_TYPE)
@@ -24,24 +24,66 @@ endif ()
 option(BUILD_EXAMPLES "Build examples/demo code" OFF)
 
 ################################################################################
+# Default standalone build
+
+set(BUILD_STANDALONE ON)
+set(EXAMPLES_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+set(MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/include")
+
+################################################################################
 # Numfort subproject setup
 
 if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
-	set(${PROJECT_NAME}_STANDALONE FALSE)
-	set(${PROJECT_NAME}_EXAMPLES_DIRECTORY
+    set(BUILD_STANDALONE OFF)
+	set(EXAMPLES_DIRECTORY
 		"${${CMAKE_PROJECT_NAME}_EXAMPLES_DIRECTORY}/external/${PROJECT_NAME}"
 	)
     # add to list of object libraries that will be used to create ultimate
     # numfort library
     set_property(GLOBAL APPEND
         PROPERTY ${CMAKE_PROJECT_NAME}_COMPONENT_TARGETS
-        ${${PROJECT_NAME}_LIBRARY_NAME}
+        ${LIBRARY_NAME}
     )
+
+    # Store module files in global module directory
+    set(MODULE_DIRECTORY ${${CMAKE_PROJECT_NAME}_MODDIR}/external)
+
     message(STATUS "Building ${PROJECT_NAME_PRETTY} as sub-project")
 else ()
-	set(${PROJECT_NAME}_STANDALONE TRUE)
-	set(${PROJECT_NAME}_EXAMPLES_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 	message(STATUS "Building ${PROJECT_NAME_PRETTY} as standalone project")
+endif ()
+
+################################################################################
+# Additional compiler flags for Fortran 2008 source files
+
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
+    # explicitly add -cpp to run C preprocessor if required
+    set(GNU_WARN "-Wextra -Warray-temporaries -Wrealloc-lhs -pedantic -Wsurprising")
+    set(F08_FLAGS "${GNU_WARN} -std=f2008")
+
+    # Disable "surprising" warnings for older GFORTRAN version as this
+    # produces endless warnings about array finalizers
+    if (CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 7)
+        set(F08_FLAGS "${F08_FLAGS} -Wno-surprising")
+    endif()
+elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+    if (WIN32)
+        set(F08_FLAGS "/warn:all /standard-semantics /stand:f08")
+        # NOTE: When setting -standard-semantics, resets any previously
+        # given -assume std_mod_proc_name, so we need to append it again!
+        if (NOT IFORT_STD_MOD_PROC_NAME)
+            set(F08_FLAGS "${F08_FLAGS} /assume:nostd_mod_proc_name")
+        else ()
+            set(F08_FLAGS "${F08_FLAGS} /assume:std_mod_proc_name")
+        endif ()
+    else ()
+        set(F08_FLAGS "-warn all -standard-semantics -std08")
+        if (NOT IFORT_STD_MOD_PROC_NAME)
+            set(F08_FLAGS "${F08_FLAGS} -assume nostd_mod_proc_name")
+        else ()
+            set(F08_FLAGS "${F08_FLAGS} -assume std_mod_proc_name")
+        endif ()
+    endif (WIN32)
 endif ()
 
 ################################################################################
@@ -53,29 +95,41 @@ set(SOURCE_FILES
 
 # additional files replacing original FITPACK implementation, written in F90
 # These FLAGS are appended to any other previously defined FLAGS.
-list(APPEND F90_SOURCES constraints_tree.f90)
-# if (${CMAKE_PROJECT_NAME}_FFLAGS)
-#     set_source_files_properties(${F90_SOURCES} PROPERTIES
-#         COMPILE_FLAGS "${${CMAKE_PROJECT_NAME}_FFLAGS}"
-#     )
-# endif ()
-# string(TOUPPER ${CMAKE_BUILD_TYPE} _build)
-# if (${CMAKE_PROJECT_NAME}_FFLAGS_${_build})
-#     set_source_files_properties(${F90_SOURCES} PROPERTIES
-#         COMPILE_FLAGS "${${CMAKE_PROJECT_NAME}_FFLAGS_${_build}}"
-#     )
-# endif ()
+list(APPEND F08_SOURCES constraints_tree.f90)
+list(APPEND SOURCE_FILES ${F08_SOURCES})
 
-list(APPEND SOURCE_FILES ${F90_SOURCES})
-
-set(_name ${${PROJECT_NAME}_LIBRARY_NAME})
-add_library(${_name} OBJECT ${SOURCE_FILES})
-if (BUILD_SHARED_LIBS)
-    set_target_properties(${_name} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+if (F08_FLAGS)
+    set_source_files_properties(${F08_SOURCES} PROPERTIES
+        COMPILE_FLAGS "${F08_FLAGS}"
+    )
 endif ()
+
+string(TOUPPER ${CMAKE_BUILD_TYPE} _build)
+if (F08_FLAGS_${_build})
+    set_source_files_properties(${F08_SOURCES} PROPERTIES
+        COMPILE_FLAGS "${F08_FLAGS_${_build}}"
+    )
+endif ()
+
+
+set(_name ${LIBRARY_NAME})
 
 # build shared/static library from object library only if standalone build.
 # Otherwise, parent project will use object library directly.
-if (${PROJECT_NAME}_STANDALONE)
-    add_library(${_name} $<TARGET_OBJECTS:${_name}>)
+if (BUILD_STANDALONE)
+    add_library(${_name} ${SOURCE_FILES})
+    if (BUILD_SHARED_LIBS)
+        set_target_properties(${_name} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    endif ()
+else ()
+    add_library(${_name} OBJECT ${SOURCE_FILES})
 endif ()
+
+set_target_properties(${_name} PROPERTIES
+    Fortran_MODULE_DIRECTORY ${MODULE_DIRECTORY}
+)
+
+# Building original example files shipped with FITPACK does not work ATM
+#if (BUILD_EXAMPLES)
+#    add_subdirectory(examples)
+#endif ()

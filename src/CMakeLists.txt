@@ -152,6 +152,7 @@ set(CMAKE_Fortran_MODULE_DIRECTORY "${${PROJECT_NAME}_MODDIR}")
 # set include directory to directory where MOD files are stored
 list(APPEND ${PROJECT_NAME}_INCLUDE_DIRS
     "${${PROJECT_NAME}_MODDIR}"
+    "${CMAKE_BINARY_DIR}/include/external"
     "${CMAKE_CURRENT_SOURCE_DIR}/numfort/include"
 )
 

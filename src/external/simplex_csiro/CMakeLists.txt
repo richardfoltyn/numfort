@@ -1,11 +1,11 @@
-# fitpack/CMakeLists.txt
-# CMake configuration for FITPACK library
+# src/external/simplex_csiro/CMakeLists.txt
+# CMake configuration for simplex (CSIRO) library
 
 cmake_minimum_required(VERSION 3.0)
 
 project(simplex_csiro Fortran)
 set(PROJECT_NAME_PRETTY "SIMPLEX (CSIRO implementation)")
-set(${PROJECT_NAME}_LIBRARY_NAME ${PROJECT_NAME})
+set(LIBRARY_NAME ${PROJECT_NAME})
 
 # make sure that the default is a RELEASE
 if (NOT CMAKE_BUILD_TYPE)
@@ -24,23 +24,32 @@ endif ()
 option(BUILD_EXAMPLES "Build examples/demo code" OFF)
 
 ################################################################################
+# Default standalone build
+
+set(BUILD_STANDALONE ON)
+set(EXAMPLES_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+set(MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/include")
+
+################################################################################
 # Numfort subproject setup
 
 if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
-    set(${PROJECT_NAME}_STANDALONE OFF)
-	set(${PROJECT_NAME}_EXAMPLES_DIRECTORY
+    set(BUILD_STANDALONE OFF)
+	set(EXAMPLES_DIRECTORY
 		"${${CMAKE_PROJECT_NAME}_EXAMPLES_DIRECTORY}/external/${PROJECT_NAME}"
 	)
     # add to list of object libraries that will be used to create ultimate
     # numfort library
     set_property(GLOBAL APPEND
         PROPERTY ${CMAKE_PROJECT_NAME}_COMPONENT_TARGETS
-        ${${PROJECT_NAME}_LIBRARY_NAME}
+        ${LIBRARY_NAME}
     )
+
+    # Store module files in global module directory
+    set(MODULE_DIRECTORY ${${CMAKE_PROJECT_NAME}_MODDIR}/external)
+
     message(STATUS "Building ${PROJECT_NAME_PRETTY} as sub-project")
 else ()
-    set(${PROJECT_NAME}_STANDALONE ON)
-	set(${PROJECT_NAME}_EXAMPLES_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 	message(STATUS "Building ${PROJECT_NAME_PRETTY} as standalone project")
 endif ()
 
@@ -48,20 +57,28 @@ endif ()
 # Target definitions
 
 set(SOURCE_FILES
-    simplex_real64.f90
-    simplex_real32.f90
+    simplex_real32.F90
+    simplex_real64.F90
     simplex.f90
 )
 
-set(_name ${${PROJECT_NAME}_LIBRARY_NAME})
-add_library(${_name} OBJECT ${SOURCE_FILES})
-if (BUILD_SHARED_LIBS)
-    set_target_properties(${_name} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-endif ()
+set(_name ${LIBRARY_NAME})
 
 # build shared/static library from object library only if standalone build.
 # Otherwise, parent project will use object library directly.
-if (${PROJECT_NAME}_STANDALONE)
-    add_library(${_name} $<TARGET_OBJECTS:${_name}>)
+if (BUILD_STANDALONE)
+    add_library(${_name} ${SOURCE_FILES})
+    if (BUILD_SHARED_LIBS)
+        set_target_properties(${_name} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    endif ()
+else ()
+    add_library(${_name} OBJECT ${SOURCE_FILES})
 endif ()
 
+set_target_properties(${_name} PROPERTIES
+    Fortran_MODULE_DIRECTORY ${MODULE_DIRECTORY}
+)
+
+if (BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif ()

@@ -1,5 +1,4 @@
-# src/fitpack/fitpack/CMakeLists.txt
-# CMake configuration for numfort library
+# src/external/fitpack/examples/CMakeLists.txt
 
 set(SOURCE_FILES
 	mnbisp.f
@@ -32,20 +31,29 @@ set(SOURCE_FILES
 	mnsuev.f
 	mnsurf.f)
 
-# set output directory to test directory
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${${PROJECT_NAME}_EXAMPLES_DIRECTORY}")
+# set output directory to examples directory
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${EXAMPLES_DIRECTORY}")
+
+include_directories("${MODULE_DIRECTORY}")
 
 # Add all tests as separate executables
 foreach (_file IN LISTS SOURCE_FILES)
 	get_filename_component(exe_name "${_file}" NAME_WE)
-	set(_target dierckx_${exe_name})
+	set(_target ${PROJECT_NAME}_${exe_name})
 
-	add_executable(${_target} "${_file}")
-	target_link_libraries(${_target} ${${PROJECT_NAME}_LIBRARIES})
+	if (BUILD_STANDALONE)
+		add_executable(${_target} "${_file}")
+		target_link_libraries(${_target} ${LIBRARY_NAME})
+	else ()
+		add_executable(${_target} "${_file}"
+			$<TARGET_OBJECTS:${LIBRARY_NAME}>
+		)
+	endif ()
+
 	set_target_properties(${_target} PROPERTIES OUTPUT_NAME ${exe_name})
 
 endforeach (_file)
 
-# copy sample data from samples/ subdirectory to test directory
+# copy sample data from samples/ subdirectory to examples directory
 file(GLOB FITPACK_SAMPLE_DATA "da*.txt")
 file(COPY ${FITPACK_SAMPLE_DATA} DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
