@@ -1,41 +1,32 @@
-
+c                                                                                      
+c  L-BFGS-B is released under the “New BSD License” (aka “Modified BSD License”        
+c  or “3-clause license”)                                                              
+c  Please read attached file License.txt                                               
+c                                        
       subroutine timer(ttime)
       double precision ttime
-c     *********
 c
-c     Subroutine timer
-c
-c     This subroutine is used to determine user time. In a typical 
-c     application, the user time for a code segment requires calls 
-c     to subroutine timer to determine the initial and final time.
-c
-c     The subroutine statement is
-c
-c       subroutine timer(ttime)
-c
-c     where
-c
-c       ttime is an output variable which specifies the user time.
-c
-c     Argonne National Laboratory and University of Minnesota.
-c     MINPACK-2 Project.
-c
-c     Modified October 1990 by Brett M. Averick.
-c
-c     **********
       real temp
-      real tarray(2)
-      real etime
+c
+c     This routine computes cpu time in double precision; it makes use of 
+c     the intrinsic f90 cpu_time therefore a conversion type is
+c     needed.
+c
+c           J.L Morales  Departamento de Matematicas, 
+c                        Instituto Tecnologico Autonomo de Mexico
+c                        Mexico D.F.
+c
+c           J.L Nocedal  Department of Electrical Engineering and
+c                        Computer Science.
+c                        Northwestern University. Evanston, IL. USA
+c                         
+c                        January 21, 2011
+c
+      temp = sngl(ttime)
+      call cpu_time(temp)
+      ttime = dble(temp) 
 
-c     The first element of the array tarray specifies user time
-
-      temp = etime(tarray) 
-
-      ttime = dble(tarray(1))
- 
       return
 
       end
       
-c====================== The end of timer ===============================
-

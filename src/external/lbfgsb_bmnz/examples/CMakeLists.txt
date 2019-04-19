@@ -47,7 +47,7 @@ foreach (_file IN LISTS SOURCE_FILES)
 		${CMAKE_CURRENT_SOURCE_DIR}/../lbfgsb.f
 		${CMAKE_CURRENT_SOURCE_DIR}/../linpack.f
         ${CMAKE_CURRENT_SOURCE_DIR}/../timer.f
-        ${CMAKE_CURRENT_SOURCE_DIR}/../blas1.f
+		${CMAKE_CURRENT_SOURCE_DIR}/../blas.f
 	)
 
 	set(_target ${PROJEC_NAME}_${exe_name})

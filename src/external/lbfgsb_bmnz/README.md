@@ -13,6 +13,10 @@ describing  work using this software, or all commercial products using it,
 quote at least one of the references given below. This software is released
 under the "New BSD License" (aka "Modified BSD License" or "3-clause license").
 
+## Files ##
+
+This version was downloaded from [here](http://users.iems.northwestern.edu/~nocedal/lbfgsb.html).
+
 ## Authors ##
 
 Ciyou Zhu, Richard Byrd, Jorge Nocedal and Jose Luis Morales.

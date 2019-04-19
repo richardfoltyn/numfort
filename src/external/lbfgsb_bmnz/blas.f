@@ -1,3 +1,9 @@
+c                                                                                      
+c  L-BFGS-B is released under the “New BSD License” (aka “Modified BSD License”        
+c  or “3-clause license”)                                                              
+c  Please read attached file License.txt                                               
+c                                        
+
       double precision function dnrm2(n,x,incx)
       integer n,incx
       double precision x(n)
@@ -52,6 +58,9 @@ c     **********
       return
 
       end
+      
+c====================== The end of dnrm2 ===============================
+
       subroutine daxpy(n,da,dx,incx,dy,incy)
 c
 c     constant times a vector plus a vector.
@@ -99,6 +108,9 @@ c
    50 continue
       return
       end
+      
+c====================== The end of daxpy ===============================
+
       subroutine dcopy(n,dx,incx,dy,incy)
 c
 c     copies a vector, x, to a vector, y.
@@ -148,6 +160,9 @@ c
    50 continue
       return
       end
+      
+c====================== The end of dcopy ===============================
+
       double precision function ddot(n,dx,incx,dy,incy)
 c
 c     forms the dot product of two vectors.
@@ -196,6 +211,9 @@ c
    60 ddot = dtemp
       return
       end
+      
+c====================== The end of ddot ================================
+
       subroutine  dscal(n,da,dx,incx)
 c
 c     scales a vector by a constant.
@@ -238,3 +256,6 @@ c
    50 continue
       return
       end
+      
+c====================== The end of dscal ===============================
+
