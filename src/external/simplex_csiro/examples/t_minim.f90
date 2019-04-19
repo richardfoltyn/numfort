@@ -19,7 +19,7 @@ INTERFACE
   SUBROUTINE objfun(p, func)
     IMPLICIT NONE
     INTEGER, PARAMETER     :: dp = SELECTED_REAL_KIND(14, 60)
-    REAL (dp), INTENT(IN)  :: p(:)
+    REAL (dp), INTENT(IN), CONTIGUOUS  :: p(:)
     REAL (dp), INTENT(OUT) :: func
   END SUBROUTINE objfun
 END INTERFACE
@@ -91,7 +91,7 @@ SUBROUTINE objfun(p, func)
 
 IMPLICIT NONE
 INTEGER, PARAMETER     :: dp = SELECTED_REAL_KIND(14, 60)
-REAL (dp), INTENT(IN)  :: p(:)
+REAL (dp), INTENT(IN), CONTIGUOUS  :: p(:)
 REAL (dp), INTENT(OUT) :: func
 
 !     Local variables

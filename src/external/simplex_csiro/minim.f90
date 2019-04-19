@@ -1,4 +1,4 @@
-! needs to be included such that the KIND constant dp is defined
+! needs to be included such that the KIND constant PREC is defined
 
 SUBROUTINE minim(p, step, nop, func, maxfn, iprint, stopcr, nloop, iquad,  &
                  simp, var, functn, ifault)
@@ -75,28 +75,28 @@ SUBROUTINE minim(p, step, nop, func, maxfn, iprint, stopcr, nloop, iquad,  &
 
 INTEGER, INTENT(IN)        :: nop, maxfn, iprint, nloop, iquad
 INTEGER, INTENT(OUT)       :: ifault
-REAL (dp), INTENT(IN)      :: stopcr, simp
-REAL (dp), INTENT(INOUT)  :: p(:), step(:)
-REAL (dp), INTENT(OUT)     :: var(:), func
+REAL (PREC), INTENT(IN)    :: stopcr, simp
+REAL (PREC), INTENT(INOUT) :: p(:), step(:)
+REAL (PREC), INTENT(OUT)   :: var(:), func
 
 PROCEDURE(functn_if) :: functn
 CONTIGUOUS :: p
 
 !     Local variables
 
-REAL (dp)   :: g(nop+1,nop), h(nop+1), pbar(nop), pstar(nop), pstst(nop), &
+REAL (PREC)   :: g(nop+1,nop), h(nop+1), pbar(nop), pstar(nop), pstst(nop), &
                aval(nop), pmin(nop), temp(nop), bmat(nop*(nop+1)/2),  &
                vc(nop*(nop+1)/2), ymin, rmax, hstst, a0, hmin, test, hmean, &
                hstd, hstar, hmax, savemn
 
-REAL (dp), PARAMETER :: zero = 0._dp, half = 0.5_dp, one = 1._dp, two = 2._dp
+REAL (PREC), PARAMETER :: zero = 0._PREC, half = 0.5_PREC, one = 1._PREC, two = 2._PREC
 INTEGER     :: i, i1, i2, iflag, ii, ij, imax, imin, irank, irow, j, j1, jj, &
                k, l, loop, nap, neval, nmore, np1, nullty
 
 !     A = REFLECTION COEFFICIENT, B = CONTRACTION COEFFICIENT, AND
 !     C = EXPANSION COEFFICIENT.
 
-REAL (dp), PARAMETER :: a = 1._dp, b = 0.5_dp, c = 2._dp
+REAL (PREC), PARAMETER :: a = 1._PREC, b = 0.5_PREC, c = 2._PREC
 
 !     SET LOUT = LOGICAL UNIT NO. FOR OUTPUT
 
@@ -419,7 +419,7 @@ END DO
 
 DO i = 1, nap
   i1 = i + 1
-  aval(i) = two * aval(i) - (h(i1) + 3._dp*a0) * half
+  aval(i) = two * aval(i) - (h(i1) + 3._PREC*a0) * half
 END DO
 
 !     THE MATRIX Q OF NELDER & MEAD IS CALCULATED AND STORED IN G.
@@ -609,14 +609,14 @@ SUBROUTINE syminv(a, n, c, w, nullty, ifault, rmax)
 
 !***************************************************************************
 
-REAL (dp), INTENT(IN OUT) :: a(:), c(:), w(:)
+REAL (PREC), INTENT(IN OUT) :: a(:), c(:), w(:)
 INTEGER, INTENT(IN)       :: n
 INTEGER, INTENT(OUT)      :: nullty, ifault
-REAL (dp), INTENT(OUT)    :: rmax
+REAL (PREC), INTENT(OUT)    :: rmax
 
-REAL (dp), PARAMETER :: zero = 0._dp, one = 1._dp
+REAL (PREC), PARAMETER :: zero = 0._PREC, one = 1._PREC
 INTEGER              :: i, icol, irow, j, jcol, k, l, mdiag, ndiag, nn, nrow
-REAL (dp)            :: x
+REAL (PREC)            :: x
 
 nrow = n
 ifault = 1
@@ -707,19 +707,19 @@ SUBROUTINE chola(a, n, u, nullty, ifault, rmax, r)
 
 !***************************************************************************
 
-REAL (dp), INTENT(IN)   :: a(:)
+REAL (PREC), INTENT(IN)   :: a(:)
 INTEGER, INTENT(IN)     :: n
-REAL (dp), INTENT(OUT)  :: u(:)
+REAL (PREC), INTENT(OUT)  :: u(:)
 INTEGER, INTENT(OUT)    :: nullty, ifault
-REAL (dp), INTENT(OUT)  :: rmax, r(:)
+REAL (PREC), INTENT(OUT)  :: rmax, r(:)
 
 !     ETA SHOULD BE SET EQUAL TO THE SMALLEST +VE VALUE SUCH THAT
-!     1._dp + ETA IS CALCULATED AS BEING GREATER THAN 1._dp IN THE ACCURACY
+!     1._PREC + ETA IS CALCULATED AS BEING GREATER THAN 1._PREC IN THE ACCURACY
 !     BEING USED.
 
-REAL (dp), PARAMETER :: eta = EPSILON(1.0_dp), zero = 0._dp
+REAL (PREC), PARAMETER :: eta = EPSILON(1.0_PREC), zero = 0._PREC
 INTEGER              :: i, icol, irow, j, k, l, m
-REAL (dp)            :: rsq, w
+REAL (PREC)            :: rsq, w
 
 ifault = 1
 IF (n > 0) THEN
@@ -785,7 +785,7 @@ END SUBROUTINE chola
 SUBROUTINE print_tri_matrix(a, n, lout)
 
 INTEGER, INTENT(IN)    :: n, lout
-REAL (dp), INTENT(IN)  :: a(:)
+REAL (PREC), INTENT(IN)  :: a(:)
 
 !     Local variables
 INTEGER  :: i, ii, i1, i2, l
