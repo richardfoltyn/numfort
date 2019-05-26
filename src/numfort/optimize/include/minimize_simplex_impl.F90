@@ -1,8 +1,10 @@
 
-subroutine __APPEND(check_input,__PREC) (tol, maxfun, status, msg)
+subroutine __APPEND(check_input,__PREC) (tol, maxfun, rstep, xstep, status, msg)
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: tol
     integer, intent(in) :: maxfun
+    real (PREC), intent(in), optional :: rstep
+    real (PREC), intent(in), optional :: xstep
     type (status_t), intent(inout) :: status
     character (*), intent(inout) :: msg
 
@@ -14,6 +16,20 @@ subroutine __APPEND(check_input,__PREC) (tol, maxfun, status, msg)
     call check_positive (0.0_PREC, tol, "tol", status, msg)
     if (status /= NF_STATUS_OK) goto 100
 
+    call check_nonneg (0.0_PREC, xstep, "xstep", status, msg)
+    if (status /= NF_STATUS_OK) goto 100
+
+    call check_nonneg (0.0_PREC, rstep, "rstep", status, msg)
+    if (status /= NF_STATUS_OK) goto 100
+
+    ! Check that not both xstep and rstep are zero
+    if (present(rstep) .and. present(xstep)) then
+        if (rstep == 0.0_PREC .and. xstep == 0.0_PREC) then
+            status = NF_STATUS_INVALID_ARG
+            goto 100
+        end if
+    end if
+
     return
 
 100 continue
@@ -23,14 +39,20 @@ end subroutine
 
 
 
-subroutine __APPEND(minimize_simplex,__PREC) (fcn, x, tol, maxfun, quad, &
-        iprint, work, res)
+subroutine __APPEND(minimize_simplex,__PREC) (fcn, x, tol, maxfun, rstep, &
+        xstep, quad, iprint, work, res)
 
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvs_fcn,__PREC)) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxfun
+    real (PREC), intent(in), optional :: rstep
+        !*  Optional relative initial step size (default: 5% of initial x-value)
+        !   The actual step size is computed as (xstep + rstep * x).
+    real (PREC), intent(in), optional :: xstep
+        !*  Optional absolute initial step size (default: 2.5e-4)
+        !   The actual step size is computed as (xstep + rstep * x).
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
     logical, intent(in), optional :: quad
     type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
@@ -40,12 +62,12 @@ subroutine __APPEND(minimize_simplex,__PREC) (fcn, x, tol, maxfun, quad, &
 
     call wrap_procedure (fwrapper, fcn=fcn)
 
-    call simplex_impl (fwrapper, x, tol, maxfun, quad, iprint, work, res)
+    call simplex_impl (fwrapper, x, tol, maxfun, rstep, xstep, quad, iprint, work, res)
 end subroutine
 
 
 subroutine __APPEND(minimize_simplex_args,__PREC) (fcn, x, args, tol, maxfun, &
-        quad, iprint, work, res)
+        rstep, xstep, quad, iprint, work, res)
 
     integer, parameter :: PREC = __PREC
     procedure (__APPEND(fvs_fcn_args,__PREC)) :: fcn
@@ -53,6 +75,12 @@ subroutine __APPEND(minimize_simplex_args,__PREC) (fcn, x, args, tol, maxfun, &
     class (args_data), intent(inout) :: args
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxfun
+    real (PREC), intent(in), optional :: rstep
+        !*  Optional relative initial step size (default: 5% of initial x-value)
+        !   The actual step size is computed as (xstep + rstep * x).
+    real (PREC), intent(in), optional :: xstep
+        !*  Optional absolute initial step size (default: 2.5e-4)
+        !   The actual step size is computed as (xstep + rstep * x).
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
     logical, intent(in), optional :: quad
     type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
@@ -62,12 +90,12 @@ subroutine __APPEND(minimize_simplex_args,__PREC) (fcn, x, args, tol, maxfun, &
 
     call wrap_procedure (fwrapper, fcn_args=fcn, args=args)
 
-    call simplex_impl (fwrapper, x, tol, maxfun, quad, iprint, work, res)
+    call simplex_impl (fwrapper, x, tol, maxfun, rstep, xstep, quad, iprint, work, res)
 end subroutine
 
 
-subroutine __APPEND(simplex_impl,__PREC) (fcn, x, tol, maxfun, quad, &
-        iprint, work, res)
+subroutine __APPEND(simplex_impl,__PREC) (fcn, x, tol, maxfun, rstep, xstep, &
+        quad, iprint, work, res)
 
     integer, parameter :: PREC = __PREC
     type (__APPEND(fwrapper_vs,__PREC)), intent(inout) :: fcn
@@ -75,6 +103,8 @@ subroutine __APPEND(simplex_impl,__PREC) (fcn, x, tol, maxfun, quad, &
     real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxfun
+    real (PREC), intent(in), optional :: rstep
+    real (PREC), intent(in), optional :: xstep
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
     logical, intent(in), optional :: quad
     type (__APPEND(workspace,__PREC)), intent(inout), target, optional :: work
@@ -82,7 +112,7 @@ subroutine __APPEND(simplex_impl,__PREC) (fcn, x, tol, maxfun, quad, &
 
     integer :: n, lmaxfun, nloop, iquad, liprint, ifault, nrwrk
     logical :: lquad
-    real (PREC) :: delta_nonzero, delta_zero, simp, fopt, ltol
+    real (PREC) :: lrstep, lxstep, simp, fopt, ltol
     real (PREC), dimension(:), pointer, contiguous :: ptr_step, ptr_var
 
     type (__APPEND(workspace,__PREC)), pointer :: ptr_work
@@ -99,17 +129,23 @@ subroutine __APPEND(simplex_impl,__PREC) (fcn, x, tol, maxfun, quad, &
     lmaxfun = 100 * n
     lquad = .true.
     iquad = 0
+    ! Default relative step size
+    lrstep = 0.05_PREC
+    ! Default absolute step size
+    lxstep = 2.5e-4_PREC
 
     if (present(tol)) ltol = tol
     if (present(maxfun)) lmaxfun = maxfun
     if (present(quad)) lquad = quad
     if (lquad) iquad = 1
+    if (present(rstep)) lrstep = rstep
+    if (present(xstep)) lxstep = xstep
 
     ! disable diagnostic printing
     liprint = map_iprint(NF_PRINT_NONE)
     if (present(iprint)) liprint = map_iprint (iprint)
 
-    call check_input (ltol, lmaxfun, ptr_res%status, ptr_res%msg)
+    call check_input (ltol, lmaxfun, lrstep, lxstep, ptr_res%status, ptr_res%msg)
     if (NF_STATUS_INVALID_ARG .in. ptr_res%status) goto 100
 
     nrwrk = 2 * n
@@ -125,14 +161,7 @@ subroutine __APPEND(simplex_impl,__PREC) (fcn, x, tol, maxfun, quad, &
     call workspace_get_ptr (ptr_work, n, ptr_var)
 
     ! set up initial step size
-    ! take some sensible values as used in scipy implementation
-    delta_zero = 0.00025_PREC
-    delta_nonzero = 0.05_PREC
-    where (x == 0.0_PREC)
-        ptr_step = delta_zero
-    else where
-        ptr_step = x * delta_nonzero
-    end where
+    ptr_step(:) = max(lxstep + lrstep * x, 1.0e-8_PREC)
 
     nloop = 2 * n
     simp = 1.0e-6_PREC

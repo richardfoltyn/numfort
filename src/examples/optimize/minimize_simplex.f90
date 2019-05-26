@@ -30,7 +30,7 @@ subroutine example1 ()
     quad = .true.
     tol = 1d-04
 
-    call minimize_simplex (fobj1, x, tol, maxfun, quad, iprint, res=res)
+    call minimize_simplex (fobj1, x, tol, maxfun, quad=quad, iprint=iprint, res=res)
 
     print "('Status codes(s): ', a, ' - ', a100)", char(res%status), res%msg
     print "('Function value at minimum: ', en22.15e2)", res%fx(1)
