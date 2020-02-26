@@ -461,7 +461,7 @@ recursive subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
             ptr_res%msg = 'Convergence achieved, func. value smaller than tol'
             status = NF_STATUS_OK
             ! Code below expects the final function value to be stored in FXLAST
-            call DCOPY (n, fx, 1, fxlast, 1)
+            call COPY (n, fx, 1, fxlast, 1)
             x(:) = x + dx
 
             goto 100
@@ -479,7 +479,7 @@ recursive subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
             ! better approximation
             if (nrm_last > nrm_upd) then
                 x(:) = x + dx
-                call DCOPY (n, fx, 1, fxlast, 1)
+                call COPY (n, fx, 1, fxlast, 1)
             end if
 
             goto 100
@@ -497,7 +497,7 @@ recursive subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
             ! better approximation
             if (nrm_last > nrm_upd) then
                 x(:) = x + dx
-                call DCOPY (n, fx, 1, fxlast, 1)
+                call COPY (n, fx, 1, fxlast, 1)
             end if
 
             goto 100
@@ -538,7 +538,7 @@ recursive subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
         call GER (m, n, alpha, vec1, incx, vec2, incy, jac_inv, lda)
 
         ! Update for next iteration
-        call DCOPY (n, fx, 1, fxlast, 1)
+        call COPY (n, fx, 1, fxlast, 1)
         nrm_last = nrm_upd
     end do
 

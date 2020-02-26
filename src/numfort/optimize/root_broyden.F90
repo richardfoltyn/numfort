@@ -16,7 +16,7 @@ module numfort_optimize_root_broyden
     use numfort_optimize_interfaces
     use numfort_optimize_fwrapper
 
-    use blas_interfaces, only: DOT, GEMV, SCAL, AXPY, GER
+    use blas_interfaces, only: COPY, DOT, GEMV, SCAL, AXPY, GER
     use lapack_interfaces, only: GETRF, GETRS
 
     implicit none
