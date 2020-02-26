@@ -80,7 +80,7 @@ end subroutine
 
 
 pure subroutine __APPEND(power_ppolyval,__PREC) (self, knots, coefs, x, y, ext, &
-        left, right, status)
+        left, right, cache, status)
     !*  PPOLYVAL evaluates the fitted piecewise cubic polynomial at
     !   a set of given points.
     integer, parameter :: PREC = __PREC
@@ -104,6 +104,7 @@ pure subroutine __APPEND(power_ppolyval,__PREC) (self, knots, coefs, x, y, ext, 
     real (PREC), intent(in), optional :: right
         !*  Constant value assigned to x-coordinates larger than X(-1), if
         !   EXT = NF_INTERP_EVAL_CONST.
+    type (search_cache), intent(inout), dimension(:), optional, contiguous :: cache
     type (status_t), intent(out), optional :: status
         !   Exit code (optional)
 
@@ -120,11 +121,14 @@ pure subroutine __APPEND(power_ppolyval,__PREC) (self, knots, coefs, x, y, ext, 
 
     select case (self%degree)
     case (2)
-        call power_ppolyval_impl_quadratic (self, knots, coefs, x, y, lext, left, right, lstatus)
+        call power_ppolyval_impl_quadratic (self, knots, coefs, x, y, &
+            lext, left, right, cache, lstatus)
     case (3)
-        call power_ppolyval_impl_cubic (self, knots, coefs, x, y, lext, left, right, lstatus)
+        call power_ppolyval_impl_cubic (self, knots, coefs, x, y, lext, &
+            left, right, cache, lstatus)
     case default
-        call power_ppolyval_impl (self, knots, coefs, x, y, lext, left, right, lstatus)
+        call power_ppolyval_impl (self, knots, coefs, x, y, lext, &
+            left, right, lstatus)
     end select
 
 100 continue
@@ -232,7 +236,7 @@ end subroutine
 
 
 pure subroutine __APPEND(power_ppolyval_impl_quadratic,__PREC) (self, knots, &
-        coefs, x, y, ext, left, right, status)
+        coefs, x, y, ext, left, right, cache, status)
     integer, parameter :: PREC = __PREC
     type (ppoly), intent(in) :: self
     real (PREC), intent(in), dimension(:), contiguous :: knots
@@ -242,6 +246,7 @@ pure subroutine __APPEND(power_ppolyval_impl_quadratic,__PREC) (self, knots, &
     integer (NF_ENUM_KIND), intent(in) :: ext
     real (PREC), intent(in), optional :: left
     real (PREC), intent(in), optional :: right
+    type (search_cache), intent(inout), dimension(:), optional, contiguous :: cache
     type (status_t), intent(out) :: status
 
     integer :: nk, n, i, j, jj, ik
@@ -274,7 +279,7 @@ pure subroutine __APPEND(power_ppolyval_impl_quadratic,__PREC) (self, knots, &
                 goto 100
             case default
                 ! Find interval j such that knots(j) <= x(i)
-                call bsearch_cached (xi, knots, j, bcache)
+                call bsearch_proxy (xi, knots, i, cache, bcache, j)
             end select
         else if (xi > xub) then
             select case (ext)
@@ -291,11 +296,11 @@ pure subroutine __APPEND(power_ppolyval_impl_quadratic,__PREC) (self, knots, &
                 goto 100
             case default
                 ! Find interval j such that knots(j) <= x(i)
-                call bsearch_cached (xi, knots, j, bcache)
+                call bsearch_proxy (xi, knots, i, cache, bcache, j)
             end select
         else
             ! Find interval j such that knots(j) <= x(i)
-            call bsearch_cached (xi, knots, j, bcache)
+            call bsearch_proxy (xi, knots, i, cache, bcache, j)
         end if
 
         ! At this point we have one of three cases:
@@ -327,7 +332,7 @@ end subroutine
 
 
 pure subroutine __APPEND(power_ppolyval_impl_cubic,__PREC) (self, knots, coefs, x, y, &
-        ext, left, right, status)
+        ext, left, right, cache, status)
     integer, parameter :: PREC = __PREC
     type (ppoly), intent(in) :: self
     real (PREC), intent(in), dimension(:), contiguous :: knots
@@ -337,6 +342,7 @@ pure subroutine __APPEND(power_ppolyval_impl_cubic,__PREC) (self, knots, coefs, 
     integer (NF_ENUM_KIND), intent(in) :: ext
     real (PREC), intent(in), optional :: left
     real (PREC), intent(in), optional :: right
+    type (search_cache), intent(inout), dimension(:), optional, contiguous :: cache
     type (status_t), intent(out) :: status
 
     integer :: nk, n, i, j, jj, ik
@@ -369,7 +375,7 @@ pure subroutine __APPEND(power_ppolyval_impl_cubic,__PREC) (self, knots, coefs, 
                 goto 100
             case default
                 ! Find interval j such that knots(j) <= x(i)
-                call bsearch_cached (xi, knots, j, bcache)
+                call bsearch_proxy (xi, knots, i, cache, bcache, j)
             end select
         else if (xi > xub) then
             select case (ext)
@@ -386,11 +392,11 @@ pure subroutine __APPEND(power_ppolyval_impl_cubic,__PREC) (self, knots, coefs, 
                 goto 100
             case default
                 ! Find interval j such that knots(j) <= x(i)
-                call bsearch_cached (xi, knots, j, bcache)
+                call bsearch_proxy (xi, knots, i, cache, bcache, j)
             end select
         else
             ! Find interval j such that knots(j) <= x(i)
-            call bsearch_cached (xi, knots, j, bcache)
+            call bsearch_proxy (xi, knots, i, cache, bcache, j)
         end if
 
         ! At this point we have one of three cases:
@@ -445,7 +451,7 @@ pure subroutine __APPEND(power_ppolyval_scalar,__PREC) (self, knots, coefs, x, y
     ! Initialize to something to present unintialized variable warnings
     ! if PPOLYVAL exits with an error.
     y1 = 0.0
-    call ppolyval (self, knots, coefs, x1, y1, ext, left, right, status)
+    call ppolyval (self, knots, coefs, x1, y1, ext, left, right, status=status)
     y = y1(1)
 
 end subroutine

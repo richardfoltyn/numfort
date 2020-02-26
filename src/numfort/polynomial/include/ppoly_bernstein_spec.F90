@@ -57,7 +57,3 @@ end interface
 interface ppoly_transform_basis
     procedure __APPEND(bernstein2power,__PREC)
 end interface
-
-interface bsearch_proxy
-    procedure __APPEND(bsearch_proxy,__PREC)
-end interface
