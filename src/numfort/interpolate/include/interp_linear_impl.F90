@@ -1,5 +1,78 @@
 
-pure subroutine __APPEND(interp_linear_impl,__PREC) (x, xp, fp, fx, wgt, ext, left, right)
+
+
+
+pure subroutine __APPEND(interp_linear_eval_check_input,__PREC) (ilbound, &
+        weight, fx, status)
+    !*  INTERP_LINEAR_EVAL_CHECK_INPUT performs input validation for
+    !   INTERP_LINEAR_EVAL.
+    integer, parameter :: PREC = __PREC
+
+    integer, intent(in), dimension(:) :: ilbound
+    real (PREC), intent(in), dimension(:) :: weight
+    real (PREC), intent(in), dimension(:) :: fx
+        !*  Optional array for storing output, which is not present in
+        !   scalar interface.
+    type (status_t), intent(out) :: status
+
+    status = NF_STATUS_OK
+
+    if (size(fx) /= size(ilbound)) then
+        status = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+
+    if (size(ilbound) /= size(weight)) then
+        status = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+
+100 continue
+
+end subroutine
+
+
+
+pure subroutine __APPEND(interp_linear_check_input,__PREC) (x, xp, fp, fx, status)
+    !*  INTERP_LINEAR_CHECK_INPUT performs input validation for INTERP_LINEAR.
+    !   This routine will check arguments that are passed to both the
+    !   implementations of the FIND and EVAL routines so they don't need
+    !   to be checked separately.
+    integer, parameter :: PREC = __PREC
+
+    real (PREC), intent(in), dimension(:), optional :: x, fx
+        !*  Optional interpolation points, since these do not need to be
+        !   checked for scalar routines.
+    real (PREC), intent(in), dimension(:) :: xp, fp
+    type (status_t), intent(out) :: status
+
+    status = NF_STATUS_OK
+
+    if (present(x) .and. present(fx)) then
+        if (size(x) /= size(fx)) then
+            status = NF_STATUS_INVALID_ARG
+            goto 100
+        end if
+    end if
+
+    if (size(xp) /= size(fp)) then
+        status = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+
+    if (size(xp) < 2) then
+        status = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+
+100 continue
+
+end subroutine
+
+
+
+pure subroutine __APPEND(interp_linear_eval_impl_scalar,__PREC) (ilbound, &
+        weight, fp, fx, ext, left, right)
     !*  Implements linear interpolation for scalar input/return value
     !   and no optional arguments.
     !   Should be called from wrapper routines doing the optional argument handling,
@@ -7,16 +80,14 @@ pure subroutine __APPEND(interp_linear_impl,__PREC) (x, xp, fp, fx, wgt, ext, le
     integer, parameter :: PREC = __PREC
     integer, parameter :: INTSIZE = int32
 
-    real (PREC), intent(in) :: x
-        !*  x-coordinate of the interpolated value
-    real (PREC), intent(in), dimension(:), contiguous :: xp
-        !*  x-coordinates of data points in increasing order
+    integer (INTSIZE), intent(in) :: ilbound
+        !*  Index of the lower bound of the interpolating interval
+    real (PREC), intent(in) :: weight
+        !*  Weight on the lower bound of the bracketing interval
     real (PREC), intent(in), dimension(:), contiguous :: fp
         !*  y-coordinates of the data points, same length as xp.
     real (PREC), intent(out) :: fx
         !*  Interpolated value
-    real (PREC), intent(out) :: wgt
-        !*  Weight placed on the lower bound of the bracketing interval
     integer (NF_ENUM_KIND), intent(in) :: ext
         !*  Defines behavious in case function should be evaluated at point x
         !   outside of the range specified by [xp(1), xp(size(xp))].
@@ -27,62 +98,224 @@ pure subroutine __APPEND(interp_linear_impl,__PREC) (x, xp, fp, fx, wgt, ext, le
         !           are used, respectively.
         !       - NF_INTERP_EVAL_BOUNDARY: Returns fp(1) for all x < xp(1) and
         !           fp(size(xp)) for all x > xp(size(xp)).
-        !       - NF_INTERP_EVAL_ZERO: Returns zero for all x outside of
-        !           admissible range.
         !       - For all other values, the function value at x is extrapolated.
     real (PREC), intent(in) :: left
-        !*  Value to return if x < xp(1)
+        !*  Value to return if x is smaller than the lower bound of the
+        !   function's domain.
     real (PREC), intent(in) :: right
-        !*  Value to return if x > xp(size(xp))
+        !*  Value to return if x is larger then the upper bound of the
+        !   function'n domain.
 
-    integer (INTSIZE) :: ilb, iub
-    integer :: np
+    integer (INTSIZE) :: np, ilb
+    real (PREC) :: wgt
 
-    np = size(xp)
+    np = size(fp)
 
-    if (x < xp(1)) then
-        wgt = 1.0_PREC
-        select case (ext)
-        case (NF_INTERP_EVAL_CONST)
+    if (ext == NF_INTERP_EVAL_CONST) then
+        if (ilbound == 0) then
             fx = left
-            return
-        case (NF_INTERP_EVAL_BOUNDARY)
-            fx = fp(1)
-            return
-        case (NF_INTERP_EVAL_ZERO)
-            fx = 0.0_PREC
-            return
-        end select
-    else if (x > xp(np)) then
-        wgt = 0.0_PREC
-        select case (ext)
-        case (NF_INTERP_EVAL_CONST)
+        else if (ilbound == np) then
             fx = right
-            return
-        case (NF_INTERP_EVAL_BOUNDARY)
-            fx = fp(np)
-            return
-        case (NF_INTERP_EVAL_ZERO)
-            fx = 0.0_PREC
-            return
-        end select
+        end if
+
+        return
     end if
 
-    ! default: At this point there is either a bracketing interval, or we extrapolate
-    ! values outside of domain
-    ilb = bsearch (x, xp)
-    iub = ilb + 1
-    ! Weight on lower bound
-    wgt = (xp(iub) - x) / (xp(iub) - xp(ilb))
-    fx = wgt * fp(ilb) + (1.0_PREC-wgt) * fp(iub)
+    ! Use linear interpolation / extrapolation according to bracket and
+    ! weight identified previously.
+    ilb = ilbound
+    wgt = weight
+
+    fx = wgt * fp(ilb) + (1.0_PREC - wgt) * fp(ilb+1)
+
+end subroutine
+
+
+
+pure subroutine __APPEND(interp_linear_eval_scalar,__PREC) (ilbound, &
+        weight, fp, fx, ext, left, right, status)
+    !*  Implements linear interpolation for scalar input/return value
+    !   and no optional arguments.
+    !   Should be called from wrapper routines doing the optional argument handling,
+    !   etc.
+    integer, parameter :: PREC = __PREC
+    integer, parameter :: INTSIZE = int32
+
+    integer (INTSIZE), intent(in) :: ilbound
+        !*  Index of the lower bound of the interpolating interval
+    real (PREC), intent(in) :: weight
+        !*  Weight on the lower bound of the bracketing interval
+    real (PREC), intent(in), dimension(:), contiguous :: fp
+        !*  y-coordinates of the data points, same length as xp.
+    real (PREC), intent(out) :: fx
+        !*  Interpolated value
+    integer (NF_ENUM_KIND), intent(in), optional :: ext
+        !*  Defines behavious in case function should be evaluated at point x
+        !   outside of the range specified by [xp(1), xp(size(xp))].
+        !   Adminissible constants are
+        !       - NF_INTERP_EVAL_CONST: Returns value of argument 'left' for all
+        !           x < xp(1) and the value of 'right' for all x > xp(size(xp)).
+        !           If 'left' or 'right' are omitted, values fp(1) or fp(size(xp))
+        !           are used, respectively.
+        !       - NF_INTERP_EVAL_BOUNDARY: Returns fp(1) for all x < xp(1) and
+        !           fp(size(xp)) for all x > xp(size(xp)).
+        !       - For all other values, the function value at x is extrapolated.
+    real (PREC), intent(in), optional :: left
+        !*  Value to return if x is smaller than the lower bound of the
+        !   function's domain.
+    real (PREC), intent(in), optional :: right
+        !*  Value to return if x is larger then the upper bound of the
+        !   function'n domain.
+    type (status_t), intent(out), optional :: status
+
+    integer (NF_ENUM_KIND) :: lext
+    type (status_t) :: lstatus
+
+    lstatus = NF_STATUS_OK
+
+    call check_input_ext (1.0_PREC, ext, left, right, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    lext = NF_INTERP_EVAL_EXTRAPOLATE
+    if (present(ext)) lext = ext
+
+    call interp_linear_eval_impl (ilbound, weight, fp, fx, lext, left, right)
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+
+pure subroutine __APPEND(interp_linear_eval_impl_1d,__PREC) (ilbound, &
+        weight, fp, fx, ext, left, right)
+    !*  Implements linear interpolation for scalar input/return value
+    !   and no optional arguments.
+    !   Should be called from wrapper routines doing the optional argument handling,
+    !   etc.
+    integer, parameter :: PREC = __PREC
+    integer, parameter :: INTSIZE = int32
+
+    integer (INTSIZE), intent(in), dimension(:), contiguous :: ilbound
+        !*  Index of the lower bound of the interpolating interval
+    real (PREC), intent(in), dimension(:), contiguous :: weight
+        !*  Weight on the lower bound of the bracketing interval
+    real (PREC), intent(in), dimension(:), contiguous :: fp
+        !*  y-coordinates of the data points, same length as xp.
+    real (PREC), intent(out), dimension(:), contiguous :: fx
+        !*  Interpolated value
+    integer (NF_ENUM_KIND), intent(in) :: ext
+        !*  Defines behavious in case function should be evaluated at point x
+        !   outside of the range specified by [xp(1), xp(size(xp))].
+        !   Adminissible constants are
+        !       - NF_INTERP_EVAL_CONST: Returns value of argument 'left' for all
+        !           x < xp(1) and the value of 'right' for all x > xp(size(xp)).
+        !           If 'left' or 'right' are omitted, values fp(1) or fp(size(xp))
+        !           are used, respectively.
+        !       - NF_INTERP_EVAL_BOUNDARY: Returns fp(1) for all x < xp(1) and
+        !           fp(size(xp)) for all x > xp(size(xp)).
+        !       - For all other values, the function value at x is extrapolated.
+    real (PREC), intent(in) :: left
+        !*  Value to return if x is smaller than the lower bound of the
+        !   function's domain.
+    real (PREC), intent(in) :: right
+        !*  Value to return if x is larger then the upper bound of the
+        !   function'n domain.
+
+    integer (INTSIZE) :: np, nx, ilb, i
+    real (PREC) :: wgt
+
+    nx = size(fx)
+    np = size(fp)
+
+    ! First pass: interpolate/extrapolate irrespective of extrapolation mode
+    do i = 1, nx
+        wgt = weight(i)
+        ilb = ilbound(i)
+        fx(i) = wgt * fp(ilb) + (1.0_PREC - wgt) * fp(ilb+1)
+    end do
+
+    ! Deal with constant extrapolation separately
+    if (ext == NF_INTERP_EVAL_CONST) then
+        do i = 1, nx
+            wgt = weight(i)
+            ilb = ilbound(i)
+            if (ilb == 0) then
+                fx(i) = left
+            else if (ilb == np) then
+                fx(i) = right
+            end if
+        end do
+    end if
+
+end subroutine
+
+
+
+pure subroutine __APPEND(interp_linear_eval_1d,__PREC) (ilbound, &
+        weight, fp, fx, ext, left, right, status)
+    !*  Implements linear interpolation for scalar input/return value
+    !   and no optional arguments.
+    !   Should be called from wrapper routines doing the optional argument handling,
+    !   etc.
+    integer, parameter :: PREC = __PREC
+    integer, parameter :: INTSIZE = int32
+
+    integer (INTSIZE), intent(in), dimension(:), contiguous :: ilbound
+        !*  Index of the lower bound of the interpolating interval
+    real (PREC), intent(in), dimension(:), contiguous :: weight
+        !*  Weight on the lower bound of the bracketing interval
+    real (PREC), intent(in), dimension(:), contiguous :: fp
+        !*  y-coordinates of the data points, same length as xp.
+    real (PREC), intent(out), dimension(:), contiguous :: fx
+        !*  Interpolated value
+    integer (NF_ENUM_KIND), intent(in), optional :: ext
+        !*  Defines behavious in case function should be evaluated at point x
+        !   outside of the range specified by [xp(1), xp(size(xp))].
+        !   Adminissible constants are
+        !       - NF_INTERP_EVAL_CONST: Returns value of argument 'left' for all
+        !           x < xp(1) and the value of 'right' for all x > xp(size(xp)).
+        !           If 'left' or 'right' are omitted, values fp(1) or fp(size(xp))
+        !           are used, respectively.
+        !       - NF_INTERP_EVAL_BOUNDARY: Returns fp(1) for all x < xp(1) and
+        !           fp(size(xp)) for all x > xp(size(xp)).
+        !       - For all other values, the function value at x is extrapolated.
+    real (PREC), intent(in), optional :: left
+        !*  Value to return if x is smaller than the lower bound of the
+        !   function's domain.
+    real (PREC), intent(in), optional :: right
+        !*  Value to return if x is larger then the upper bound of the
+        !   function'n domain.
+    type (status_t), intent(out), optional :: status
+
+    type (status_t) :: lstatus
+    integer (NF_ENUM_KIND) :: lext
+
+    call interp_linear_eval_check_input (ilbound, weight, fx, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    call check_input_ext (1.0_PREC, ext, left, right, status)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    lext = NF_INTERP_EVAL_EXTRAPOLATE
+    if (present(ext)) lext = ext
+
+    call interp_linear_eval_impl (ilbound, weight, fp, fx, lext, left, right)
+
+100 continue
+
+    if (present(status)) status = lstatus
 
 end subroutine
 
 
 
 pure subroutine __APPEND(interp_linear_scalar,__PREC) (x, xp, fp, fx, ext, &
-        left, right, wgt)
+        left, right, cache, status)
     !*  INTERP_LINEAR_SCALAR performs linear interpolation for scalar arguments
+    integer, parameter :: INTSIZE = int32
     integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in) :: x
@@ -103,8 +336,8 @@ pure subroutine __APPEND(interp_linear_scalar,__PREC) (x, xp, fp, fx, ext, &
         !           are used, respectively.
         !       - NF_INTERP_EVAL_BOUNDARY: Returns fp(1) for all x < xp(1) and
         !           fp(size(xp)) for all x > xp(size(xp)).
-        !       - NF_INTERP_EVAL_ZERO: Returns zero for all x outside of
-        !           admissible range.
+        !       - NF_INTERP_EVAL_ERROR: Routine exists with an error code if
+        !           a value outside of the function's domain is encountered.
         !       - For all other values, the function value at x is extrapolated.
     real (PREC), intent(in), optional :: left
         !*  Value to return if x < xp(1) and extrapolation is disabled (`ext=.false.`).
@@ -112,35 +345,47 @@ pure subroutine __APPEND(interp_linear_scalar,__PREC) (x, xp, fp, fx, ext, &
     real (PREC), intent(in), optional :: right
         !*  Value to return if x > xp(-1) and extrapolation disabled (`ext=.false.`).
         !   Default is fp(-1).
-    real (PREC), intent(out), optional :: wgt
+    type (search_cache), intent(inout), optional :: cache
+    type (status_t), intent(out), optional :: status
 
     integer (NF_ENUM_KIND) :: lext
-    real (PREC) :: lright, lleft, lwgt
+    type (status_t) :: lstatus
+    type (search_cache) :: lcache
+    integer (INTSIZE) :: ilbound
+    real (PREC) :: weight
+
+    lstatus = NF_STATUS_OK
+
+    call interp_linear_check_input (xp=xp, fp=fp, status=lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    call check_input_ext (1.0_PREC, ext, left, right, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
 
     lext = NF_INTERP_EVAL_EXTRAPOLATE
     if (present(ext)) lext = ext
+    if (present(cache)) lcache = cache
 
-    if (present(left)) then
-        lleft = left
-    else
-        lleft = fp(1)
-    end if
+    ! Find index of bracketing interval lower bound and its weight
+    call interp_find_impl (x, xp, ilbound, weight, lext, lcache, lstatus)
 
-    if (present(right)) then
-        lright = right
-    else
-        lright = fp(size(fp))
-    end if
+    if (lstatus /= NF_STATUS_OK) goto 100
 
-    call interp_linear_impl (x, xp, fp, fx, lwgt, lext, lleft, lright)
+    ! Evaluate interpolant and desired location
+    call interp_linear_eval_impl (ilbound, weight, fp, fx, lext, left, right)
 
-    if (present(wgt)) wgt = lwgt
+    if (present(cache)) cache = lcache
+
+100 continue
+
+    if (present(status)) status = lstatus
 
 end subroutine
 
 
 
-pure subroutine __APPEND(interp_linear_1d,__PREC) (x, xp, fp, fx, ext, left, right, wgt)
+pure subroutine __APPEND(interp_linear_1d,__PREC) (x, xp, fp, fx, ext, left, &
+        right, cache, status)
     !*  INTERP_LINEAR_1D performs linear interpolation for an array of
     !   points.
 
@@ -165,8 +410,8 @@ pure subroutine __APPEND(interp_linear_1d,__PREC) (x, xp, fp, fx, ext, left, rig
         !           fp(size(xp)) for all x > xp(size(xp)).
         !           If 'left' or 'right' are omitted, values fp(1) or fp(size(xp))
         !           are used, respectively.
-        !       - NF_INTERP_EVAL_ZERO: Returns zero for all x outside of
-        !           admissible range.
+        !       - NF_INTERP_EVAL_ERROR: Routine exists with an error code if
+        !           a value outside of the function's domain is encountered.
         !       - For all other values, the function value at x is extrapolated.
     real (PREC), intent(in), optional :: left
         !*  Value to return if x < xp(1) and extrapolation is disabled (`ext=.false.`).
@@ -174,43 +419,49 @@ pure subroutine __APPEND(interp_linear_1d,__PREC) (x, xp, fp, fx, ext, left, rig
     real (PREC), intent(in), optional :: right
         !*  Value to return if x > xp(-1) and extrapolation disabled (`ext=.false.`).
         !   Default is fp(-1)
-    real (PREC), intent(out), dimension(:), optional :: wgt
+    type (search_cache), intent(inout), optional :: cache
+    type (status_t), intent(out), optional :: status
 
-    integer (INTSIZE) :: n, i
     integer (NF_ENUM_KIND) :: lext
-    real (PREC) :: lright, lleft, wgt_dummy
+    type (status_t) :: lstatus
+    type (search_cache) :: lcache
+    integer (INTSIZE), dimension(:), allocatable :: ilbound
+    real (PREC), dimension(:), allocatable :: weight
+    integer (INTSIZE) :: n
 
-    n = size (x)
+    lstatus = NF_STATUS_OK
+
+    call interp_linear_check_input (x, xp, fp, fx, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    call check_input_ext (1.0_PREC, ext, left, right, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
     lext = NF_INTERP_EVAL_EXTRAPOLATE
-
     if (present(ext)) lext = ext
-    if (present(left)) then
-        lleft = left
-    else
-        lleft = fp(1)
-    end if
+    if (present(cache)) lcache = cache
 
-    if (present(right)) then
-        lright = right
-    else
-        lright = fp(size(fp))
-    end if
+    ! Allocate arrays to store location and interpolation weights
+    n = size(x)
+    allocate (ilbound(n))
+    allocate (weight(n))
 
-    if (present(wgt)) then
-        do i = 1, n
-            ! call scalar implementation
-            call interp_linear_impl (x(i), xp, fp, fx(i), wgt(i), lext, &
-                lleft, lright)
-        end do
-    else
-        do i = 1, n
-            ! call scalar implementation
-            call interp_linear_impl (x(i), xp, fp, fx(i), wgt_dummy, lext, &
-                lleft, lright)
-        end do
-    end if
+    ! Find index of bracketing interval lower bound and its weight
+    call interp_find_impl (x, xp, ilbound, weight, lext, lcache, lstatus)
+
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! Evaluate interpolant and desired location
+    call interp_linear_eval_impl (ilbound, weight, fp, fx, lext, left, right)
+
+    if (present(cache)) cache = lcache
+
+100 continue
+
+    if (present(status)) status = lstatus
 
 end subroutine
+
 
 
 pure subroutine __APPEND(interp_bilinear_impl,__PREC) (x1, x2, xp1, xp2, fp, &

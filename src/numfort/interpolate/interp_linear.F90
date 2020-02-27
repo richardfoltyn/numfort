@@ -14,7 +14,8 @@ module numfort_interpolate_linear
     private
 
     public :: interp_linear
-    public :: interp_linear_impl
+    public :: interp_linear_eval
+    public :: interp_linear_eval_impl
     public :: interp_bilinear
 
 #include <numfort_real32.h>

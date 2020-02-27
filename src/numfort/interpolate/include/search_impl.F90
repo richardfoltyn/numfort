@@ -104,76 +104,220 @@ pure subroutine __APPEND(bsearch_cached,__PREC) (needle, haystack, ilb, cache)
 end subroutine
 
 
-pure function __APPEND(interp_find,__PREC) (needle, haystack) result (res)
-    !*  INTERP_FIND is a wrapper around BSEARCH that exists only for
-    !   backwards compatibility.
+
+pure subroutine __APPEND(interp_find_check_input,__PREC) (x, knots, ilbound, &
+        weight, status)
+    !*  INTERP_FIND_CHECK_INPUT performs input validation for various
+    !   INTERP_FIND routines.
+
+    integer, parameter :: INTSIZE = int32
     integer, parameter :: PREC = __PREC
-    real (PREC), intent(in), dimension(:), contiguous :: haystack
-    real (PREC), intent(in) :: needle
 
-    integer :: res
+    real (PREC), intent(in), dimension(:), optional :: x
+        !*  Array of points for which to determine the location within `knots`
+    real (PREC), intent(in), dimension(:) :: knots
+        !*  Array defining the points over which to search.
+    integer (INTSIZE), intent(in), dimension(:), optional :: ilbound
+        !*  Array to store indices of bracket lower bounds. Optional since
+        !   this is not applicable for the scalar API.
+    real (PREC), intent(in), dimension(:), optional :: weight
+        !*  Array to store weights on bracket lower bounds. Optional since
+        !   this is not applicable for the scalar API.
+    type (status_t), intent(out) :: status
 
-    res = bsearch (needle, haystack)
+    status = NF_STATUS_OK
 
-end function
+    if (size(knots) < 2) then
+        status = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
 
+    if (present(x) .and. present(ilbound) .and. present(weight)) then
+        if (size(x) /= size(ilbound)) then
+            status = NF_STATUS_INVALID_ARG
+            goto 100
+        end if
 
+        if (size(ilbound) /= size(weight)) then
+            status = NF_STATUS_INVALID_ARG
+            goto 100
+        end if
+    end if
 
-pure subroutine __APPEND(interp_find_cached,__PREC) (needle, haystack, ilb, cache)
-    !*  INTERP_FIND_CACHED is a wrapper around BSEARCH that exists only for
-    !   backwards compatibility.
-    integer, parameter :: PREC = __PREC
-    real (PREC), intent(in) :: needle
-    real (PREC), intent(in), dimension(:), contiguous :: haystack
-    integer, intent(out) :: ilb
-    type (search_cache), intent(inout) :: cache
-
-    call bsearch_cached (needle, haystack, ilb, cache)
+100 continue
 
 end subroutine
 
 
-pure subroutine __APPEND(interp_find_wgt_cached,__PREC) (needle, haystack, &
-        ilb, wgt_lb, cache)
-    !*  INTERP_FIND_WGT_CACHED returns the index and weight associated with
-    !   the lower bound of a (bracketing) interpolation interval, optionally
-    !   using a search cache.
+
+pure subroutine __APPEND(interp_find_impl_1d,__PREC) (x, knots, &
+        ilbound, weight, ext, cache, status)
+    !*  INTERP_LOCATE identifies the bracketing interval and interpolation
+    !   weights that are required for varios interpolation methods.
     integer, parameter :: PREC = __PREC
-    real (PREC), intent(in) :: needle
-    real (PREC), intent(in), dimension(:), contiguous :: haystack
-    integer, intent(out) :: ilb
-        !*  Index of the lower bound of the interpolation bracket
-    real (PREC), intent(out) :: wgt_lb
-        !*  Interpolation weight on the lower bound of the interpolation
-        !   bracket.
+    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: knots
+    integer, intent(out), dimension(:) :: ilbound
+    real (PREC), intent(out), dimension(:) :: weight
+    integer (NF_ENUM_KIND), intent(in) :: ext
     type (search_cache), intent(inout) :: cache
+    type (status_t), intent(out) :: status
 
-    call interp_find_cached (needle, haystack, ilb, cache)
+    integer :: i, nx, nknots, j
+    real (PREC) :: xi, xlb, xub
 
-    ! Compute interpolation weight
-    wgt_lb = (haystack(ilb+1)-needle) / (haystack(ilb+1)-haystack(ilb))
-end subroutine
+    status = NF_STATUS_OK
 
+    nknots = size(knots)
+    nx = size(x)
 
-pure subroutine __APPEND(interp_find_wgt_cached_1d,__PREC) (needle, haystack, &
-       ilb, wgt_lb)
-    integer, parameter :: PREC = __PREC
-    real (PREC), intent(in), dimension(:), contiguous :: needle
-    real (PREC), intent(in), dimension(:), contiguous :: haystack
-    integer, intent(out), dimension(:), contiguous :: ilb
-        !*  Index of the lower bound of the interpolation bracket
-    real (PREC), intent(out), dimension(:), contiguous :: wgt_lb
-        !*  Interpolation weight on the lower bound of the interpolation
-        !   bracket.
+    xlb = knots(1)
+    xub = knots(nknots)
 
-    type (search_cache) :: cache
-    real (PREC) :: x
-    integer :: i, j
+    do i = 1, nx
+        xi = x(i)
+        if (xi < xlb) then
+            select case (ext)
+            case (NF_INTERP_EVAL_BOUNDARY)
+                ilbound(i) = 1
+                weight(i) = 1.0_PREC
+                cycle
+            case (NF_INTERP_EVAL_CONST)
+                ilbound(i) = 0
+                ! Weight does not matter in this case, should not be used
+                weight(i) = 0.0_PREC
+                cycle
+            case (NF_INTERP_EVAL_ERROR)
+                status = NF_STATUS_BOUNDS_ERROR
+                goto 100
+            end select
+        else if (xi > xub) then
+            select case (ext)
+            case (NF_INTERP_EVAL_BOUNDARY)
+                ! Upper bound: set corresponding interpolation interval to the
+                ! last one. Correct boundary value will be interpolated below.
+                ilbound(i) = nknots - 1
+                weight(i) = 0.0_PREC
+                cycle
+            case (NF_INTERP_EVAL_CONST)
+                ilbound(i) = nknots
+                ! Weight does not matter in this case, should not be used
+                weight(i) = 0.0_PREC
+                cycle
+            case (NF_INTERP_EVAL_ERROR)
+                status = NF_STATUS_BOUNDS_ERROR
+                goto 100
+            end select
+        end if
 
-    do i = 1, size(needle)
-        x = needle(i)
-        call bsearch_cached (x, haystack, j, cache)
-        wgt_lb(i) = (haystack(j+1)-x) / (haystack(j+1)-haystack(j))
-        ilb(i) = j
+        call bsearch_cached (xi, knots, j, cache)
+
+        ilbound(i) = j
+        weight(i) = (knots(j+1) - xi) / (knots(j+1) - knots(j))
     end do
+
+100 continue
+
+end subroutine
+
+
+
+pure subroutine __APPEND(interp_find_1d,__PREC) (x, knots, &
+        ilbound, weight, ext, cache, status)
+    !*  INTERP_LOCATE identifies the bracketing interval and interpolation
+    !   weights that are required for varios interpolation methods.
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: knots
+    integer, intent(out), dimension(:) :: ilbound
+    real (PREC), intent(out), dimension(:) :: weight
+    integer (NF_ENUM_KIND), intent(in), optional :: ext
+    type (search_cache), intent(inout), optional :: cache
+    type (status_t), intent(out), optional :: status
+
+    type (search_cache) :: lcache
+    integer (NF_ENUM_KIND) :: lext
+    type (status_t) :: lstatus
+
+    call interp_find_check_input (x, knots, ilbound, weight, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    lext = NF_INTERP_EVAL_EXTRAPOLATE
+    if (present(ext)) lext = ext
+    if (present(cache)) lcache = cache
+
+    call interp_find_impl (x, knots, ilbound, weight, lext, lcache, lstatus)
+
+    if (present(cache)) cache = lcache
+
+100 continue
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+
+pure subroutine __APPEND(interp_find_impl_scalar,__PREC) (x, knots, &
+        ilbound, weight, ext, cache, status)
+    !*  INTERP_LOCATE identifies the bracketing interval and interpolation
+    !   weights that are required for varios interpolation methods.
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: knots
+    integer, intent(out) :: ilbound
+    real (PREC), intent(out) :: weight
+    integer (NF_ENUM_KIND), intent(in) :: ext
+    type (search_cache), intent(inout) :: cache
+    type (status_t), intent(out) :: status
+
+    real (PREC), dimension(1) :: x1d, weight1d
+    integer, dimension(1) :: ilbound1d
+
+    x1d(1) = x
+
+    call interp_find_impl (x1d, knots, ilbound1d, weight1d, ext, cache, &
+        status)
+
+    if (status == NF_STATUS_OK) then
+        ilbound = ilbound1d(1)
+        weight = weight1d(1)
+    end if
+
+end subroutine
+
+
+
+pure subroutine __APPEND(interp_find_scalar,__PREC) (x, knots, &
+        ilbound, weight, ext, cache, status)
+    !*  INTERP_LOCATE identifies the bracketing interval and interpolation
+    !   weights that are required for varios interpolation methods.
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: knots
+    integer, intent(out) :: ilbound
+    real (PREC), intent(out) :: weight
+    integer (NF_ENUM_KIND), intent(in), optional :: ext
+    type (search_cache), intent(inout), optional :: cache
+    type (status_t), intent(out), optional :: status
+
+    type (search_cache) :: lcache
+    integer (NF_ENUM_KIND) :: lext
+    type (status_t) :: lstatus
+
+    lstatus = NF_STATUS_OK
+    call interp_find_check_input (knots=knots, status=lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    lext = NF_INTERP_EVAL_EXTRAPOLATE
+    if (present(ext)) lext = ext
+    if (present(cache)) lcache = cache
+
+    call interp_find_impl (x, knots, ilbound, weight, lext, lcache, lstatus)
+
+    if (present(cache)) cache = lcache
+
+100 continue
+
+    if (present(status)) status = lstatus
+
 end subroutine

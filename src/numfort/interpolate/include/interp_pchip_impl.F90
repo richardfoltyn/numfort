@@ -299,7 +299,7 @@ pure subroutine __APPEND(interp_pchip_eval,__PREC) (xp, coef, x, y, order, ext, 
                 goto 100
             case default
                 ! Find interval j such that xp(j) <= x(i)
-                j = interp_find (x(i), xp)
+                j = bsearch (x(i), xp)
             end select
         else if (xi > xub) then
             select case (lext)
@@ -316,11 +316,11 @@ pure subroutine __APPEND(interp_pchip_eval,__PREC) (xp, coef, x, y, order, ext, 
                 goto 100
             case default
                 ! Find interval j such that xp(j) <= x(i)
-                j = interp_find (x(i), xp)
+                j = bsearch (x(i), xp)
             end select
         else
             ! Find interval j such that xp(j) <= x(i)
-            j = interp_find (x(i), xp)
+            j = bsearch (x(i), xp)
         end if
 
         ! At this point we have one of three cases:

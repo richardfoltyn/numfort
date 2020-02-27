@@ -3,22 +3,21 @@ interface bsearch
     procedure __APPEND(bsearch,__PREC)
 end interface
 
-interface interp_find
-    procedure __APPEND(interp_find,__PREC)
-end interface
-
 interface bsearch_cached
     procedure __APPEND(bsearch_cached,__PREC)
 end interface
 
-interface interp_find_cached
-    procedure __APPEND(interp_find_cached,__PREC)
+interface interp_find
+   procedure __APPEND(interp_find_scalar,__PREC), &
+        __APPEND(interp_find_1d,__PREC)
 end interface
 
-interface interp_find_cached
-    procedure __APPEND(interp_find_wgt_cached,__PREC)
+interface interp_find_impl
+    procedure __APPEND(interp_find_impl_scalar,__PREC), &
+        __APPEND(interp_find_impl_1d,__PREC)
 end interface
 
-interface interp_find_cached
-    procedure __APPEND(interp_find_wgt_cached_1d,__PREC)
+interface interp_find_check_input
+    procedure __APPEND(interp_find_check_input,__PREC)
 end interface
+

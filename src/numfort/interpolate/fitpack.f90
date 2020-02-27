@@ -3,7 +3,7 @@ module numfort_interpolate_fitpack
     use iso_fortran_env
     use numfort_common
     use numfort_common_workspace
-    use numfort_interpolate_common
+    use numfort_interpolate_common, mask_check_input_ext => check_input_ext
     use fitpack_real64, only: fitpack_curfit_real64 => curfit, &
         fitpack_concon_real64 => concon, fitpack_splev_real64 => splev, &
         fitpack_splder_real64 => splder

@@ -566,7 +566,7 @@ pure subroutine __APPEND(quantile_bins,__PREC) (x, pmf, rnk, q, interp, status)
     case (NF_STATS_QUANTILE_NEAREST)
 
         do i = 1, nq
-            call interp_find_cached (rnk(i), cdf(1:imax), ilb, wgt, cache)
+            call interp_find (rnk(i), cdf(1:imax), ilb, wgt, cache=cache)
             if (wgt >= 0.50_PREC) then
                 q(i) = x(ilb)
             else
