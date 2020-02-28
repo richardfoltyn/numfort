@@ -114,11 +114,11 @@ pure subroutine __APPEND(interp_linear_eval_impl_scalar,__PREC) (ilbound, &
     if (ext == NF_INTERP_EVAL_CONST) then
         if (ilbound == 0) then
             fx = left
+            return
         else if (ilbound == np) then
             fx = right
+            return
         end if
-
-        return
     end if
 
     ! Use linear interpolation / extrapolation according to bracket and
@@ -228,17 +228,11 @@ pure subroutine __APPEND(interp_linear_eval_impl_1d,__PREC) (ilbound, &
     real (PREC) :: wgt
 
     nx = size(fx)
-    np = size(fp)
 
-    ! First pass: interpolate/extrapolate irrespective of extrapolation mode
-    do i = 1, nx
-        wgt = weight(i)
-        ilb = ilbound(i)
-        fx(i) = wgt * fp(ilb) + (1.0_PREC - wgt) * fp(ilb+1)
-    end do
-
-    ! Deal with constant extrapolation separately
     if (ext == NF_INTERP_EVAL_CONST) then
+        ! Deal with constant extrapolation separately
+        np = size(fp)
+
         do i = 1, nx
             wgt = weight(i)
             ilb = ilbound(i)
@@ -246,7 +240,19 @@ pure subroutine __APPEND(interp_linear_eval_impl_1d,__PREC) (ilbound, &
                 fx(i) = left
             else if (ilb == np) then
                 fx(i) = right
+            else
+                fx(i) = wgt * fp(ilb) + (1.0_PREC - wgt) * fp(ilb+1)
             end if
+        end do
+    else
+        ! If we are NOT replacing non-interior interpolant values with some
+        ! contants, every other supported extrapolation method
+        ! was already applied to bounds/weights as required. Nothing left to
+        ! do here.
+        do i = 1, nx
+            wgt = weight(i)
+            ilb = ilbound(i)
+            fx(i) = wgt * fp(ilb) + (1.0_PREC - wgt) * fp(ilb+1)
         end do
     end if
 
