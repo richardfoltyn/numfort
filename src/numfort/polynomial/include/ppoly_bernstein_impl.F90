@@ -36,56 +36,19 @@ end subroutine
 
 
 
-pure subroutine __APPEND(bernstein_ppolyval_check_input,__PREC) (self, &
-        x, y, ext, left, right, status)
-    !*  BERNSTEIN_PPOLYVAL_CHECK_INPUT performs input checks on caller-provided
-    !   arguments to BERNSTEIN_PPOLYVAL.
+pure subroutine __APPEND(bernstein_ppolyval_eval_impl_1d,__PREC) &
+        (self, ilbound, weight, coefs, y, ext, left, right)
+    integer, parameter :: INTSIZE = int32
     integer, parameter :: PREC = __PREC
     type (ppoly_bernstein), intent(in) :: self
-    real (PREC), intent(in), dimension(:) :: x
-    real (PREC), intent(in), dimension(:) :: y
-    integer (NF_ENUM_KIND), intent(in), optional :: ext
-    real (PREC), intent(in), optional :: left
-    real (PREC), intent(in), optional :: right
-    type (status_t), intent(out) :: status
-        !   Exit code (optional)
-
-    if (size(x) /= size(y)) goto 100
-
-    ! Need to provide constants for extrapolation if corresponding extrapolation
-    ! mode was requested.
-    if (present(ext)) then
-        if (ext == NF_INTERP_EVAL_CONST .and. (.not. present(left) .or. &
-            .not. present(right))) then
-            status = NF_STATUS_INVALID_ARG
-            goto 100
-        end if
-    end if
-
-    status = NF_STATUS_OK
-    return
-
-100 continue
-    status = NF_STATUS_INVALID_ARG
-
-end subroutine
-
-
-pure subroutine __APPEND(bernstein_ppolyval,__PREC) (self, knots, coefs, x, y, &
-        ext, left, right, cache, status)
-    integer, parameter :: PREC = __PREC
-    type (ppoly_bernstein), intent(in) :: self
-    real (PREC), intent(in), dimension(:), contiguous :: knots
-        !*  x-values of data points (knots) that define the breakpoints of
-        !   the piecewise polynomial
+    integer (INTSIZE), intent(in), dimension(:), contiguous :: ilbound
+    real (PREC), intent(in), dimension(:), contiguous :: weight
     real (PREC), intent(in), dimension(:), contiguous :: coefs
         !*  Stacked array of polynomial coefficients for each segment
-    real (PREC), intent(in), dimension(:), contiguous :: x
-        !*  x-coordinates of points where function should be interpolating.
     real (PREC), intent(out), dimension(:), contiguous :: y
         !*  On exit, contains interpolated function values for x-coordinates
         !   given in X.
-    integer (NF_ENUM_KIND), intent(in), optional :: ext
+    integer (NF_ENUM_KIND), intent(in) :: ext
         !*  Type of extrapolation, if applicable (default: extrapolate based
         !   on coefficients of closest interior interval).
     real (PREC), intent(in), optional :: left
@@ -94,53 +57,29 @@ pure subroutine __APPEND(bernstein_ppolyval,__PREC) (self, knots, coefs, x, y, &
     real (PREC), intent(in), optional :: right
         !*  Constant value assigned to x-coordinates larger than KNOTS(-1), if
         !   EXT = NF_INTERP_EVAL_CONST.
-    type (search_cache), intent(inout), dimension(:), optional, contiguous :: cache
-    type (status_t), intent(out), optional :: status
-        !   Exit code (optional)
-
-    type (status_t) :: lstatus
-    integer (NF_ENUM_KIND) :: lext
-
-    lstatus = NF_STATUS_OK
-
-    ! Perform input checks specific to evaluating polynomials
-    call ppolyval_check_input (self, x, y, ext, left, right, lstatus)
-    if (lstatus /= NF_STATUS_OK) goto 100
-
-    lext = NF_INTERP_EVAL_EXTRAPOLATE
-    if (present(ext)) lext = ext
 
     select case (self%degree)
     case (2)
-        call bernstein_ppolyval_impl_quadratic (self, knots, coefs, x, y, &
-            lext, left, right, cache, lstatus)
+        call ppolyval_eval_impl_deg2 (self, ilbound, weight, coefs, y, ext, left, right)
     case (3)
-        call bernstein_ppolyval_impl_cubic (self, knots, coefs, x, y, lext, &
-            left, right, cache, lstatus)
+        call ppolyval_eval_impl_deg3 (self, ilbound, weight, coefs, y, ext, left, right)
     case default
-        call bernstein_ppolyval_impl (self, knots, coefs, x, y, lext, left, &
-            right, lstatus)
+        call ppolyval_eval_impl_degk (self, ilbound, weight, coefs, y, ext, left, right)
     end select
-
-100 continue
-
-    if (present(status)) status = lstatus
 
 end subroutine
 
 
 
-pure subroutine __APPEND(bernstein_ppolyval_scalar,__PREC) (self, knots, coefs, &
-        x, y, ext, left, right, status)
+pure subroutine __APPEND(bernstein_ppolyval_eval_impl_scalar,__PREC) &
+        (self, ilbound, weight, coefs, y, ext, left, right)
+    integer, parameter :: INTSIZE = int32
     integer, parameter :: PREC = __PREC
     type (ppoly_bernstein), intent(in) :: self
-    real (PREC), intent(in), dimension(:), contiguous :: knots
-        !*  x-values of data points (knots) that define the breakpoints of
-        !   the piecewise polynomial
-    real (PREC), intent(in), dimension(:), contiguous :: coefs
+    integer (INTSIZE), intent(in) :: ilbound
+    real (PREC), intent(in) :: weight
+    real (PREC), intent(in), dimension(0:), contiguous :: coefs
         !*  Stacked array of polynomial coefficients for each segment
-    real (PREC), intent(in) :: x
-        !*  x-coordinate of point where function should be interpolating.
     real (PREC), intent(out) :: y
         !*  On exit, contains interpolated function value for x-coordinate
         !   given in X.
@@ -153,300 +92,348 @@ pure subroutine __APPEND(bernstein_ppolyval_scalar,__PREC) (self, knots, coefs, 
     real (PREC), intent(in), optional :: right
         !*  Constant value assigned to x-coordinates larger than KNOTS(-1), if
         !   EXT = NF_INTERP_EVAL_CONST.
-    type (status_t), intent(out), optional :: status
-        !   Exit code (optional)
 
-    real (PREC), dimension(1) :: x1, y1
+    integer :: k, jj
+    real (PREC) :: s
 
-    x1(1) = x
-    ! Initialize to something to present unintialized variable warnings
-    ! if POLYVAL exits with an error.
-    y1 = 0.0
-
-    call ppolyval (self, knots, coefs, x1, y1, ext, left, right, status=status)
-    y = y1(1)
-
-end subroutine
-
-
-
-pure subroutine __APPEND(bernstein_ppolyval_impl,__PREC) (self, knots, coefs, &
-        x, y, ext, left, right, status)
-    integer, parameter :: PREC = __PREC
-    type (ppoly_bernstein), intent(in) :: self
-    real (PREC), intent(in), dimension(:), contiguous :: knots
-        !*  x-values of data points (knots) that define the breakpoints of
-        !   the piecewise polynomial
-    real (PREC), intent(in), dimension(0:), contiguous :: coefs
-        !*  Stacked array of polynomial coefficients for each segment
-    real (PREC), intent(in), dimension(:), contiguous :: x
-        !*  x-coordinates of points where function should be interpolated
-    real (PREC), intent(out), dimension(:), contiguous :: y
-        !*  On exit, contains interpolated function values for x-coordinates
-        !   given in X.
-    integer (NF_ENUM_KIND), intent(in) :: ext
-        !*  Type of extrapolation
-    real (PREC), intent(in), optional :: left
-        !*  Constant value assigned to x-coordinates smaller than X(1), if
-        !   EXT = NF_INTERP_EVAL_CONST.
-    real (PREC), intent(in), optional :: right
-        !*  Constant value assigned to x-coordinates larger than X(-1), if
-        !   EXT = NF_INTERP_EVAL_CONST.
-    type (status_t), intent(out) :: status
-        !   Exit code
-
-    integer :: i, nx, k, nknots, j, jj
-    real (PREC) :: xi, s, xlb, xub
-    type (search_cache) :: bcache
-
-    status = NF_STATUS_OK
-
-    nknots = size(knots)
-    nx = size(x)
-    k = self%degree
-
-    xlb = knots(1)
-    xub = knots(nknots)
-
-    do i = 1, nx
-        xi = x(i)
-        if (xi < xlb) then
-            select case (ext)
-            case (NF_INTERP_EVAL_BOUNDARY)
-                j = 1
-                xi = xlb
-            case (NF_INTERP_EVAL_CONST)
-                y(i) = left
-                cycle
-            case (NF_INTERP_EVAL_ERROR)
-                status = NF_STATUS_BOUNDS_ERROR
-                goto 100
-            case default
-                ! Find interval j that will be used to intropolate/extrapolate
-                ! y-value
-                call bsearch_cached (xi, knots, j, bcache)
-            end select
-        else if (xi > xub) then
-            select case (ext)
-            case (NF_INTERP_EVAL_BOUNDARY)
-                ! Upper bound: set corresponding interpolation interval to the
-                ! last one. Correct boundary value will be interpolated below.
-                j = nknots - 1
-                xi = xub
-            case (NF_INTERP_EVAL_CONST)
-                y(i) = right
-                cycle
-            case (NF_INTERP_EVAL_ERROR)
-                status = NF_STATUS_BOUNDS_ERROR
-                goto 100
-            case default
-                ! Find interval j such that knots(j) <= x(i)
-                call bsearch_cached (xi, knots, j, bcache)
-            end select
-        else
-            ! Find interval j such that knots(j) <= x(i)
-            call bsearch_cached (xi, knots, j, bcache)
+    if (ext == NF_INTERP_EVAL_CONST) then
+        if (ilbound == 0) then
+            y = left
+            return
+        else if (ilbound == self%nknots) then
+            y = right
+            return
         end if
+    end if
 
-        ! Offset of coefficient block for interval j
-        jj = (j-1) * (k+1)
+    s = 1.0_PREC - weight
 
-        s = (xi - knots(j))/(knots(j+1) - knots(j))
-        y(i) = bernstein_polyval (k, s, coefs(jj:jj+k))
-    end do
-
-100 continue
+    k = self%degree
+    jj = (ilbound - 1) * (k+1)
+    y = bernstein_polyval (self%degree, s, coefs(jj:jj+k))
 
 end subroutine
 
 
 
-pure subroutine __APPEND(bernstein_ppolyval_impl_quadratic,__PREC) (self, knots, &
-        coefs, x, y, ext, left, right, cache, status)
-    !*  BERNSTEIN_PPOLYVAL_IMPL_CUBIC implements the evaluation of
-    !   piecewise cubic polynomials wrt. the Bernstein basis.
+pure subroutine __APPEND(bernstein_ppolyval_eval_impl_degk_1d,__PREC) &
+        (self, ilbound, weight, coefs, y, ext, left, right)
+    !*  BERNSTEIN_PPOLYVAL_EVAL_IMPL_DEGN implements the evaluation of
+    !   piecewise polynomials or arbitrary degree wrt. the Bernstein basis.
     integer, parameter :: PREC = __PREC
+    integer, parameter :: INTSIZE = int32
     type (ppoly_bernstein), intent(in) :: self
-    real (PREC), intent(in), dimension(:), contiguous :: knots
+    integer (INTSIZE), intent(in), dimension(:), contiguous :: ilbound
+    real (PREC), intent(in), dimension(:), contiguous :: weight
     real (PREC), intent(in), dimension(0:), contiguous :: coefs
-    real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(out), dimension(:), contiguous :: y
     integer (NF_ENUM_KIND), intent(in) :: ext
     real (PREC), intent(in), optional :: left
     real (PREC), intent(in), optional :: right
-    type (search_cache), intent(inout), dimension(:), optional, contiguous :: cache
-    type (status_t), intent(out) :: status
+
+    integer (INTSIZE) :: i, nx, nknots, jj, k, ilb
+    real (PREC) :: s, yi, wgt
+
+    k = self%degree
+    nx = size(y)
+
+    if (ext == NF_INTERP_EVAL_CONST) then
+        ! Deal with constant "extrapolation" separately
+        nknots = self%nknots
+
+        do i = 1, nx
+            ilb = ilbound(i)
+            if (ilb == 0) then
+                y(i) = left
+            else if (ilb == nknots) then
+                y(i) = right
+            else
+                wgt = weight(i)
+                ! For interior points, position of x within the normalized
+                ! unit interval is 1 - weight on bracket lower bound
+                s = 1.0_PREC - wgt
+
+                ! Offset of coefficient block for interval j
+                jj = (ilb-1) * (k+1)
+
+                yi = bernstein_polyval (k, s, coefs(jj:jj+k))
+
+                y(i) = yi
+            end if
+        end do
+    else
+        ! Extrapolation taken care of by adjusted weights  and bracket lower
+        ! bound indices, no further adjustment required.
+        do i = 1, nx
+            ilb = ilbound(i)
+            wgt = weight(i)
+
+            ! For interior points, position of x within the normalized
+            ! unit interval is 1 - weight on bracket lower bound
+            s = 1.0_PREC - wgt
+
+            ! Offset of coefficient block for interval j
+            jj = (ilb-1) * (k+1)
+
+            yi = bernstein_polyval (k, s, coefs(jj:jj+k))
+
+            y(i) = yi
+        end do
+    end if
+
+end subroutine
+
+
+
+
+pure subroutine __APPEND(bernstein_ppolyval_eval_impl_deg2_1d,__PREC) &
+        (self, ilbound, weight, coefs, y, ext, left, right)
+    !*  BERNSTEIN_PPOLYVAL_EVAL_IMPL_DEG2 implements the evaluation of
+    !   piecewise quadratic polynomials wrt. the Bernstein basis.
+    integer, parameter :: PREC = __PREC
+    integer, parameter :: INTSIZE = int32
+    type (ppoly_bernstein), intent(in) :: self
+    integer (INTSIZE), intent(in), dimension(:), contiguous :: ilbound
+    real (PREC), intent(in), dimension(:), contiguous :: weight
+    real (PREC), intent(in), dimension(0:), contiguous :: coefs
+    real (PREC), intent(out), dimension(:), contiguous :: y
+    integer (NF_ENUM_KIND), intent(in) :: ext
+    real (PREC), intent(in), optional :: left
+    real (PREC), intent(in), optional :: right
 
     integer, parameter :: k = 2
-    integer :: i, nx, nknots, j, jj, ik
-    real (PREC) :: xi, s, xlb, xub, si, yi
-    type (search_cache) :: bcache
-    real (PREC) :: lcoefs(2)
+    integer (INTSIZE) :: i, nx, nknots, jj, ilb
+    real (PREC) :: s, yi, wgt
 
-    status = NF_STATUS_OK
+    nx = size(y)
 
-    nknots = size(knots)
-    nx = size(x)
+    if (ext == NF_INTERP_EVAL_CONST) then
+        ! Deal with constant "extrapolation" separately
+        nknots = self%nknots
 
-    xlb = knots(1)
-    xub = knots(nknots)
-
-    do i = 1, nx
-        xi = x(i)
-        if (xi < xlb) then
-            select case (ext)
-            case (NF_INTERP_EVAL_BOUNDARY)
-                j = 1
-                xi = xlb
-            case (NF_INTERP_EVAL_CONST)
+        do i = 1, nx
+            ilb = ilbound(i)
+            if (ilb == 0) then
                 y(i) = left
-                cycle
-            case (NF_INTERP_EVAL_ERROR)
-                status = NF_STATUS_BOUNDS_ERROR
-                goto 100
-            case default
-                ! Find interval j that will be used to intropolate/extrapolate
-                ! y-value
-                call bsearch_proxy (xi, knots, i, cache, bcache, j)
-            end select
-        else if (xi > xub) then
-            select case (ext)
-            case (NF_INTERP_EVAL_BOUNDARY)
-                ! Upper bound: set corresponding interpolation interval to the
-                ! last one. Correct boundary value will be interpolated below.
-                j = nknots - 1
-                xi = xub
-            case (NF_INTERP_EVAL_CONST)
+            else if (ilb == nknots) then
                 y(i) = right
-                cycle
-            case (NF_INTERP_EVAL_ERROR)
-                status = NF_STATUS_BOUNDS_ERROR
-                goto 100
-            case default
-                ! Find interval j such that knots(j) <= x(i)
-                call bsearch_proxy (xi, knots, i, cache, bcache, j)
-            end select
-        else
-            ! Find interval j such that knots(j) <= x(i)
-            call bsearch_proxy (xi, knots, i, cache, bcache, j)
-        end if
+            else
+                wgt = weight(i)
+                ! For interior points, position of x within the normalized
+                ! unit interval is 1 - weight on bracket lower bound
+                s = 1.0_PREC - wgt
 
-        ! Offset of coefficient block for interval j
-        jj = (j-1) * (k+1)
+                ! Offset of coefficient block for interval j
+                jj = (ilb-1) * (k+1)
 
-        s = (xi - knots(j))/(knots(j+1) - knots(j))
+                yi = bernstein_polyval (k, s, coefs(jj:jj+k))
 
-        lcoefs(1) = 2.0_PREC * (coefs(jj+1) - coefs(jj))
-        lcoefs(2) = coefs(jj) - 2.0_PREC * coefs(jj+1) + coefs(jj+2)
-
-        si = 1.0
-        yi = coefs(jj)
-        do ik = 1, k
-            si = si * s
-            yi = yi + lcoefs(ik) * si
+                y(i) = yi
+            end if
         end do
+    else
+        ! Extrapolation taken care of by adjusted weights  and bracket lower
+        ! bound indices, no further adjustment required.
+        do i = 1, nx
+            ilb = ilbound(i)
+            wgt = weight(i)
 
-        y(i) = yi
-    end do
+            ! For interior points, position of x within the normalized
+            ! unit interval is 1 - weight on bracket lower bound
+            s = 1.0_PREC - wgt
 
-100 continue
+            ! Offset of coefficient block for interval j
+            jj = (ilb-1) * (k+1)
+
+            yi = bernstein_polyval (k, s, coefs(jj:jj+k))
+
+            y(i) = yi
+        end do
+    end if
 
 end subroutine
 
 
 
-pure subroutine __APPEND(bernstein_ppolyval_impl_cubic,__PREC) (self, knots, &
-        coefs, x, y, ext, left, right, cache, status)
+pure subroutine __APPEND(bernstein_ppolyval_eval_impl_deg3_1d,__PREC) &
+        (self, ilbound, weight, coefs, y, ext, left, right)
     !*  BERNSTEIN_PPOLYVAL_IMPL_CUBIC implements the evaluation of
     !   piecewise cubic polynomials wrt. the Bernstein basis.
     integer, parameter :: PREC = __PREC
+    integer, parameter :: INTSIZE = int32
     type (ppoly_bernstein), intent(in) :: self
-    real (PREC), intent(in), dimension(:), contiguous :: knots
+    integer (INTSIZE), intent(in), dimension(:), contiguous :: ilbound
+    real (PREC), intent(in), dimension(:), contiguous :: weight
     real (PREC), intent(in), dimension(0:), contiguous :: coefs
-    real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(out), dimension(:), contiguous :: y
     integer (NF_ENUM_KIND), intent(in) :: ext
     real (PREC), intent(in), optional :: left
     real (PREC), intent(in), optional :: right
-    type (search_cache), intent(inout), dimension(:), optional, contiguous :: cache
-    type (status_t), intent(out) :: status
 
     integer, parameter :: k = 3
-    integer :: i, nx, nknots, j, jj, ik
-    real (PREC) :: xi, s, xlb, xub, si, yi
-    type (search_cache) :: bcache
-    real (PREC), dimension(k) :: lcoefs
+    integer (INTSIZE) :: i, nx, nknots, jj, ilb
+    real (PREC) :: s, yi, wgt
 
-    status = NF_STATUS_OK
+    nx = size(y)
 
-    nknots = size(knots)
-    nx = size(x)
+    if (ext == NF_INTERP_EVAL_CONST) then
+        ! Deal with constant "extrapolation" separately
+        nknots = self%nknots
 
-    xlb = knots(1)
-    xub = knots(nknots)
-
-    do i = 1, nx
-        xi = x(i)
-        if (xi < xlb) then
-            select case (ext)
-            case (NF_INTERP_EVAL_BOUNDARY)
-                j = 1
-                xi = xlb
-            case (NF_INTERP_EVAL_CONST)
+        do i = 1, nx
+            ilb = ilbound(i)
+            if (ilb == 0) then
                 y(i) = left
-                cycle
-            case (NF_INTERP_EVAL_ERROR)
-                status = NF_STATUS_BOUNDS_ERROR
-                goto 100
-            case default
-                ! Find interval j that will be used to intropolate/extrapolate
-                ! y-value
-                call bsearch_proxy (xi, knots, i, cache, bcache, j)
-            end select
-        else if (xi > xub) then
-            select case (ext)
-            case (NF_INTERP_EVAL_BOUNDARY)
-                ! Upper bound: set corresponding interpolation interval to the
-                ! last one. Correct boundary value will be interpolated below.
-                j = nknots - 1
-                xi = xub
-            case (NF_INTERP_EVAL_CONST)
+            else if (ilb == nknots) then
                 y(i) = right
-                cycle
-            case (NF_INTERP_EVAL_ERROR)
-                status = NF_STATUS_BOUNDS_ERROR
-                goto 100
-            case default
-                ! Find interval j such that knots(j) <= x(i)
-                call bsearch_proxy (xi, knots, i, cache, bcache, j)
-            end select
-        else
-            ! Find interval j such that knots(j) <= x(i)
-            call bsearch_proxy (xi, knots, i, cache, bcache, j)
-        end if
+            else
+                wgt = weight(i)
+                ! For interior points, position of x within the normalized
+                ! unit interval is 1 - weight on bracket lower bound
+                s = 1.0_PREC - wgt
 
-        ! Offset of coefficient block for interval j
-        jj = (j-1) * (k+1)
+                ! Offset of coefficient block for interval j
+                jj = (ilb-1) * (k+1)
 
-        s = (xi - knots(j))/(knots(j+1) - knots(j))
+                yi = bernstein_polyval (k, s, coefs(jj:jj+k))
 
-        lcoefs(1) = - 3.0_PREC * coefs(jj) + 3.0_PREC * coefs(jj+1)
-        lcoefs(2) = 3.0_PREC * coefs(jj) - 6.0_PREC * coefs(jj+1) + 3.0_PREC * coefs(jj+2)
-        lcoefs(3) = -coefs(jj) + 3.0_PREC * coefs(jj+1) - 3.0_PREC * coefs(jj+2) + coefs(jj+3)
-
-        si = 1.0_PREC
-        yi = coefs(jj)
-        do ik = 1, k
-            si = si * s
-            yi = yi + lcoefs(ik) * si
+                y(i) = yi
+            end if
         end do
+    else
+        ! Extrapolation taken care of by adjusted weights  and bracket lower
+        ! bound indices, no further adjustment required.
+        do i = 1, nx
+            ilb = ilbound(i)
+            wgt = weight(i)
 
-        y(i) = yi
-    end do
+            ! For interior points, position of x within the normalized
+            ! unit interval is 1 - weight on bracket lower bound
+            s = 1.0_PREC - wgt
+
+            ! Offset of coefficient block for interval j
+            jj = (ilb-1) * (k+1)
+
+            yi = bernstein_polyval (k, s, coefs(jj:jj+k))
+
+            y(i) = yi
+        end do
+    end if
+
+end subroutine
+
+
+
+pure subroutine __APPEND(bernstein_ppolyval_scalar,__PREC) &
+        (self, knots, coefs, x, y, ext, left, right, cache, status)
+
+    integer, parameter :: INTSIZE = int32
+    integer, parameter :: PREC = __PREC
+
+    type (ppoly_bernstein), intent(in) :: self
+    real (PREC), intent(in), dimension(:), contiguous :: knots
+    real (PREC), intent(in), dimension(:), contiguous :: coefs
+    real (PREC), intent(in) :: x
+    real (PREC), intent(out) :: y
+    integer (NF_ENUM_KIND), intent(in), optional :: ext
+    real (PREC), intent(in), optional :: left
+    real (PREC), intent(in), optional :: right
+    type (search_cache), intent(inout), optional :: cache
+    type (status_t), intent(out), optional :: status
+
+    type (status_t) :: lstatus
+    type (search_cache) :: lcache
+    integer (NF_ENUM_KIND) :: lext
+    integer (INTSIZE) :: ilbound
+    real (PREC) :: weight
+
+    lstatus = NF_STATUS_OK
+
+    call check_input_ext (1.0_PREC, ext, left, right, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    lext = NF_INTERP_EVAL_EXTRAPOLATE
+    if (present(ext)) lext = ext
+
+    call bernstein_check_input (self, knots, coefs, self%nknots, self%degree, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    if (present(cache)) lcache = cache
+
+    ! Find bracket
+    call interp_find_impl (x, knots, ilbound, weight, lext, lcache, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! Evaluate polynomial at given location
+    call ppolyval_eval_impl (self, ilbound, weight, coefs, y, lext, left, right)
 
 100 continue
 
+    if (present(status)) status = lstatus
+
 end subroutine
+
+
+
+pure subroutine __APPEND(bernstein_ppolyval_1d,__PREC) &
+        (self, knots, coefs, x, y, ext, left, right, cache, status)
+
+    integer, parameter :: INTSIZE = int32
+    integer, parameter :: PREC = __PREC
+
+    type (ppoly_bernstein), intent(in) :: self
+    real (PREC), intent(in), dimension(:), contiguous :: knots
+    real (PREC), intent(in), dimension(:), contiguous :: coefs
+    real (PREC), intent(in), dimension(:), contiguous :: x
+    real (PREC), intent(out), dimension(:), contiguous :: y
+    integer (NF_ENUM_KIND), intent(in), optional :: ext
+    real (PREC), intent(in), optional :: left
+    real (PREC), intent(in), optional :: right
+    type (search_cache), intent(inout), optional :: cache
+    type (status_t), intent(out), optional :: status
+
+    type (status_t) :: lstatus
+    type (search_cache) :: lcache
+    integer (NF_ENUM_KIND) :: lext
+    integer (INTSIZE), dimension(:), allocatable :: ilbound
+    real (PREC), dimension(:), allocatable :: weight
+    integer :: nx
+
+    lstatus = NF_STATUS_OK
+
+    call check_input_ext (1.0_PREC, ext, left, right, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    lext = NF_INTERP_EVAL_EXTRAPOLATE
+    if (present(ext)) lext = ext
+
+    call bernstein_check_input (self, knots, coefs, self%nknots, self%degree, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! Additionally check for conformable array sizes
+    if (size(x) /= size(y)) then
+        lstatus = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+
+    if (present(cache)) lcache = cache
+
+    nx = size(x)
+    allocate (ilbound(nx), weight(nx))
+
+    ! Find bracket
+    call interp_find_impl (x, knots, ilbound, weight, lext, lcache, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! Evaluate polynomial at given location
+    call ppolyval_eval_impl (self, ilbound, weight, coefs, y, lext, left, right)
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
 
 
 
@@ -463,8 +450,8 @@ pure function __APPEND(bernstein_polyval,__PREC) (k, s, coefs) result(res)
     real (PREC) :: res
         !*  Polynomial value in given interval.
 
-    real (PREC), dimension(3) :: lcoefs3
-    real (PREC) :: s1, si, comb
+    real (PREC), dimension(0:3) :: lcoefs3
+    real (PREC) :: s1, comb
     integer :: j
 
     ! Hardcode values for lower polynomial degrees
@@ -476,27 +463,21 @@ pure function __APPEND(bernstein_polyval,__PREC) (k, s, coefs) result(res)
         res = coefs(0) * s1 + coefs(1) * s
 
     case (2)
+        lcoefs3(0) = coefs(0)
         lcoefs3(1) = 2.0_PREC * (coefs(1) - coefs(0))
         lcoefs3(2) = coefs(0) - 2.0_PREC * coefs(1) + coefs(2)
 
-        si = 1.0
-        res = coefs(0)
-        do j = 1, 2
-            si = si * s
-            res = res + lcoefs3(j) * si
-        end do
-!        res = coefs(0) * s1**2.0_PREC + coefs(1) * 2.0_PREC*s1*s &
-!            + coefs(2) * s**2.0_PREC
+        res = lcoefs3(2) * s + lcoefs3(1)
+        res = res * s + lcoefs3(0)
     case (3)
+        lcoefs3(0) = coefs(0)
         lcoefs3(1) = - 3.0_PREC * coefs(0) + 3.0_PREC * coefs(1)
         lcoefs3(2) = 3.0_PREC * coefs(0) - 6.0_PREC * coefs(1) + 3.0_PREC * coefs(2)
         lcoefs3(3) = -coefs(0) + 3.0_PREC * coefs(1) - 3.0_PREC * coefs(2) + coefs(3)
 
-        si = 1.0
-        res = coefs(0)
-        do j = 1, 3
-            si = si * s
-            res = res + lcoefs3(j) * si
+        res = lcoefs3(3) * s + lcoefs3(2)
+        do j = 1, 0, -1
+            res = res * s + lcoefs3(j)
         end do
 
     case default
@@ -829,4 +810,34 @@ subroutine __APPEND(bernstein2power,__PREC) (self, coefs, poly_out, coefs_out, s
 
 end subroutine
 
+
+!
+!pure subroutine __APPEND(bernstein2power_deg3,__PREC) (coefs_bb, coefs_pb)
+!
+!    integer, parameter :: PREC = __PREC
+!    real (PREC), intent(in), dimension(0:), contiguous :: coefs_bb
+!    real (PREC), intent(out), dimension(0:), contiguous :: coefs_pb
+!
+!    coefs_pb(0) = coefs_bb(0)
+!    coefs_pb(1) = - 3.0_PREC * coefs_bb(0) + 3.0_PREC * coefs_bb(1)
+!    coefs_pb(2) = 3.0_PREC * coefs_bb(0) - 6.0_PREC * coefs_bb(1) &
+!        + 3.0_PREC * coefs_bb(2)
+!    coefs_pb(3) = -coefs_bb(0) + 3.0_PREC * coefs_bb(1) &
+!        - 3.0_PREC * coefs_bb(2) + coefs_bb(3)
+!
+!end subroutine
+!
+!
+!
+!pure subroutine __APPEND(bernstein2power_deg2,__PREC) (coefs_bb, coefs_pb)
+!
+!    integer, parameter :: PREC = __PREC
+!    real (PREC), intent(in), dimension(0:), contiguous :: coefs_bb
+!    real (PREC), intent(out), dimension(0:), contiguous :: coefs_pb
+!
+!    coefs_pb(0) = coefs_bb(0)
+!    coefs_pb(1) = 2.0_PREC * (coefs_bb(1) - coefs_bb(0))
+!    coefs_pb(2) = coefs_bb(0) - 2.0_PREC * coefs_bb(1) + coefs_bb(2)
+!
+!end subroutine
 

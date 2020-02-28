@@ -109,9 +109,8 @@ pure subroutine __APPEND(interp_linear_eval_impl_scalar,__PREC) (ilbound, &
     integer (INTSIZE) :: np, ilb
     real (PREC) :: wgt
 
-    np = size(fp)
-
     if (ext == NF_INTERP_EVAL_CONST) then
+        np = size(fp)
         if (ilbound == 0) then
             fx = left
             return
@@ -234,13 +233,13 @@ pure subroutine __APPEND(interp_linear_eval_impl_1d,__PREC) (ilbound, &
         np = size(fp)
 
         do i = 1, nx
-            wgt = weight(i)
             ilb = ilbound(i)
             if (ilb == 0) then
                 fx(i) = left
             else if (ilb == np) then
                 fx(i) = right
             else
+                wgt = weight(i)
                 fx(i) = wgt * fp(ilb) + (1.0_PREC - wgt) * fp(ilb+1)
             end if
         end do
