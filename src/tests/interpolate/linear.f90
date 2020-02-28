@@ -21,6 +21,7 @@ subroutine test_all ()
 
     call tests%set_label ("LINEAR interpolation unit tests")
 
+    call test_linear_input_checks (tests)
     call test_exact (tests)
     call test_extrap (tests)
     call test_truncate (tests)
@@ -35,9 +36,118 @@ subroutine test_all ()
 
 end subroutine
 
-!>  Tests for linear extrapolation when x-coordinate of interpolated value
-!   is outside of data points boundaries.
+
+
+subroutine test_linear_input_checks (tests)
+    class (test_suite) :: tests
+
+    class (test_case), pointer :: tc
+    real (PREC), dimension(:), allocatable :: x, xp, fp, fx
+    real (PREC) :: xi, fxi, left, right
+    integer (NF_ENUM_KIND) :: ext
+    integer :: np, nx, i
+    type (status_t) :: status
+
+    tc => tests%add_test ("Linear input validation")
+
+
+    ! === Invalid XP, FP array sizes ===
+    nx = 10
+    allocate (x(nx), fx(nx))
+    xi = 0.0
+
+    do i = 0, 1
+        allocate (xp(i), fp(i))
+
+        ! Scalar interface
+        status = NF_STATUS_UNDEFINED
+        call interp_linear (xi, xp, fp, fxi, status=status)
+        call tc%assert_true (status == NF_STATUS_INVALID_ARG, "0d API: size(XP) < 2")
+
+        ! Array interface
+        status = NF_STATUS_UNDEFINED
+        call interp_linear (x, xp, fp, fx, status=status)
+        call tc%assert_true (status == NF_STATUS_INVALID_ARG, "1d API: size(XP) < 2")
+
+        deallocate (xp, fp)
+    end do
+
+    deallocate (x, fx)
+
+    ! === Non-conformable XP, FP arrays
+    nx = 5
+    allocate (x(nx), fx(nx))
+    allocate (xp(2), fp(3))
+
+    ! Scalar interface
+    status = NF_STATUS_UNDEFINED
+    call interp_linear (xi, xp, fp, fxi, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "0d API: size(XP) != size(FP)")
+
+    ! Array interface
+    status = NF_STATUS_UNDEFINED
+    call interp_linear (x, xp, fp, fx, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "1d API: size(XP) != size(FP)")
+
+    deallocate (xp, fp, x, fx)
+
+    ! === Non-conformable X, FX array ===
+    np = 10
+    allocate (xp(np), fp(np))
+    allocate (x(1), fx(2))
+
+    status = NF_STATUS_UNDEFINED
+    call interp_linear (x, xp, fp, fx, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
+        "1d API: Non-conformable X, FX")
+
+    deallocate (xp, fp, x, fx)
+
+    ! === Missing LEFT, RIGHT ===
+    ext = NF_INTERP_EVAL_CONST
+    nx = 10
+    np = 9
+    allocate (xp(np))
+    call arange (xp, 1.0_PREC)
+    allocate (fp(np), source=xp)
+
+    allocate (x(nx), fx(nx))
+    call random_number (x)
+
+    ! Scalar interface
+    xi = 1.0
+    status = NF_STATUS_UNDEFINED
+    call interp_linear (xi, xp, fp, fxi, ext=ext, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "0d API: Missing LEFT, RIGHT arguments")
+
+    status = NF_STATUS_UNDEFINED
+    call interp_linear (xi, xp, fp, fxi, ext=ext, left=1.0_PREC, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "0d API: Missing RIGHT argument")
+
+    status = NF_STATUS_UNDEFINED
+    call interp_linear (xi, xp, fp, fxi, ext=ext, right=1.0_PREC, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "1d API: Missing LEFT argument")
+
+    ! Array interface
+    status = NF_STATUS_UNDEFINED
+    call interp_linear (x, xp, fp, fx, ext=ext, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "0d API: Missing LEFT, RIGHT arguments")
+
+    status = NF_STATUS_UNDEFINED
+    call interp_linear (x, xp, fp, fx, ext=ext, left=1.0_PREC, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "0d API: Missing RIGHT argument")
+
+    status = NF_STATUS_UNDEFINED
+    call interp_linear (x, xp, fp, fx, ext=ext, right=1.0_PREC, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "1d API: Missing LEFT argument")
+
+end subroutine
+
+
+
 subroutine test_extrap (tests)
+    !*  Tests for linear extrapolation when x-coordinate of interpolated value
+    !   is outside of data points boundaries.
     class (test_suite) :: tests
     class (test_case), pointer :: tc
 
@@ -73,9 +183,10 @@ subroutine test_extrap (tests)
 
 end subroutine
 
-!>  Tests for "interpolating" exactly at function data points.
-subroutine test_exact (tests)
 
+
+subroutine test_exact (tests)
+    !*  Tests for "interpolating" exactly at function data points.
     class (test_suite) :: tests
     class (test_case), pointer :: tc
 
@@ -107,10 +218,11 @@ subroutine test_exact (tests)
 
 end subroutine
 
-!>  Tests for interpolating at random points within the boundaries defined
-!   but data points.
-subroutine test_random (tests)
 
+
+subroutine test_random (tests)
+    !*  Tests for interpolating at random points within the boundaries defined
+    !   but data points.
     class (test_suite) :: tests
     class (test_case), pointer :: tc
 
@@ -151,15 +263,19 @@ subroutine test_random (tests)
 
 end subroutine
 
-!>  Tests for interpolation at x-coordinates outside of data point boundaries
-!   when linear extrapolation is disabled.
+
+
 subroutine test_truncate (tests)
+    !*  Tests for interpolation at x-coordinates outside of data point boundaries
+    !   when linear extrapolation is disabled.
     class (test_suite) :: tests
     class (test_case), pointer :: tc
 
     real (PREC), dimension(10) :: xp, fp, fx, fx1
-    integer :: i, j, k
+    integer :: i, ilb, iub
     real (PREC) :: left, right
+    logical :: all_ok
+    type (status_t) :: status
 
     tc => tests%add_test ("Truncation: left/right values for x outside of boundaries")
 
@@ -172,50 +288,42 @@ subroutine test_truncate (tests)
     ! >>> Truncate outside of specified domain, default left/right values
     fx = 0.0
     ! limit xp/fp to subrange of values
-    j = size(xp) / 2 - 1
-    k = size(xp) / 2 + 1
+    ilb = size(xp) / 2 - 1
+    iub = size(xp) / 2 + 1
 
+    all_ok = .true.
     do i = 1, size(xp)
-        call interp_linear (xp(i), xp(j:k), fp(j:k), fx(i), &
-            ext=NF_INTERP_EVAL_BOUNDARY)
+        status = NF_STATUS_UNDEFINED
+        call interp_linear (xp(i), xp(ilb:iub), fp(ilb:iub), fx(i), &
+            ext=NF_INTERP_EVAL_BOUNDARY, status=status)
+        all_ok = all_ok .and. (status == NF_STATUS_OK)
     end do
 
     ! Compute expected result
     fx1 = fp
-    call truncate (xp, xp(j), xp(k), fx1, fp(j), fp(k))
+    call truncate (xp, xp(ilb), xp(iub), fx1, fp(ilb), fp(iub))
 
-    call tc%assert_true (all(abs(fx-fx1) < 1d-12), &
-        "Truncation: scalar argument, default left/right values")
+    all_ok = all_ok .and. all_close (fx, fx1, rtol=0.0_PREC, atol=1.0e-12_PREC)
+    call tc%assert_true (all_ok, "Truncation: scalar argument, default left/right values")
 
-    ! >>> Truncation, exlicitly specify left value
+    ! === Truncation, exlicitly specify LEFT, RIGHT
     fx = 0.0
     left = -1.0
+    right = 10.123_PREC
+    all_ok = .true.
     do i = 1, size(xp)
-        call interp_linear (xp(i), xp(j:k), fp(j:k), fx(i), &
-            ext=NF_INTERP_EVAL_CONST, left=left)
+        status = NF_STATUS_UNDEFINED
+        call interp_linear (xp(i), xp(ilb:iub), fp(ilb:iub), fx(i), &
+            ext=NF_INTERP_EVAL_CONST, left=left, right=right, status=status)
+        all_ok = all_ok .and. (status == NF_STATUS_OK)
     end do
 
     ! compute expected result
     fx1 = fp
-    call truncate (xp, xp(j), xp(k), fx1, left, fp(k))
+    call truncate (xp, xp(ilb), xp(iub), fx1, left, right)
 
-    call tc%assert_true (all(abs(fx-fx1) < 1d-12), &
-        "Truncation: scalar argument, explicit left value")
-
-    ! >>> Truncation: exlicitly specify right value
-    fx = 0.0
-    right = -10.0
-    do i = 1, size(xp)
-        call interp_linear (xp(i), xp(j:k), fp(j:k), fx(i), &
-            ext=NF_INTERP_EVAL_CONST, right=right)
-    end do
-
-    ! compute expected result
-    fx1 = fp
-    call truncate (xp, xp(j), xp(k), fx1, fp(j), right)
-
-    call tc%assert_true (all(abs(fx-fx1) < 1d-12), &
-        "Truncation: scalar argument, explicit right value")
+    all_ok = all_ok .and. all_close (fx, fx1, rtol=0.0_PREC, atol=1.0e-12_PREC)
+    call tc%assert_true (all_ok, "Truncation: scalar argument, explicit left value")
 
 
     ! ===== Array arguments =====
@@ -223,46 +331,39 @@ subroutine test_truncate (tests)
     ! >>> Truncate outside of specified domain, default left/right values
     fx = 0.0
     ! limit xp/fp to subrange of values
-    j = size(xp) / 2 - 1
-    k = size(xp) / 2 + 1
+    ilb = size(xp) / 2 - 1
+    iub = size(xp) / 2 + 1
 
-    call interp_linear (xp, xp(j:k), fp(j:k), fx, ext=NF_INTERP_EVAL_BOUNDARY)
+    call interp_linear (xp, xp(ilb:iub), fp(ilb:iub), fx, &
+        ext=NF_INTERP_EVAL_BOUNDARY, status=status)
 
     ! Compute expected result
     fx1 = fp
-    call truncate (xp, xp(j), xp(k), fx1, fp(j), fp(k))
+    call truncate (xp, xp(ilb), xp(iub), fx1, fp(ilb), fp(iub))
 
-    call tc%assert_true (all(abs(fx-fx1) < 1d-12), &
+    all_ok = all_close (fx, fx1, rtol=0.0_PREC, atol=1.0e-12_PREC)
+    call tc%assert_true (all_ok .and. (status == NF_STATUS_OK), &
         "Truncation: array argument, default left/right values")
 
     ! >>> Truncation, exlicitly specify left value
     fx = 0.0
     left = -1.0
+    right = 234.345_PREC
 
-    call interp_linear (xp, xp(j:k), fp(j:k), fx, ext=NF_INTERP_EVAL_CONST, &
-        left=left)
+    call interp_linear (xp, xp(ilb:iub), fp(ilb:iub), fx, ext=NF_INTERP_EVAL_CONST, &
+        left=left, right=right, status=status)
 
     ! compute expected result
     fx1 = fp
-    call truncate (xp, xp(j), xp(k), fx1, left, fp(k))
+    call truncate (xp, xp(ilb), xp(iub), fx1, left, right)
 
-    call tc%assert_true (all(abs(fx-fx1) < 1d-12), &
+    all_ok = all_close (fx, fx1, rtol=0.0_PREC, atol=1.0e-12_PREC)
+    call tc%assert_true (all_ok .and. (status == NF_STATUS_OK), &
         "Truncation: array argument, explicit left value")
 
-    ! >>> Truncation: exlicitly specify right value
-    fx = 0.0
-    right = -10.0
-    call interp_linear (xp, xp(j:k), fp(j:k), fx, ext=NF_INTERP_EVAL_CONST, &
-        right=right)
-
-    ! compute expected result
-    fx1 = fp
-    call truncate (xp, xp(j), xp(k), fx1, fp(j), right)
-
-    call tc%assert_true (all(abs(fx-fx1) < 1d-12), &
-        "Truncation: array argument, explicit right value")
-
 end subroutine
+
+
 
 subroutine truncate (x, lb, ub, fx, left, right)
     real (PREC), dimension(:) :: x, fx
@@ -274,6 +375,7 @@ subroutine truncate (x, lb, ub, fx, left, right)
         fx = right
     end where
 end subroutine
+
 
 
 subroutine test_bilinear_input_checks (tests)
