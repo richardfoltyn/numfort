@@ -50,8 +50,10 @@ subroutine test_ppolyfit_bernstein (tests)
     real (PREC), dimension(:), allocatable :: knots, coefs, coefs1, xx, xp, yp, yy
     real (PREC), dimension(:), allocatable :: fx, fpx
     real (PREC), dimension(:,:), allocatable :: ydat
-    integer :: k, ncoefs, nknots, nx, n, i
-    real (PREC) :: xlb, xub, left, right, ylb, yub
+    integer :: k, ncoefs, nknots, nx, n, i, ilb
+    real (PREC) :: xlb, xub, left, right, ylb, yub, wgt
+    real (PREC), dimension(:), allocatable :: weight
+    integer, dimension(:), allocatable :: ilbound
     type (ppoly_bernstein) :: pp, pp1
     logical :: status_ok, values_ok
     type (status_t) :: status
@@ -85,7 +87,24 @@ subroutine test_ppolyfit_bernstein (tests)
     values_ok = all_close (yy, fx, atol=1.0e-8_PREC)
     call tc%assert_true (status == NF_STATUS_OK .and. values_ok, &
         '1d API: Cubic: evaluate at original knots')
-    deallocate (yy)
+
+    ! 1d API: Test separate find/eval routines
+    allocate (ilbound(n), weight(n))
+
+    status = NF_STATUS_UNDEFINED
+    call interp_find (xx, knots, ilbound, weight, status=status)
+    status_ok = (status == NF_STATUS_OK)
+
+    status = NF_STATUS_UNDEFINED
+    yy(:) = 0.0
+    call ppolyval_eval (pp, ilbound, weight, coefs, yy, status=status)
+    status_ok = status_ok .and. (status == NF_STATUS_OK)
+    values_ok = all_close (yy, fx, atol=1.0e-8_PREC)
+
+    call tc%assert_true (status_ok .and. values_ok, &
+        "1d API: Cubic: find/eval at original knots")
+
+    deallocate (yy, ilbound, weight)
 
     ! Evaluate using scalar interface
     allocate (yy(n))
@@ -98,6 +117,22 @@ subroutine test_ppolyfit_bernstein (tests)
     values_ok = all_close (yy, fx, atol=1.0e-8_PREC)
     call tc%assert_true (status_ok .and. values_ok, &
         '0d API: Cubic: evaluate at original knots')
+
+    ! 0d API: Separate find/eval routines
+    status_ok = .true.
+    do i = 1, size(xx)
+        status = NF_STATUS_UNDEFINED
+        call interp_find (xx(i), knots, ilb, wgt, status=status)
+        status_ok = status_ok .and. (status == NF_STATUS_OK)
+
+        call ppolyval_eval (pp, ilb, wgt, coefs, yy(i), status=status)
+        status_ok = status_ok .and. (status == NF_STATUS_OK)
+    end do
+
+    values_ok = all_close (yy, fx, atol=1.0e-8_PREC)
+    call tc%assert_true (status_ok .and. values_ok, &
+        "0d API: Cubic: find/eval at original knots")
+
     deallocate (yy)
 
     ! === Evaluate at different points than knots ===
@@ -110,7 +145,23 @@ subroutine test_ppolyfit_bernstein (tests)
     values_ok = all_close (yy, yp, atol=1.0e-8_PREC)
     call tc%assert_true (status == NF_STATUS_OK .and. values_ok, &
         '1d API: Cubic: Evaluate at points other than knots')
-    deallocate (yy)
+
+    ! 1d API: separate find/eval routines
+    allocate (ilbound(nx), weight(nx))
+
+    status = NF_STATUS_UNDEFINED
+    call interp_find (xp, knots, ilbound, weight, status=status)
+    status_ok = (status == NF_STATUS_OK)
+
+    status = NF_STATUS_UNDEFINED
+    call ppolyval_eval (pp, ilbound, weight, coefs, yy, status=status)
+    status_ok = status_ok .and. (status == NF_STATUS_OK)
+    values_ok = all_close (yy, yp, atol=1.0e-8_PREC)
+
+    call tc%assert_true (status == NF_STATUS_OK .and. values_ok, &
+        '1d API: Cubic: find/eval at points other than knots')
+
+    deallocate (yy, ilbound, weight)
 
     ! Evaluate using scalar interface
     allocate (yy(nx), source=0.0_PREC)
@@ -123,6 +174,23 @@ subroutine test_ppolyfit_bernstein (tests)
     values_ok = all_close (yy, yp, atol=1.0e-8_PREC)
     call tc%assert_true (status_ok .and. values_ok,  &
         '0d API: Cubic: Evaluate at points other than knots')
+
+    ! 0d API: separate find/eval routines
+    status_ok = .true.
+    do i = 1, size(xp)
+        status = NF_STATUS_UNDEFINED
+        call interp_find (xp(i), knots, ilb, wgt, status=status)
+        status_ok = status_ok .and. (status == NF_STATUS_OK)
+
+        status = NF_STATUS_UNDEFINED
+        call ppolyval_eval (pp, ilb, wgt, coefs, yy(i), status=status)
+        status_ok = status_ok .and. (status == NF_STATUS_OK)
+    end do
+
+    values_ok = all_close (yy, yp, atol=1.0e-8_PREC)
+    call tc%assert_true (status_ok .and. values_ok,  &
+        '0d API: Cubic: find/eval at points other than knots')
+
     deallocate (yp, xp, yy)
 
     ! === Extrapolation ===
