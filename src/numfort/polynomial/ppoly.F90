@@ -27,6 +27,7 @@ module numfort_polynomial_ppoly
     public :: ppoly_get_degree
     public :: ppolyfit
     public :: ppolyval
+    public :: ppolyval_eval
     public :: ppolyder
 
     ! The following routines contain the implementations of the more

@@ -6,7 +6,7 @@ pure subroutine __APPEND(bernstein_check_input,__PREC) (self, knots, coefs, &
 
     integer, parameter :: PREC = __PREC
     type (ppoly_bernstein), intent(in) :: self
-    real (PREC), intent(in), dimension(:) :: knots
+    real (PREC), intent(in), dimension(:), optional :: knots
         !*  Array of knots
     real (PREC), intent(in), dimension(:) :: coefs
         !*  Coefficient array
@@ -23,7 +23,11 @@ pure subroutine __APPEND(bernstein_check_input,__PREC) (self, knots, coefs, &
     nknots = ppoly_get_nknots (self, n, k)
     ncoefs = ppoly_get_ncoefs (self, n, k)
 
-    if (size(knots) < nknots) goto 100
+    if (present(knots)) then
+        ! Knots are optional, need not be passed to EVAL routines
+        if (size(knots) < nknots) goto 100
+    end if
+
     if (size(coefs) /= ncoefs) goto 100
 
     status = NF_STATUS_OK
@@ -319,6 +323,109 @@ pure subroutine __APPEND(bernstein_ppolyval_eval_impl_deg3_1d,__PREC) &
             y(i) = yi
         end do
     end if
+
+end subroutine
+
+
+
+pure subroutine __APPEND(bernstein_ppolyval_eval_scalar,__PREC) &
+        (self, ilbound, weight, coefs, y, ext, left, right, status)
+    !*  BERNSTEIN_PPOLYVAL_EVAL implements the user-friendly front-end to
+    !   the evaluation of polynomials using the Bernstein basis.
+    !   This routine performs input validation on given arguments.
+    integer, parameter :: INTSIZE = int32
+    integer, parameter :: PREC = __PREC
+
+    type (ppoly_bernstein), intent(in) :: self
+    integer (INTSIZE), intent(in) :: ilbound
+        !*  Index of bracketing interval lower bound
+    real (PREC), intent(in) :: weight
+        !*  Weight on bracketing interval lower bound
+    real (PREC), intent(in), dimension(:), contiguous :: coefs
+        !*  Piecewise polynomial coefficients
+    real (PREC), intent(out) :: y
+        !*  Polynomial value at given point
+    integer (NF_ENUM_KIND), intent(in), optional :: ext
+    real (PREC), intent(in), optional :: left
+    real (PREC), intent(in), optional :: right
+    type (status_t), intent(out), optional :: status
+
+    type (status_t) :: lstatus
+    integer (NF_ENUM_KIND) :: lext
+
+    lstatus = NF_STATUS_OK
+
+    call check_input_ext (1.0_PREC, ext, left, right, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    lext = NF_INTERP_EVAL_EXTRAPOLATE
+    if (present(ext)) lext = ext
+
+    call bernstein_check_input (self, coefs=coefs, n=self%nknots, k=self%degree, &
+        status=lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! Evaluate polynomial at given location
+    call ppolyval_eval_impl (self, ilbound, weight, coefs, y, lext, left, right)
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+
+pure subroutine __APPEND(bernstein_ppolyval_eval_1d,__PREC) &
+        (self, ilbound, weight, coefs, y, ext, left, right, status)
+    !*  BERNSTEIN_PPOLYVAL_EVAL implements the user-friendly front-end to
+    !   the evaluation of polynomials using the Bernstein basis.
+    !   This routine performs input validation on given arguments.
+    integer, parameter :: INTSIZE = int32
+    integer, parameter :: PREC = __PREC
+
+    type (ppoly_bernstein), intent(in) :: self
+    integer (INTSIZE), intent(in), dimension(:), contiguous :: ilbound
+        !*  Array of indices of bracketing interval lower bounds, one for
+        !   each point at which polynomial should be evaluated.
+    real (PREC), intent(in), dimension(:), contiguous :: weight
+        !*  Array of weights on bracketing interval lower bounds, one for
+        !   each point at which polynomial should be evaluated.
+    real (PREC), intent(in), dimension(:), contiguous :: coefs
+        !*  Array of piecewise polynomial coefficients
+    real (PREC), intent(out), dimension(:), contiguous :: y
+        !*  Polynomial values at given points.
+    integer (NF_ENUM_KIND), intent(in), optional :: ext
+    real (PREC), intent(in), optional :: left
+    real (PREC), intent(in), optional :: right
+    type (status_t), intent(out), optional :: status
+
+    type (status_t) :: lstatus
+    integer (NF_ENUM_KIND) :: lext
+
+    lstatus = NF_STATUS_OK
+
+    call check_input_ext (1.0_PREC, ext, left, right, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    lext = NF_INTERP_EVAL_EXTRAPOLATE
+    if (present(ext)) lext = ext
+
+    call bernstein_check_input (self, coefs=coefs, n=self%nknots, k=self%degree, &
+        status=lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    if (size(ilbound) /= size(weight) .or. size(ilbound) /= size(y)) then
+        lstatus = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+
+    ! Evaluate polynomial at given location
+    call ppolyval_eval_impl (self, ilbound, weight, coefs, y, lext, left, right)
+
+    100 continue
+
+    if (present(status)) status = lstatus
 
 end subroutine
 
