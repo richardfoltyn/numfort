@@ -87,7 +87,7 @@ pure subroutine __APPEND(bernstein_ppolyval_eval_impl_scalar,__PREC) &
     real (PREC), intent(out) :: y
         !*  On exit, contains interpolated function value for x-coordinate
         !   given in X.
-    integer (NF_ENUM_KIND), intent(in), optional :: ext
+    integer (NF_ENUM_KIND), intent(in) :: ext
         !*  Type of extrapolation, if applicable (default: extrapolate based
         !   on coefficients of closest interior interval).
     real (PREC), intent(in), optional :: left
@@ -122,8 +122,8 @@ end subroutine
 
 pure subroutine __APPEND(bernstein_ppolyval_eval_impl_degk_1d,__PREC) &
         (self, ilbound, weight, coefs, y, ext, left, right)
-    !*  BERNSTEIN_PPOLYVAL_EVAL_IMPL_DEGN implements the evaluation of
-    !   piecewise polynomials or arbitrary degree wrt. the Bernstein basis.
+    !*  BERNSTEIN_PPOLYVAL_EVAL_IMPL_DEGK implements the evaluation of
+    !   piecewise polynomials or arbitrary degree K wrt. the Bernstein basis.
     integer, parameter :: PREC = __PREC
     integer, parameter :: INTSIZE = int32
     type (ppoly_bernstein), intent(in) :: self

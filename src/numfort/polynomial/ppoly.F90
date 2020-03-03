@@ -22,6 +22,7 @@ module numfort_polynomial_ppoly
 
     public :: ppoly
     public :: ppoly_bernstein
+    public :: ppoly_init
     public :: ppoly_get_nknots
     public :: ppoly_get_ncoefs
     public :: ppoly_get_degree
@@ -67,16 +68,26 @@ module numfort_polynomial_ppoly
     end interface
 
 #include <numfort_real32.h>
-#include "common_spec.F90"
 #include "ppoly_power_spec.F90"
 #include "ppoly_bernstein_spec.F90"
 
 #include <numfort_real64.h>
-#include "common_spec.F90"
 #include "ppoly_power_spec.F90"
 #include "ppoly_bernstein_spec.F90"
 
     contains
+
+
+pure function ppoly_init (k, n) result(res)
+    !*  PPOLY_INIT initializes a piecewise polynomial wrt. the power basis.
+    integer, intent(in) :: k
+    integer, intent(in) :: n
+    type (ppoly) :: res
+
+    res%degree = k
+    res%nknots = n
+end function
+
 
 pure function power_get_ncoefs (self, n, k) result(res)
     !*  POWER_GET_NCOEFS returns the required array size to
@@ -159,12 +170,10 @@ end function
 
 
 #include <numfort_real32.h>
-#include "common_impl.F90"
 #include "ppoly_power_impl.F90"
 #include "ppoly_bernstein_impl.F90"
 
 #include <numfort_real64.h>
-#include "common_impl.F90"
 #include "ppoly_power_impl.F90"
 #include "ppoly_bernstein_impl.F90"
 
