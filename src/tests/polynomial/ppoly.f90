@@ -30,10 +30,12 @@ subroutine test_all ()
 
     call tests%set_label ('Piecewise polynomial unit tests')
 
-    call test_ppolyfit_bernstein_input (tests)
-    call test_ppolyfit_bernstein (tests)
+    call test_bernstein_ppolyfit_input (tests)
+    call test_bernstein_ppolyfit (tests)
 
-    call test_ppolyval_power_cubic (tests)
+    call test_power_ppolyval_input (tests)
+    call test_power_ppolyval_eval_input (tests)
+    call test_power_ppolyval_cubic (tests)
 
     call tests%print ()
 
@@ -41,7 +43,7 @@ end subroutine
 
 
 
-subroutine test_ppolyfit_bernstein (tests)
+subroutine test_bernstein_ppolyfit (tests)
     !*  Unit tests for fitting and evaluating piecewise polynomials wrt. the
     !   Bernstein basis.
     class (test_suite) :: tests
@@ -331,7 +333,8 @@ subroutine test_ppolyfit_bernstein (tests)
 end subroutine
 
 
-subroutine test_ppolyfit_bernstein_input (tests)
+
+subroutine test_bernstein_ppolyfit_input (tests)
     !*  Unit tests for input checking for Bernstein basis fitting routines
     class (test_suite) :: tests
 
@@ -381,6 +384,7 @@ subroutine test_ppolyfit_bernstein_input (tests)
 end subroutine
 
 
+
 elemental subroutine fcn1 (x, fx, fpx)
     real (PREC), intent(in) :: x
     real (PREC), intent(out), optional :: fx
@@ -410,7 +414,7 @@ end subroutine
 
 
 
-subroutine test_ppolyval_power_cubic (tests)
+subroutine test_power_ppolyval_cubic (tests)
     !*  Unit tests for evaluating cubic polynomials and their derivatives
     !   using a power basis.
     class (test_suite) :: tests
@@ -418,14 +422,14 @@ subroutine test_ppolyval_power_cubic (tests)
     type (ppoly) :: pp, pp_d1
     type (ppoly_bernstein) :: pp_bern, pp_bern_d1
 
-    real (PREC), dimension(:), allocatable :: xx, yy, yy_bern
+    real (PREC), dimension(:), allocatable :: xx, yy, yy_bern, fx, fpx
     real (PREC), dimension(:,:), allocatable :: ydat
     real (PREC), dimension(:), allocatable :: knots, coefs_bern, coefs
     real (PREC), dimension(:), allocatable :: coefs_bern_d1, coefs_d1
     real (PREC) :: lb, ub
     integer :: n, deg, nknots, ncoefs, ncoefs_bern
     type (status_t) :: status
-    logical :: is_ok
+    logical :: is_ok, values_ok
 
     class (test_case), pointer :: tc
 
@@ -434,13 +438,15 @@ subroutine test_ppolyval_power_cubic (tests)
     ! Fit some polynomial using the Bernstein basis
     nknots = 20
     deg = 3
-    allocate (xx(nknots), ydat(2,nknots))
+    allocate (xx(nknots), ydat(2,nknots), fx(nknots), fpx(nknots))
 
     lb = 0.0
     ub = 10.0
     call linspace (xx, 0.0_PREC, 10.0_PREC)
-    ydat(1,:) = sin(xx)
-    ydat(2,:) = cos(xx)
+    fx(:) = sin(xx)
+    fpx(:) = cos(xx)
+    ydat(1,:) = fx
+    ydat(2,:) = fpx
 
     ncoefs = ppoly_get_ncoefs (pp_bern, n=nknots, k=deg)
     allocate (knots(nknots), coefs_bern(ncoefs))
@@ -459,8 +465,8 @@ subroutine test_ppolyval_power_cubic (tests)
     allocate (yy(nknots))
     call ppolyval (pp, knots, coefs, knots, yy, status=status)
 
-    is_ok = all_close (yy, ydat(1,:), atol=1.0e-10_PREC, rtol=0.0_PREC)
-    call tc%assert_true (status == NF_STATUS_OK .and. is_ok, &
+    values_ok = all_close (yy, fx, atol=1.0e-10_PREC, rtol=0.0_PREC)
+    call tc%assert_true (status == NF_STATUS_OK .and. values_ok, &
         'Eval at original points')
 
     deallocate (yy)
@@ -511,5 +517,316 @@ subroutine test_ppolyval_power_cubic (tests)
         'D1: Comparing to true values at original knots')
 
 end subroutine
+
+
+
+subroutine test_power_ppolyval_input (tests)
+    !*  Unit tests for input checking for Bernstein basis fitting routines
+    class (test_suite) :: tests
+
+    class (test_case), pointer :: tc
+    real (PREC), dimension(:), allocatable :: knots, coefs
+    real (PREC), dimension(:), allocatable :: x, y
+    integer :: n, k, ncoefs, nknots, nx
+    real (PREC) :: xi, yi, wgt
+    integer (NF_ENUM_KIND) :: ext
+    integer :: ilb
+    type (ppoly) :: pp
+    type (status_t) :: status
+    logical :: status_ok
+
+    tc => tests%add_test ('PPOLYVAL input checks for power basis')
+
+    xi = 0.0
+
+    ! === "Constant" extrapolation and missing LEFT, RIGHT ===
+    k = 1
+    nknots = 2
+    ncoefs = ppoly_get_ncoefs (pp, k=k, n=nknots)
+    nx = 1
+    allocate (knots(nknots), coefs(ncoefs))
+    allocate (x(nx), y(nx))
+    ext = NF_INTERP_EVAl_CONST
+
+    ! --- Missing both LEFT, RIGHT ---
+
+    ! 0d API
+    status = NF_STATUS_UNDEFINED
+    call ppolyval (pp, knots, coefs, xi, yi, ext=ext, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "0d API: missing LEFT, RIGHT")
+
+    ! 1d API
+    status = NF_STATUS_UNDEFINED
+    call ppolyval (pp, knots, coefs, x, y, ext=ext, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "1d API: missing LEFT, RIGHT")
+
+    ! --- Missing LEFT ---
+    ! 0d API
+    status = NF_STATUS_UNDEFINED
+    call ppolyval (pp, knots, coefs, xi, yi, ext=ext, right=0.0_PREC, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "0d API: missing LEFT")
+
+    ! 1d API
+    status = NF_STATUS_UNDEFINED
+    call ppolyval (pp, knots, coefs, x, y, ext=ext, right=0.0_PREC, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "1d API: missing LEFT")
+
+    ! --- Missing RIGHT ---
+    ! 0d API
+    status = NF_STATUS_UNDEFINED
+    call ppolyval (pp, knots, coefs, xi, yi, ext=ext, left=0.0_PREC, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "0d API: missing RIGHT")
+
+    status = NF_STATUS_UNDEFINED
+    call ppolyval (pp, knots, coefs, x, y, ext=ext, left=0.0_PREC, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "1d API: missing RIGHT")
+
+    deallocate (knots, coefs, x, y)
+
+    ! === Invalid KNOTS array size ===
+    k = 3
+    nknots = 1
+    ncoefs = ppoly_get_ncoefs (pp, k=3, n=nknots)
+    allocate (knots(nknots), coefs(ncoefs))
+    ! 0d API
+    status = NF_STATUS_UNDEFINED
+    call ppolyval (pp, knots, coefs, xi, yi, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "0d API: Invalid KNOTS array size")
+
+    ! 1d API
+    nx = 1
+    allocate (x(nx), y(nx))
+    status = NF_STATUS_UNDEFINED
+    call ppolyval (pp, knots, coefs, x, y, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "1d API: Invalid KNOTS array size")
+
+    deallocate (knots, coefs, x, y)
+
+    ! === KNOTS, COEFS input arrays ===
+
+    nknots = 2
+    allocate (knots(nknots))
+
+    ! 0d API
+    status_ok = .true.
+    do k = 0, 3
+        ncoefs = ppoly_get_ncoefs (pp, k=k, n=nknots)
+        allocate (coefs(ncoefs+1))
+
+        status = NF_STATUS_UNDEFINED
+        call ppolyval (pp, knots, coefs, xi, yi, status=status)
+        status_ok = status_ok .and. (status == NF_STATUS_INVALID_ARG)
+
+        deallocate (coefs)
+
+        allocate (coefs(max(0, ncoefs-1)))
+        status = NF_STATUS_UNDEFINED
+        call ppolyval (pp, knots, coefs, xi, yi, status=status)
+        status_ok = status_ok .and. (status == NF_STATUS_INVALID_ARG)
+
+        deallocate (coefs)
+    end do
+
+    call tc%assert_true (status_ok, "0d API: Non-conformable KNOTS, COEFS")
+
+    ! 1d API
+    nx = 2
+    allocate (x(nx), y(nx))
+    status_ok = .true.
+
+    do k = 0, 3
+        ncoefs = ppoly_get_ncoefs (pp, k=k, n=nknots)
+        allocate (coefs(ncoefs+1))
+
+        status = NF_STATUS_UNDEFINED
+        call ppolyval (pp, knots, coefs, x, y, status=status)
+        status_ok = status_ok .and. (status == NF_STATUS_INVALID_ARG)
+
+        deallocate (coefs)
+
+        allocate (coefs(max(0, ncoefs-1)))
+        status = NF_STATUS_UNDEFINED
+        call ppolyval (pp, knots, coefs, x, y, status=status)
+        status_ok = status_ok .and. (status == NF_STATUS_INVALID_ARG)
+
+        deallocate (coefs)
+    end do
+
+    call tc%assert_true (status_ok, "1d API: Non-conformable KNOTS, COEFS")
+
+    deallocate (knots, x, y)
+
+    ! === Non-conformable X, Y arrays ===
+
+    k = 2
+    nknots = 10
+    ncoefs = ppoly_get_ncoefs (pp, k=k, n=nknots)
+    nx = 5
+    allocate (knots(nknots), coefs(ncoefs))
+    allocate (x(nx), y(nx+1))
+
+    status = NF_STATUS_UNDEFINED
+    call ppolyval (pp, knots, coefs, x, y, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "1d API: Non-conformable X, Y")
+
+
+end subroutine
+
+
+
+subroutine test_power_ppolyval_eval_input (tests)
+    !*  Unit tests for input checking for Bernstein basis fitting routines
+    class (test_suite) :: tests
+
+    class (test_case), pointer :: tc
+    real (PREC), dimension(:), allocatable :: coefs, weight
+    real (PREC), dimension(:), allocatable :: y
+    integer, dimension(:), allocatable :: ilbound
+    integer :: n, k, ncoefs, nknots, nx
+    real (PREC) :: yi, wgt
+    integer (NF_ENUM_KIND) :: ext
+    integer :: ilb
+    type (ppoly) :: pp
+    type (status_t) :: status
+    logical :: status_ok
+
+    tc => tests%add_test ('PPOLYVAL_EVAL input checks for power basis')
+
+    ilb = 1
+    wgt = 0.0
+
+    ! === "Constant" extrapolation and missing LEFT, RIGHT ===
+    k = 3
+    nknots = 2
+    ncoefs = ppoly_get_ncoefs (pp, k=k, n=nknots)
+    nx = 1
+    allocate (coefs(ncoefs), ilbound(nx), weight(nx), y(nx))
+    ext = NF_INTERP_EVAl_CONST
+
+    ! --- Missing both LEFT, RIGHT ---
+
+    ! 0d API
+    status = NF_STATUS_UNDEFINED
+    call ppolyval_eval (pp, ilb, wgt, coefs, yi, ext=ext, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "0d API: missing LEFT, RIGHT")
+
+    ! 1d API
+    status = NF_STATUS_UNDEFINED
+    call ppolyval_eval (pp, ilbound, weight, coefs, y, ext=ext, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "1d API: missing LEFT, RIGHT")
+
+    ! --- Missing LEFT ---
+    ! 0d API
+    status = NF_STATUS_UNDEFINED
+    call ppolyval_eval (pp, ilb, wgt, coefs, yi, ext=ext, right=0.0_PREC, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "0d API: missing LEFT")
+
+    ! 1d API
+    status = NF_STATUS_UNDEFINED
+    call ppolyval_eval (pp, ilbound, weight, coefs, y, ext=ext, right=0.0_PREC, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "1d API: missing LEFT")
+
+    ! --- Missing RIGHT ---
+    ! 0d API
+    status = NF_STATUS_UNDEFINED
+    call ppolyval_eval (pp, ilb, wgt, coefs, yi, ext=ext, left=0.0_PREC, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "0d API: missing RIGHT")
+
+    ! 1d API
+    status = NF_STATUS_UNDEFINED
+    call ppolyval_eval (pp, ilbound, weight, coefs, y, ext=ext, left=0.0_PREC, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "1d API: missing RIGHT")
+
+    deallocate (ilbound, weight, coefs, y)
+
+    ! === Invalid COEFS array size ===
+
+    nknots = 2
+
+    ! 0d API
+    status_ok = .true.
+    do k = 0, 3
+        pp = ppoly_init (k, nknots)
+        ncoefs = ppoly_get_ncoefs (pp, k=k, n=nknots)
+        allocate (coefs(ncoefs+1))
+
+        status = NF_STATUS_UNDEFINED
+        call ppolyval_eval (pp, ilb, wgt, coefs, yi, status=status)
+        status_ok = status_ok .and. (status == NF_STATUS_INVALID_ARG)
+
+        deallocate (coefs)
+
+        allocate (coefs(max(0, ncoefs-1)))
+        status = NF_STATUS_UNDEFINED
+        call ppolyval_eval (pp, ilb, wgt, coefs, yi, status=status)
+        status_ok = status_ok .and. (status == NF_STATUS_INVALID_ARG)
+
+        deallocate (coefs)
+    end do
+
+    call tc%assert_true (status_ok, "0d API: Invalid COEFS array size")
+
+    ! 1d API
+    nx = 5
+    allocate (ilbound(nx), weight(nx), y(nx))
+    status_ok = .true.
+
+    do k = 0, 3
+        pp = ppoly_init (k, nknots)
+        ncoefs = ppoly_get_ncoefs (pp, k=k, n=nknots)
+        allocate (coefs(ncoefs+1))
+
+        status = NF_STATUS_UNDEFINED
+        call ppolyval_eval (pp, ilbound, weight, coefs, y, status=status)
+        status_ok = status_ok .and. (status == NF_STATUS_INVALID_ARG)
+
+        deallocate (coefs)
+
+        allocate (coefs(max(0, ncoefs-1)))
+        status = NF_STATUS_UNDEFINED
+        call ppolyval_eval (pp, ilbound, weight, coefs, y, status=status)
+        status_ok = status_ok .and. (status == NF_STATUS_INVALID_ARG)
+
+        deallocate (coefs)
+    end do
+
+    call tc%assert_true (status_ok, "1d API: Invalid COEFS array size")
+
+    deallocate (ilbound, weight, y)
+
+    ! === Non-conformable ILBOUND, WEIGHT arrays ===
+
+    k = 2
+    nknots = 10
+    pp = ppoly_init (k, nknots)
+    ncoefs = ppoly_get_ncoefs (pp, k=k, n=nknots)
+    nx = 5
+    allocate (coefs(ncoefs))
+    allocate (ilbound(nx), weight(nx+1), y(nx))
+
+    status = NF_STATUS_UNDEFINED
+    call ppolyval_eval (pp, ilbound, weight, coefs, y, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "1d API: Non-conformable ILBOUND, WEIGHT")
+
+    deallocate (coefs, ilbound, weight, y)
+
+    ! === Non-conformable ILBOUND, Y arrays ===
+
+    k = 1
+    nknots = 4
+    ncoefs = ppoly_get_ncoefs (pp, k=k, n=nknots)
+    pp = ppoly_init (k, nknots)
+    nx = 1
+    allocate (coefs(ncoefs))
+    allocate (ilbound(nx), weight(nx), y(nx-1))
+
+    status = NF_STATUS_UNDEFINED
+    call ppolyval_eval (pp, ilbound, weight, coefs, y, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, "1d API: Non-conformable ILBOUND, Y")
+
+    deallocate (coefs, ilbound, weight, y)
+
+end subroutine
+
 
 end
