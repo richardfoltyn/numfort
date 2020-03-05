@@ -21,7 +21,6 @@ module numfort_interpolate_search
     public :: bsearch_cached
 
     type :: search_cache
-        private
         integer :: i = 1
     end type
 
