@@ -17,6 +17,14 @@ interface interp_find_impl
         __APPEND(interp_find_impl_1d,__PREC)
 end interface
 
+interface interp_find_impl_ext
+    procedure __APPEND(interp_find_impl_ext_1d,__PREC)
+end interface
+
+interface interp_find_impl_default
+    procedure __APPEND(interp_find_impl_default_1d,__PREC)
+end interface
+
 interface interp_find_check_input
     procedure __APPEND(interp_find_check_input,__PREC)
 end interface
