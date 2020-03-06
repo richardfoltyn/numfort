@@ -638,10 +638,10 @@ pure subroutine __APPEND(bernstein_fit_deriv,__PREC) (self, x, y, k, &
         knots, coefs, status)
     integer, parameter :: PREC = __PREC
     type (ppoly_bernstein), intent(inout) :: self
-    real (PREC), intent(in), dimension(:) :: x
-    real (PREC), intent(in), dimension(:,:) :: y
+    real (PREC), intent(in), dimension(:), contiguous :: x
+    real (PREC), intent(in), dimension(:,:), contiguous :: y
     integer, intent(in) :: k
-    real (PREC), intent(out), dimension(:) :: knots
+    real (PREC), intent(out), dimension(:), contiguous :: knots
     real (PREC), intent(out), dimension(:), target, contiguous :: coefs
     type (status_t), intent(out), optional :: status
 
@@ -672,10 +672,10 @@ pure subroutine __APPEND(bernstein_fit_deriv_impl,__PREC) (self, x, y, k, &
         knots, coefs, status)
     integer, parameter :: PREC = __PREC
     type (ppoly_bernstein), intent(inout) :: self
-    real (PREC), intent(in), dimension(:) :: x
-    real (PREC), intent(in), dimension(0:,:) :: y
+    real (PREC), intent(in), dimension(:), contiguous :: x
+    real (PREC), intent(in), dimension(0:,:), contiguous :: y
     integer, intent(in) :: k
-    real (PREC), intent(out), dimension(:) :: knots
+    real (PREC), intent(out), dimension(:), contiguous :: knots
     real (PREC), intent(out), dimension(:), target, contiguous :: coefs
     type (status_t), intent(out) ::  status
 
@@ -735,7 +735,7 @@ pure subroutine __APPEND(bernstein_ppolyder,__PREC) (self, knots, coefs, &
         ppoly_out, coefs_out, m, status)
     integer, parameter :: PREC = __PREC
     type (ppoly_bernstein), intent(in) :: self
-    real (PREC), intent(in), dimension(:) :: knots
+    real (PREC), intent(in), dimension(:), contiguous :: knots
     real (PREC), intent(in), dimension(:), contiguous :: coefs
     type (ppoly_bernstein), intent(out) :: ppoly_out
     real (PREC), intent(out), dimension(:), contiguous :: coefs_out
@@ -784,7 +784,7 @@ pure subroutine __APPEND(bernstein_ppolyder_impl,__PREC) (self, knots, coefs, &
 
     integer, parameter :: PREC = __PREC
     type (ppoly_bernstein), intent(in) :: self
-    real (PREC), intent(in), dimension(:) :: knots
+    real (PREC), intent(in), dimension(:), contiguous :: knots
     real (PREC), intent(in), dimension(0:), contiguous :: coefs
     integer, intent(in) :: m
     type (ppoly_bernstein), intent(out) :: ppoly_out
