@@ -746,7 +746,7 @@ subroutine test_power_ppolyval_eval_input (tests)
     ! 0d API
     status_ok = .true.
     do k = 0, 3
-        pp = ppoly_init (k, nknots)
+        call ppoly_init (pp, nknots, k)
         ncoefs = ppoly_get_ncoefs (pp, k=k, n=nknots)
         allocate (coefs(ncoefs+1))
 
@@ -772,7 +772,7 @@ subroutine test_power_ppolyval_eval_input (tests)
     status_ok = .true.
 
     do k = 0, 3
-        pp = ppoly_init (k, nknots)
+        call ppoly_init (pp, nknots, k)
         ncoefs = ppoly_get_ncoefs (pp, k=k, n=nknots)
         allocate (coefs(ncoefs+1))
 
@@ -798,7 +798,7 @@ subroutine test_power_ppolyval_eval_input (tests)
 
     k = 2
     nknots = 10
-    pp = ppoly_init (k, nknots)
+    call ppoly_init (pp, nknots, k)
     ncoefs = ppoly_get_ncoefs (pp, k=k, n=nknots)
     nx = 5
     allocate (coefs(ncoefs))
@@ -815,7 +815,7 @@ subroutine test_power_ppolyval_eval_input (tests)
     k = 1
     nknots = 4
     ncoefs = ppoly_get_ncoefs (pp, k=k, n=nknots)
-    pp = ppoly_init (k, nknots)
+    call ppoly_init (pp, nknots, k)
     nx = 1
     allocate (coefs(ncoefs))
     allocate (ilbound(nx), weight(nx), y(nx-1))

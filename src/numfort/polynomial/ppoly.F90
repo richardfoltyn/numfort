@@ -68,6 +68,10 @@ module numfort_polynomial_ppoly
         procedure power_get_degree, bernstein_get_degree
     end interface
 
+    interface ppoly_init
+        procedure ppoly_abc_init, ppoly_power_init, ppoly_bernstein_init
+    end interface
+
 #include <numfort_real32.h>
 #include "ppoly_power_spec.F90"
 #include "ppoly_bernstein_spec.F90"
@@ -79,15 +83,35 @@ module numfort_polynomial_ppoly
     contains
 
 
-pure function ppoly_init (k, n) result(res)
+pure subroutine ppoly_abc_init (self, n, k)
     !*  PPOLY_INIT initializes a piecewise polynomial wrt. the power basis.
-    integer, intent(in) :: k
+    type (ppoly_abc), intent(inout) :: self
     integer, intent(in) :: n
-    type (ppoly) :: res
+    integer, intent(in) :: k
 
-    res%degree = k
-    res%nknots = n
-end function
+    self%degree = k
+    self%nknots = n
+end subroutine
+
+
+
+pure subroutine ppoly_power_init (self, n, k)
+    type (ppoly), intent(inout) :: self
+    integer, intent(in) :: n
+    integer, intent(in) :: k
+
+    call ppoly_init (self%ppoly_abc, n, k)
+end subroutine
+
+
+pure subroutine ppoly_bernstein_init (self, n, k)
+    type (ppoly_bernstein), intent(inout) :: self
+    integer, intent(in) :: n
+    integer, intent(in) :: k
+
+    call ppoly_init (self%ppoly_abc, n, k)
+end subroutine
+
 
 
 pure function power_get_ncoefs (self, n, k) result(res)
