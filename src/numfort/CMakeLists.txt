@@ -35,6 +35,10 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
         endif ()
     else ()
         set(_FFLAGS "-warn all -standard-semantics -std08")
+        set(_FFLAGS_REPORT "-qopt-report=2 -qopt-report-phase=ipo,loop,par,vec")
+        if (OPT_REPORT)
+            set(_FFLAGS "${_FFLAGS} ${_FFLAGS_REPORT}")
+        endif()
         # NOTE: When setting -standard-semantics, resets any previously
         # given -assume std_mod_proc_name, so we need to append it again!
         if (NOT IFORT_STD_MOD_PROC_NAME)

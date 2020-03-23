@@ -34,6 +34,7 @@ option(USE_MKL "Build against Intel MKL" ON)
 option(BUILD_BLAS95 "Build Fortran 95 wrappers for BLAS" OFF)
 option(BUILD_TESTS "Build (unit) tests" OFF)
 option(BUILD_EXAMPLES "Build examples/demo code" OFF)
+option(OPT_REPORT "Generate compiler optimization reports" OFF)
 
 # If enabled, pass -assume std_mod_proc_name to ifort such that module
 # names will use _MP_ as module name / procedure name separator.
