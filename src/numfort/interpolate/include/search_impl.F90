@@ -341,7 +341,7 @@ pure subroutine __APPEND(interp_find_impl_ext_1d,__PREC) (x, knots, &
     type (status_t), intent(out) :: status
 
     integer :: i, nx, nknots, j
-    real (PREC) :: xi, dx, const, slope
+    real (PREC) :: xi, dx, xub, wi
 
     status = NF_STATUS_OK
 
@@ -349,17 +349,17 @@ pure subroutine __APPEND(interp_find_impl_ext_1d,__PREC) (x, knots, &
     nx = size(x)
 
     do i = 1, nx
-        call bsearch_cached (x(i), knots, ilbound(i), cache)
+        xi = x(i)
+        call bsearch_cached (xi, knots, j, cache)
+
+        xub = knots(j+1)
+        dx = xub - knots(j)
+        wi = (xub - xi) / dx
+
+        ilbound(i) = j
+        weight(i) = wi
     end do
 
-    do i = 1, nx
-        xi = x(i)
-        j = ilbound(i)
-        dx = knots(j+1) - knots(j)
-        const = knots(j+1) / dx
-        slope = - 1.0_PREC / dx
-        weight(i) = slope * xi + const
-    end do
 end subroutine
 
 
