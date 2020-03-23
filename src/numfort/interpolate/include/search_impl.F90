@@ -150,10 +150,11 @@ end subroutine
 
 
 
-pure subroutine __APPEND(interp_find_impl_scalar,__PREC) (x, knots, &
+pure subroutine __APPEND(interp_find_impl_cache_scalar,__PREC) (x, knots, &
         ilbound, weight, ext, cache, status)
-    !*  INTERP_LOCATE identifies the bracketing interval and interpolation
-    !   weights that are required for varios interpolation methods.
+    !*  INTERP_FIND_IMPL_CACHE_SCALAR implements an algorithm to identify the
+    !   bracketing interval and interpolation weights that are required for
+    !   varios interpolation methods.
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
@@ -161,6 +162,7 @@ pure subroutine __APPEND(interp_find_impl_scalar,__PREC) (x, knots, &
     real (PREC), intent(out) :: weight
     integer (NF_ENUM_KIND), intent(in) :: ext
     type (search_cache), intent(inout) :: cache
+        !*  Cache to speed up search algorithm.
     type (status_t), intent(out) :: status
 
     integer :: nknots, j
@@ -212,6 +214,76 @@ pure subroutine __APPEND(interp_find_impl_scalar,__PREC) (x, knots, &
     end if
 
     call bsearch_cached (x, knots, j, cache)
+
+    ilbound = j
+    weight = (knots(j+1) - x) / (knots(j+1) - knots(j))
+
+end subroutine
+
+
+
+pure subroutine __APPEND(interp_find_impl_scalar,__PREC) (x, knots, &
+        ilbound, weight, ext, status)
+    !*  INTERP_FIND_IMPL_SCALAR implements an algorithm to identify the
+    !   bracketing interval and interpolation weights that are required for
+    !   varios interpolation methods.
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: knots
+    integer, intent(out) :: ilbound
+    real (PREC), intent(out) :: weight
+    integer (NF_ENUM_KIND), intent(in) :: ext
+    type (status_t), intent(out) :: status
+
+    integer :: nknots, j
+
+    status = NF_STATUS_OK
+
+    nknots = size(knots)
+
+    if (x < knots(1)) then
+        select case (ext)
+        case (NF_INTERP_EVAL_BOUNDARY)
+            ilbound = 1
+            weight = 1.0_PREC
+            return
+        case (NF_INTERP_EVAL_CONST)
+            ilbound = 0
+            ! Weight does not matter in this case, should not be used
+            weight = 0.0_PREC
+            return
+        case (NF_INTERP_EVAL_ERROR)
+            status = NF_STATUS_BOUNDS_ERROR
+            return
+        case (NF_INTERP_EVAL_EXTRAPOLATE)
+            ilbound = 1
+            weight = (knots(2) - x) / (knots(2) - knots(1))
+            return
+        end select
+    else if (x > knots(nknots)) then
+        select case (ext)
+        case (NF_INTERP_EVAL_BOUNDARY)
+            ! Upper bound: set corresponding interpolation interval to the
+            ! last one. Correct boundary value will be interpolated below.
+            ilbound = nknots - 1
+            weight = 0.0_PREC
+            return
+        case (NF_INTERP_EVAL_CONST)
+            ilbound = nknots
+            ! Weight does not matter in this case, should not be used
+            weight = 0.0_PREC
+            return
+        case (NF_INTERP_EVAL_ERROR)
+            status = NF_STATUS_BOUNDS_ERROR
+            return
+        case (NF_INTERP_EVAL_EXTRAPOLATE)
+            ilbound = nknots - 1
+            weight = (knots(nknots) - x) / (knots(nknots) - knots(nknots-1))
+            return
+        end select
+    end if
+
+    j = bsearch (x, knots)
 
     ilbound = j
     weight = (knots(j+1) - x) / (knots(j+1) - knots(j))
@@ -399,22 +471,20 @@ end subroutine
 
 
 
-
-
-pure subroutine __APPEND(interp_find_scalar,__PREC) (x, knots, &
+pure subroutine __APPEND(interp_find_cache_scalar,__PREC) (x, knots, &
         ilbound, weight, ext, cache, status)
-    !*  INTERP_LOCATE identifies the bracketing interval and interpolation
-    !   weights that are required for varios interpolation methods.
+    !*  INTERP_FIND_CACHE_SCALAR identifies the bracketing interval and
+    !   interpolation weights that are required for varios interpolation methods.
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
     integer, intent(out) :: ilbound
     real (PREC), intent(out) :: weight
     integer (NF_ENUM_KIND), intent(in), optional :: ext
-    type (search_cache), intent(inout), optional :: cache
+    type (search_cache), intent(inout) :: cache
+        !*  Cache that can possibly speed up search algorithm
     type (status_t), intent(out), optional :: status
 
-    type (search_cache) :: lcache
     integer (NF_ENUM_KIND) :: lext
     type (status_t) :: lstatus
 
@@ -424,11 +494,40 @@ pure subroutine __APPEND(interp_find_scalar,__PREC) (x, knots, &
 
     lext = NF_INTERP_EVAL_EXTRAPOLATE
     if (present(ext)) lext = ext
-    if (present(cache)) lcache = cache
 
-    call interp_find_impl (x, knots, ilbound, weight, lext, lcache, lstatus)
+    call interp_find_impl (x, knots, ilbound, weight, lext, cache, lstatus)
 
-    if (present(cache)) cache = lcache
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+
+pure subroutine __APPEND(interp_find_scalar,__PREC) (x, knots, &
+        ilbound, weight, ext, status)
+    !*  INTERP_FIND_SCALAR identifies the bracketing interval and
+    !   interpolation weights that are required for varios interpolation methods.
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: knots
+    integer, intent(out) :: ilbound
+    real (PREC), intent(out) :: weight
+    integer (NF_ENUM_KIND), intent(in), optional :: ext
+    type (status_t), intent(out), optional :: status
+
+    integer (NF_ENUM_KIND) :: lext
+    type (status_t) :: lstatus
+
+    lstatus = NF_STATUS_OK
+    call interp_find_check_input (knots=knots, status=lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    lext = NF_INTERP_EVAL_EXTRAPOLATE
+    if (present(ext)) lext = ext
+
+    call interp_find_impl (x, knots, ilbound, weight, lext, status=lstatus)
 
 100 continue
 
