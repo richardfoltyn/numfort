@@ -19,6 +19,7 @@ module numfort_interpolate_search
 
     public :: search_cache
     public :: bsearch_cached
+    public :: bsearch_cached_impl
 
     type :: search_cache
         integer :: i = 1

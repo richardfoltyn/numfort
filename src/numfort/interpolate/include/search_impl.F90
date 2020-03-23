@@ -43,7 +43,7 @@ end function
 
 
 pure subroutine __APPEND(bsearch_cached,__PREC) (needle, haystack, ilb, cache)
-    !*  BSEARCH finds the interval on array HAYSTACK that contains NEEDLE,
+    !*  BSEARCH_CACHED finds the interval on array HAYSTACK that contains NEEDLE,
     !   returning the array index of the lower boundary of that interval.
     !
     !   If NEEDLE is smaller than the first element of HAYSTACK, the rountine
@@ -66,7 +66,7 @@ pure subroutine __APPEND(bsearch_cached,__PREC) (needle, haystack, ilb, cache)
         !   if this condition holds. Otherwise the regular search algorithm
         !   is resumed.
 
-    integer :: iub, imid, n, i
+    integer :: n
 
     n = size(haystack)
     if (n <= 1) then
@@ -74,10 +74,47 @@ pure subroutine __APPEND(bsearch_cached,__PREC) (needle, haystack, ilb, cache)
         return
     end if
 
+    cache%i = max(min(cache%i, n-1), 1)
+
+    call bsearch_cached_impl (needle, haystack, ilb, cache)
+
+end subroutine
+
+
+
+pure subroutine __APPEND(bsearch_cached_impl,__PREC) (needle, haystack, ilb, cache)
+    !*  BSEARCH_CACHED_IMPL finds the interval on array HAYSTACK that contains
+    !   NEEDLE, returning the array index of the lower boundary of that interval.
+    !
+    !   If NEEDLE is smaller than the first element of HAYSTACK, the rountine
+    !   returns 1. If NEEDLE is larger than the last of element of HAYSTACK,
+    !   size(HAYSTACK)-1 is returned.
+    !
+    !   Note: Implementation routine, does not perform any input checks!
+    integer, parameter :: PREC = __PREC
+    real (PREC), intent(in) :: needle
+        !*  Value to bracket
+    real (PREC), intent(in), dimension(:), contiguous :: haystack
+        !*  Array of sorted (!) values that are interpreted as the boundaries
+        !   of a sequence of bracketing intervals.
+    integer, intent(out) :: ilb
+        !*  Index of array element that is the lower bound of the bracketing
+        !   interval such that HAYSTACK(ilb) <= NEEDLE < HAYSTACK(ilb+1),
+        !   if such a bracket exists.
+    type (search_cache), intent(inout) :: cache
+        !*  Optional search cache. If present, initially the routine checks
+        !   whether the interval HAYSTACK(i) <= NEEDLE < HAYSTACK(i+1)),
+        !   where i is the cached index and returns immediately
+        !   if this condition holds. Otherwise the regular search algorithm
+        !   is resumed.
+
+    integer :: iub, imid, i, n
+
     i = cache%i
-    i = max(min(i, n-1), 1)
+
     if (haystack(i) <= needle) then
         ilb = i
+        n = size(haystack)
         if (haystack(i+1) > needle) then
             goto 100
         else if (i == (n-1)) then
@@ -154,7 +191,7 @@ pure subroutine __APPEND(interp_find_impl_cache_scalar,__PREC) (x, knots, &
         ilbound, weight, ext, cache, status)
     !*  INTERP_FIND_IMPL_CACHE_SCALAR implements an algorithm to identify the
     !   bracketing interval and interpolation weights that are required for
-    !   varios interpolation methods.
+    !   various interpolation methods.
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
@@ -226,7 +263,7 @@ pure subroutine __APPEND(interp_find_impl_scalar,__PREC) (x, knots, &
         ilbound, weight, ext, status)
     !*  INTERP_FIND_IMPL_SCALAR implements an algorithm to identify the
     !   bracketing interval and interpolation weights that are required for
-    !   varios interpolation methods.
+    !   various interpolation methods.
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
@@ -295,7 +332,7 @@ end subroutine
 pure subroutine __APPEND(interp_find_impl_1d,__PREC) (x, knots, &
         ilbound, weight, ext, cache, status)
     !*  INTERP_LOCATE identifies the bracketing interval and interpolation
-    !   weights that are required for varios interpolation methods.
+    !   weights that are required for various interpolation methods.
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
@@ -318,7 +355,7 @@ end subroutine
 pure subroutine __APPEND(interp_find_impl_default_1d,__PREC) (x, knots, &
         ilbound, weight, ext, cache, status)
     !*  INTERP_LOCATE identifies the bracketing interval and interpolation
-    !   weights that are required for varios interpolation methods.
+    !   weights that are required for various interpolation methods.
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
@@ -401,8 +438,8 @@ end subroutine
 
 pure subroutine __APPEND(interp_find_impl_ext_1d,__PREC) (x, knots, &
         ilbound, weight, ext, cache, status)
-    !*  INTERP_LOCATE identifies the bracketing interval and interpolation
-    !   weights that are required for varios interpolation methods.
+    !*  INTERP_FIND identifies the bracketing interval and interpolation
+    !   weights that are required for various interpolation methods.
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
@@ -420,9 +457,13 @@ pure subroutine __APPEND(interp_find_impl_ext_1d,__PREC) (x, knots, &
     nknots = size(knots)
     nx = size(x)
 
+    ! Ensure that cache contains valid initial index as the implementation
+    ! routine will not check for that!
+    cache%i = max(min(cache%i, nknots-1), 1)
+
     do i = 1, nx
         xi = x(i)
-        call bsearch_cached (xi, knots, j, cache)
+        call bsearch_cached_impl (xi, knots, j, cache)
 
         xub = knots(j+1)
         dx = xub - knots(j)
@@ -439,7 +480,7 @@ end subroutine
 pure subroutine __APPEND(interp_find_1d,__PREC) (x, knots, &
         ilbound, weight, ext, cache, status)
     !*  INTERP_LOCATE identifies the bracketing interval and interpolation
-    !   weights that are required for varios interpolation methods.
+    !   weights that are required for various interpolation methods.
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
@@ -474,7 +515,7 @@ end subroutine
 pure subroutine __APPEND(interp_find_cache_scalar,__PREC) (x, knots, &
         ilbound, weight, ext, cache, status)
     !*  INTERP_FIND_CACHE_SCALAR identifies the bracketing interval and
-    !   interpolation weights that are required for varios interpolation methods.
+    !   interpolation weights that are required for various interpolation methods.
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
@@ -508,7 +549,7 @@ end subroutine
 pure subroutine __APPEND(interp_find_scalar,__PREC) (x, knots, &
         ilbound, weight, ext, status)
     !*  INTERP_FIND_SCALAR identifies the bracketing interval and
-    !   interpolation weights that are required for varios interpolation methods.
+    !   interpolation weights that are required for various interpolation methods.
     integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
