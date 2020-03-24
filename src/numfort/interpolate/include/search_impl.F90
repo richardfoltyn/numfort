@@ -1,14 +1,13 @@
 
 
 
-pure function __APPEND(bsearch,__PREC) (needle, haystack) result(ilb)
+pure function bsearch (needle, haystack) result(ilb)
     !*  BSEARCH finds the interval on array HAYSTACK that contains NEEDLE,
     !   returning the array index of the lower boundary of that interval.
     !
     !   If NEEDLE is smaller than the first element of HAYSTACK, the rountine
     !   returns 1. If NEEDLE is larger than the last of element of HAYSTACK,
     !   size(HAYSTACK)-1 is returned.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: needle
         !*  Value to bracket
     real (PREC), intent(in), dimension(:), contiguous :: haystack
@@ -42,14 +41,13 @@ end function
 
 
 
-pure subroutine __APPEND(bsearch_cached,__PREC) (needle, haystack, ilb, cache)
+pure subroutine bsearch_cached (needle, haystack, ilb, cache)
     !*  BSEARCH_CACHED finds the interval on array HAYSTACK that contains NEEDLE,
     !   returning the array index of the lower boundary of that interval.
     !
     !   If NEEDLE is smaller than the first element of HAYSTACK, the rountine
     !   returns 1. If NEEDLE is larger than the last of element of HAYSTACK,
     !   size(HAYSTACK)-1 is returned.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: needle
         !*  Value to bracket
     real (PREC), intent(in), dimension(:), contiguous :: haystack
@@ -83,7 +81,7 @@ end subroutine
 
 
 
-pure subroutine __APPEND(bsearch_cached_impl,__PREC) (needle, haystack, ilb)
+pure subroutine bsearch_cached_impl (needle, haystack, ilb)
     !*  BSEARCH_CACHED_IMPL finds the interval on array HAYSTACK that contains
     !   NEEDLE, returning the array index of the lower boundary of that interval.
     !
@@ -92,7 +90,6 @@ pure subroutine __APPEND(bsearch_cached_impl,__PREC) (needle, haystack, ilb)
     !   size(HAYSTACK)-1 is returned.
     !
     !   Note: Implementation routine, does not perform any input checks!
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: needle
         !*  Value to bracket
     real (PREC), intent(in), dimension(:), contiguous :: haystack
@@ -131,19 +128,15 @@ end subroutine
 
 
 
-pure subroutine __APPEND(interp_find_check_input,__PREC) (x, knots, ilbound, &
-        weight, status)
+pure subroutine interp_find_check_input (x, knots, ilbound, weight, status)
     !*  INTERP_FIND_CHECK_INPUT performs input validation for various
     !   INTERP_FIND routines.
-
-    integer, parameter :: INTSIZE = int32
-    integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in), dimension(:), optional :: x
         !*  Array of points for which to determine the location within `knots`
     real (PREC), intent(in), dimension(:) :: knots
         !*  Array defining the points over which to search.
-    integer (INTSIZE), intent(in), dimension(:), optional :: ilbound
+    integer, intent(in), dimension(:), optional :: ilbound
         !*  Array to store indices of bracket lower bounds. Optional since
         !   this is not applicable for the scalar API.
     real (PREC), intent(in), dimension(:), optional :: weight
@@ -176,12 +169,11 @@ end subroutine
 
 
 
-pure subroutine __APPEND(interp_find_impl_cached_scalar,__PREC) (x, knots, &
-        ilbound, weight, ext, cache, status)
+pure subroutine interp_find_cached_impl_0d (x, knots, ilbound, weight, &
+        ext, cache, status)
     !*  INTERP_FIND_IMPL_CACHE_SCALAR implements an algorithm to identify the
     !   bracketing interval and interpolation weights that are required for
     !   various interpolation methods.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
     integer, intent(out) :: ilbound
@@ -248,12 +240,10 @@ end subroutine
 
 
 
-pure subroutine __APPEND(interp_find_impl_scalar,__PREC) (x, knots, &
-        ilbound, weight, ext, status)
+pure subroutine interp_find_impl_0d (x, knots, ilbound, weight, ext, status)
     !*  INTERP_FIND_IMPL_SCALAR implements an algorithm to identify the
     !   bracketing interval and interpolation weights that are required for
     !   various interpolation methods.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
     integer, intent(out) :: ilbound
@@ -318,11 +308,10 @@ end subroutine
 
 
 
-pure subroutine __APPEND(interp_find_cached_impl_1d,__PREC) (x, knots, &
-        ilbound, weight, ext, cache, status)
+pure subroutine interp_find_cached_impl_1d (x, knots, ilbound, weight, ext, &
+        cache, status)
     !*  INTERP_LOCATE identifies the bracketing interval and interpolation
     !   weights that are required for various interpolation methods.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
     integer, intent(out), dimension(:), contiguous :: ilbound
@@ -343,11 +332,9 @@ end subroutine
 
 
 
-pure subroutine __APPEND(interp_find_impl_1d,__PREC) (x, knots, &
-        ilbound, weight, ext, status)
+pure subroutine interp_find_impl_1d (x, knots, ilbound, weight, ext, status)
     !*  INTERP_LOCATE identifies the bracketing interval and interpolation
     !   weights that are required for various interpolation methods.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
     integer, intent(out), dimension(:), contiguous :: ilbound
@@ -367,11 +354,10 @@ end subroutine
 
 
 
-pure subroutine __APPEND(interp_find_cached_impl_default_1d,__PREC) (x, knots, &
-        ilbound, weight, ext, cache, status)
+pure subroutine interp_find_cached_impl_default_1d (x, knots, ilbound, weight, &
+        ext, cache, status)
     !*  INTERP_LOCATE identifies the bracketing interval and interpolation
     !   weights that are required for various interpolation methods.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
     integer, intent(out), dimension(:), contiguous :: ilbound
@@ -451,11 +437,9 @@ end subroutine
 
 
 
-pure subroutine __APPEND(interp_find_impl_default_1d,__PREC) (x, knots, &
-        ilbound, weight, ext, status)
+pure subroutine interp_find_impl_default_1d (x, knots, ilbound, weight, ext, status)
     !*  INTERP_LOCATE identifies the bracketing interval and interpolation
     !   weights that are required for various interpolation methods.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
     integer, intent(out), dimension(:), contiguous :: ilbound
@@ -536,11 +520,10 @@ end subroutine
 
 
 
-pure subroutine __APPEND(interp_find_cached_impl_ext_1d,__PREC) (x, knots, &
-        ilbound, weight, cache, status)
+pure subroutine interp_find_cached_impl_ext_1d (x, knots, ilbound, weight, &
+        cache, status)
     !*  INTERP_FIND identifies the bracketing interval and interpolation
     !   weights that are required for various interpolation methods.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
     integer, intent(out), dimension(:), contiguous :: ilbound
@@ -578,11 +561,9 @@ end subroutine
 
 
 
-pure subroutine __APPEND(interp_find_impl_ext_1d,__PREC) (x, knots, &
-        ilbound, weight, status)
+pure subroutine interp_find_impl_ext_1d (x, knots, ilbound, weight, status)
     !*  INTERP_FIND identifies the bracketing interval and interpolation
     !   weights that are required for various interpolation methods.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
     integer, intent(out), dimension(:), contiguous :: ilbound
@@ -615,11 +596,9 @@ end subroutine
 
 
 
-pure subroutine __APPEND(interp_find_cached_1d,__PREC) (x, knots, &
-        ilbound, weight, ext, cache, status)
+pure subroutine interp_find_cached_1d (x, knots, ilbound, weight, ext, cache, status)
     !*  INTERP_LOCATE identifies the bracketing interval and interpolation
     !   weights that are required for various interpolation methods.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
     integer, intent(out), dimension(:), contiguous :: ilbound
@@ -646,11 +625,9 @@ end subroutine
 
 
 
-pure subroutine __APPEND(interp_find_1d,__PREC) (x, knots, &
-    ilbound, weight, ext, status)
+pure subroutine interp_find_1d (x, knots, ilbound, weight, ext, status)
     !*  INTERP_LOCATE identifies the bracketing interval and interpolation
     !   weights that are required for various interpolation methods.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
     integer, intent(out), dimension(:), contiguous :: ilbound
@@ -676,11 +653,10 @@ end subroutine
 
 
 
-pure subroutine __APPEND(interp_find_cached_scalar,__PREC) (x, knots, &
-        ilbound, weight, ext, cache, status)
+pure subroutine interp_find_cached_0d (x, knots, ilbound, weight, ext, &
+        cache, status)
     !*  INTERP_FIND_CACHE_SCALAR identifies the bracketing interval and
     !   interpolation weights that are required for various interpolation methods.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
     integer, intent(out) :: ilbound
@@ -710,11 +686,9 @@ end subroutine
 
 
 
-pure subroutine __APPEND(interp_find_scalar,__PREC) (x, knots, &
-        ilbound, weight, ext, status)
+pure subroutine interp_find_0d (x, knots, ilbound, weight, ext, status)
     !*  INTERP_FIND_SCALAR identifies the bracketing interval and
     !   interpolation weights that are required for various interpolation methods.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
     integer, intent(out) :: ilbound

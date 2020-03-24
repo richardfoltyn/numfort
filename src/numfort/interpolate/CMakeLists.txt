@@ -9,6 +9,8 @@ set(SOURCE_FILES
 	interp_pchip.F90
 	fitpack.f90
 	search.F90
+	search_real32.F90
+	search_real64.F90
 )
 
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
