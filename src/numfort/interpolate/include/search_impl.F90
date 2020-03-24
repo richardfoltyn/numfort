@@ -805,22 +805,30 @@ pure subroutine interp_find_decr_ext_impl (x, knots, ilbound, weight)
     integer, intent(out), dimension(:), contiguous :: ilbound
     real (PREC), intent(out), dimension(:), contiguous :: weight
 
-    integer ::nx, i, ilb, iub
-    real (PREC) :: xi, wi, xub, dx
-
+    integer ::nx, i, ilb, iub, ilast
+    real (PREC) :: xi, wi, xub, dx, wlast
 
     nx = size(x)
 
     ! Manually compute first element
-    iub = bsearch (x(1), knots)
+    xi = x(1)
+    iub = bsearch (xi, knots)
     ilbound(1) = iub
+    xub = knots(iub+1)
+    dx = xub - knots(iub)
+    wi = (xub - xi) / dx
+    weight(1) = wi
 
-    if (nx == 1) goto 10
+    if (nx == 1) return
 
     ! Manually compute last element
     ilb = iub
-    call bsearch_cached_impl (x(nx), knots, ilb)
-    ilbound(nx) = ilb
+    xi = x(nx)
+    call bsearch_cached_impl (xi, knots, ilb)
+    xub = knots(ilb+1)
+    dx = xub - knots(ilb)
+    wlast = (xub - xi) / dx
+    ilast = ilb
 
     ! Heuristically choose between binary and linear search
     ! Do linear search if there are 16 elements between 2,...,NX-1;
@@ -828,26 +836,28 @@ pure subroutine interp_find_decr_ext_impl (x, knots, ilbound, weight)
     ! (iub - ilb + 1) = 18.
     if ((iub - ilb) <= 17) then
         do i = 2, nx - 1
-            iub = lsearch_bounded (x(i), knots, ilb, iub+1)
+            xi = x(i)
+            iub = lsearch_bounded (xi, knots, ilb, iub+1)
             ilbound(i) = iub
+            xub = knots(iub+1)
+            dx = xub - knots(iub)
+            wi = (xub - xi) / dx
+            weight(i) = wi
         end do
     else
         do i = 2, nx-1
-            iub = bsearch_bounded (x(i), knots, ilb, iub+1)
+            xi = x(i)
+            iub = bsearch_bounded (xi, knots, ilb, iub+1)
             ilbound(i) = iub
+            xub = knots(iub+1)
+            dx = xub - knots(iub)
+            wi = (xub - xi) / dx
+            weight(i) = wi
         end do
     end if
 
-10  continue
-
-    do i = 1, nx
-        ilb = ilbound(i)
-        xi = x(i)
-        xub = knots(ilb+1)
-        dx = xub - knots(ilb)
-        wi = (xub - xi) / dx
-        weight(i) = wi
-    end do
+    ilbound(nx) = ilast
+    weight(nx) = wlast
 
 end subroutine
 
