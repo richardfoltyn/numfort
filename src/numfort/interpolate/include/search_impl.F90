@@ -128,6 +128,32 @@ end subroutine
 
 
 
+pure function bsearch_bounded (needle, haystack, ilb, iub) result(res)
+    real (PREC), intent(in) :: needle
+    real (PREC), intent(in), dimension(:), contiguous :: haystack
+    integer, intent(in) :: ilb, iub
+    integer :: res
+
+    integer :: imid, lilb, liub
+
+    lilb = ilb
+    liub = iub
+
+    do while (liub > (lilb + 1))
+        imid = (liub + lilb) / 2
+        if (haystack(imid) > needle) then
+            liub = imid
+        else
+            lilb = imid
+        end if
+    end do
+
+    res = lilb
+
+end function
+
+
+
 pure subroutine interp_find_check_input (x, knots, ilbound, weight, status)
     !*  INTERP_FIND_CHECK_INPUT performs input validation for various
     !   INTERP_FIND routines.
@@ -322,7 +348,7 @@ pure subroutine interp_find_cached_impl_1d (x, knots, ilbound, weight, ext, &
 
     if (ext == NF_INTERP_EVAL_EXTRAPOLATE) then
         ! Specific implementation that assumes extrapolation
-        call interp_find_impl_ext (x, knots, ilbound, weight, cache, status)
+        call interp_find_impl_ext (x, knots, ilbound, weight, cache)
     else
         ! Default implementation
         call interp_find_impl_default (x, knots, ilbound, weight, ext, cache, status)
@@ -344,7 +370,7 @@ pure subroutine interp_find_impl_1d (x, knots, ilbound, weight, ext, status)
 
     if (ext == NF_INTERP_EVAL_EXTRAPOLATE) then
         ! Specific implementation that assumes extrapolation
-        call interp_find_impl_ext (x, knots, ilbound, weight, status)
+        call interp_find_impl_ext (x, knots, ilbound, weight)
     else
         ! Default implementation
         call interp_find_impl_default (x, knots, ilbound, weight, ext, status)
@@ -520,8 +546,7 @@ end subroutine
 
 
 
-pure subroutine interp_find_cached_impl_ext_1d (x, knots, ilbound, weight, &
-        cache, status)
+pure subroutine interp_find_cached_impl_ext_1d (x, knots, ilbound, weight, cache)
     !*  INTERP_FIND identifies the bracketing interval and interpolation
     !   weights that are required for various interpolation methods.
     real (PREC), intent(in), dimension(:), contiguous :: x
@@ -529,12 +554,9 @@ pure subroutine interp_find_cached_impl_ext_1d (x, knots, ilbound, weight, &
     integer, intent(out), dimension(:), contiguous :: ilbound
     real (PREC), intent(out), dimension(:), contiguous :: weight
     type (search_cache), intent(inout) :: cache
-    type (status_t), intent(out) :: status
 
     integer :: i, nx, nknots, j
     real (PREC) :: xi, dx, xub, wi
-
-    status = NF_STATUS_OK
 
     nknots = size(knots)
     nx = size(x)
@@ -561,21 +583,17 @@ end subroutine
 
 
 
-pure subroutine interp_find_impl_ext_1d (x, knots, ilbound, weight, status)
+pure subroutine interp_find_impl_ext_1d (x, knots, ilbound, weight)
     !*  INTERP_FIND identifies the bracketing interval and interpolation
     !   weights that are required for various interpolation methods.
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous :: knots
     integer, intent(out), dimension(:), contiguous :: ilbound
     real (PREC), intent(out), dimension(:), contiguous :: weight
-    type (status_t), intent(out) :: status
 
-    integer :: i, nx, nknots, j
+    integer :: i, nx, j
     real (PREC) :: xi, dx, xub, wi
 
-    status = NF_STATUS_OK
-
-    nknots = size(knots)
     nx = size(x)
 
     j = 1
@@ -713,3 +731,123 @@ pure subroutine interp_find_0d (x, knots, ilbound, weight, ext, status)
     if (present(status)) status = lstatus
 
 end subroutine
+
+
+
+pure subroutine interp_find_incr_ext_impl (x, knots, ilbound, weight)
+    real (PREC), intent(in), dimension(:), contiguous :: x
+    real (PREC), intent(in), dimension(:), contiguous :: knots
+    integer, intent(out), dimension(:), contiguous :: ilbound
+    real (PREC), intent(out), dimension(:), contiguous :: weight
+
+    integer ::nx, i, ilb, iub
+    real (PREC) :: xi, wi, xub, dx
+
+
+    nx = size(x)
+
+    ! Manually compute first element
+    ilb = bsearch (x(1), knots)
+    ilbound(1) = ilb
+
+    if (nx == 1) goto 10
+
+    ! Manually compute last element
+    iub = ilb
+    call bsearch_cached_impl (x(nx), knots, iub)
+    ilbound(nx) = iub
+
+    do i = 2, nx-1
+        ilb = bsearch_bounded (x(i), knots, ilb, iub)
+        ilbound(i) = ilb
+    end do
+
+10  continue
+
+    do i = 1, nx
+        ilb = ilbound(i)
+        xi = x(i)
+        xub = knots(ilb+1)
+        dx = xub - knots(ilb)
+        wi = (xub - xi) / dx
+        weight(i) = wi
+    end do
+
+end subroutine
+
+
+
+pure subroutine interp_find_decr_ext_impl (x, knots, ilbound, weight)
+    real (PREC), intent(in), dimension(:), contiguous :: x
+    real (PREC), intent(in), dimension(:), contiguous :: knots
+    integer, intent(out), dimension(:), contiguous :: ilbound
+    real (PREC), intent(out), dimension(:), contiguous :: weight
+
+    integer ::nx, i, ilb, iub
+    real (PREC) :: xi, wi, xub, dx
+
+
+    nx = size(x)
+
+    ! Manually compute first element
+    iub = bsearch (x(1), knots)
+    ilbound(1) = iub
+
+    if (nx == 1) goto 10
+
+    ! Manually compute last element
+    ilb = iub
+    call bsearch_cached_impl (x(nx), knots, ilb)
+    ilbound(nx) = ilb
+
+    do i = 2, nx-1
+        iub = bsearch_bounded (x(i), knots, ilb, iub+1)
+        ilbound(i) = iub
+    end do
+
+10  continue
+
+    do i = 1, nx
+        ilb = ilbound(i)
+        xi = x(i)
+        xub = knots(ilb+1)
+        dx = xub - knots(ilb)
+        wi = (xub - xi) / dx
+        weight(i) = wi
+    end do
+
+end subroutine
+
+
+
+pure subroutine interp_find_decr_ext (x, knots, ilbound, weight, status)
+    real (PREC), intent(in), dimension(:), contiguous :: x
+    real (PREC), intent(in), dimension(:), contiguous :: knots
+    integer, intent(out), dimension(:), contiguous :: ilbound
+    real (PREC), intent(out), dimension(:), contiguous :: weight
+    type (status_t), intent(out), optional :: status
+
+    type (status_t) :: lstatus
+    integer :: i
+
+    status = NF_STATUS_OK
+
+    call interp_find_check_input (x, knots, ilbound, weight, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! Check that X is indeeded (weakly) decreasing
+    do i = 2, size(x)
+        if (x(i) > x(i-1)) then
+            lstatus = NF_STATUS_INVALID_ARG
+            goto 100
+        end if
+    end do
+
+    call interp_find_decr_ext_impl (x, knots, ilbound, weight)
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
+

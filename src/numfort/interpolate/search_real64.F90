@@ -18,6 +18,10 @@ module numfort_interpolate_search_real64
     public :: interp_find
     public :: interp_find_impl
 
+    public :: interp_find_decr
+    public :: interp_find_decr_impl
+    public :: interp_find_incr_impl
+
     integer, parameter :: PREC = real64
 
 #include "search_spec.F90"
