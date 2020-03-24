@@ -154,25 +154,6 @@ end function
 
 
 
-#ifdef __INTEL_COMPILER
-pure function lsearch_bounded (needle, haystack, ilb, iub) result(res)
-    real (PREC), intent(in) :: needle
-    real (PREC), intent(in), dimension(:), contiguous :: haystack
-    integer, intent(in) :: ilb, iub
-    integer :: res
-
-    res = ilb
-
-    !$omp simd early_exit
-    do res = ilb, iub-2
-        if (needle < haystack(res+1)) exit
-    end do
-    !$omp end simd
-
-end function
-
-#else
-
 pure function lsearch_bounded (needle, haystack, ilb, iub) result(res)
     real (PREC), intent(in) :: needle
     real (PREC), intent(in), dimension(:), contiguous :: haystack
@@ -186,7 +167,6 @@ pure function lsearch_bounded (needle, haystack, ilb, iub) result(res)
     end do
 
 end function
-#endif
 
 
 
