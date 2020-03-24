@@ -153,6 +153,44 @@ pure function bsearch_bounded (needle, haystack, ilb, iub) result(res)
 end function
 
 
+#ifdef __INTEL_COMPILER
+pure function lsearch_bounded (needle, haystack, ilb, iub) result(res)
+    real (PREC), intent(in) :: needle
+    real (PREC), intent(in), dimension(:), contiguous :: haystack
+    integer, intent(in) :: ilb, iub
+    integer :: res
+
+    res = ilb
+
+    !$omp simd early_exit
+    do res = ilb, iub-1
+        if (needle < haystack(res+1)) exit
+    end do
+    !$omp end simd
+
+    res = min(res, iub-1)
+
+end function
+
+#else
+
+pure function lsearch_bounded (needle, haystack, ilb, iub) result(res)
+    real (PREC), intent(in) :: needle
+    real (PREC), intent(in), dimension(:), contiguous :: haystack
+    integer, intent(in) :: ilb, iub
+    integer :: res
+
+    res = ilb
+
+    do res = ilb, iub-1
+        if (needle < haystack(res+1)) exit
+    end do
+
+    res = min(res, iub-1)
+
+end function
+#endif
+
 
 pure subroutine interp_find_check_input (x, knots, ilbound, weight, status)
     !*  INTERP_FIND_CHECK_INPUT performs input validation for various
@@ -800,10 +838,21 @@ pure subroutine interp_find_decr_ext_impl (x, knots, ilbound, weight)
     call bsearch_cached_impl (x(nx), knots, ilb)
     ilbound(nx) = ilb
 
-    do i = 2, nx-1
-        iub = bsearch_bounded (x(i), knots, ilb, iub+1)
-        ilbound(i) = iub
-    end do
+    ! Heuristically choose between binary and linear search
+    ! Do linear search if there are 16 elements between 2,...,NX-1;
+    ! which means that there are 18 elements in KNOTS that span X, and thus
+    ! (iub - ilb + 1) = 18.
+    if ((iub - ilb) <= 17) then
+        do i = 2, nx - 1
+            iub = lsearch_bounded (x(i), knots, ilb, iub+1)
+            ilbound(i) = iub
+        end do
+    else
+        do i = 2, nx-1
+            iub = bsearch_bounded (x(i), knots, ilb, iub+1)
+            ilbound(i) = iub
+        end do
+    end if
 
 10  continue
 
