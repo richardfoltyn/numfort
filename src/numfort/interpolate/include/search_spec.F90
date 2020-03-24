@@ -17,7 +17,8 @@ interface interp_find
 end interface
 
 interface interp_find
-    procedure __APPEND(interp_find_cache_scalar,__PREC)
+    procedure __APPEND(interp_find_cached_scalar,__PREC), &
+        __APPEND(interp_find_cached_1d,__PREC)
 end interface
 
 interface interp_find_impl
@@ -26,15 +27,18 @@ interface interp_find_impl
 end interface
 
 interface interp_find_impl
-   procedure __APPEND(interp_find_impl_cache_scalar,__PREC)
+    procedure __APPEND(interp_find_impl_cached_scalar,__PREC), &
+        __APPEND(interp_find_cached_impl_1d,__PREC)
 end interface
 
 interface interp_find_impl_ext
-    procedure __APPEND(interp_find_impl_ext_1d,__PREC)
+    procedure __APPEND(interp_find_impl_ext_1d,__PREC), &
+        __APPEND(interp_find_cached_impl_ext_1d,__PREC)
 end interface
 
 interface interp_find_impl_default
-    procedure __APPEND(interp_find_impl_default_1d,__PREC)
+    procedure __APPEND(interp_find_impl_default_1d,__PREC), &
+        __APPEND(interp_find_cached_impl_default_1d,__PREC)
 end interface
 
 interface interp_find_check_input
