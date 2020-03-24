@@ -153,6 +153,7 @@ pure function bsearch_bounded (needle, haystack, ilb, iub) result(res)
 end function
 
 
+
 #ifdef __INTEL_COMPILER
 pure function lsearch_bounded (needle, haystack, ilb, iub) result(res)
     real (PREC), intent(in) :: needle
@@ -163,12 +164,10 @@ pure function lsearch_bounded (needle, haystack, ilb, iub) result(res)
     res = ilb
 
     !$omp simd early_exit
-    do res = ilb, iub-1
+    do res = ilb, iub-2
         if (needle < haystack(res+1)) exit
     end do
     !$omp end simd
-
-    res = min(res, iub-1)
 
 end function
 
@@ -182,14 +181,13 @@ pure function lsearch_bounded (needle, haystack, ilb, iub) result(res)
 
     res = ilb
 
-    do res = ilb, iub-1
+    do res = ilb, iub-2
         if (needle < haystack(res+1)) exit
     end do
 
-    res = min(res, iub-1)
-
 end function
 #endif
+
 
 
 pure subroutine interp_find_check_input (x, knots, ilbound, weight, status)
@@ -385,6 +383,8 @@ pure subroutine interp_find_cached_impl_1d (x, knots, ilbound, weight, ext, &
     type (status_t), intent(out) :: status
 
     if (ext == NF_INTERP_EVAL_EXTRAPOLATE) then
+        ! Nothing in this specific routine that could go wrong
+        status = NF_STATUS_OK
         ! Specific implementation that assumes extrapolation
         call interp_find_impl_ext (x, knots, ilbound, weight, cache)
     else
@@ -407,6 +407,8 @@ pure subroutine interp_find_impl_1d (x, knots, ilbound, weight, ext, status)
     type (status_t), intent(out) :: status
 
     if (ext == NF_INTERP_EVAL_EXTRAPOLATE) then
+        ! Nothing in this specific routine that could go wrong
+        status = NF_STATUS_OK
         ! Specific implementation that assumes extrapolation
         call interp_find_impl_ext (x, knots, ilbound, weight)
     else
@@ -693,6 +695,8 @@ pure subroutine interp_find_1d (x, knots, ilbound, weight, ext, status)
 
     integer (NF_ENUM_KIND) :: lext
     type (status_t) :: lstatus
+
+    lstatus = NF_STATUS_OK
 
     call interp_find_check_input (x, knots, ilbound, weight, lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
