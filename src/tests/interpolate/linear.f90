@@ -448,7 +448,7 @@ subroutine test_bilinear_interpolate (tests)
     allocate (xp1(n1), xp2(n2), fp(n1,n2))
 
     call linspace (xp1, 0.0_PREC, 10.0_PREC)
-    call powerspace (xp2, 0.0_PREC, 5.0_PREC, 2)
+    call powerspace (xp2, 0.0_PREC, 5.0_PREC, 2.0_PREC)
 
     forall (j=1:size(xp2)) fp(:,j) = func1_2d (xp1, xp2(j))
 
@@ -525,7 +525,7 @@ subroutine test_bilinear_extrapolate (tests)
     allocate (xp1(n1), xp2(n2), fp(n1,n2))
 
     call linspace (xp1, -1.0_PREC, 1.0_PREC)
-    call powerspace (xp2, -1.0_PREC, 1.0_PREC, 2)
+    call powerspace (xp2, -1.0_PREC, 1.0_PREC, 2.0_PREC)
 
     forall (j=1:size(xp2)) fp(:,j) = func1_2d (xp1, xp2(j))
 
