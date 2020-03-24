@@ -9,6 +9,11 @@ unset(_FFLAGS)
 unset(_FFLAGS_DEBUG)
 unset(_FFLAGS_RELEASE)
 
+
+if (USE_OPENMP)
+    find_package(OpenMP)
+endif()
+
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     # explicitly add -cpp to run C preprocessor if required
     set(GNU_WARN "-Wall -Wextra -Wno-compare-reals -Warray-temporaries -Wrealloc-lhs -pedantic -Wuninitialized")
@@ -22,10 +27,10 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
         # breaks compilation with gfortran 5.x, possibly with 6.x as well.
         set(GNU_WARN "${GNU_WARN} -Wno-unused-dummy-argument")
     endif()
-    set(_FFLAGS "${GNU_WARN} --std=f2008")
+    set(_FFLAGS "${GNU_WARN} --std=f2008 ${OpenMP_Fortran_FLAGS}")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
-        set(_FFLAGS "/warn:all /standard-semantics /stand:f08")
+        set(_FFLAGS "/warn:all /standard-semantics /stand:f08 ${OpenMP_Fortran_FLAGS}")
         # NOTE: When setting -standard-semantics, resets any previously
         # given -assume std_mod_proc_name, so we need to append it again!
         if (NOT IFORT_STD_MOD_PROC_NAME)
@@ -34,7 +39,7 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
             set(_FFLAGS "${_FFLAGS} /assume:std_mod_proc_name")
         endif ()
     else ()
-        set(_FFLAGS "-warn all -standard-semantics -std08")
+        set(_FFLAGS "-warn all -standard-semantics -std08 ${OpenMP_Fortran_FLAGS}")
         set(_FFLAGS_REPORT "-qopt-report=2 -qopt-report-phase=ipo,loop,par,vec")
         if (OPT_REPORT)
             set(_FFLAGS "${_FFLAGS} ${_FFLAGS_REPORT}")
