@@ -382,9 +382,9 @@ pure subroutine interp_find_cached_impl_1d (x, knots, ilbound, weight, ext, &
     type (search_cache), intent(inout) :: cache
     type (status_t), intent(out) :: status
 
+    status = NF_STATUS_OK
+
     if (ext == NF_INTERP_EVAL_EXTRAPOLATE) then
-        ! Nothing in this specific routine that could go wrong
-        status = NF_STATUS_OK
         ! Specific implementation that assumes extrapolation
         call interp_find_impl_ext (x, knots, ilbound, weight, cache)
     else
@@ -406,9 +406,9 @@ pure subroutine interp_find_impl_1d (x, knots, ilbound, weight, ext, status)
     integer (NF_ENUM_KIND), intent(in) :: ext
     type (status_t), intent(out) :: status
 
+    status = NF_STATUS_OK
+
     if (ext == NF_INTERP_EVAL_EXTRAPOLATE) then
-        ! Nothing in this specific routine that could go wrong
-        status = NF_STATUS_OK
         ! Specific implementation that assumes extrapolation
         call interp_find_impl_ext (x, knots, ilbound, weight)
     else
