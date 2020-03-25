@@ -21,8 +21,7 @@ module numfort_arrays_create
     end interface
 
     interface powerspace
-        procedure powerspace_real32, powerspace_real64, &
-            powerspace_real32_int32, powerspace_real64_int32
+        procedure powerspace_real32, powerspace_real64
     end interface
 
     interface diag
@@ -111,50 +110,6 @@ pure subroutine powerspace_real64 (x, xmin, xmax, pow)
     !   sequence on [0,1].
     integer, parameter :: PREC = real64
 #include "powerspace_impl.f90"
-end subroutine
-
-pure subroutine powerspace_real32_int32 (x, xmin, xmax, pow)
-    !*  POWERSPACE returns a sequence of points obtained by taking the power
-    !   of a sequence of uniformly spaced points on [0,1] and applying
-    !   an affine transformation to match the given start and end point.
-    !
-    !   More specifically, each element in X is computed as
-    !       x(i) = xmin + (xmax-xmin) * u(i) ** pow
-    !   where u(i) is the corresponding element on a uniformly-spaced
-    !   sequence on [0,1].
-    integer, parameter :: PREC = real32
-    real (PREC), intent(out), dimension(:) :: x
-        !*  Array to store "power-spaced" sequence of points
-    real (PREC), intent(in) :: xmin
-        !*  Starting value
-    real (PREC), intent(in) :: xmax
-        !*  Endpoint value
-    integer, intent(in) :: pow
-        !*  Exponent used to create power-spaced sequence
-
-    call powerspace (x, xmin, xmax, real(pow, PREC))
-end subroutine
-
-pure subroutine powerspace_real64_int32 (x, xmin, xmax, pow)
-    !*  POWERSPACE returns a sequence of points obtained by taking the power
-    !   of a sequence of uniformly spaced points on [0,1] and applying
-    !   an affine transformation to match the given start and end point.
-    !
-    !   More specifically, each element in X is computed as
-    !       x(i) = xmin + (xmax-xmin) * u(i) ** pow
-    !   where u(i) is the corresponding element on a uniformly-spaced
-    !   sequence on [0,1].
-    integer, parameter :: PREC = real64
-    real (PREC), intent(out), dimension(:) :: x
-        !*  Array to store "power-spaced" sequence of points
-    real (PREC), intent(in) :: xmin
-        !*  Starting value
-    real (PREC), intent(in) :: xmax
-        !*  Endpoint value
-    integer, intent(in) :: pow
-        !*  Exponent used to create power-spaced sequence
-
-    call powerspace (x, xmin, xmax, real(pow, PREC))
 end subroutine
 
 
