@@ -81,12 +81,12 @@ subroutine ols_2d (y, x, coefs, add_const, trans_x, rcond, rank, res, status)
     !   Note that the routine creates copies for input arrays X and Y as these
     !   will be overwritten by GELSD.
 
-    real (PREC), intent(in), dimension(:,:) :: y
+    real (PREC), intent(in), dimension(:,:), contiguous :: y
         !*  Array of LHS variables (separate regression is performed for each
         !   LHS variables using the same set of RHS variables)
-    real (PREC), intent(in), dimension(:,:) :: x
+    real (PREC), intent(in), dimension(:,:), contiguous :: x
         !*  Array of RHS variables
-    real (PREC), intent(out), dimension(:,:), optional :: coefs
+    real (PREC), intent(out), dimension(:,:), contiguous, optional :: coefs
         !*  Array of estimated coefficients. Argument is optional in case
         !   coefficients should only be stored in RES argument.
     logical, intent(in), optional :: add_const
@@ -221,9 +221,9 @@ subroutine ols_1d (y, x, coefs, add_const, trans_x, rcond, rank, res, status)
     !
     !   See the documentation for OLS_2D for details.
 
-    real (PREC), intent(in), dimension(:), target :: y
-    real (PREC), intent(in), dimension(:,:) :: x
-    real (PREC), intent(out), dimension(:), optional :: coefs
+    real (PREC), intent(in), dimension(:), contiguous, target :: y
+    real (PREC), intent(in), dimension(:,:), contiguous :: x
+    real (PREC), intent(out), dimension(:), contiguous, optional :: coefs
     logical, intent(in), optional :: add_const
     logical, intent(in), optional :: trans_x
     real (PREC), intent(in), optional :: rcond
@@ -231,7 +231,7 @@ subroutine ols_1d (y, x, coefs, add_const, trans_x, rcond, rank, res, status)
     type (lm_data), intent(out), optional :: res
     type (status_t), intent(out), optional :: status
 
-    real (PREC), dimension(:,:), pointer :: ptr_y
+    real (PREC), dimension(:,:), contiguous, pointer :: ptr_y
     real (PREC), dimension(:,:), allocatable :: coefs2d
     integer :: nobs, ncoefs
     type (status_t) :: lstatus
@@ -339,17 +339,17 @@ end subroutine
 subroutine pca (x, scores, ncomp, center, scale, trans_x, &
         sval, loadings, mean_x, std_x, propvar, status)
 
-    real (PREC), intent(in), dimension(:,:) :: x
+    real (PREC), intent(in), dimension(:,:), contiguous :: x
     real (PREC), intent(out), dimension(:,:), contiguous :: scores
     integer, intent(in) :: ncomp
     logical, intent(in), optional :: center
     logical, intent(in), optional :: scale
     logical, intent(in), optional :: trans_x
-    real (PREC), intent(out), dimension(:), optional :: sval
-    real (PREC), intent(out), dimension(:,:), optional :: loadings
-    real (PREC), intent(out), dimension(:), optional :: mean_x
-    real (PREC), intent(out), dimension(:), optional :: std_x
-    real (PREC), intent(out), dimension(:), optional :: propvar
+    real (PREC), intent(out), dimension(:), contiguous, optional :: sval
+    real (PREC), intent(out), dimension(:,:), contiguous, optional :: loadings
+    real (PREC), intent(out), dimension(:), contiguous, optional :: mean_x
+    real (PREC), intent(out), dimension(:), contiguous, optional :: std_x
+    real (PREC), intent(out), dimension(:), contiguous, optional :: propvar
     type (status_t), intent(out), optional :: status
 
     logical :: lscale, lcenter, ltrans_x
@@ -582,11 +582,11 @@ end subroutine
 subroutine pcr_2d (lhs, scores, sval, loadings, coefs, mean_x, std_x, &
         center, add_const, status)
 
-    real (PREC), intent(in), dimension(:,:) :: lhs
+    real (PREC), intent(in), dimension(:,:), contiguous :: lhs
     real (PREC), intent(in), dimension(:,:), contiguous :: scores
-    real (PREC), intent(in), dimension(:) :: sval
+    real (PREC), intent(in), dimension(:), contiguous :: sval
     real (PREC), intent(in), dimension(:,:), contiguous :: loadings
-    real (PREC), intent(out), dimension(:,:) :: coefs
+    real (PREC), intent(out), dimension(:,:), contiguous :: coefs
     real (PREC), intent(in), dimension(:), contiguous, optional :: mean_x
     real (PREC), intent(in), dimension(:), contiguous, optional :: std_x
     logical, intent(in), optional :: add_const
@@ -736,18 +736,18 @@ end subroutine
 subroutine pcr_1d (lhs, scores, sval, loadings, coefs, mean_x, std_x, &
         add_const, center, status)
 
-    real (PREC), intent(in), dimension(:), target :: lhs
+    real (PREC), intent(in), dimension(:), contiguous, target :: lhs
     real (PREC), intent(in), dimension(:,:), contiguous :: scores
-    real (PREC), intent(in), dimensioN(:) :: sval
+    real (PREC), intent(in), dimensioN(:), contiguous :: sval
     real (PREC), intent(in), dimension(:,:), contiguous :: loadings
-    real (PREC), intent(out), dimension(:), target :: coefs
+    real (PREC), intent(out), dimension(:), contiguous, target :: coefs
     real (PREC), intent(in), dimension(:), contiguous, optional :: mean_x
     real (PREC), intent(in), dimension(:), contiguous, optional :: std_x
     logical, intent(in), optional :: add_const
     logical, intent(in), optional :: center
     type (status_t), intent(out), optional :: status
 
-    real (PREC), dimension(:,:), pointer :: ptr_lhs, ptr_coefs
+    real (PREC), dimension(:,:), contiguous, pointer :: ptr_lhs, ptr_coefs
 
     integer :: ncoefs, nobs
 
@@ -839,9 +839,9 @@ end subroutine
 subroutine pcr_pca_2d (lhs, rhs, coefs, ncomp_min, add_const, center, &
         trans_rhs, var_min, res, status)
 
-    real (PREC), intent(in), dimension(:,:) :: lhs
-    real (PREC), intent(in), dimension(:,:) :: rhs
-    real (PREC), intent(out), dimension(:,:) :: coefs
+    real (PREC), intent(in), dimension(:,:), contiguous :: lhs
+    real (PREC), intent(in), dimension(:,:), contiguous :: rhs
+    real (PREC), intent(out), dimension(:,:), contiguous :: coefs
     integer, intent(in), optional :: ncomp_min
         !*  If present, specifies the min. number of principal components to
         !   use (default: all). If VAR_SHARE is not given, NCOMP_MIN will
@@ -951,14 +951,14 @@ subroutine pcr_pca_1d (lhs, rhs, coefs, ncomp_min, add_const, center, &
         trans_rhs, var_min, res, status)
 
     real (PREC), intent(in), dimension(:), contiguous, target :: lhs
-    real (PREC), intent(in), dimension(:,:) :: rhs
-    real (PREC), intent(out), dimension(:), optional :: coefs
+    real (PREC), intent(in), dimension(:,:), contiguous :: rhs
+    real (PREC), intent(out), dimension(:), contiguous, optional :: coefs
     integer, intent(in), optional :: ncomp_min
     logical, intent(in), optional :: add_const
     logical, intent(in), optional :: center
     logical, intent(in), optional :: trans_rhs
     real (PREC), intent(in), optional :: var_min
-    type (lm_data), intent(in out), optional :: res
+    type (lm_data), intent(inout), optional :: res
     type (status_t), intent(out), optional :: status
 
     real (PREC), dimension(:,:), pointer, contiguous :: ptr_lhs
