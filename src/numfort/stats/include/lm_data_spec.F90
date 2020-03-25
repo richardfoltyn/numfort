@@ -1,13 +1,12 @@
 
-public :: __APPEND(lm_data,__PREC)
 
-type :: __APPEND(lm_data,__PREC)
-    real (__PREC), dimension(:), allocatable :: coefs
+type :: lm_data
+    real (PREC), dimension(:), allocatable :: coefs
         !*  Coefficient array of estimated model
     integer, private :: model = 0
         !*  Type of model estimated (OLS, PCR,...)
     
-    real (__PREC) :: var_expl
+    real (PREC) :: var_expl
         !*  Frac of RHS variables explained by principle components used 
         !   in PCR (PCR only!)
     logical, private :: add_const = .false.
@@ -28,17 +27,17 @@ end type
 
 
 interface lm_data_update
-    procedure __APPEND(lm_data_update,__PREC)
+    procedure lm_data_update
 end interface
 
 interface finalize
-    procedure __APPEND(lm_data_finalize,__PREC)
+    procedure lm_data_finalize
 end interface
 
 interface assert_alloc_ptr
-    procedure __APPEND(lm_data_assert_alloc_ptr,__PREC)
+    procedure lm_data_assert_alloc_ptr
 end interface
 
 interface assert_dealloc_ptr
-    procedure __APPEND(lm_data_assert_dealloc_ptr,__PREC)
+    procedure lm_data_assert_dealloc_ptr
 end interface

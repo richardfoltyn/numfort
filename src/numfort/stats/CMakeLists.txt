@@ -15,6 +15,9 @@ set(SOURCE_FILES
     markov.F90
     stats.f90
     stats_lm.F90
+    stats_lm_common.f90
+    stats_lm_real32.F90
+    stats_lm_real64.F90
     stats_qrng.F90
 )
 

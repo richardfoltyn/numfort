@@ -3,9 +3,7 @@
 !-------------------------------------------------------------------------------
 ! OLS
 
-pure subroutine __APPEND(ols_check_input,__PREC) (y, x, coefs, add_const, trans_x, &
-        rcond, res, status)
-    integer, parameter :: PREC = __PREC
+pure subroutine ols_check_input (y, x, coefs, add_const, trans_x, rcond, res, status)
 
     real (PREC), intent(in), dimension(:,:) :: y
     real (PREC), intent(in), dimension(:,:) :: x
@@ -13,7 +11,7 @@ pure subroutine __APPEND(ols_check_input,__PREC) (y, x, coefs, add_const, trans_
     logical, intent(in) :: add_const
     logical, intent(in) :: trans_x
     real (PREC), intent(in) :: rcond
-    type (__APPEND(lm_data,__PREC)), intent(in), dimension(:), optional :: res
+    type (lm_data), intent(in), dimension(:), optional :: res
     type (status_t), intent(out) :: status
 
     integer :: nvars, nobs, nconst, nlhs, ncoefs
@@ -40,13 +38,12 @@ end subroutine
 
 
 
-pure subroutine __APPEND(ols_get_dims,__PREC) (y, x, add_const, trans_x, &
-        nobs, nvars, nlhs, ncoefs, nconst)
+pure subroutine ols_get_dims (y, x, add_const, trans_x, nobs, nvars, nlhs, &
+        ncoefs, nconst)
     !*  OLS_GET_DIMS returns the number of various dimensions of the least-squares
     !   problem, depending on input data arrays and whether these should be
     !   transposed, an intercept added, etc.
 
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:,:) :: x
     real (PREC), intent(in), dimension(:,:) :: y
     logical, intent(in) :: add_const
@@ -71,8 +68,7 @@ end subroutine
 
 
 
-subroutine __APPEND(ols_2d,__PREC) (y, x, coefs, add_const, trans_x, rcond, &
-        rank, res, status)
+subroutine ols_2d (y, x, coefs, add_const, trans_x, rcond, rank, res, status)
     !*  OLS_2D computes the ordinary least-squares problem for given independent
     !   data X and (potentially multiple) dependent variables Y.
     !
@@ -84,8 +80,6 @@ subroutine __APPEND(ols_2d,__PREC) (y, x, coefs, add_const, trans_x, rcond, &
     !
     !   Note that the routine creates copies for input arrays X and Y as these
     !   will be overwritten by GELSD.
-
-    integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in), dimension(:,:) :: y
         !*  Array of LHS variables (separate regression is performed for each
@@ -104,7 +98,7 @@ subroutine __APPEND(ols_2d,__PREC) (y, x, coefs, add_const, trans_x, rcond, &
         !   control the effective rank of the regressor matrix.
     integer, intent(out), optional :: rank
         !*  Contains effective rank of regressor matrix
-    type (__APPEND(lm_data,__PREC)), dimension(:), optional :: res
+    type (lm_data), dimension(:), optional :: res
         !*  Optional result objects for linear models. Note that a separate
         !   object is returned for each LHS variable.
     type (status_t), intent(out), optional :: status
@@ -221,13 +215,11 @@ end subroutine
 
 
 
-subroutine __APPEND(ols_1d,__PREC) (y, x, coefs, add_const, trans_x, rcond, &
-        rank, res, status)
+subroutine ols_1d (y, x, coefs, add_const, trans_x, rcond, rank, res, status)
     !*  OLS_1D provides a convenient wrapper for OLS_2D for one-dimensional
     !   input data (ie for regressions with a single dependent variable).
     !
     !   See the documentation for OLS_2D for details.
-    integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in), dimension(:), target :: y
     real (PREC), intent(in), dimension(:,:) :: x
@@ -236,14 +228,14 @@ subroutine __APPEND(ols_1d,__PREC) (y, x, coefs, add_const, trans_x, rcond, &
     logical, intent(in), optional :: trans_x
     real (PREC), intent(in), optional :: rcond
     integer, intent(out), optional :: rank
-    type (__APPEND(lm_data,__PREC)), intent(out), optional :: res
+    type (lm_data), intent(out), optional :: res
     type (status_t), intent(out), optional :: status
 
     real (PREC), dimension(:,:), pointer :: ptr_y
     real (PREC), dimension(:,:), allocatable :: coefs2d
     integer :: nobs, ncoefs
     type (status_t) :: lstatus
-    type (__APPEND(lm_data,__PREC)), dimension(:), allocatable :: res1d
+    type (lm_data), dimension(:), allocatable :: res1d
 
     nobs = size(y)
     ncoefs = size(coefs)
@@ -276,10 +268,8 @@ end subroutine
 !-------------------------------------------------------------------------------
 ! PCA (Principal component analysis)
 
-pure subroutine __APPEND(pca_check_input,__PREC) (x, scores, ncomp, trans_x, s, &
+pure subroutine pca_check_input (x, scores, ncomp, trans_x, s, &
         loadings, mean_x, std_x, propvar, status)
-    integer, parameter :: PREC = __PREC
-
     real (PREC), intent(in), dimension(:,:) :: x
     real (PREC), intent(in), dimension(:,:) :: scores
     integer, intent(in) :: ncomp
@@ -326,12 +316,11 @@ pure subroutine __APPEND(pca_check_input,__PREC) (x, scores, ncomp, trans_x, s, 
 end subroutine
 
 
-pure subroutine __APPEND(pca_get_dims,__PREC) (x, trans_x, nobs, nvars)
+pure subroutine pca_get_dims (x, trans_x, nobs, nvars)
     !*  PCA_GET_DIMS returns the number of various dimensions of the PCA
     !   problem derived from input data and options (e.g. whether data should
     !   be transposed).
 
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:,:) :: x
     logical, intent(in) :: trans_x
     integer, intent(out) :: nobs, nvars
@@ -347,10 +336,8 @@ pure subroutine __APPEND(pca_get_dims,__PREC) (x, trans_x, nobs, nvars)
 end subroutine
 
 
-subroutine __APPEND(pca,__PREC) (x, scores, ncomp, center, scale, trans_x, &
+subroutine pca (x, scores, ncomp, center, scale, trans_x, &
         sval, loadings, mean_x, std_x, propvar, status)
-
-    integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in), dimension(:,:) :: x
     real (PREC), intent(out), dimension(:,:), contiguous :: scores
@@ -525,9 +512,8 @@ end subroutine
 ! PCR (Principal component regression)
 
 
-pure subroutine __APPEND(pcr_check_input,__PREC) (lhs, scores, sval, loadings, &
+pure subroutine pcr_check_input (lhs, scores, sval, loadings, &
         coefs, mean_x, std_x, add_const, status)
-    integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in), dimension(:,:) :: lhs
     real (PREC), intent(in), dimension(:,:) :: scores
@@ -569,13 +555,14 @@ pure subroutine __APPEND(pcr_check_input,__PREC) (lhs, scores, sval, loadings, &
 
 end subroutine
 
-pure subroutine __APPEND(pcr_get_dims,__PREC) (lhs, scores, coefs, add_const, &
+
+
+pure subroutine pcr_get_dims (lhs, scores, coefs, add_const, &
         nobs, nvars, ncomp, nlhs, ncoefs, nconst)
     !*  PCR_GET_DIMS returns the number of various dimensions of the PCR
     !   problem, depending on input data arrays and whether an intercept
     !   shoud be added, etc.
 
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:,:) :: lhs, scores, coefs
     logical, intent(in) :: add_const
     integer, intent(out) :: nobs, nvars, nlhs, ncoefs, nconst, ncomp
@@ -592,9 +579,8 @@ end subroutine
 
 
 
-subroutine __APPEND(pcr_2d,__PREC) (lhs, scores, sval, loadings, coefs, mean_x, std_x, &
+subroutine pcr_2d (lhs, scores, sval, loadings, coefs, mean_x, std_x, &
         center, add_const, status)
-    integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in), dimension(:,:) :: lhs
     real (PREC), intent(in), dimension(:,:), contiguous :: scores
@@ -747,9 +733,8 @@ end subroutine
 
 
 
-subroutine __APPEND(pcr_1d,__PREC) (lhs, scores, sval, loadings, coefs, &
-        mean_x, std_x, add_const, center, status)
-    integer, parameter :: PREC = __PREC
+subroutine pcr_1d (lhs, scores, sval, loadings, coefs, mean_x, std_x, &
+        add_const, center, status)
 
     real (PREC), intent(in), dimension(:), target :: lhs
     real (PREC), intent(in), dimension(:,:), contiguous :: scores
@@ -778,13 +763,12 @@ subroutine __APPEND(pcr_1d,__PREC) (lhs, scores, sval, loadings, coefs, &
 end subroutine
 
 
-pure subroutine __APPEND(pcr_pca_get_dims,__PREC) (lhs, rhs, add_const, &
-        trans_rhs, nobs, nvars, nlhs, ncoefs, nconst)
+pure subroutine pcr_pca_get_dims (lhs, rhs, add_const, trans_rhs, nobs, nvars, &
+        nlhs, ncoefs, nconst)
     !*  PCR_GET_DIMS returns the number of various dimensions of the PCR
     !   problem, depending on input data arrays and whether an intercept
     !   shoud be added, etc.
 
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:,:) :: lhs, rhs
     logical, intent(in) :: add_const
     logical, intent(in) :: trans_rhs
@@ -807,10 +791,8 @@ pure subroutine __APPEND(pcr_pca_get_dims,__PREC) (lhs, rhs, add_const, &
 end subroutine
 
 
-pure subroutine __APPEND(pcr_pca_check_input,__PREC) (lhs, rhs, ncomp_min, &
-        coefs, add_const, trans_rhs, var_min, res, status)
-
-    integer, parameter :: PREC = __PREC
+pure subroutine pcr_pca_check_input (lhs, rhs, ncomp_min, coefs, add_const, &
+        trans_rhs, var_min, res, status)
 
     real (PREC), intent(in), dimension(:,:) :: lhs
     real (PREC), intent(in), dimension(:,:) :: rhs
@@ -819,7 +801,7 @@ pure subroutine __APPEND(pcr_pca_check_input,__PREC) (lhs, rhs, ncomp_min, &
     logical, intent(in) :: add_const
     logical, intent(in) :: trans_rhs
     real (PREC), intent(in), optional :: var_min
-    type (__APPEND(lm_data,__PREC)), intent(in), dimension(:), optional :: res
+    type (lm_data), intent(in), dimension(:), optional :: res
     type (status_t), intent(out) :: status
 
     integer :: nobs, nvars, nlhs, nconst, ncoefs
@@ -854,10 +836,8 @@ pure subroutine __APPEND(pcr_pca_check_input,__PREC) (lhs, rhs, ncomp_min, &
 end subroutine
 
 
-subroutine __APPEND(pcr_pca_2d,__PREC) (lhs, rhs, coefs, ncomp_min, add_const, &
-        center, trans_rhs, var_min, res, status)
-
-    integer, parameter :: PREC = __PREC
+subroutine pcr_pca_2d (lhs, rhs, coefs, ncomp_min, add_const, center, &
+        trans_rhs, var_min, res, status)
 
     real (PREC), intent(in), dimension(:,:) :: lhs
     real (PREC), intent(in), dimension(:,:) :: rhs
@@ -879,7 +859,7 @@ subroutine __APPEND(pcr_pca_2d,__PREC) (lhs, rhs, coefs, ncomp_min, add_const, &
         !*  If present, specifies the min. share of variance in the RHS
         !   variables that the (automatically) selected number of principal
         !   components should explain.
-    type (__APPEND(lm_data,__PREC)), dimension(:), optional :: res
+    type (lm_data), dimension(:), optional :: res
     type (status_t), intent(out), optional :: status
 
     type (status_t) :: lstatus
@@ -967,10 +947,8 @@ subroutine __APPEND(pcr_pca_2d,__PREC) (lhs, rhs, coefs, ncomp_min, add_const, &
 end subroutine
 
 
-subroutine __APPEND(pcr_pca_1d,__PREC) (lhs, rhs, coefs, ncomp_min, add_const, &
-        center, trans_rhs, var_min, res, status)
-
-    integer, parameter :: PREC = __PREC
+subroutine pcr_pca_1d (lhs, rhs, coefs, ncomp_min, add_const, center, &
+        trans_rhs, var_min, res, status)
 
     real (PREC), intent(in), dimension(:), contiguous, target :: lhs
     real (PREC), intent(in), dimension(:,:) :: rhs
@@ -980,12 +958,12 @@ subroutine __APPEND(pcr_pca_1d,__PREC) (lhs, rhs, coefs, ncomp_min, add_const, &
     logical, intent(in), optional :: center
     logical, intent(in), optional :: trans_rhs
     real (PREC), intent(in), optional :: var_min
-    type (__APPEND(lm_data,__PREC)), intent(in out), optional :: res
+    type (lm_data), intent(in out), optional :: res
     type (status_t), intent(out), optional :: status
 
     real (PREC), dimension(:,:), pointer, contiguous :: ptr_lhs
     real (PREC), dimension(:,:), allocatable :: coefs2d
-    type (__APPEND(lm_data,__PREC)), dimension(1) :: res1d
+    type (lm_data), dimension(1) :: res1d
 
     integer :: nobs, ncoefs, nconst, nvars, nlhs
     logical :: ladd_const, ltrans_rhs
@@ -1017,12 +995,11 @@ subroutine __APPEND(pcr_pca_1d,__PREC) (lhs, rhs, coefs, ncomp_min, add_const, &
 end subroutine
 
 
-subroutine __APPEND(lm_post_estim,__PREC) (model, lhs, rhs, rsq, status)
+subroutine lm_post_estim (model, lhs, rhs, rsq, status)
     !*  LM_POST_ESTIM computes common post-estimation statistics such as
     !   R^2 for a given linear model. The model must have been estimated
     !   using before invoking this routine.
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(lm_data,__PREC)), intent(in) :: model
+    type (lm_data), intent(in) :: model
         !*  Estimated model
     real (PREC), intent(in), dimension(:), contiguous :: lhs
         !*  Vector of observations of the dependent variable used to estimate

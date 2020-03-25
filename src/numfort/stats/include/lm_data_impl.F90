@@ -1,9 +1,8 @@
 
-subroutine __APPEND(lm_data_update,__PREC) (self, model, coefs, nobs, nvars, &
+subroutine lm_data_update (self, model, coefs, nobs, nvars, &
         ncomp, add_const, trans_rhs, var_expl, rank_rhs)
     
-    integer, parameter :: PREC  = __PREC
-    type (__APPEND(lm_data,__PREC)), intent(inout) :: self
+    type (lm_data), intent(inout) :: self
     integer, intent(in), optional :: model
     real (PREC), intent(in), dimension(:), optional :: coefs
     integer, intent(in), optional :: nobs
@@ -29,16 +28,18 @@ subroutine __APPEND(lm_data_update,__PREC) (self, model, coefs, nobs, nvars, &
 end subroutine
 
 
-subroutine __APPEND(lm_data_finalize,__PREC) (self)
-    type (__APPEND(lm_data,__PREC)), intent(inout) :: self
+
+subroutine lm_data_finalize (self)
+    type (lm_data), intent(inout) :: self
     
     if (allocated(self%coefs)) deallocate (self%coefs)
 end subroutine
 
 
-subroutine __APPEND(lm_data_assert_alloc_ptr,__PREC) (self, ptr)
-    type (__APPEND(lm_data,__PREC)), intent(inout), target, optional :: self
-    type (__APPEND(lm_data,__PREC)), intent(inout), pointer :: ptr
+
+subroutine lm_data_assert_alloc_ptr (self, ptr)
+    type (lm_data), intent(inout), target, optional :: self
+    type (lm_data), intent(inout), pointer :: ptr
     
     if (present(self)) then
         ptr => self
@@ -48,9 +49,10 @@ subroutine __APPEND(lm_data_assert_alloc_ptr,__PREC) (self, ptr)
 end subroutine
 
 
-subroutine __APPEND(lm_data_assert_dealloc_ptr,__PREC) (self, ptr)
-    type (__APPEND(lm_data,__PREC)), intent(in), target, optional :: self
-    type (__APPEND(lm_data,__PREC)), intent(inout), pointer :: ptr
+
+subroutine lm_data_assert_dealloc_ptr (self, ptr)
+    type (lm_data), intent(in), target, optional :: self
+    type (lm_data), intent(inout), pointer :: ptr
 
     if (associated(ptr)) then
         if (.not. present(self)) then
