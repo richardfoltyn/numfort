@@ -813,10 +813,11 @@ pure subroutine interp_find_decr_ext_impl (x, knots, ilbound, weight)
     ! Manually compute first element
     xi = x(1)
     iub = bsearch (xi, knots)
-    ilbound(1) = iub
     xub = knots(iub+1)
     dx = xub - knots(iub)
     wi = (xub - xi) / dx
+
+    ilbound(1) = iub
     weight(1) = wi
 
     if (nx == 1) return
@@ -831,31 +832,34 @@ pure subroutine interp_find_decr_ext_impl (x, knots, ilbound, weight)
     ilast = ilb
 
     ! Heuristically choose between binary and linear search
-    ! Do linear search if there are 16 elements between 2,...,NX-1;
-    ! which means that there are 18 elements in KNOTS that span X, and thus
-    ! (iub - ilb + 1) = 18.
-    if ((iub - ilb) <= 17) then
+    ! Do linear search if there are 16 elements between 1,...,NX;
+    ! and thus (iub - ilb + 1) = 16.
+    if ((iub - ilb) <= 15) then
         do i = 2, nx - 1
             xi = x(i)
             iub = lsearch_bounded (xi, knots, ilb, iub+1)
-            ilbound(i) = iub
             xub = knots(iub+1)
             dx = xub - knots(iub)
             wi = (xub - xi) / dx
+
+            ilbound(i) = iub
             weight(i) = wi
         end do
     else
         do i = 2, nx-1
             xi = x(i)
             iub = bsearch_bounded (xi, knots, ilb, iub+1)
-            ilbound(i) = iub
             xub = knots(iub+1)
             dx = xub - knots(iub)
             wi = (xub - xi) / dx
+
+            ilbound(i) = iub
             weight(i) = wi
         end do
     end if
 
+    ! Write back index, weight for last element here instead of doing
+    ! it immediately as elements 1 and NX could be far apart.
     ilbound(nx) = ilast
     weight(nx) = wlast
 
