@@ -238,11 +238,11 @@ subroutine ols_1d (y, x, coefs, add_const, trans_x, rcond, rank, res, status)
     type (lm_data), dimension(:), allocatable :: res1d
 
     nobs = size(y)
-    ncoefs = size(coefs)
 
     ptr_y(1:nobs,1:1) => y
 
     if (present(coefs)) then
+        ncoefs = size(coefs)
         allocate (coefs2d(ncoefs,1))
     end if
 
