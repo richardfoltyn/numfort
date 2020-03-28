@@ -12,6 +12,7 @@ module numfort_common_input_checks
     public :: check_nonneg
     public :: check_nonzero
     public :: check_enum
+    public :: check_range
 
     interface check_positive
         procedure check_positive_real32, check_positive_real64, &
@@ -24,6 +25,10 @@ module numfort_common_input_checks
 
     interface check_nonzero
         procedure check_nonzero_real32, check_nonzero_real64
+    end interface
+
+    interface check_range
+        procedure check_range_real32, check_range_real64
     end interface
 
 contains
@@ -102,6 +107,27 @@ pure subroutine check_nonzero_real64 (dummy, val, name, status, msg)
 #include "check_nonzero.f90"
 end subroutine
 
+
+! ------------------------------------------------------------------------------
+! CHECK_RANGE implementations
+
+pure subroutine check_range_real32 (dummy, val, lb, ub, name, status, msg)
+    integer, parameter :: PREC = real32
+    real (PREC), intent(in) :: dummy
+    real (PREC), intent(in), optional :: val
+    real (PREC), intent(in), optional :: lb, ub
+
+#include "check_range.f90"
+end subroutine
+
+pure subroutine check_range_real64 (dummy, val, lb, ub, name, status, msg)
+    integer, parameter :: PREC = real64
+    real (PREC), intent(in) :: dummy
+    real (PREC), intent(in), optional :: val
+    real (PREC), intent(in), optional :: lb, ub
+
+#include "check_range.f90"
+end subroutine
 
 ! ------------------------------------------------------------------------------
 
