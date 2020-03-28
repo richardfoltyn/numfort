@@ -15,7 +15,9 @@ set(SOURCE_FILES
     shape.F90
     strings.F90
     swap.F90
-    testing.F90
+    testing.f90
+    testing_real32.F90
+    testing_real64.F90
 )
 
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})

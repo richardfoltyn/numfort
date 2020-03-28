@@ -1,7 +1,6 @@
 
-#include <numfort.h>
 
-module numfort_common_testing
+module numfort_common_testing_real32
     !*  Module NUMFORT_COMMON_TESTING contains routines to perform various
     !   tests, eg. if two values are approximately close.
 
@@ -16,19 +15,18 @@ module numfort_common_testing
     public :: all_close
     public :: is_close
 
-#include <numfort_real32.h>
-#include "include/testing_spec.F90"
+    integer, parameter :: PREC = real32
 
-#include <numfort_real64.h>
-#include "include/testing_spec.F90"
+    interface all_close
+        procedure all_close_0d, all_close_1d, all_close_2d, all_close_3d
+    end interface
+
+    interface is_close
+        procedure is_close
+    end interface
 
     contains
 
-#include <numfort_real32.h>
 #include "include/testing_impl.F90"
-
-#include <numfort_real64.h>
-#include "include/testing_impl.F90"
-
 
 end module
