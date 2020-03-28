@@ -5,6 +5,7 @@ module numfort_stats_markov_simulate_real64_int8
     use, intrinsic :: iso_fortran_env
 
     use numfort_common_status
+    use numfort_common_testing, only: all_close
     use numfort_stats_markov_real64
 
     implicit none

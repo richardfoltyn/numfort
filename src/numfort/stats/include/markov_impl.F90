@@ -331,12 +331,12 @@ end subroutine
 
 
 subroutine ergodic_dist (tm, edist, inverse, maxiter, &
-        is_transposed, tol, initial, work, status)
+        transposed, tol, initial, work, status)
     !*  ERGODIC_DIST returns the ergodic distribution implied by a given
     !   Markov transition matrix using one of two methods (see argument INVERSE).
-    real (PREC), intent(in), dimension(:,:) :: tm
+    real (PREC), intent(in), dimension(:,:), contiguous :: tm
         !*  Markov transition matrix.
-    real (PREC), intent(inout), dimension(:) :: edist
+    real (PREC), intent(inout), dimension(:), contiguous :: edist
         !*  Contains ergodic distribution on successful exit
     logical, intent(in), optional :: inverse
         !*  If present and true, compute ergodic distribution using the
@@ -344,7 +344,7 @@ subroutine ergodic_dist (tm, edist, inverse, maxiter, &
         !   transition matrix until element-wise convergence.
     integer, intent(in), optional :: maxiter
         !*  Maximum number of iterations if INVERSE is .FALSE.
-    logical, intent(in), optional :: is_transposed
+    logical, intent(in), optional :: transposed
         !*  If present and true, assume that TM is a transposed transition
         !   matrix, ie TM(i,j) = Prob(x'=i|x=j). (default: false)
     real (PREC), intent(in), optional :: tol
@@ -373,7 +373,7 @@ subroutine ergodic_dist (tm, edist, inverse, maxiter, &
         !*  Number of iterations to perform before checking for convergence
         !   when iterative method is used.
     integer :: i, j, lmaxiter, n, NBATCH
-    logical :: linverse, lis_transposed, linitial
+    logical :: linverse, ltransposed, linitial
     real (PREC) :: ltol
     type (status_t) :: lstatus
     real (PREC) :: mass
@@ -402,11 +402,11 @@ subroutine ergodic_dist (tm, edist, inverse, maxiter, &
     linitial = .false.
     linverse = .true.
     lmaxiter = 10000
-    lis_transposed = .false.
+    ltransposed = .false.
     ltol = 1.0e-12_PREC
     if (present(inverse)) linverse = inverse
     if (present(maxiter)) lmaxiter = maxiter
-    if (present(is_transposed)) lis_transposed = is_transposed
+    if (present(transposed)) ltransposed = transposed
     if (present(tol)) ltol = tol
     if (present(initial)) linitial = initial
 
@@ -433,7 +433,7 @@ subroutine ergodic_dist (tm, edist, inverse, maxiter, &
     shp2d = n
     call workspace_get_ptr (ptr_work, shp2d, tm_T)
 
-    if (lis_transposed) then
+    if (ltransposed) then
         tm_T(:,:) = tm
     else
         tm_T(:,:) = transpose(tm)
@@ -537,9 +537,9 @@ subroutine moments (states, tm, mean, acorr, sigma, sigma_e, &
         edist, inverse, status)
     !*  MOMENTS computes selected moments implied by a Markov
     !   process with given state space and transition matrix.
-    real (PREC), intent(in), dimension(:) :: states
+    real (PREC), intent(in), dimension(:), contiguous :: states
         !*  Markov chain state space
-    real (PREC), intent(in), dimension(:,:) :: tm
+    real (PREC), intent(in), dimension(:,:), contiguous :: tm
         !*  Transition matrix with element (i,j) being the transition
         !   probability Prob[x_t=s_j|x_{t-1}=s_i]
     real (PREC), intent(out), optional :: mean
@@ -559,7 +559,7 @@ subroutine moments (states, tm, mean, acorr, sigma, sigma_e, &
         !   (ignored if EDIST argument is present).
     type (status_t), intent(out), optional :: status
 
-    real (PREC), dimension(:), pointer :: ptr_pmf
+    real (PREC), dimension(:), pointer, contiguous :: ptr_pmf
     real (PREC), dimension(:), allocatable :: x
     logical :: linverse
     real (PREC) :: mean_x, var_x, covar_x, acorr_x
