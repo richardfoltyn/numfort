@@ -426,6 +426,7 @@ subroutine test_power_ppolyval_cubic (tests)
     real (PREC), dimension(:,:), allocatable :: ydat
     real (PREC), dimension(:), allocatable :: knots, coefs_bern, coefs
     real (PREC), dimension(:), allocatable :: coefs_bern_d1, coefs_d1
+    real (PREC), dimension(:), allocatable :: rwork
     real (PREC) :: lb, ub
     integer :: n, deg, nknots, ncoefs, ncoefs_bern
     type (status_t) :: status
@@ -512,9 +513,13 @@ subroutine test_power_ppolyval_cubic (tests)
     ! were used to fit the data.
     allocate (yy(nknots))
     call ppolyval (pp_d1, knots, coefs_d1, knots, yy, status=status)
-    is_ok = all_close (yy, ydat(2,:), atol=1.0e-8_PREC, rtol=0.0_PREC)
+    ! Create contiguous array to be used as argument
+    allocate (rwork(size(ydat, 2)), source=ydat(2,:))
+    is_ok = all_close (yy, rwork, atol=1.0e-8_PREC, rtol=0.0_PREC)
     call tc%assert_true (status == NF_STATUS_OK .and. is_ok, &
         'D1: Comparing to true values at original knots')
+
+    deallocate (rwork)
 
 end subroutine
 
