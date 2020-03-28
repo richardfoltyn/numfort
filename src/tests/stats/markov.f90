@@ -30,6 +30,9 @@ subroutine test_all ()
     call test_rouwenhorst_iid (tests)
     call test_rouwenhorst_python (tests)
 
+    call test_simulate (tests)
+    call test_simulate_advanced (tests)
+
     call tests%print ()
 
 end subroutine
@@ -215,7 +218,7 @@ subroutine test_rouwenhorst_python (tests)
 
     tm_T(:,:) = transpose(tm)
     status = NF_STATUS_UNDEFINED
-    call markov_ergodic_dist (tm_T, edist2, inverse=.true., is_transposed=.true., &
+    call markov_ergodic_dist (tm_T, edist2, inverse=.true., transposed=.true., &
         work=work, status=status)
 
     call tc%assert_true (status == NF_STATUS_OK, &
@@ -236,7 +239,7 @@ subroutine test_rouwenhorst_python (tests)
 
     edist2(:) = 0.0
     status = NF_STATUS_UNDEFINED
-    call markov_ergodic_dist (tm_T, edist2, inverse=.false., is_transposed=.true., &
+    call markov_ergodic_dist (tm_T, edist2, inverse=.false., transposed=.true., &
         work=work, status=status)
 
     call tc%assert_true (status == NF_STATUS_OK, &
@@ -247,7 +250,296 @@ subroutine test_rouwenhorst_python (tests)
 
     deallocate (states, tm, tm_T, edist, edist2)
 
+end subroutine
+
+
+
+subroutine test_simulate (tests)
+    class (test_suite) :: tests
+
+    class (test_case), pointer :: tc
+
+    real (PREC), dimension(:,:), allocatable :: transm, transm_T
+    real (PREC), dimension(:), allocatable :: states
+    integer, dimension(:), allocatable :: sim, sim_T
+    integer :: n, Nobs
+    integer :: in, ir, is
+    real (PREC) :: rho, sigma
+    real (PREC), parameter :: RHO_ALL(*) = [ real (PREC) :: 0.0, 0.2, 0.5, 0.9]
+    real (PREC), parameter :: SIGMA_ALL(*) = [ real (PREC) :: 0.01, 0.1, 0.2]
+    integer, parameter :: N_ALL(*) = [3, 5, 7]
+    logical :: transposed, values_ok
+    type (str) :: msg
+    type (status_t) :: status, status1, status2
+
+    tc => tests%add_test ('Unit tests for Markov simulation routine')
+
+    ! === Input checks ===
+
+    ! 1. Invalid transition matrix
+    Nobs = 100
+    allocate (sim(Nobs))
+    n = 2
+    allocate (transm(n,n), source=0.0_PREC)
+    allocate (transm_T(n,n), source=0.0_PREC)
+
+    status = NF_STATUS_UNDEFINED
+    call markov_simulate (transm, 1, sim, transposed=.false., status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
+        'Invalid transm. #1, transposed=.false.')
+
+    status = NF_STATUS_UNDEFINED
+    call markov_simulate (transm, 1, sim, transposed=.true., status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
+        'Invalid transm. #1, transposed=.true.')
+
+    transm(:,:) = 1.0
+    transm_T(:,:) = 1.0
+    status = NF_STATUS_UNDEFINED
+    call markov_simulate (transm, 1, sim, transposed=.false., status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
+        'Invalid transm. #2, transposed=.false.')
+
+    status = NF_STATUS_UNDEFINED
+    call markov_simulate (transm, 1, sim, transposed=.true., status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
+        'Invalid transm. #2, transposed=.true.')
+
+    ! 2. Invalid initial value
+    transm(:,:) = 1.0_PREC / n
+    transm_T(:,:) = 1.0_PREC / n
+    status = NF_STATUS_UNDEFINED
+    call markov_simulate (transm, 0, sim, transposed=.false., status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
+        'Invalid initial state < 0, transposed=.false.')
+
+    status = NF_STATUS_UNDEFINED
+    call markov_simulate (transm, n+1, sim, transposed=.false., status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
+        'Invalid initial state > N, transposed=.false.')
+
+    deallocate (transm, transm_T, sim)
+
+    ! === Compare transposed vs. non-transposed TM input ===
+
+    Nobs = 10000
+    allocate (sim(Nobs), sim_T(Nobs))
+
+    do in = 1, size(N_ALL)
+
+        n = N_ALL(in)
+
+        allocate (transm(n,n), transm_T(n,n), states(n))
+
+        do ir = 1, size(RHO_ALL)
+            do is = 1, size(SIGMA_ALL)
+                rho = RHO_ALL(ir)
+                sigma = SIGMA_ALL(is)
+
+                call rouwenhorst (rho, sigma, states, transm)
+                transm_T(:,:) = transpose(transm)
+
+                call set_seed (1234)
+                status1 = NF_STATUS_UNDEFINED
+                sim(:) = 0
+                call markov_simulate (transm, 1, sim, transposed=.false., &
+                    status=status1)
+
+                call set_seed (1234)
+                status2 = NF_STATUS_UNDEFINED
+                sim_T(:) = 0
+                call markov_simulate (transm_T, 1, sim_T, transposed=.true., &
+                    status=status2)
+
+                values_ok = all(sim == sim_T)
+
+                msg = 'Simulation for N=' // str(n, 'i0') &
+                    // '; rho=' // str(rho, 'f0.2') &
+                    // '; sigma=' // str(sigma, 'f0.2') &
+                    // ': transposed == non-transposed'
+                call tc%assert_true (values_ok .and. status1 == NF_STATUS_OK &
+                    .and. status2 == NF_STATUS_OK, msg)
+
+            end do
+        end do
+
+        deallocate (transm, transm_T, states)
+    end do
 
 end subroutine
+
+
+
+subroutine test_simulate_advanced (tests)
+    class (test_suite) :: tests
+
+    class (test_case), pointer :: tc
+
+    real (PREC), dimension(:,:), allocatable :: transm, transm_T
+    real (PREC), dimension(:,:), allocatable :: pmf_trans, pmf_sample
+    real (PREC), dimension(:), allocatable :: states, edist
+    integer, dimension(:,:), allocatable :: ntrans
+    integer, dimension(:), allocatable :: sim, sim_T
+    integer :: n, Nobs
+    integer :: in, ir, is, i
+    real (PREC) :: rho, sigma
+    real (PREC), parameter :: RHO_ALL(*) = [ real (PREC) :: 0.0, 0.2d0, 0.5d0, 0.9d0]
+    real (PREC), parameter :: SIGMA_ALL(*) = [ real (PREC) :: 0.01d0, 0.1d0, 0.2d0]
+    integer, parameter :: N_ALL(*) = [3, 5]
+    real (PREC), parameter :: rtol = 5.0e-2_PREC, atol=1.0e-3_PREC
+    logical :: transposed, values_ok
+    type (str) :: msg
+    type (status_t) :: status, status1, status2
+
+    tc => tests%add_test ('Unit tests for Markov adv. simulation routine')
+
+    ! === Input checks ===
+
+    ! 1. Invalid transition matrix
+    Nobs = 100
+    allocate (sim(Nobs))
+    n = 2
+    allocate (transm(n,n), source=0.0_PREC)
+    allocate (transm_T(n,n), source=0.0_PREC)
+
+    status = NF_STATUS_UNDEFINED
+    call markov_simulate_advanced (transm, 1, sim, transposed=.false., status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
+        'Invalid transm. #1, transposed=.false.')
+
+    status = NF_STATUS_UNDEFINED
+    call markov_simulate_advanced (transm, 1, sim, transposed=.true., status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
+        'Invalid transm. #1, transposed=.true.')
+
+    transm(:,:) = 1.0
+    transm_T(:,:) = 1.0
+    status = NF_STATUS_UNDEFINED
+    call markov_simulate_advanced (transm, 1, sim, transposed=.false., status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
+        'Invalid transm. #2, transposed=.false.')
+
+    status = NF_STATUS_UNDEFINED
+    call markov_simulate_advanced (transm, 1, sim, transposed=.true., status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
+        'Invalid transm. #2, transposed=.true.')
+
+    ! 2. Invalid initial value
+    transm(:,:) = 1.0_PREC / n
+    transm_T(:,:) = 1.0_PREC / n
+    status = NF_STATUS_UNDEFINED
+    call markov_simulate_advanced (transm, 0, sim, transposed=.false., status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
+        'Invalid initial state < 0, transposed=.false.')
+
+    status = NF_STATUS_UNDEFINED
+    call markov_simulate_advanced (transm, n+1, sim, transposed=.false., status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
+        'Invalid initial state > N, transposed=.false.')
+
+    deallocate (transm, transm_T, sim)
+
+    ! === Compare transposed vs. non-transposed TM input ===
+
+    Nobs = 10000
+    allocate (sim(Nobs), sim_T(Nobs))
+
+    do in = 1, size(N_ALL)
+
+        n = N_ALL(in)
+
+        allocate (transm(n,n), transm_T(n,n), states(n), edist(n))
+        allocate (pmf_trans(n,n), pmf_sample(n,n))
+        allocate (ntrans(n,n))
+
+        do ir = 1, size(RHO_ALL)
+            do is = 1, size(SIGMA_ALL)
+                rho = RHO_ALL(ir)
+                sigma = SIGMA_ALL(is)
+
+                call rouwenhorst (rho, sigma, states, transm)
+                transm_T(:,:) = transpose(transm)
+
+                call set_seed (1234)
+                status1 = NF_STATUS_UNDEFINED
+                sim(:) = 0
+                call markov_simulate_advanced (transm, 1, sim, rtol=rtol, &
+                    atol=atol, transposed=.false., status=status1)
+
+                call set_seed (1234)
+                status2 = NF_STATUS_UNDEFINED
+                sim_T(:) = 0
+                call markov_simulate_advanced (transm_T, 1, sim_T, rtol=rtol, &
+                    atol=atol, transposed=.true., status=status2)
+
+                values_ok = all(sim == sim_T)
+
+                msg = 'Simulation for N=' // str(n, 'i0') &
+                    // '; rho=' // str(rho, 'f0.2') &
+                    // '; sigma=' // str(sigma, 'f0.2') &
+                    // ': transposed == non-transposed'
+                call tc%assert_true (values_ok .and. status1 == NF_STATUS_OK &
+                    .and. status2 == NF_STATUS_OK, msg)
+
+                ! Check that generated sequence is close to actual
+                ! transition matrix
+                call count_trans (sim, ntrans)
+
+                ! Theoretical transition PMF
+                call markov_ergodic_dist (transm, edist, inverse=.true.)
+                do i = 1, n
+                    pmf_trans(i,:) = transm(i,:) * edist(i)
+                end do
+
+                ! Transition PMF for simulated sample
+                do i = 1, n
+                    pmf_sample(i,:) = ntrans(i,:) / real(sum(ntrans), PREC)
+                end do
+
+                ! This is not exactly the terminal condition that simulation
+                ! routine computes, so we need to less restrictive tolerance
+                values_ok = all_close (pmf_sample, pmf_trans, &
+                    atol=atol + 1.0e-3_PREC, rtol=rtol)
+
+                msg = 'Simulation for N=' // str(n, 'i0') &
+                        // '; rho=' // str(rho, 'f0.2') &
+                        // '; sigma=' // str(sigma, 'f0.2') &
+                        // ': close trans. frequencies'
+                call tc%assert_true (values_ok, msg)
+
+            end do
+        end do
+
+        deallocate (transm, transm_T, ntrans, states, edist)
+        deallocate (pmf_trans, pmf_sample)
+    end do
+
+end subroutine
+
+
+
+pure subroutine count_trans (x, num)
+    !*  COUNT_TRANS returns the number of observed transitions for each
+    !   transition type.
+    integer, intent(in), dimension(:), contiguous :: x
+    integer, intent(out), dimension(:,:), contiguous :: num
+    !*  Matrix containing the number of transitions for each possible
+    !   combination of origin and destrination values.
+
+    integer :: i, n
+    integer :: ifrom,  ito
+
+    n = size(x)
+    num = 0
+
+    do i = 1, n - 1
+        ifrom = x(i)
+        ito = x(i+1)
+        num(ifrom, ito) = num(ifrom,ito) + 1
+    end do
+
+end subroutine
+
+
 
 end program
