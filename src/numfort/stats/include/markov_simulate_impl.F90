@@ -1,11 +1,8 @@
 
 
-subroutine __APPEND2(simulate_check_input,__PREC,__INTSIZE) (tm, s0, &
-        tol, prob_low, prob_scale, status)
+subroutine simulate_check_input (tm, s0, tol, prob_low, prob_scale, status)
     !*  SIMULATE_CHECK_INPUT performs input checking for the routines
     !   MARKOV_SIMULATE and MARKOV_SIMULATE_ADVANCED.
-    integer, parameter :: INTSIZE = __INTSIZE
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:,:) :: tm
     integer (INTSIZE), intent(in) :: s0
     real (PREC), intent(in), optional :: tol
@@ -42,11 +39,7 @@ end subroutine
 
 
 
-subroutine __APPEND2(simulate,__PREC,__INTSIZE) (tm, s0, seq, status)
-
-    integer, parameter :: INTSIZE = __INTSIZE
-    integer, parameter :: PREC = __PREC
-
+subroutine simulate (tm, s0, seq, status)
     real (PREC), intent(in), dimension(:,:) :: tm
         !*  Markov process transition matrix
     integer (INTSIZE), intent(in) :: s0
@@ -114,18 +107,14 @@ end subroutine
 
 
 
-subroutine __APPEND2(simulate_advanced,__PREC,__INTSIZE) (tm, s0, seq, tol, &
-            prob_low, prob_scale, tm_sample, status)
+subroutine simulate_advanced (tm, s0, seq, tol, prob_low, prob_scale, &
+        tm_sample, status)
     !*  MARKOV_SIMULATE_ADVANCED samples a realization of a Markov process that
     !   satisfies "steady-state" properties even in smaller samples.
     !   Optionally, the routine supports oversampling low-probability
     !   transitions by scaling up the probability of such transitions
     !   (and proportionally scaling down the probabilities of all other
     !   transitions).
-
-    integer, parameter :: INTSIZE = __INTSIZE
-    integer, parameter :: PREC = __PREC
-
     real (PREC), intent(in), dimension(:,:) :: tm
         !*  Markov process transition matrix
     integer (INTSIZE), intent(in) :: s0

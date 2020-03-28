@@ -12,7 +12,10 @@ set(SOURCE_FILES
     dfrechet.F90
     dgenpareto.F90
     dlognorm.F90
-    markov.F90
+    markov.f90
+    markov_real64.F90
+    markov_simulate_real64.F90
+    markov_simulate_real64_int8.F90
     stats.f90
     stats_lm.F90
     stats_lm_common.f90

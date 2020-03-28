@@ -1,9 +1,8 @@
 
 
 
-pure function __APPEND(is_trans_matrix,__PREC) (mat, tol, transposed) result(res)
+pure function is_trans_matrix (mat, tol, transposed) result(res)
     !*  IS_TRANS_MATRIX checks whether argument is a valid transition matrix
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:,:) :: mat
         !*  Transition matrix to check
     real (PREC), intent(in), optional :: tol
@@ -41,11 +40,10 @@ end function
 
 
 
-subroutine __APPEND(truncate_trans_matrix,__PREC) (mat, tol, transposed)
+subroutine truncate_trans_matrix (mat, tol, transposed)
     !*  TRUNCATE_TRANS_MATRIX truncates low-probability transition in a
     !   Markov transition matrix towards zero and re-normalizes the
     !   rows or columns such that probabilities sum to 1.0.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(inout), dimension(:,:) :: mat
         !*  Markov transition matrix with elements MAT(i,j) = Prob[x'=j | x=i]
     real (PREC), intent(in) :: tol
@@ -91,13 +89,9 @@ end subroutine
 
 
 
-subroutine __APPEND(markov_approx_input_checks,__PREC) (rho, sigma, states, &
-        tm, status)
+subroutine markov_approx_input_checks (rho, sigma, states, tm, status)
     !*  MARKOV_APPROX_INPUT_CHECKS validates inputs for the ROUWENHORST
     !   and TAUCHEN routines.
-
-    integer, parameter :: PREC = __PREC
-
     real (PREC), intent(in) :: rho
     real (PREC), intent(in) :: sigma
     real (PREC), intent(in), dimension(:) :: states
@@ -129,11 +123,11 @@ subroutine __APPEND(markov_approx_input_checks,__PREC) (rho, sigma, states, &
 
 end subroutine
 
-subroutine __APPEND(rouwenhorst,__PREC) (rho, sigma, states, tm, sigma_cond, status)
+
+
+subroutine rouwenhorst (rho, sigma, states, tm, sigma_cond, status)
     !*  ROUWENHORST returns the discretized approximation of an AR(1) process
     !   using the Rouwenhorst method.
-    integer, parameter :: PREC = __PREC
-
     real (PREC), intent(in) :: rho
         !*  Autocorrelation coefficient
     real (PREC), intent(in) :: sigma
@@ -227,8 +221,7 @@ subroutine __APPEND(rouwenhorst,__PREC) (rho, sigma, states, tm, sigma_cond, sta
 end subroutine
 
 
-subroutine __APPEND(rouwenhorst_pad_matrix,__PREC) (mat, res)
-    integer, parameter :: PREC = __PREC
+subroutine rouwenhorst_pad_matrix (mat, res)
     real (PREC), intent(in), dimension(:,:) :: mat
     real (PREC), intent(out), dimension(:,:) :: res
 
@@ -244,11 +237,9 @@ end subroutine
 
 
 
-subroutine __APPEND(tauchen,__PREC) (rho, sigma, states, tm, m, sigma_cond, &
-        status)
+subroutine tauchen (rho, sigma, states, tm, m, sigma_cond, status)
     !*  TAUCHEN returns the discretized approximation of an AR(1) process
     !   using the Tauche (1986) method.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: rho
         !*  Autocorrelation coefficient
     real (PREC), intent(in) :: sigma
@@ -275,8 +266,7 @@ subroutine __APPEND(tauchen,__PREC) (rho, sigma, states, tm, m, sigma_cond, &
     integer :: i, k, n
     type (status_t) :: lstatus
 
-    type (__APPEND(dnorm,__PREC)), parameter :: norm = &
-        __APPEND(dnorm,__PREC) (loc=0.0_PREC,scale=1.0_PREC)
+    type (dnorm), parameter :: norm = dnorm (loc=0.0_PREC,scale=1.0_PREC)
 
     lstatus = NF_STATUS_OK
 
@@ -339,14 +329,14 @@ subroutine __APPEND(tauchen,__PREC) (rho, sigma, states, tm, m, sigma_cond, &
 end subroutine
 
 
-subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
+
+subroutine ergodic_dist (tm, edist, inverse, maxiter, &
         is_transposed, tol, initial, work, status)
     !*  ERGODIC_DIST returns the ergodic distribution implied by a given
     !   Markov transition matrix using one of two methods (see argument INVERSE).
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:,:) :: tm
         !*  Markov transition matrix.
-    real (PREC), intent(in out), dimension(:) :: edist
+    real (PREC), intent(inout), dimension(:) :: edist
         !*  Contains ergodic distribution on successful exit
     logical, intent(in), optional :: inverse
         !*  If present and true, compute ergodic distribution using the
@@ -364,7 +354,7 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
         !*  If present and true, use the values in EDIST as the initial
         !   guess for the ergodic distribution (default: false).
         !   Only used for iterative method.
-    type (__APPEND(workspace,__PREC)), intent(in out), optional, target :: work
+    type (workspace), intent(inout), optional, target :: work
     type (status_t), intent(out), optional :: status
         !*  Exit code.
 
@@ -374,7 +364,7 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
     real (PREC), dimension(:), pointer, contiguous :: rwork_inv
     integer, dimension(:), pointer, contiguous :: iwork_inv
 
-    type (__APPEND(workspace,__PREC)), pointer :: ptr_work
+    type (workspace), pointer :: ptr_work
 
     integer :: nrwrk, niwrk, nrwrk_inv, niwrk_inv
     integer, dimension(2) :: shp2d
@@ -491,17 +481,17 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
         do i = 1, NBATCH
             do j = 1, NITER
                 alpha = 1.0_PREC
-                call GEMV (trans, m, n, alpha, tm_T, lda, mu1, incx, &
+                call BLAS_GEMV (trans, m, n, alpha, tm_T, lda, mu1, incx, &
                     beta, mu2, incy)
 
                 call swap (mu1, mu2)
             end do
 
             ! Check for convergence
-            call COPY (n, mu1, incx, diff_mu, incy)
+            call BLAS_COPY (n, mu1, incx, diff_mu, incy)
             ! obtain DIFF_MU = MU1 - MU2
             alpha = -1.0_PREC
-            call AXPY (n, alpha, mu2, incx, diff_mu, incy)
+            call BLAS_AXPY (n, alpha, mu2, incx, diff_mu, incy)
 
             ! check whether convergence in mu was achieved
             if (all(abs(diff_mu) < ltol)) exit
@@ -542,13 +532,11 @@ subroutine __APPEND(ergodic_dist,__PREC)  (tm, edist, inverse, maxiter, &
 end subroutine
 
 
-subroutine __APPEND(moments,__PREC) (states, tm, mean, acorr, sigma, sigma_e, &
+
+subroutine moments (states, tm, mean, acorr, sigma, sigma_e, &
         edist, inverse, status)
     !*  MOMENTS computes selected moments implied by a Markov
     !   process with given state space and transition matrix.
-
-    integer, parameter :: PREC = __PREC
-
     real (PREC), intent(in), dimension(:) :: states
         !*  Markov chain state space
     real (PREC), intent(in), dimension(:,:) :: tm
