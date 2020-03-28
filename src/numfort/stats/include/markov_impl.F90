@@ -534,7 +534,7 @@ end subroutine
 
 
 subroutine moments (states, tm, mean, acorr, sigma, sigma_e, &
-        edist, inverse, status)
+        edist, inverse, transposed, status)
     !*  MOMENTS computes selected moments implied by a Markov
     !   process with given state space and transition matrix.
     real (PREC), intent(in), dimension(:), contiguous :: states
@@ -557,25 +557,30 @@ subroutine moments (states, tm, mean, acorr, sigma, sigma_e, &
     logical, intent(in), optional :: inverse
         !*  Use inverse of transition matrix when computing ergodic distribution
         !   (ignored if EDIST argument is present).
+    logical, intent(in), optional :: transposed
+        !*  If present and true, assume that transition matrix TM is provided
+        !   in transposed format, ie each element (i,j) represents the
+        !   probabolity Prob[x'=i | x=j].
     type (status_t), intent(out), optional :: status
 
     real (PREC), dimension(:), pointer, contiguous :: ptr_pmf
     real (PREC), dimension(:), allocatable :: x
-    logical :: linverse
     real (PREC) :: mean_x, var_x, covar_x, acorr_x
     integer :: i, j, n
     type (status_t) :: lstatus
+    logical :: ltransposed
 
     lstatus = NF_STATUS_OK
     n = size(states)
 
-    linverse = .true.
-    if (present(inverse)) linverse = inverse
+    ltransposed = .false.
+    if (present(transposed)) ltransposed = transposed
 
     call assert_alloc_ptr (edist, n, ptr_pmf)
 
     if (.not. present(edist)) then
-        call markov_ergodic_dist (tm, ptr_pmf, inverse=linverse, status=lstatus)
+        call markov_ergodic_dist (tm, ptr_pmf, inverse=inverse, &
+            transposed=transposed, status=lstatus)
         if (lstatus /= NF_STATUS_OK) goto 100
     end if
 
@@ -594,11 +599,19 @@ subroutine moments (states, tm, mean, acorr, sigma, sigma_e, &
 
     ! Compute autocovariane
     covar_x = 0.0
-    do j = 1, n
-        do i = 1, n
-            covar_x = covar_x + x(i) * x(j) * tm(i,j) * ptr_pmf(i)
+    if (ltransposed) then
+        do j = 1, n
+            do i = 1, n
+                covar_x = covar_x + x(i) * x(j) * tm(j,i) * ptr_pmf(i)
+            end do
         end do
-    end do
+    else
+        do j = 1, n
+            do i = 1, n
+                covar_x = covar_x + x(i) * x(j) * tm(i,j) * ptr_pmf(i)
+            end do
+        end do
+    end if
 
     if (var_x > 0.0_PREC) then
         acorr_x = covar_x / var_x
