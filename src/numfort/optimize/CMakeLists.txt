@@ -17,7 +17,10 @@ set(SOURCE_FILES
     root_brent.F90
     root_broyden.F90
     root_newton.F90
-    solver_map.F90
+    solver_map.f90
+    solver_map_common.f90
+    solver_map_real32.F90
+    solver_map_real64.F90
 )
 
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})

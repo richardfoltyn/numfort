@@ -1,8 +1,7 @@
 
 
 
-pure subroutine __APPEND(solver_map_init,__PREC) (self, lb, ub, y0, dy, dx, status)
-    integer, parameter :: PREC = __PREC
+pure subroutine solver_map_init (self, lb, ub, y0, dy, dx, status)
     !*  MAPPING_INIT initializes the MAPPING object representing the function
     !   y = f(x) such that it maps the X on the real line into one of the
     !   intervals
@@ -28,9 +27,11 @@ pure subroutine __APPEND(solver_map_init,__PREC) (self, lb, ub, y0, dy, dx, stat
     !       y = exp(x/s) + y_lb
     !   To pin down the scale parameter s, we use
     !       dy = exp((x0+dx)/s) - exp(x0/s)
+    !          = exp(x0/s)*exp(dx/s) - exp(x0/s)
     !   where
     !       x0 = s * log(y0 - y_lb)
     !   and therefore
+    !       dy = (y0 - y_lb) * exp(dx/s) - (y0 - y_lb)
     !       dx/s = log(y0 - y_lb + dy) - log(y0 - y_lb)
     !
     !   Logistic map
@@ -39,11 +40,12 @@ pure subroutine __APPEND(solver_map_init,__PREC) (self, lb, ub, y0, dy, dx, stat
     !       y = y_lb + F(x,s)(y_u - y_lb)
     !   where [y_lb, y_ub] are the bounds to be enforced for y and
     !   F(x,s) is the logistic CDF with the yet-to-be determined scale
-    !   coefficient s.
+    !   coefficient s,
+    !       F(x,s) = 1/(1 + exp(-x/s))
     !
     !   We require that at y0
     !       dy = f(x0+dx) - f(x0)
-    !   where dy is in "reasonable" step size for y at x0.
+    !   where dy is a "reasonable" step size for y at x0.
     !   Thus
     !       dy  = y_lb + F(x0+dx,s)(y_ub - y_lb) - y_lb - F(x0,s)(y_ub - y_lb)
     !           = (F(x0+dx,s)-F(x0,s))(y_ub - y_lb)
@@ -157,8 +159,7 @@ end subroutine
 
 
 
-pure subroutine __APPEND(solver_map_eval_scalar,__PREC) (self, x, y, jac)
-    integer, parameter :: PREC = __PREC
+pure subroutine solver_map_eval_scalar (self, x, y, jac)
     type (solver_map), intent(in) :: self
     real (PREC), intent(in) :: x
     real (PREC), intent(out) :: y
@@ -199,8 +200,7 @@ end subroutine
 
 
 
-subroutine __APPEND(solver_map_eval_diag,__PREC) (map, x, y, jac, status)
-    integer, parameter :: PREC = __PREC
+subroutine solver_map_eval_diag (map, x, y, jac, status)
     type (solver_map), intent(in), dimension(:) :: map
     real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(out), dimension(:) :: y
@@ -208,7 +208,6 @@ subroutine __APPEND(solver_map_eval_diag,__PREC) (map, x, y, jac, status)
     type (status_t), intent(out), optional :: status
 
     type (status_t) :: lstatus
-    real (PREC), dimension(:), allocatable :: ly, ljac
     integer :: i, n
 
     lstatus = NF_STATUS_OK
@@ -227,14 +226,15 @@ subroutine __APPEND(solver_map_eval_diag,__PREC) (map, x, y, jac, status)
         end if
     end if
 
-    allocate (ly(n), ljac(n))
-
-    do i = 1, n
-        call solver_map_eval (map(i), x(i), ly(i), ljac(i))
-    end do
-
-    y = ly
-    if (present(jac)) jac = ljac
+    if (present(jac)) then
+        do i = 1, n
+            call solver_map_eval (map(i), x(i), y(i), jac(i))
+        end do
+    else
+        do i = 1, n
+            call solver_map_eval (map(i), x(i), y(i))
+        end do
+    end if
 
 100 continue
     if (present(status)) status = lstatus
@@ -243,8 +243,7 @@ end subroutine
 
 
 
-subroutine __APPEND(solver_map_eval_matrix,__PREC) (map, x, y, jac, status)
-    integer, parameter :: PREC = __PREC
+subroutine solver_map_eval_matrix (map, x, y, jac, status)
     type (solver_map), intent(in), dimension(:) :: map
     real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(out), dimension(:) :: y
@@ -286,8 +285,7 @@ end subroutine
 
 
 
-pure subroutine __APPEND(solver_map_eval_inverse_scalar,__PREC) (self, y, x, jac, status)
-    integer, parameter :: PREC = __PREC
+pure subroutine solver_map_eval_inverse_scalar (self, y, x, jac, status)
     type (solver_map), intent(in) :: self
     real (PREC), intent(in) :: y
     real (PREC), intent(out) :: x
@@ -350,8 +348,7 @@ end subroutine
 
 
 
-subroutine __APPEND(solver_map_eval_inverse_diag,__PREC) (map, y, x, jac, status)
-    integer, parameter :: PREC = __PREC
+subroutine solver_map_eval_inverse_diag (map, y, x, jac, status)
     type (solver_map), intent(in), dimension(:) :: map
     real (PREC), intent(in), dimension(:) :: y
     real (PREC), intent(out), dimension(:) :: x
@@ -395,8 +392,7 @@ end subroutine
 
 
 
-subroutine __APPEND(solver_map_eval_inverse_matrix,__PREC) (map, y, x, jac, status)
-    integer, parameter :: PREC = __PREC
+subroutine solver_map_eval_inverse_matrix (map, y, x, jac, status)
     type (solver_map), intent(in), dimension(:) :: map
     real (PREC), intent(in), dimension(:) :: y
     real (PREC), intent(out), dimension(:) :: x
