@@ -251,7 +251,6 @@ subroutine solver_map_eval_matrix (map, x, y, jac, status)
     type (status_t), intent(out), optional :: status
 
     type (status_t) :: lstatus
-    real (PREC), dimension(:), allocatable :: ly, ljac
     integer :: i, n
 
     lstatus = NF_STATUS_OK
@@ -268,15 +267,10 @@ subroutine solver_map_eval_matrix (map, x, y, jac, status)
         goto 100
     end if
 
-    allocate (ly(n), ljac(n))
-
+    jac = 0.0_PREC
     do i = 1, n
-        call solver_map_eval (map(i), x(i), ly(i), ljac(i))
+        call solver_map_eval (map(i), x(i), y(i), jac(i,i))
     end do
-
-    y = ly
-    ! Create diagonal Jacobian
-    call diag (ljac, jac)
 
 100 continue
     if (present(status)) status = lstatus
@@ -356,7 +350,6 @@ subroutine solver_map_eval_inverse_diag (map, y, x, jac, status)
     type (status_t), intent(out), optional :: status
 
     type (status_t) :: lstatus
-    real (PREC), dimension(:), allocatable :: lx, ljac
     integer :: i, n
 
     lstatus = NF_STATUS_OK
@@ -375,15 +368,17 @@ subroutine solver_map_eval_inverse_diag (map, y, x, jac, status)
         end if
     end if
 
-    allocate (lx(n), ljac(n))
-
-    do i = 1, n
-        call solver_map_eval_inverse (map(i), y(i), lx(i), ljac(i), lstatus)
-        if (lstatus /= NF_STATUS_OK) goto 100
-    end do
-
-    x = lx
-    if (present(jac)) jac = ljac
+    if (present(jac)) then
+        do i = 1, n
+            call solver_map_eval_inverse (map(i), y(i), x(i), jac(i), lstatus)
+            if (lstatus /= NF_STATUS_OK) goto 100
+        end do
+    else
+        do i = 1, n
+            call solver_map_eval_inverse (map(i), y(i), x(i), status=lstatus)
+            if (lstatus /= NF_STATUS_OK) goto 100
+        end do
+    end if
 
 100 continue
     if (present(status)) status = lstatus
@@ -400,7 +395,6 @@ subroutine solver_map_eval_inverse_matrix (map, y, x, jac, status)
     type (status_t), intent(out), optional :: status
 
     type (status_t) :: lstatus
-    real (PREC), dimension(:), allocatable :: lx, ljac
     integer :: i, n
 
     lstatus = NF_STATUS_OK
@@ -417,16 +411,13 @@ subroutine solver_map_eval_inverse_matrix (map, y, x, jac, status)
         goto 100
     end if
 
-    allocate (lx(n), ljac(n))
+    jac = 0.0_PREC
 
     do i = 1, n
-        call solver_map_eval_inverse (map(i), y(i), lx(i), ljac(i), lstatus)
+        call solver_map_eval_inverse (map(i), y(i), x(i), jac(i,i), lstatus)
         if (lstatus /= NF_STATUS_OK) goto 100
     end do
 
-    x = lx
-    ! Create diagonal Jacobian
-    call diag (ljac, jac)
 
 100 continue
     if (present(status)) status = lstatus
