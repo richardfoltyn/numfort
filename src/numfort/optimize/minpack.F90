@@ -28,15 +28,15 @@ module numfort_optimize_minpack
     abstract interface
         subroutine func_vec_vec_real64 (x, fx)
             import PREC
-            real (PREC), dimension(:), intent(in) :: x
-            real (PREC), dimension(:), intent(out) :: fx
+            real (PREC), dimension(:), intent(in), contiguous :: x
+            real (PREC), dimension(:), intent(out), contiguous :: fx
         end subroutine
 
         subroutine func_jac_real64 (x, fx, jac, task)
             import PREC
-            real (PREC), dimension(:), intent(in) :: x
-            real (PREC), dimension(:), intent(out) :: fx
-            real (PREC), dimension(:,:), intent(out) :: jac
+            real (PREC), dimension(:), intent(in), contiguous :: x
+            real (PREC), dimension(:), intent(out), contiguous :: fx
+            real (PREC), dimension(:,:), intent(out), contiguous :: jac
             integer, intent(inout) :: task
         end subroutine
     end interface

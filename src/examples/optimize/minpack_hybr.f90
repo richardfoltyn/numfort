@@ -12,7 +12,10 @@ program minpack_hybr_examples
     integer, parameter :: PREC = real64
 
     call example1 ()
-contains
+
+    contains
+
+
 
 subroutine example1 ()
     !*  Find root of function F: R^3->R^3
@@ -43,11 +46,13 @@ subroutine example1 ()
 
 end subroutine
 
+
+
 pure subroutine fcn1_jac (x, fx, jac, task)
-    real (PREC), dimension(:), intent(in) :: x
-    real (PREC), dimension(:), intent(out) :: fx
-    real (PREC), dimension(:,:), intent(out) :: jac
-    integer, intent(in out) :: task
+    real (PREC), dimension(:), intent(in), contiguous :: x
+    real (PREC), dimension(:), intent(out), contiguous :: fx
+    real (PREC), dimension(:,:), intent(out), contiguous :: jac
+    integer, intent(inout) :: task
 
     if (task == 1) then
         fx(1) = x(1)**2 + 2*x(2) - 2*x(3) - 2
@@ -60,9 +65,11 @@ pure subroutine fcn1_jac (x, fx, jac, task)
     end if
 end subroutine
 
+
+
 pure subroutine fcn1 (x, fx)
-    real (PREC), dimension(:), intent(in) :: x
-    real (PREC), dimension(:), intent(out) :: fx
+    real (PREC), dimension(:), intent(in), contiguous :: x
+    real (PREC), dimension(:), intent(out), contiguous :: fx
 
     real (PREC), dimension(size(x), size(x)) :: jac
     integer :: task
@@ -71,6 +78,7 @@ pure subroutine fcn1 (x, fx)
 
     call fcn1_jac (x, fx, jac, task)
 end subroutine
+
 
 
 subroutine print_report (res)
