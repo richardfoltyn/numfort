@@ -11,7 +11,7 @@ program test_optimize_solver_map
     use numfort_arrays
     use numfort_common
     use numfort_common_testing
-    use numfort_optimize
+    use numfort_optimize, solver_map => solver_map_real64
     use numfort_stats, only: set_seed
 
     use fcore_strings
@@ -120,7 +120,7 @@ subroutine test_linear (tests)
         'EVAL_INVERSE called at values f(X)')
 
     call tc%assert_true (status == NF_STATUS_OK .and. &
-        all_close (x1, x1, atol=1.0e-10_PREC, rtol=0.0_PREC), &
+        all_close (x, x1, atol=1.0e-10_PREC, rtol=0.0_PREC), &
         'Checking X == f^-1(f(X))')
 
     status = NF_STATUS_UNDEFINED
@@ -186,18 +186,20 @@ subroutine test_exp (tests)
 
     type (solver_map), dimension(:), allocatable :: maps
     type (solver_map) :: map
-    real (PREC), dimension(:), allocatable :: xx, yy, xx1, yy1
+    real (PREC), dimension(:), allocatable :: xx, yy, xx1, yy1, diff_x
     real (PREC), dimension(:), allocatable :: jac_diag, jac_inv_diag
     real (PREC), dimension(:,:), allocatable :: jac, jac_inv, eye, mat
     real (PREC), dimension(:), allocatable :: lb_flat
-    real (PREC) :: dx, dy, lb, y0, x0, y, diff
+    logical, dimension(:), allocatable :: mask
+    real (PREC) :: dx, dy, lb, y0, x0, y, diff, eps
     integer :: i, j, k, n, nmax
     type (status_t) :: status
+    logical :: values_ok
     type (str) :: msg
 
     tc => tests%add_test ('Exponential mappings')
 
-    ! Input checks with invalid arguments
+    !  === Input checks ===
     status = NF_STATUS_UNDEFINED
     call solver_map_init (map, lb=0.0_PREC, dy=0.0_PREC, status=status)
     call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
@@ -207,6 +209,11 @@ subroutine test_exp (tests)
     call solver_map_init (map, lb=0.0_PREC, dx=0.0_PREC, dy=1.0_PREC, status=status)
     call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
         "INIT called with invalid dx=0")
+
+    ! === Verify scaling parameter ===
+
+    ! Check that scaling parameter is computed correctly to yield the
+    ! desired dy/dx and some given point.
 
     nmax = size(dx_all) * size(lb_all) * 20
 
@@ -223,12 +230,13 @@ subroutine test_exp (tests)
 
             do k = 1, 10
 
-                call random_number (y0)
-                y0 = lb + y0 * 2.0
+                ! Set some valid points at which to pin down derivative
+                call random_number (eps)
+                y0 = lb + eps * 2.0
 
                 ! dy needs to satisfy (y0+dy) > lb
-                call random_number (dy)
-                dy = (lb-y0) + dy * 2.0d0
+                call random_number (eps)
+                dy = (lb-y0) + eps * 2.0d0
 
                 status = NF_STATUS_UNDEFINED
                 call solver_map_init (map, lb=lb, y0=y0, dy=dy, dx=dx, &
@@ -248,6 +256,7 @@ subroutine test_exp (tests)
                     // '; y0=' // str(y0, 'f6.3') //  '; dx=' &
                     // str(dx, 'f6.3') // '; dy=' // str(dy, 'f6.3')
 
+                ! Verify that DX moves Y by DY around (X0, Y0)
                 diff = (y-y0) - dy
                 call tc%assert_true (status == NF_STATUS_OK .and. &
                     abs(diff) < 1.0e-8_PREC, msg)
@@ -255,11 +264,14 @@ subroutine test_exp (tests)
         end do
     end do
 
-    ! Test mappings and its inverse
+    ! === Test inverse ===
     allocate (xx(n), yy(n), xx1(n), yy1(n))
+    allocate (diff_x(n))
+    allocate (mask(n))
 
+    ! Draw some random number in R
     call random_number (xx)
-    xx(:) = xx * 10.0
+    xx(:) = (xx - 0.5d0) * 10.0d0
 
     status = NF_STATUS_UNDEFINED
     call solver_map_eval (maps(1:n), xx, yy, status=status)
@@ -271,9 +283,20 @@ subroutine test_exp (tests)
     call tc%assert_true (status == NF_STATUS_OK, &
         'EVAL_INVERSE called at values f(X)')
 
-    call tc%assert_true (status == NF_STATUS_OK .and. &
-        all_close (xx1, xx1, atol=1.0e-10_PREC, rtol=0.0_PREC), &
-        'Checking X == f^-1(f(X))')
+    ! When checking whether values get mapped back to the same X, ignore
+    ! y-values close to lower bound, as there we have less precision.
+    mask(:) = (yy - lb_flat(1:n)) > 0.001_PREC * abs(lb_flat(1:n))
+    ! Ignore values that get mapped into boundary values +/x Inf
+    mask(:) = mask .and. ieee_is_finite (xx)
+    mask(:) = mask .and. ieee_is_finite (xx1)
+    where (mask)
+        diff_x = abs(xx - xx1)
+    else where
+        diff_x = 0.0
+    end where
+    values_ok = all(diff_x < 1.0e-10_PREC)
+
+    call tc%assert_true (values_ok, 'Checking X == f^-1(f(X))')
 
     status = NF_STATUS_UNDEFINED
     call random_number (yy)
@@ -342,18 +365,20 @@ subroutine test_logistic (tests)
 
     type (solver_map), dimension(:), allocatable :: maps
     type (solver_map) :: map
-    real (PREC), dimension(:), allocatable :: xx, yy, xx1, yy1, dd
+    real (PREC), dimension(:), allocatable :: xx, yy, xx1, yy1, dd, diff_x
     real (PREC), dimension(:), allocatable :: jac_diag, jac_inv_diag
     real (PREC), dimension(:,:), allocatable :: jac, jac_inv, eye, mat
     real (PREC), dimension(:), allocatable :: lb_flat, ub_flat
-    real (PREC) :: dx, dy, lb, ub, y0, x0, y, diff
+    logical, dimension(:), allocatable :: mask
+    real (PREC) :: dx, dy, lb, ub, y0, x0, y, diff, eps
     integer :: i, j, k, n, nmax, ii
     type (status_t) :: status
+    logical :: values_ok
     type (str) :: msg
 
     tc => tests%add_test ('Logistic mappings')
 
-    ! Input checks with invalid arguments
+    ! === Input checks ===
     status = NF_STATUS_UNDEFINED
     call solver_map_init (map, lb=0.0_PREC, dy=0.0_PREC, status=status)
     call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
@@ -364,6 +389,10 @@ subroutine test_logistic (tests)
     call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
         "INIT called with invalid dx=0")
 
+    ! === Verify scaling parameter ===
+
+    ! Check that scaling parameter is computed correctly to yield the
+    ! desired dy/dx and some given point.
     nmax = size(dx_all) * size(lb_all) * 10
 
     allocate (maps(nmax))
@@ -384,8 +413,8 @@ subroutine test_logistic (tests)
                 ii = (i - 1)*size(lb_all) + (j-1)*size(dx_all) + k
                 if (modulo(ii, 2) == 0) then
                     ! Position y0 at some random interior point
-                    call random_number (y0)
-                    y0 = lb + (ub-lb) * y0
+                    call random_number (eps)
+                    y0 = lb + (ub-lb) * eps
                 else
                     ! Position y0 exactly at midpoint as this can lead to
                     ! additional complications
@@ -394,8 +423,8 @@ subroutine test_logistic (tests)
 
                 ! dy needs to satisfy: (y0+dy) > lb, (y0+dy) < ub
                 ! and thus dy > lb-y0, dy < ub-y0
-                call random_number (dy)
-                dy = (lb-y0) + (ub-lb) * dy
+                call random_number (eps)
+                dy = (lb-y0) + (ub-lb) * eps
 
                 status = NF_STATUS_UNDEFINED
                 call solver_map_init (map, lb=lb, ub=ub, y0=y0, dy=dy, dx=dx, &
@@ -416,6 +445,7 @@ subroutine test_logistic (tests)
                     // '; y0=' // str(y0, 'f6.3') //  '; dx=' &
                     // str(dx, 'f6.3') // '; dy=' // str(dy, 'f6.3')
 
+                ! Verify that DX moves Y by DY around (X0, Y0)
                 diff = (y-y0) - dy
                 call tc%assert_true (status == NF_STATUS_OK &
                     .and. abs(diff) < 1.0e-8_PREC, msg)
@@ -423,11 +453,13 @@ subroutine test_logistic (tests)
         end do
     end do
 
-    ! Test mappings and its inverse
+    ! === Test inverse ===
     allocate (xx(n), yy(n), xx1(n), yy1(n), dd(n))
+    allocate (diff_x(n))
+    allocate (mask(n))
 
     call random_number (xx)
-    xx(:) = xx * 10.0
+    xx(:) = (xx - 0.50d0) * 10.0
 
     status = NF_STATUS_UNDEFINED
     call solver_map_eval (maps(1:n), xx, yy, status=status)
@@ -439,9 +471,21 @@ subroutine test_logistic (tests)
     call tc%assert_true (status == NF_STATUS_OK, &
         'EVAL_INVERSE called at values f(X)')
 
-    call tc%assert_true (status == NF_STATUS_OK .and. &
-        all_close (xx1, xx1, atol=1.0e-10_PREC, rtol=0.0_PREC), &
-        'Checking X == f^-1(f(X))')
+    ! When checking whether values get mapped back to the same X, ignore
+    ! y-values close to bounds, as there we have less precision.
+    mask(:) = (yy - lb_flat(1:n)) > 0.001_PREC * abs(lb_flat(1:n))
+    mask(:) = mask .and. (ub_flat(1:n) - yy) > 0.001_PREC * abs(ub_flat(1:n))
+    ! Ignore values that get mapped into boundary values +/x Inf
+    mask(:) = mask .and. ieee_is_finite (xx)
+    mask(:) = mask .and. ieee_is_finite (xx1)
+    where (mask)
+        diff_x = abs(xx - xx1)
+    else where
+        diff_x = 0.0
+    end where
+    values_ok = all(diff_x < 1.0e-10_PREC)
+
+    call tc%assert_true (values_ok, 'Checking X == f^-1(f(X))')
 
     status = NF_STATUS_UNDEFINED
     call random_number (yy)
