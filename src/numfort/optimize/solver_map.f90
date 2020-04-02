@@ -9,7 +9,6 @@ module numfort_optimize_solver_map
 
     use numfort_optimize_solver_map_common
     use numfort_optimize_solver_map_real32, solver_map_real32 => solver_map
-    use numfort_optimize_solver_map_real64
-    use numfort_optimize_solver_map_real64, only: solver_map_real64 => solver_map
+    use numfort_optimize_solver_map_real64, solver_map_real64 => solver_map
 
 end module
