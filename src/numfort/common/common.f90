@@ -3,6 +3,7 @@ module numfort_common
 
     use numfort_common_cond_alloc
     use numfort_common_copy_alloc
+    use numfort_common_copy_masked
     use numfort_common_kinds
     use numfort_common_enums
     use numfort_common_shape

@@ -30,6 +30,7 @@ module numfort_common_status
     integer (NF_ENUM_KIND), public, parameter :: NF_STATUS_NOT_IMPLEMENTED = ishft(1, 21)
     integer (NF_ENUM_KIND), public, parameter :: NF_STATUS_IO_ERROR = ishft(1, 22)
     integer (NF_ENUM_KIND), public, parameter :: NF_STATUS_DOMAIN_ERROR = ishft(1, 23)
+    integer (NF_ENUM_KIND), public, parameter :: NF_STATUS_MEMORY_ERROR = ishft(1, 24)
 
     integer, public, parameter :: NF_MAX_STATUS_CODES = bit_size (NF_STATUS_OK)
 

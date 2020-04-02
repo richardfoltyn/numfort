@@ -6,6 +6,7 @@ set(SOURCE_FILES
     alloc.f90
     cond_alloc.F90
     copy_alloc.F90
+    copy_masked.F90
     common.f90
     enums.f90
     kinds.f90
