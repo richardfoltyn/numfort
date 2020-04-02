@@ -17,16 +17,27 @@ pure subroutine bsearch (needle, haystack, ilb)
         !*  Index of array element that is the lower bound of the bracketing
         !   interval such that HAYSTACK(ilb) <= NEEDLE < HAYSTACK(ilb+1),
 
-    integer :: iub, imid, n
-
-    n = size(haystack)
-    if (n <= 1) then
+    if (size(haystack) <= 1) then
         ilb = -1
         return
     end if
 
+    call bsearch_impl (needle, haystack, ilb)
+
+end subroutine
+
+
+
+pure subroutine bsearch_impl (needle, haystack, ilb)
+    real (PREC), intent(in) :: needle
+    real (PREC), intent(in), dimension(:), contiguous :: haystack
+    integer, intent(out) :: ilb
+
+    integer :: iub, imid
+
+
     ilb = 1
-    iub = n
+    iub = size(haystack)
 
     do while (iub > (ilb + 1))
         imid = (iub + ilb) / 2
@@ -57,8 +68,7 @@ pure subroutine bsearch_1d (needle, haystack, ilbound)
         !   of a sequence of bracketing intervals.
     integer, intent(out), dimension(:), contiguous :: ilbound
 
-    integer :: i, n, ilb
-    real (PREC) :: xi
+    integer :: i, n
 
     if (size(haystack) <= 1) then
         ilbound = -1
@@ -66,14 +76,49 @@ pure subroutine bsearch_1d (needle, haystack, ilbound)
     end if
 
     n = size(needle)
-    ilb = 0
 
     do i = 1, n
-        xi = needle(i)
-        call bsearch_cached_impl (xi, haystack, ilb)
+        call bsearch_impl (needle(i), haystack, ilbound(i))
+    end do
+
+
+end subroutine
+
+
+
+pure subroutine bsearch_cached_1d (needle, haystack, ilbound, cache)
+    !*  BSEARCH finds, for each element of NEEDLE, the interval on array
+    !   HAYSTACK that contains the element, returning the array index of
+    !   the lower boundary of that interval.
+    !
+    !   If a value in NEEDLE is smaller than the first element of HAYSTACK,
+    !   the rountine returns 1 for that element.
+    !   If NEEDLE is larger than the last of element of HAYSTACK,
+    !   size(HAYSTACK)-1 is returned.
+    real (PREC), intent(in), dimension(:), contiguous :: needle
+        !*  Array of values to bracket
+    real (PREC), intent(in), dimension(:), contiguous :: haystack
+        !*  Array of sorted (!) values that are interpreted as the boundaries
+        !   of a sequence of bracketing intervals.
+    integer, intent(out), dimension(:), contiguous :: ilbound
+    type (search_cache), intent(inout) :: cache
+
+    integer :: i, n, ilb
+
+    if (size(haystack) <= 1) then
+        ilbound = -1
+        return
+    end if
+
+    n = size(needle)
+    ilb = max(min(cache%i, n-1), 1)
+
+    do i = 1, n
+        call bsearch_cached_impl (needle(i), haystack, ilb)
         ilbound(i) = ilb
     end do
 
+    cache%i = ilb
 
 end subroutine
 
