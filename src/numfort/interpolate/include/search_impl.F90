@@ -1,7 +1,7 @@
 
 
 
-pure function bsearch (needle, haystack) result(ilb)
+pure subroutine bsearch (needle, haystack, ilb)
     !*  BSEARCH finds the interval on array HAYSTACK that contains NEEDLE,
     !   returning the array index of the lower boundary of that interval.
     !
@@ -13,7 +13,7 @@ pure function bsearch (needle, haystack) result(ilb)
     real (PREC), intent(in), dimension(:), contiguous :: haystack
         !*  Array of sorted (!) values that are interpreted as the boundaries
         !   of a sequence of bracketing intervals.
-    integer :: ilb
+    integer, intent(out) :: ilb
         !*  Index of array element that is the lower bound of the bracketing
         !   interval such that HAYSTACK(ilb) <= NEEDLE < HAYSTACK(ilb+1),
 
@@ -37,7 +37,45 @@ pure function bsearch (needle, haystack) result(ilb)
         end if
     end do
 
-end function
+end subroutine
+
+
+
+pure subroutine bsearch_1d (needle, haystack, ilbound)
+    !*  BSEARCH finds, for each element of NEEDLE, the interval on array
+    !   HAYSTACK that contains the element, returning the array index of
+    !   the lower boundary of that interval.
+    !
+    !   If a value in NEEDLE is smaller than the first element of HAYSTACK,
+    !   the rountine returns 1 for that element.
+    !   If NEEDLE is larger than the last of element of HAYSTACK,
+    !   size(HAYSTACK)-1 is returned.
+    real (PREC), intent(in), dimension(:), contiguous :: needle
+        !*  Array of values to bracket
+    real (PREC), intent(in), dimension(:), contiguous :: haystack
+        !*  Array of sorted (!) values that are interpreted as the boundaries
+        !   of a sequence of bracketing intervals.
+    integer, intent(out), dimension(:), contiguous :: ilbound
+
+    integer :: i, n, ilb
+    real (PREC) :: xi
+
+    if (size(haystack) <= 1) then
+        ilbound = -1
+        return
+    end if
+
+    n = size(needle)
+    ilb = 0
+
+    do i = 1, n
+        xi = needle(i)
+        call bsearch_cached_impl (xi, haystack, ilb)
+        ilbound(i) = ilb
+    end do
+
+
+end subroutine
 
 
 
@@ -341,7 +379,7 @@ pure subroutine interp_find_impl_0d (x, knots, ilbound, weight, ext, status)
         end select
     end if
 
-    j = bsearch (x, knots)
+    call bsearch (x, knots, j)
 
     ilbound = j
     weight = (knots(j+1) - x) / (knots(j+1) - knots(j))
@@ -769,7 +807,7 @@ pure subroutine interp_find_incr_ext_impl (x, knots, ilbound, weight)
     nx = size(x)
 
     ! Manually compute first element
-    ilb = bsearch (x(1), knots)
+    call bsearch (x(1), knots, ilb)
     ilbound(1) = ilb
 
     if (nx == 1) goto 10
@@ -812,7 +850,7 @@ pure subroutine interp_find_decr_ext_impl (x, knots, ilbound, weight)
 
     ! Manually compute first element
     xi = x(1)
-    iub = bsearch (xi, knots)
+    call bsearch (xi, knots, iub)
     xub = knots(iub+1)
     dx = xub - knots(iub)
     wi = (xub - xi) / dx

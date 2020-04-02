@@ -52,14 +52,14 @@ subroutine test_bsearch (tests)
     n = 0
     allocate (haystack(n), source=0.0_PREC)
     needle = 0.0
-    i = bsearch (needle, haystack)
+    call bsearch (needle, haystack, i)
     call tc%assert_true (i == -1, "size(HAYSTACK) = 0")
     deallocate (haystack)
 
     n = 1
     allocate (haystack(n), source=0.0_PREC)
     needle = 0.0
-    i = bsearch (needle, haystack)
+    call bsearch (needle, haystack, i)
     call tc%assert_true (i == -1, "size(HAYSTACK) = 1")
     deallocate (haystack)
 
@@ -68,19 +68,19 @@ subroutine test_bsearch (tests)
     call linspace (haystack, 0.0_PREC, 10.0_PREC)
 
     needle = -1.0
-    i = bsearch (needle, haystack)
+    call bsearch (needle, haystack, i)
     call tc%assert_true (i == 1, "needle < HAYSTACK(1)")
 
     needle = 11.0
-    i = bsearch (needle, haystack)
+    call bsearch (needle, haystack, i)
     call tc%assert_true (i == 10, "needle > HAYSTACK(size(HAYSTACK))")
 
     needle = 0.5d0
-    i = bsearch (needle, haystack)
+    call bsearch (needle, haystack, i)
     call tc%assert_true (i == 1, "needle in first interval")
 
     needle = 9.5d0
-    i = bsearch (needle, haystack)
+    call bsearch (needle, haystack, i)
     call tc%assert_true (i == 10, "needle in last interval")
 
     deallocate (haystack)
@@ -92,15 +92,15 @@ subroutine test_bsearch (tests)
     haystack(7:9) = haystack(7)
 
     needle = 2.0
-    i = bsearch (needle, haystack)
+    call bsearch (needle, haystack, i)
     call tc%assert_true (i == 5, "Piecewise-constant HAYSTACK, lower bound")
 
     needle = 3.0
-    i = bsearch (needle, haystack)
+    call bsearch (needle, haystack, i)
     call tc%assert_true (i == 5, "Piecewise-constant HAYSTACK, interior value")
 
     needle = 5.0
-    i = bsearch (needle, haystack)
+    call bsearch (needle, haystack, i)
     call tc%assert_true (i == 6, "Piecewise-constant HAYSTACK, upper bound")
 
     deallocate (haystack)
@@ -123,7 +123,7 @@ subroutine test_bsearch_cached (tests)
     n = 0
     allocate (haystack(n), source=0.0_PREC)
     needle = 0.0
-    i = bsearch (needle, haystack)
+    call bsearch (needle, haystack, i)
     call tc%assert_true (i == -1, "size(HAYSTACK) = 0")
 
     call bsearch_cached (needle, haystack, i, cache)
@@ -138,7 +138,7 @@ subroutine test_bsearch_cached (tests)
     allocate (haystack(n), source=0.0_PREC)
     needle = 0.0
 
-    i = bsearch (needle, haystack)
+    call bsearch (needle, haystack, i)
     call tc%assert_true (i == -1, "size(HAYSTACK) = 1")
 
     call bsearch_cached (needle, haystack, i, cache)
@@ -154,7 +154,7 @@ subroutine test_bsearch_cached (tests)
     call linspace (haystack, 0.0_PREC, 10.0_PREC)
 
     needle = -1.0
-    i = bsearch (needle, haystack)
+    call bsearch (needle, haystack, i)
     call tc%assert_true (i == 1, "needle < HAYSTACK(1)")
 
     call bsearch_cached (needle, haystack, i, cache)
@@ -164,7 +164,7 @@ subroutine test_bsearch_cached (tests)
     call tc%assert_true (i == 1, "needle < HAYSTACK(1) with cache, repeat call")
 
     needle = 11.0
-    i = bsearch (needle, haystack)
+    call bsearch (needle, haystack, i)
     call tc%assert_true (i == 10, "needle > HAYSTACK(size(HAYSTACK))")
 
     call bsearch_cached (needle, haystack, i, cache)
@@ -174,7 +174,7 @@ subroutine test_bsearch_cached (tests)
     call tc%assert_true (i == 10, "needle > HAYSTACK(size(HAYSTACK)) with cache, repeat call")
 
     needle = 0.5d0
-    i = bsearch (needle, haystack)
+    call bsearch (needle, haystack, i)
     call tc%assert_true (i == 1, "needle in first interval")
 
     call bsearch_cached (needle, haystack, i, cache)
@@ -183,7 +183,7 @@ subroutine test_bsearch_cached (tests)
     call tc%assert_true (i == 1, "needle in first interval with cache, repeat call")
 
     needle = 9.5d0
-    i = bsearch (needle, haystack)
+    call bsearch (needle, haystack, i)
     call tc%assert_true (i == 10, "needle in last interval")
 
     call bsearch_cached (needle, haystack, i, cache)

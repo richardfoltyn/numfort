@@ -518,8 +518,8 @@ pure subroutine __APPEND(interp_bilinear_impl,__PREC) (x1, x2, xp1, xp2, fp, &
 
     ! default: At this point there is either a bracketing interval, or we extrapolate
     ! values outside of domain
-    ilb1 = bsearch (x1, xp1)
-    ilb2 = bsearch (x2, xp2)
+    call bsearch (x1, xp1, ilb1)
+    call bsearch (x2, xp2, ilb2)
 
     w1 = (x1 - xp1(ilb1)) / (xp1(ilb1+1) - xp1(ilb1))
     w2 = (x2 - xp2(ilb2)) / (xp2(ilb2+1) - xp2(ilb2))

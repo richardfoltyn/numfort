@@ -1,7 +1,7 @@
 
 
 interface bsearch
-    procedure bsearch
+    procedure bsearch, bsearch_cached, bsearch_1d
 end interface
 
 interface bsearch_cached
