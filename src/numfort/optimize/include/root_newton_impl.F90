@@ -90,8 +90,8 @@ end subroutine
 
 
 
-subroutine root_newton_args (fcn, x, args, ndiff, xtol, tol, maxiter, xtol2, &
-        dstep, res)
+recursive subroutine root_newton_args (fcn, x, args, ndiff, xtol, tol, &
+        maxiter, xtol2, dstep, res)
     procedure (fss_args) :: fcn
     real (PREC), intent(inout) :: x
     class (args_data), intent(inout) :: args
@@ -124,7 +124,8 @@ end subroutine
 
 
 
-subroutine root_newton_jac_args (fcn, jac, x, args, xtol, tol, maxiter, xtol2, res)
+recursive subroutine root_newton_jac_args (fcn, jac, x, args, xtol, tol, &
+        maxiter, xtol2, res)
     procedure (fss_args) :: fcn
     procedure (fss_args) :: jac
     real (PREC), intent(inout) :: x
@@ -148,7 +149,8 @@ end subroutine
 
 
 
-subroutine root_newton_fcn_jac_args (fcn, x, args, xtol, tol, maxiter, xtol2, res)
+recursive subroutine root_newton_fcn_jac_args (fcn, x, args, xtol, tol, &
+        maxiter, xtol2, res)
     procedure (fss_fcn_jac_args) :: fcn
     real (PREC), intent(inout) :: x
     class (args_data), intent(inout) :: args
@@ -171,7 +173,8 @@ end subroutine
 
 
 
-subroutine root_newton (fcn, x, ndiff, xtol, tol, maxiter, xtol2, dstep, res)
+recursive subroutine root_newton (fcn, x, ndiff, xtol, tol, maxiter, xtol2, &
+        dstep, res)
     procedure (fss) :: fcn
     real (PREC), intent(inout) :: x
     logical, intent(in) :: ndiff
@@ -204,7 +207,7 @@ end subroutine
 
 
 
-subroutine root_newton_jac (fcn, jac, x, xtol, tol, maxiter, xtol2, res)
+recursive subroutine root_newton_jac (fcn, jac, x, xtol, tol, maxiter, xtol2, res)
     procedure (fss) :: fcn
     procedure (fss) :: jac
     real (PREC), intent(inout) :: x
@@ -227,7 +230,7 @@ end subroutine
 
 
 
-subroutine root_newton_fcn_jac (fcn, x, xtol, tol, maxiter, xtol2, res)
+recursive subroutine root_newton_fcn_jac (fcn, x, xtol, tol, maxiter, xtol2, res)
     procedure (fss_fcn_jac) :: fcn
     real (PREC), intent(inout) :: x
     real (PREC), intent(in), optional :: xtol
@@ -249,7 +252,7 @@ end subroutine
 
 
 
-subroutine root_newton_impl (fcn, x, xtol, tol, maxiter, xtol2, res)
+recursive subroutine root_newton_impl (fcn, x, xtol, tol, maxiter, xtol2, res)
     type (fwrapper_ss), intent(inout) :: fcn
     real (PREC), intent(inout) :: x
     real (PREC), intent(in), optional :: xtol
@@ -259,22 +262,19 @@ subroutine root_newton_impl (fcn, x, xtol, tol, maxiter, xtol2, res)
         !*  If present, identify period-2 cycles if |X(n)-X(n-2)| < XTOL2
         !   and take the midpoint of [X(n), X(n-1)] as the next candidate root
         !   whenever such cycles occur.
-    type (optim_result), intent(inout), optional, target :: res
+    type (optim_result), intent(inout), optional :: res
 
     real (PREC) :: fx, fpx, x0
     real (PREC) :: x2
     integer :: iter
 
-    type (optim_result), pointer :: ptr_res
+    type (optim_result) :: lres
     real (PREC) :: lxtol, ltol
     integer :: lmaxiter
     logical :: do_xtol, check_cycle
 
-    call assert_alloc_ptr (res, ptr_res)
-    call result_reset (ptr_res)
-
-    call check_inputs (xtol, tol, maxiter, xtol2, ptr_res)
-    if (ptr_res%status /= NF_STATUS_OK) goto 100
+    call check_inputs (xtol, tol, maxiter, xtol2, lres)
+    if (lres%status /= NF_STATUS_OK) goto 100
 
     call set_defaults (xtol, tol, maxiter, lxtol, ltol, lmaxiter)
 
@@ -289,14 +289,14 @@ subroutine root_newton_impl (fcn, x, xtol, tol, maxiter, xtol2, res)
         call dispatch_fcn_jac (fcn, x0, fx, fpx)
 
         if (abs(fx) < ltol) then
-            ptr_res%msg = "Convergence achieved; abs(f(x)) < ltol"
-            ptr_res%status = NF_STATUS_OK
+            lres%msg = "Convergence achieved; abs(f(x)) < ltol"
+            lres%status = NF_STATUS_OK
             goto 100
         end if
 
         if (fpx == 0.0_PREC) then
-            ptr_res%msg = "Derivative evaluted to 0"
-            ptr_res%status = NF_STATUS_OK
+            lres%msg = "Derivative evaluted to 0"
+            lres%status = NF_STATUS_OK
             goto 100
         end if
 
@@ -318,8 +318,8 @@ subroutine root_newton_impl (fcn, x, xtol, tol, maxiter, xtol2, res)
 
         ! Exit if tolerance level achieved
         if (do_xtol .and. abs(x - x0) < lxtol) then
-            ptr_res%status = NF_STATUS_OK
-            ptr_res%msg = "Convergence achieved: abs(x(n)-x(n-1)) < lxtol"
+            lres%status = NF_STATUS_OK
+            lres%msg = "Convergence achieved: abs(x(n)-x(n-1)) < lxtol"
             goto 100
         end if
 
@@ -327,21 +327,22 @@ subroutine root_newton_impl (fcn, x, xtol, tol, maxiter, xtol2, res)
         x0 = x
     end do
 
-   ptr_res%msg = "Max. number of iterations exceeded"
-   ptr_res%status = NF_STATUS_MAX_ITER
-   ptr_res%status = ptr_res%status + NF_STATUS_NOT_CONVERGED
+   lres%msg = "Max. number of iterations exceeded"
+   lres%status = NF_STATUS_MAX_ITER
+   lres%status = lres%status + NF_STATUS_NOT_CONVERGED
 
 100 continue
 
-    call result_update (ptr_res, x, fx, nit=iter, nfev=fcn%nfev)
+    call result_update (lres, x, fx, nit=iter, nfev=fcn%nfev)
 
-    ! Clean up local OPTIM_RESULT object if none was passed by client code
-    call assert_dealloc_ptr (res, ptr_res)
+    if (present(res)) res = lres
+
 end subroutine
 
 
-subroutine newton_bisect_args (fcn, x, args, ndiff, a, b, xtol, tol, maxiter, &
-        dstep, res)
+
+recursive subroutine newton_bisect_args (fcn, x, args, ndiff, a, b, xtol, tol, &
+        maxiter, dstep, res)
     procedure (fss_args) :: fcn
     real (PREC), intent(inout) :: x
     class (args_data), intent(inout) :: args
@@ -371,7 +372,8 @@ end subroutine
 
 
 
-subroutine newton_bisect_jac_args (fcn, jac, x, args, a, b, xtol, tol, maxiter, res)
+recursive subroutine newton_bisect_jac_args (fcn, jac, x, args, a, b, xtol, &
+        tol, maxiter, res)
     procedure (fss_args) :: fcn
     procedure (fss_args) :: jac
     real (PREC), intent(inout) :: x
@@ -392,7 +394,8 @@ end subroutine
 
 
 
-subroutine newton_bisect (fcn, x, ndiff, a, b, xtol, tol, maxiter, dstep, res)
+recursive subroutine newton_bisect (fcn, x, ndiff, a, b, xtol, tol, maxiter, &
+        dstep, res)
     procedure (fss) :: fcn
     real (PREC), intent(inout) :: x
     logical, intent(in) :: ndiff
@@ -422,7 +425,7 @@ end subroutine
 
 
 
-subroutine newton_bisect_jac (fcn, jac, x, a, b, xtol, tol, maxiter, res)
+recursive subroutine newton_bisect_jac (fcn, jac, x, a, b, xtol, tol, maxiter, res)
     procedure (fss) :: fcn
     procedure (fss) :: jac
     real (PREC), intent(inout) :: x
@@ -442,7 +445,7 @@ end subroutine
 
 
 
-subroutine newton_bisect_fcn_jac (fcn, x, a, b, xtol, tol, maxiter, res)
+recursive subroutine newton_bisect_fcn_jac (fcn, x, a, b, xtol, tol, maxiter, res)
     procedure (fss_fcn_jac) :: fcn
     real (PREC), intent(inout) :: x
     real (PREC), intent(in), optional :: a, b
@@ -461,7 +464,8 @@ end subroutine
 
 
 
-subroutine newton_bisect_fcn_jac_args (fcn, x, args, a, b, xtol, tol, maxiter, res)
+recursive subroutine newton_bisect_fcn_jac_args (fcn, x, args, a, b, xtol, tol, &
+        maxiter, res)
     procedure (fss_fcn_jac_args) :: fcn
     real (PREC), intent(inout) :: x
     real (PREC), intent(in), optional :: a, b
@@ -481,14 +485,14 @@ end subroutine
 
 
 
-subroutine newton_bisect_impl (fcn, x, a, b, xtol, tol, maxiter, res)
+recursive subroutine newton_bisect_impl (fcn, x, a, b, xtol, tol, maxiter, res)
     type (fwrapper_ss), intent(inout) :: fcn
     real (PREC), intent(inout) :: x
     real (PREC), intent(in), optional :: a, b
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
-    type (optim_result), intent(inout), optional, target :: res
+    type (optim_result), intent(inout), optional :: res
 
     real (PREC) :: fx, fpx, x0
     real (PREC) :: xlb, xub, s, xstart, slb, sub, dub, dlb
@@ -496,18 +500,15 @@ subroutine newton_bisect_impl (fcn, x, a, b, xtol, tol, maxiter, res)
     integer :: iter
     logical :: has_bracket
 
-    type (optim_result), pointer :: ptr_res
+    type (optim_result) :: lres
     real (PREC) :: lxtol, ltol
     integer :: lmaxiter
 
-    call assert_alloc_ptr (res, ptr_res)
-    call result_reset (ptr_res)
+    call check_inputs (xtol, tol, maxiter, res=lres)
+    if (lres%status /= NF_STATUS_OK) goto 100
 
-    call check_inputs (xtol, tol, maxiter, res=ptr_res)
-    if (ptr_res%status /= NF_STATUS_OK) goto 100
-
-    call check_bracket (x, a, b, ptr_res)
-    if (ptr_res%status /= NF_STATUS_OK) goto 100
+    call check_bracket (x, a, b, lres)
+    if (lres%status /= NF_STATUS_OK) goto 100
 
     call set_defaults (xtol, tol, maxiter, lxtol, ltol, lmaxiter)
 
@@ -517,8 +518,8 @@ subroutine newton_bisect_impl (fcn, x, a, b, xtol, tol, maxiter, res)
     call dispatch_fcn_jac (fcn, x0, fx, fpx)
     ! Check for immediate convergence before wasting any more computation time
     if (abs(fx) < ltol) then
-        ptr_res%msg = "Convergence achieved; abs(f(x)) < tol"
-        ptr_res%status = NF_STATUS_OK
+        lres%msg = "Convergence achieved; abs(f(x)) < tol"
+        lres%status = NF_STATUS_OK
         goto 100
     end if
 
@@ -557,8 +558,8 @@ subroutine newton_bisect_impl (fcn, x, a, b, xtol, tol, maxiter, res)
     ! If we have no bracket, but A, B have been provided by user, return
     ! error.
     if (.not. has_bracket .and. present(a) .and. present(b)) then
-        ptr_res%msg = "Initial interval does not bracket root"
-        ptr_res%status = NF_STATUS_INVALID_ARG
+        lres%msg = "Initial interval does not bracket root"
+        lres%status = NF_STATUS_INVALID_ARG
         goto 100
     end if
 
@@ -568,14 +569,14 @@ subroutine newton_bisect_impl (fcn, x, a, b, xtol, tol, maxiter, res)
     do iter = 0, lmaxiter - 1
 
         if (abs(fx) < ltol) then
-            ptr_res%msg = "Convergence achieved; abs(f(x)) < tol"
-            ptr_res%status = NF_STATUS_OK
+            lres%msg = "Convergence achieved; abs(f(x)) < tol"
+            lres%status = NF_STATUS_OK
             goto 100
         end if
 
         if (fpx == 0.0_PREC) then
-            ptr_res%msg = "Derivative evaluted to 0"
-            ptr_res%status = NF_STATUS_OK
+            lres%msg = "Derivative evaluted to 0"
+            lres%status = NF_STATUS_OK
             goto 100
         end if
 
@@ -609,8 +610,8 @@ subroutine newton_bisect_impl (fcn, x, a, b, xtol, tol, maxiter, res)
         ! Exit if tolerance level achieved.
         ! Note: do this only after updating FX, we need to return correct FX=f(X)
         if (abs(x - x0) < lxtol) then
-            ptr_res%status = NF_STATUS_OK
-            ptr_res%msg = "Convergence achieved: abs(x(n)-x(n-1)) < xtol"
+            lres%status = NF_STATUS_OK
+            lres%msg = "Convergence achieved: abs(x(n)-x(n-1)) < xtol"
             goto 100
         end if
 
@@ -667,16 +668,16 @@ subroutine newton_bisect_impl (fcn, x, a, b, xtol, tol, maxiter, res)
         x0 = x
     end do
 
-   ptr_res%msg = "Max. number of iterations exceeded"
-   ptr_res%status = NF_STATUS_MAX_ITER
-   ptr_res%status = ptr_res%status + NF_STATUS_NOT_CONVERGED
+   lres%msg = "Max. number of iterations exceeded"
+   lres%status = NF_STATUS_MAX_ITER
+   lres%status = lres%status + NF_STATUS_NOT_CONVERGED
 
 100 continue
 
-    call result_update (ptr_res, x, fx, nit=iter, nfev=fcn%nfev)
+    call result_update (lres, x, fx, nit=iter, nfev=fcn%nfev)
 
-    ! Clean up local OPTIM_RESULT object if none was passed by client code
-    call assert_dealloc_ptr (res, ptr_res)
+    if (present(res)) res = lres
+
 end subroutine
 
 
@@ -708,7 +709,7 @@ end subroutine
 
 
 
-subroutine root_halley_impl (x, xtol, tol, maxiter, res, fcn, fcn_args, args)
+recursive subroutine root_halley_impl (x, xtol, tol, maxiter, res, fcn, fcn_args, args)
     real (PREC), intent(inout) :: x
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
