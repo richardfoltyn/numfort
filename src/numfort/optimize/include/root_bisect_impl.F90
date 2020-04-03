@@ -1,16 +1,15 @@
 
 
-pure subroutine __APPEND(bisect_check_inputs,__PREC) (a, b, xtol, tol, maxiter, res)
+pure subroutine bisect_check_inputs (a, b, xtol, tol, maxiter, res)
     !*  BISECT_CHECK_INPUTS performs input validation for the bisection
     !   root-finding algorithm.
 
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: a
     real (PREC), intent(in) :: b
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
-    type (__APPEND(optim_result,__PREC)), intent(inout) :: res
+    type (optim_result), intent(inout) :: res
 
     res%status = NF_STATUS_OK
 
@@ -37,18 +36,17 @@ end subroutine
 
 
 
-subroutine __APPEND(root_bisect,__PREC) (fcn, a, b, x0, xtol, tol, maxiter, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss,__PREC)) :: fcn
+subroutine root_bisect (fcn, a, b, x0, xtol, tol, maxiter, res)
+    procedure (fss) :: fcn
     real (PREC), intent(in) :: a
     real (PREC), intent(in) :: b
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
     real (PREC), intent(out), optional :: x0
-    type (__APPEND(optim_result,__PREC)), intent(out), optional :: res
+    type (optim_result), intent(out), optional :: res
 
-    type (__APPEND(fwrapper_ss,__PREC)) :: fwrapper
+    type (fwrapper_ss) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn=fcn)
 
@@ -58,10 +56,9 @@ end subroutine
 
 
 
-subroutine __APPEND(root_bisect_args,__PREC) (fcn, a, b, args, x0, xtol, tol, &
+subroutine root_bisect_args (fcn, a, b, args, x0, xtol, tol, &
         maxiter, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss_args,__PREC)) :: fcn
+    procedure (fss_args) :: fcn
     real (PREC), intent(in) :: a
     real (PREC), intent(in) :: b
     class (args_data), intent(inout) :: args
@@ -69,9 +66,9 @@ subroutine __APPEND(root_bisect_args,__PREC) (fcn, a, b, args, x0, xtol, tol, &
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
     real (PREC), intent(out), optional :: x0
-    type (__APPEND(optim_result,__PREC)), intent(out), optional :: res
+    type (optim_result), intent(out), optional :: res
 
-    type (__APPEND(fwrapper_ss,__PREC)) :: fwrapper
+    type (fwrapper_ss) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn_args=fcn, args=args)
 
@@ -81,11 +78,10 @@ end subroutine
 
 
 
-subroutine __APPEND(root_bisect_impl,__PREC) (fcn, a, b, x0, xtol, tol, &
+subroutine root_bisect_impl (fcn, a, b, x0, xtol, tol, &
         maxiter, res)
     !*  ROOT_BISECT_IMPL implements a bisection root-finding algorithm.
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_ss,__PREC)), intent(inout) :: fcn
+    type (fwrapper_ss), intent(inout) :: fcn
     real (PREC), intent(in) :: a
         !*  Lower bound of bracketing interval
     real (PREC), intent(in) :: b
@@ -99,10 +95,10 @@ subroutine __APPEND(root_bisect_impl,__PREC) (fcn, a, b, x0, xtol, tol, &
         !*  Maximum number of iterations
     real (PREC), intent(out), optional :: x0
         !*  If present, contains the root on successful exit.
-    type (__APPEND(optim_result,__PREC)), intent(out), optional :: res
+    type (optim_result), intent(out), optional :: res
         !*  Result object
 
-    type (__APPEND(optim_result,__PREC)), pointer :: ptr_res
+    type (optim_result), pointer :: ptr_res
     real (PREC) :: lxtol, ltol
     integer :: lmaxiter
 

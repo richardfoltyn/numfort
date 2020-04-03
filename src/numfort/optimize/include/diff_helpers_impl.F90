@@ -1,10 +1,9 @@
 
 
-subroutine __APPEND(fss_deriv,__PREC) (fcn, x, fpx, fx, eps, reps)
+subroutine fss_deriv (fcn, x, fpx, fx, eps, reps)
     !*  FSS_DERIV numerically differentiates a function f:R->R
     !   and returns its derivative
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss,__PREC)) :: fcn
+    procedure (fss) :: fcn
     real (PREC), intent(in) :: x
         !*  Point X at which derivative should be evaluated
     real (PREC), intent(out) :: fpx
@@ -42,11 +41,10 @@ end subroutine
 
 
 
-subroutine __APPEND(fss_deriv_args,__PREC) (fcn, x, args, fpx, fx, eps, reps)
+subroutine fss_deriv_args (fcn, x, args, fpx, fx, eps, reps)
     !*  FSS_DERIV_ARGS numerically differentiates a function f:R->R
     !   and returns its derivative
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss_args,__PREC)) :: fcn
+    procedure (fss_args) :: fcn
     real (PREC), intent(in) :: x
         !*  Point X at which derivative should be evaluated
     class (args_data), intent(inout) :: args
@@ -89,11 +87,10 @@ end subroutine
 ! ------------------------------------------------------------------------------
 ! Numeric differentiation for functions that map vectors into scalars
 
-subroutine __APPEND(fvs_deriv,__PREC) (fcn, x, fpx, fx, eps, reps)
+subroutine fvs_deriv (fcn, x, fpx, fx, eps, reps)
     !*  FVS_DERIV numerically differentiates a function f:R^n->R^m
     !   and returns its m-by-n Jacobian.
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fvs_fcn,__PREC)) :: fcn
+    procedure (fvs_fcn) :: fcn
     real (PREC), intent(in), dimension(:), contiguous :: x
         !*  Point X at which gradient should be evaluated
     real (PREC), intent(out), dimension(:) :: fpx
@@ -146,11 +143,10 @@ end subroutine
 
 
 
-subroutine __APPEND(fvs_args_deriv,__PREC) (fcn, x, args, fpx, fx, eps, reps)
+subroutine fvs_args_deriv (fcn, x, args, fpx, fx, eps, reps)
     !*  FVS_DERIV numerically differentiates a function f:R^n->R^m
     !   and returns its m-by-n Jacobian.
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fvs_fcn_args,__PREC)) :: fcn
+    procedure (fvs_fcn_args) :: fcn
     real (PREC), intent(in), dimension(:), contiguous :: x
         !*  Point X at which gradient should be evaluated
     class (args_data), intent(inout) :: args
@@ -207,11 +203,10 @@ end subroutine
 ! ------------------------------------------------------------------------------
 ! Numeric differentiation for functions that map vectors into vectors
 
-subroutine __APPEND(fvv_deriv,__PREC) (fcn, x, fpx, fx, eps, reps)
+subroutine fvv_deriv (fcn, x, fpx, fx, eps, reps)
     !*  JACOBIAN numerically differentiates a function f:R^n->R^m
     !   and returns its m-by-n Jacobian.
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fvv_fcn,__PREC)) :: fcn
+    procedure (fvv_fcn) :: fcn
     real (PREC), intent(in), dimension(:), contiguous :: x
         !*  Point X at this Jacobian should be evaluated
     real (PREC), intent(out), dimension(:,:) :: fpx
@@ -269,11 +264,10 @@ subroutine __APPEND(fvv_deriv,__PREC) (fcn, x, fpx, fx, eps, reps)
 end subroutine
 
 
-subroutine __APPEND(fvv_args_deriv,__PREC) (fcn, x, args, fpx, fx, eps, reps)
+subroutine fvv_args_deriv (fcn, x, args, fpx, fx, eps, reps)
     !*  JACOBIAN numerically differentiates a function f:R^n->R^m
     !   and returns its m-by-n Jacobian.
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fvv_fcn_args,__PREC)) :: fcn
+    procedure (fvv_fcn_args) :: fcn
     real (PREC), intent(in), dimension(:), contiguous :: x
         !*  Point X at this Jacobian should be evaluated
     class (args_data), intent(inout) :: args
@@ -333,10 +327,9 @@ end subroutine
 
 
 
-pure function __APPEND(get_step_size,__PREC) (x, eps, reps) result(res)
+pure function get_step_size (x, eps, reps) result(res)
     !*  GET_STEP_SIZE determines the forward-difference step size
     !   depending on (presence of) user-provided arguments.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: x
     real (PREC), intent(in), optional :: eps
     real (PREC), intent(in), optional :: reps

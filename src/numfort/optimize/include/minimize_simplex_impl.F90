@@ -1,6 +1,7 @@
 
-subroutine __APPEND(check_input,__PREC) (tol, maxfun, rstep, xstep, status, msg)
-    integer, parameter :: PREC = __PREC
+
+
+subroutine check_input (tol, maxfun, rstep, xstep, status, msg)
     real (PREC), intent(in) :: tol
     integer, intent(in) :: maxfun
     real (PREC), intent(in), optional :: rstep
@@ -39,11 +40,55 @@ end subroutine
 
 
 
-subroutine __APPEND(minimize_simplex,__PREC) (fcn, x, tol, maxfun, rstep, &
+pure function map_iprint (i) result(k)
+    !*  MAP_IPRINT converts NUMFORT print flags to values expected by
+    !   wrapped routine.
+    integer (NF_ENUM_KIND), intent(in) :: i
+    integer :: k
+
+    select case (i)
+    case (NF_PRINT_MINIMAL)
+        k = 0
+    case (NF_PRINT_VERBOSE)
+        k = 1
+    case (NF_PRINT_ALL)
+        k = 1
+    case default
+        ! do not print anything by default
+        k = -1
+    end select
+end function
+
+
+
+pure subroutine map_ifault (ifault, status, msg)
+    !*  MAP_IFAULT maps the status code returned by the underlying implementation
+    !   into corresponding NUMFORT status codes.
+    integer, intent(in) :: ifault
+    !!  Status code as returned by simplex routine
+    type (status_t), intent(out) :: status
+    !!  On exit, contains the corresponding NF status code
+    character (len=*), intent(out), optional :: msg
+
+    status = NF_STATUS_UNKNOWN
+    if (ifault == 0) then
+        status = NF_STATUS_OK
+        if (present(msg)) msg = "Simplex: successful termination"
+    else if (ifault == 1) then
+        status = NF_STATUS_MAX_EVAL
+        if (present(msg)) msg = "Simplex: max. number of function evaluations exceeded"
+    else if (ifault == 3 .or. ifault == 4) then
+        status = NF_STATUS_INVALID_ARG
+        if (present(msg)) msg = "Simplex: invalid input argument(s)"
+    end if
+end subroutine
+
+
+
+subroutine minimize_simplex (fcn, x, tol, maxfun, rstep, &
         xstep, quad, iprint, work, res)
 
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fvs_fcn,__PREC)) :: fcn
+    procedure (fvs_fcn) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxfun
@@ -55,10 +100,10 @@ subroutine __APPEND(minimize_simplex,__PREC) (fcn, x, tol, maxfun, rstep, &
         !   The actual step size is computed as (xstep + rstep * x).
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
     logical, intent(in), optional :: quad
-    type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (workspace), intent(inout), optional :: work
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_vs,__PREC)) :: fwrapper
+    type (fwrapper_vs) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn=fcn)
 
@@ -66,11 +111,10 @@ subroutine __APPEND(minimize_simplex,__PREC) (fcn, x, tol, maxfun, rstep, &
 end subroutine
 
 
-subroutine __APPEND(minimize_simplex_args,__PREC) (fcn, x, args, tol, maxfun, &
+subroutine minimize_simplex_args (fcn, x, args, tol, maxfun, &
         rstep, xstep, quad, iprint, work, res)
 
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fvs_fcn_args,__PREC)) :: fcn
+    procedure (fvs_fcn_args) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
     class (args_data), intent(inout) :: args
     real (PREC), intent(in), optional :: tol
@@ -83,10 +127,10 @@ subroutine __APPEND(minimize_simplex_args,__PREC) (fcn, x, args, tol, maxfun, &
         !   The actual step size is computed as (xstep + rstep * x).
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
     logical, intent(in), optional :: quad
-    type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (workspace), intent(inout), optional :: work
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_vs,__PREC)) :: fwrapper
+    type (fwrapper_vs) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn_args=fcn, args=args)
 
@@ -94,11 +138,10 @@ subroutine __APPEND(minimize_simplex_args,__PREC) (fcn, x, args, tol, maxfun, &
 end subroutine
 
 
-subroutine __APPEND(simplex_impl,__PREC) (fcn, x, tol, maxfun, rstep, xstep, &
+subroutine simplex_impl (fcn, x, tol, maxfun, rstep, xstep, &
         quad, iprint, work, res)
 
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_vs,__PREC)), intent(inout) :: fcn
+    type (fwrapper_vs), intent(inout) :: fcn
 
     real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(in), optional :: tol
@@ -107,16 +150,16 @@ subroutine __APPEND(simplex_impl,__PREC) (fcn, x, tol, maxfun, rstep, xstep, &
     real (PREC), intent(in), optional :: xstep
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
     logical, intent(in), optional :: quad
-    type (__APPEND(workspace,__PREC)), intent(inout), target, optional :: work
-    type (__APPEND(optim_result,__PREC)), intent(inout), target, optional :: res
+    type (workspace), intent(inout), target, optional :: work
+    type (optim_result), intent(inout), target, optional :: res
 
     integer :: n, lmaxfun, nloop, iquad, liprint, ifault, nrwrk
     logical :: lquad
     real (PREC) :: lrstep, lxstep, simp, fopt, ltol
     real (PREC), dimension(:), pointer, contiguous :: ptr_step, ptr_var
 
-    type (__APPEND(workspace,__PREC)), pointer :: ptr_work
-    type (__APPEND(optim_result,__PREC)), pointer :: ptr_res
+    type (workspace), pointer :: ptr_work
+    type (optim_result), pointer :: ptr_res
 
     nullify (ptr_work, ptr_res)
     nullify (ptr_step, ptr_var)

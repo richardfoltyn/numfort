@@ -1,9 +1,8 @@
 
 
 
-subroutine __APPEND(root_broyden_check_input,__PREC) (maxiter, maxfev, &
+subroutine root_broyden_check_input (maxiter, maxfev, &
         tol, xtol, rstep, xstep, status, msg)
-    integer, parameter :: PREC = __PREC
     integer, intent(in):: maxiter, maxfev
     real (PREC), intent(in) :: tol, xtol
     real (PREC), intent(in), optional :: rstep, xstep
@@ -37,10 +36,10 @@ subroutine __APPEND(root_broyden_check_input,__PREC) (maxiter, maxfev, &
 end subroutine
 
 
-recursive subroutine __APPEND(root_broyden,__PREC) (fcn, x, ndiff, tol, xtol, &
+
+recursive subroutine root_broyden (fcn, x, ndiff, tol, xtol, &
         maxiter, maxfev, rstep, xstep, dstep, iprint, work, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fvv_fcn,__PREC)) :: fcn
+    procedure (fvv_fcn) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
     logical, intent(in) :: ndiff
     real (PREC), intent(in), optional :: tol
@@ -55,10 +54,10 @@ recursive subroutine __APPEND(root_broyden,__PREC) (fcn, x, ndiff, tol, xtol, &
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
         !*  If present, debug info will be printed according to the value
         !   of IPRINT.
-    type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (workspace), intent(inout), optional :: work
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_vv,__PREC)) :: fwrapper
+    type (fwrapper_vv) :: fwrapper
 
     ! Force NDIFF argument to be TRUE
     if (.not. ndiff) then
@@ -76,11 +75,11 @@ recursive subroutine __APPEND(root_broyden,__PREC) (fcn, x, ndiff, tol, xtol, &
 end subroutine
 
 
-recursive subroutine __APPEND(root_broyden_jac,__PREC) (fcn, fjac, x, tol, &
+
+recursive subroutine root_broyden_jac (fcn, fjac, x, tol, &
         xtol, maxiter, maxfev, rstep, xstep, iprint, work, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fvv_fcn,__PREC)) :: fcn
-    procedure (__APPEND(fvv_jac,__PREC)) :: fjac
+    procedure (fvv_fcn) :: fcn
+    procedure (fvv_jac) :: fjac
     real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(in), optional :: tol
     real (PREC), intent(in), optional :: xtol
@@ -93,10 +92,10 @@ recursive subroutine __APPEND(root_broyden_jac,__PREC) (fcn, fjac, x, tol, &
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
     !*  If present, debug info will be printed according to the value
     !   of IPRINT.
-    type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (workspace), intent(inout), optional :: work
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_vv,__PREC)) :: fwrapper
+    type (fwrapper_vv) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn=fcn, jac=fjac)
 
@@ -105,10 +104,11 @@ recursive subroutine __APPEND(root_broyden_jac,__PREC) (fcn, fjac, x, tol, &
 
 end subroutine
 
-recursive subroutine __APPEND(root_broyden_fcn_jac_opt,__PREC) (fcn, x, tol, &
+
+
+recursive subroutine root_broyden_fcn_jac_opt (fcn, x, tol, &
         xtol, maxiter, maxfev, rstep, xstep, iprint, work, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fvv_fcn_jac_opt,__PREC)) :: fcn
+    procedure (fvv_fcn_jac_opt) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(in), optional :: tol
     real (PREC), intent(in), optional :: xtol
@@ -121,10 +121,10 @@ recursive subroutine __APPEND(root_broyden_fcn_jac_opt,__PREC) (fcn, x, tol, &
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
     !*  If present, debug info will be printed according to the value
     !   of IPRINT.
-    type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (workspace), intent(inout), optional :: work
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_vv,__PREC)) :: fwrapper
+    type (fwrapper_vv) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn_jac_opt=fcn)
 
@@ -134,10 +134,10 @@ recursive subroutine __APPEND(root_broyden_fcn_jac_opt,__PREC) (fcn, x, tol, &
 end subroutine
 
 
-recursive subroutine __APPEND(root_broyden_args,__PREC) (fcn, x, args, ndiff, &
+
+recursive subroutine root_broyden_args (fcn, x, args, ndiff, &
         tol, xtol, maxiter, maxfev, rstep, xstep, dstep, iprint, work, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fvv_fcn_args,__PREC)) :: fcn
+    procedure (fvv_fcn_args) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
     class (args_data), intent(inout) :: args
     logical, intent(in) :: ndiff
@@ -153,10 +153,10 @@ recursive subroutine __APPEND(root_broyden_args,__PREC) (fcn, x, args, ndiff, &
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
     !*  If present, debug info will be printed according to the value
     !   of IPRINT.
-    type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (workspace), intent(inout), optional :: work
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_vv,__PREC)) :: fwrapper
+    type (fwrapper_vv) :: fwrapper
 
     ! Force NDIFF argument to be TRUE
     if (.not. ndiff) then
@@ -174,11 +174,11 @@ recursive subroutine __APPEND(root_broyden_args,__PREC) (fcn, x, args, ndiff, &
 end subroutine
 
 
-recursive subroutine __APPEND(root_broyden_jac_args,__PREC) (fcn, fjac, x, &
+
+recursive subroutine root_broyden_jac_args (fcn, fjac, x, &
         args, tol, xtol, maxiter, maxfev, rstep, xstep, iprint, work, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fvv_fcn_args,__PREC)) :: fcn
-    procedure (__APPEND(fvv_jac_args,__PREC)) :: fjac
+    procedure (fvv_fcn_args) :: fcn
+    procedure (fvv_jac_args) :: fjac
     real (PREC), intent(inout), dimension(:), contiguous :: x
     class (args_data), intent(inout) :: args
     real (PREC), intent(in), optional :: tol
@@ -192,10 +192,10 @@ recursive subroutine __APPEND(root_broyden_jac_args,__PREC) (fcn, fjac, x, &
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
     !*  If present, debug info will be printed according to the value
     !   of IPRINT.
-    type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (workspace), intent(inout), optional :: work
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_vv,__PREC)) :: fwrapper
+    type (fwrapper_vv) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn_args=fcn, jac_args=fjac, args=args)
 
@@ -206,10 +206,9 @@ end subroutine
 
 
 
-recursive subroutine __APPEND(root_broyden_fcn_jac_opt_args,__PREC) (fcn, x, &
+recursive subroutine root_broyden_fcn_jac_opt_args (fcn, x, &
         args, tol, xtol, maxiter, maxfev, rstep, xstep, iprint, work, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fvv_fcn_jac_opt_args,__PREC)) :: fcn
+    procedure (fvv_fcn_jac_opt_args) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
     class (args_data), intent(inout) :: args
     real (PREC), intent(in), optional :: tol
@@ -223,10 +222,10 @@ recursive subroutine __APPEND(root_broyden_fcn_jac_opt_args,__PREC) (fcn, x, &
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
     !*  If present, debug info will be printed according to the value
     !   of IPRINT.
-    type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (workspace), intent(inout), optional :: work
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_vv,__PREC)) :: fwrapper
+    type (fwrapper_vv) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn_jac_opt_args=fcn, args=args)
 
@@ -236,12 +235,11 @@ recursive subroutine __APPEND(root_broyden_fcn_jac_opt_args,__PREC) (fcn, x, &
 end subroutine
 
 
-recursive subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
+
+recursive subroutine root_broyden_impl (fcn, x, tol, xtol, &
         maxiter, maxfev, rstep, xstep, iprint, work, res)
 
-    integer, parameter :: PREC = __PREC
-
-    type (__APPEND(fwrapper_vv,__PREC)), intent(inout) :: fcn
+    type (fwrapper_vv), intent(inout) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(in), optional :: tol
     real (PREC), intent(in), optional :: xtol
@@ -255,8 +253,8 @@ recursive subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
     real (PREC), intent(in), optional :: xstep
         !*  Max. absolute step size in search direction (default: unbounded)
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
-    type (__APPEND(workspace,__PREC)), intent(inout), optional, target :: work
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional, target :: res
+    type (workspace), intent(inout), optional, target :: work
+    type (optim_result), intent(inout), optional, target :: res
 
     real (PREC) :: ltol, lxtol
     real (PREC) :: dx_scale, denom, nrm, nrmp1, nrm_last, nrm_upd
@@ -273,8 +271,8 @@ recursive subroutine __APPEND(root_broyden_impl,__PREC) (fcn, x, tol, xtol, &
     real (PREC), dimension(:), pointer, contiguous :: rwork_inv
     integer, dimension(:), pointer, contiguous :: iwork_inv
 
-    type (__APPEND(workspace,__PREC)), pointer :: ptr_work
-    type (__APPEND(optim_result,__PREC)), pointer :: ptr_res
+    type (workspace), pointer :: ptr_work
+    type (optim_result), pointer :: ptr_res
     type (status_t) :: status
 
     ! Arguments for GEMV
@@ -576,7 +574,7 @@ end subroutine
 
 
 
-recursive subroutine __APPEND(dumb_line_search,__PREC) (fcn, x, nrm, iprint, &
+recursive subroutine dumb_line_search (fcn, x, nrm, iprint, &
         x_ls, fx_ls, dx, fx)
     !*  DUMB_LINE_SEARCH uses backtracking to identify the step size in a
     !   given direction that yields a lower Euclidean norm of the objective
@@ -584,8 +582,7 @@ recursive subroutine __APPEND(dumb_line_search,__PREC) (fcn, x, nrm, iprint, &
     !
     !   If the Euclidean norm is larger at all candidate points in direction
     !   DX, the least bad step size is returned.
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_vv,__PREC)), intent(inout) :: fcn
+    type (fwrapper_vv), intent(inout) :: fcn
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(in) :: nrm
         !*  Euclidean norm of the last function value, |FX|_2

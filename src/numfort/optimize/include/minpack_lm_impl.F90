@@ -1,10 +1,9 @@
 
 
-subroutine root_lm_real64 (fcn, x, fx, ndiff, ftol, xtol, gtol, maxfev, &
+subroutine root_lm (fcn, x, fx, ndiff, ftol, xtol, gtol, maxfev, &
         factor, diag, dstep, drstep, work, res)
 
-    integer, parameter :: PREC = real64
-    procedure (fvv_fcn_real64) :: fcn
+    procedure (fvv_fcn) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(out), dimension(:), contiguous :: fx
     logical, intent(in) :: ndiff
@@ -20,10 +19,10 @@ subroutine root_lm_real64 (fcn, x, fx, ndiff, ftol, xtol, gtol, maxfev, &
         !   step size for the derivative wrt. X(j) is computed as
         !       h = DRSTEP * abs(X(j))
         !   Note: Ignored if DSTEP is present.
-    type (workspace_real64), intent(inout), optional :: work
-    type (optim_result_real64), intent(inout), optional :: res
+    type (workspace), intent(inout), optional :: work
+    type (optim_result), intent(inout), optional :: res
 
-    type (fwrapper_vv_real64) :: fwrapper
+    type (fwrapper_vv) :: fwrapper
     real (PREC) :: reps
 
     ! Force NDIFF argument to be TRUE
@@ -51,12 +50,11 @@ end subroutine
 
 
 
-subroutine root_lm_jac_real64 (fcn, fjac, x, fx, ftol, xtol, gtol, maxfev, &
+subroutine root_lm_jac (fcn, fjac, x, fx, ftol, xtol, gtol, maxfev, &
         factor, diag, work, res)
 
-    integer, parameter :: PREC = real64
-    procedure (fvv_fcn_real64) :: fcn
-    procedure (fvv_jac_real64) :: fjac
+    procedure (fvv_fcn) :: fcn
+    procedure (fvv_jac) :: fjac
     real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(out), dimension(:), contiguous :: fx
     real (PREC), intent(in), optional :: ftol
@@ -65,10 +63,10 @@ subroutine root_lm_jac_real64 (fcn, fjac, x, fx, ftol, xtol, gtol, maxfev, &
     integer, intent(in), optional :: maxfev
     real (PREC), intent(in), optional :: factor
     real (PREC), intent(in), dimension(:), optional, contiguous :: diag
-    type (workspace_real64), intent(inout), optional :: work
-    type (optim_result_real64), intent(inout), optional :: res
+    type (workspace), intent(inout), optional :: work
+    type (optim_result), intent(inout), optional :: res
 
-    type (fwrapper_vv_real64) :: fwrapper
+    type (fwrapper_vv) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn=fcn, jac=fjac)
     
@@ -78,11 +76,10 @@ subroutine root_lm_jac_real64 (fcn, fjac, x, fx, ftol, xtol, gtol, maxfev, &
 end subroutine
 
 
-subroutine root_lm_fcn_jac_real64 (fcn, x, fx, ftol, xtol, gtol, maxfev, &
+subroutine root_lm_fcn_jac (fcn, x, fx, ftol, xtol, gtol, maxfev, &
         factor, diag, work, res)
 
-    integer, parameter :: PREC = real64
-    procedure (fvv_fcn_jac_opt_real64) :: fcn
+    procedure (fvv_fcn_jac_opt) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(out), dimension(:), contiguous :: fx
     real (PREC), intent(in), optional :: ftol
@@ -91,10 +88,10 @@ subroutine root_lm_fcn_jac_real64 (fcn, x, fx, ftol, xtol, gtol, maxfev, &
     integer, intent(in), optional :: maxfev
     real (PREC), intent(in), optional :: factor
     real (PREC), intent(in), dimension(:), optional, contiguous :: diag
-    type (workspace_real64), intent(inout), optional :: work
-    type (optim_result_real64), intent(inout), optional :: res
+    type (workspace), intent(inout), optional :: work
+    type (optim_result), intent(inout), optional :: res
 
-    type (fwrapper_vv_real64) :: fwrapper
+    type (fwrapper_vv) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn_jac_opt=fcn)
     
@@ -105,11 +102,10 @@ end subroutine
 
 
 
-subroutine root_lm_args_real64 (fcn, x, args, fx, ndiff, ftol, xtol, gtol, maxfev, &
+subroutine root_lm_args (fcn, x, args, fx, ndiff, ftol, xtol, gtol, maxfev, &
         factor, diag, dstep, drstep, work, res)
 
-    integer, parameter :: PREC = real64
-    procedure (fvv_fcn_args_real64) :: fcn
+    procedure (fvv_fcn_args) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
     class (args_data), intent(inout) :: args
     real (PREC), intent(out), dimension(:), contiguous :: fx
@@ -126,10 +122,10 @@ subroutine root_lm_args_real64 (fcn, x, args, fx, ndiff, ftol, xtol, gtol, maxfe
         !   step size for the derivative wrt. X(j) is computed as
         !       h = DRSTEP * abs(X(j))
         !   Note: Ignored if DSTEP is present.
-    type (workspace_real64), intent(inout), optional :: work
-    type (optim_result_real64), intent(inout), optional :: res
+    type (workspace), intent(inout), optional :: work
+    type (optim_result), intent(inout), optional :: res
 
-    type (fwrapper_vv_real64) :: fwrapper
+    type (fwrapper_vv) :: fwrapper
     real (PREC) :: reps
 
     ! Force NDIFF argument to be TRUE
@@ -157,12 +153,11 @@ end subroutine
 
 
 
-subroutine root_lm_jac_args_real64 (fcn, fjac, x, args, fx, ftol, xtol, gtol, & 
+subroutine root_lm_jac_args (fcn, fjac, x, args, fx, ftol, xtol, gtol, &
         maxfev, factor, diag, work, res)
 
-    integer, parameter :: PREC = real64
-    procedure (fvv_fcn_args_real64) :: fcn
-    procedure (fvv_jac_args_real64) :: fjac
+    procedure (fvv_fcn_args) :: fcn
+    procedure (fvv_jac_args) :: fjac
     real (PREC), intent(inout), dimension(:), contiguous :: x
     class (args_data), intent(inout) :: args
     real (PREC), intent(out), dimension(:), contiguous :: fx
@@ -172,10 +167,10 @@ subroutine root_lm_jac_args_real64 (fcn, fjac, x, args, fx, ftol, xtol, gtol, &
     integer, intent(in), optional :: maxfev
     real (PREC), intent(in), optional :: factor
     real (PREC), intent(in), dimension(:), optional, contiguous :: diag
-    type (workspace_real64), intent(inout), optional :: work
-    type (optim_result_real64), intent(inout), optional :: res
+    type (workspace), intent(inout), optional :: work
+    type (optim_result), intent(inout), optional :: res
 
-    type (fwrapper_vv_real64) :: fwrapper
+    type (fwrapper_vv) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn_args=fcn, jac_args=fjac, args=args)
     
@@ -185,11 +180,10 @@ subroutine root_lm_jac_args_real64 (fcn, fjac, x, args, fx, ftol, xtol, gtol, &
 end subroutine
 
 
-subroutine root_lm_fcn_jac_args_real64 (fcn, x, args, fx, ftol, xtol, gtol, &
+subroutine root_lm_fcn_jac_args (fcn, x, args, fx, ftol, xtol, gtol, &
         maxfev, factor, diag, work, res)
 
-    integer, parameter :: PREC = real64
-    procedure (fvv_fcn_jac_opt_args_real64) :: fcn
+    procedure (fvv_fcn_jac_opt_args) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
     class (args_data), intent(inout) :: args
     real (PREC), intent(out), dimension(:), contiguous :: fx
@@ -199,10 +193,10 @@ subroutine root_lm_fcn_jac_args_real64 (fcn, x, args, fx, ftol, xtol, gtol, &
     integer, intent(in), optional :: maxfev
     real (PREC), intent(in), optional :: factor
     real (PREC), intent(in), dimension(:), optional, contiguous :: diag
-    type (workspace_real64), intent(inout), optional :: work
-    type (optim_result_real64), intent(inout), optional :: res
+    type (workspace), intent(inout), optional :: work
+    type (optim_result), intent(inout), optional :: res
 
-    type (fwrapper_vv_real64) :: fwrapper
+    type (fwrapper_vv) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn_jac_opt_args=fcn, args=args)
     
@@ -215,11 +209,10 @@ end subroutine
 
 
 
-subroutine root_lm_impl_real64 (fcn, x, fx, ftol, xtol, gtol, maxfev, &
+subroutine root_lm_impl (fcn, x, fx, ftol, xtol, gtol, maxfev, &
         factor, diag, work, res)
 
-    integer, parameter :: PREC = real64
-    type (fwrapper_vv_real64), intent(inout) :: fcn
+    type (fwrapper_vv), intent(inout) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(out), dimension(:), contiguous :: fx
     real (PREC), intent(in), optional :: ftol
@@ -228,15 +221,15 @@ subroutine root_lm_impl_real64 (fcn, x, fx, ftol, xtol, gtol, maxfev, &
     integer, intent(in), optional :: maxfev
     real (PREC), intent(in), optional :: factor
     real (PREC), intent(in), dimension(:), optional, target, contiguous :: diag
-    type (workspace_real64), intent(inout), target, optional :: work
-    type (optim_result_real64), intent(inout), optional :: res
+    type (workspace), intent(inout), target, optional :: work
+    type (optim_result), intent(inout), optional :: res
 
     ! local default values for optional arguments
     real (PREC) :: lxtol, lftol, lgtol, lfactor
     integer :: lmaxfev, lnprint
     integer :: m, n, nrwrk, niwrk, mode, info, nfev, njev
-    type (optim_result_real64), pointer :: ptr_res
-    type (workspace_real64), pointer :: ptr_work
+    type (optim_result), pointer :: ptr_res
+    type (workspace), pointer :: ptr_work
     ! pointers to various arrays that need to be passed to lmder() that are
     ! segments of memory allocated in workspace
     real (PREC), dimension(:,:), pointer, contiguous :: ptr_fjac
@@ -319,7 +312,7 @@ subroutine root_lm_impl_real64 (fcn, x, fx, ftol, xtol, gtol, maxfev, &
 
     call workspace_get_ptr (ptr_work, n, ptr_ipvt)
 
-    call minpack_lmder_real64 (fcn_wrapper, m, n, x, fx, ptr_fjac, m, &
+    call minpack_lmder (fcn_wrapper, m, n, x, fx, ptr_fjac, m, &
         lftol, lxtol, lgtol, lmaxfev, &
         ptr_diag, mode, lfactor, lnprint, info, nfev, njev, &
         ptr_ipvt, ptr_qtf, ptr_wa1, ptr_wa2, ptr_wa3, ptr_wa4)
@@ -385,12 +378,11 @@ subroutine root_lm_impl_real64 (fcn, x, fx, ftol, xtol, gtol, maxfev, &
 end subroutine
 
 
-subroutine lm_check_input_real64 (m, n, ftol, xtol, gtol, maxfev, factor, eps, &
+subroutine lm_check_input (m, n, ftol, xtol, gtol, maxfev, factor, eps, &
         status, msg)
     !*  LM_CHECK_INPUT performs input validation for LMDER and LMDIF
     !   routines.
 
-    integer, parameter :: PREC = real64
     integer, intent(in) :: m, n
     real (PREC), intent(in), optional :: ftol, xtol, gtol
     integer, intent(in) :: maxfev

@@ -1,39 +1,30 @@
-module numfort_optimize_slsqp
+
+
+
+module numfort_optimize_slsqp_real64
 
     use, intrinsic :: ieee_arithmetic
     use, intrinsic :: iso_fortran_env
+
     use numfort_common
     use numfort_common_input_checks
-    use numfort_common_workspace
-    use numfort_optimize_result
-    use numfort_optimize_interfaces
-    use numfort_optimize_fwrapper
-    use slsqp_mod, only: slsqp_impl => slsqp, slsqp_data_real64, linmin_data_real64
+    use numfort_common_workspace, workspace => workspace_real64
+    use numfort_optimize_result_real64
+    use numfort_optimize_interfaces_real64
+    use numfort_optimize_fwrapper_real64
+    use slsqp_mod, only: slsqp_orig => slsqp, slsqp_data => slsqp_data_real64, &
+        linmin_data => linmin_data_real64
 
     implicit none
+
+    integer, parameter :: PREC = real64
 
     private
 
     public :: minimize_slsqp
 
     interface minimize_slsqp
-        module procedure slsqp_real64, slsqp_args_real64
-    end interface
-
-    interface slsqp_check_input
-        module procedure slsqp_check_input_real64
-    end interface
-
-    interface slsqp_clip_init
-        module procedure slsqp_clip_init_real64
-    end interface
-
-    interface slsqp_sanitize_bounds
-        module procedure slsqp_sanitize_bounds_real64
-    end interface
-
-    interface slsqp_impl
-        module procedure slsqp_impl_real64
+        module procedure minimize_slsqp, minimize_slsqp_args
     end interface
 
     integer, parameter :: MODE_INIT = 0
@@ -74,99 +65,94 @@ module numfort_optimize_slsqp
 
 
 
-subroutine slsqp_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
+subroutine minimize_slsqp (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
         f_ieqcons, maxiter, linesearch, tol, work, res)
 
-    integer, parameter :: PREC = real64
-
-    procedure (fvs_fcn_jac_opt_real64) :: fobj
+    procedure (fvs_fcn_jac_opt) :: fobj
     real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), optional :: lbounds
     real (PREC), intent(in), dimension(:), optional :: ubounds
     integer, intent(in), optional :: m, meq
-    procedure (fvv_fcn_jac_opt_real64), optional :: f_eqcons
-    procedure (fvv_fcn_jac_opt_real64), optional :: f_ieqcons
+    procedure (fvv_fcn_jac_opt), optional :: f_eqcons
+    procedure (fvv_fcn_jac_opt), optional :: f_ieqcons
     integer, intent(in), optional :: maxiter
     integer (NF_ENUM_KIND), intent(in), optional :: linesearch
     real (PREC), intent(in), optional :: tol
-    type (workspace_real64), intent(inout), optional :: work
-    type (optim_result_real64), intent(inout), optional :: res
+    type (workspace), intent(inout), optional :: work
+    type (optim_result), intent(inout), optional :: res
 
-    type (fwrapper_vs_real64) :: fobj_wrapper
-    type (fwrapper_vv_real64) :: f_eqcons_wrapper, f_ieqcons_wrapper
+    type (fwrapper_vs) :: fobj_wrapper
+    type (fwrapper_vv) :: f_eqcons_wrapper, f_ieqcons_wrapper
 
     call wrap_procedure (fobj_wrapper, fcn_jac_opt=fobj)
     call wrap_procedure (f_eqcons_wrapper, fcn_jac_opt=f_eqcons)
     call wrap_procedure (f_ieqcons_wrapper, fcn_jac_opt=f_ieqcons)
 
-    call slsqp_impl (fobj_wrapper, x, lbounds, ubounds, m, meq, &
+    call minimize_slsqp_impl (fobj_wrapper, x, lbounds, ubounds, m, meq, &
         f_eqcons_wrapper, f_ieqcons_wrapper, maxiter, linesearch, tol, work, res)
 
 end subroutine
 
 
-subroutine slsqp_args_real64 (fobj, x, args, lbounds, ubounds, m, meq, f_eqcons, &
+subroutine minimize_slsqp_args (fobj, x, args, lbounds, ubounds, m, meq, f_eqcons, &
         f_ieqcons, maxiter, linesearch, tol, work, res)
 
-    integer, parameter :: PREC = real64
-
-    procedure (fvs_fcn_jac_opt_args_real64) :: fobj
+    procedure (fvs_fcn_jac_opt_args) :: fobj
     real (PREC), intent(inout), dimension(:), contiguous :: x
     class (args_data), intent(inout) :: args
     real (PREC), intent(in), dimension(:), optional :: lbounds
     real (PREC), intent(in), dimension(:), optional :: ubounds
     integer, intent(in), optional :: m, meq
-    procedure (fvv_fcn_jac_opt_args_real64), optional :: f_eqcons
-    procedure (fvv_fcn_jac_opt_args_real64), optional :: f_ieqcons
+    procedure (fvv_fcn_jac_opt_args), optional :: f_eqcons
+    procedure (fvv_fcn_jac_opt_args), optional :: f_ieqcons
     integer, intent(in), optional :: maxiter
     integer (NF_ENUM_KIND), intent(in), optional :: linesearch
     real (PREC), intent(in), optional :: tol
-    type (workspace_real64), intent(inout), optional :: work
-    type (optim_result_real64), intent(inout), optional :: res
+    type (workspace), intent(inout), optional :: work
+    type (optim_result), intent(inout), optional :: res
 
-    type (fwrapper_vs_real64) :: fobj_wrapper
-    type (fwrapper_vv_real64) :: f_eqcons_wrapper, f_ieqcons_wrapper
+    type (fwrapper_vs) :: fobj_wrapper
+    type (fwrapper_vv) :: f_eqcons_wrapper, f_ieqcons_wrapper
 
     call wrap_procedure (fobj_wrapper, fcn_jac_opt_args=fobj, args=args)
     call wrap_procedure (f_eqcons_wrapper, fcn_jac_opt_args=f_eqcons, args=args)
     call wrap_procedure (f_ieqcons_wrapper, fcn_jac_opt_args=f_ieqcons, args=args)
 
-    call slsqp_impl (fobj_wrapper, x, lbounds, ubounds, m, meq, &
+    call minimize_slsqp_impl (fobj_wrapper, x, lbounds, ubounds, m, meq, &
         f_eqcons_wrapper, f_ieqcons_wrapper, maxiter, linesearch, tol, work, res)
 
 end subroutine
 
 
-subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
+
+subroutine minimize_slsqp_impl (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
         f_ieqcons, maxiter, linesearch, tol, work, res)
 
-    integer, parameter :: PREC = real64
-
-    type (fwrapper_vs_real64) :: fobj
+    type (fwrapper_vs) :: fobj
     real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), optional :: lbounds
     real (PREC), intent(in), dimension(:), optional :: ubounds
     integer, intent(in), optional :: m, meq
-    type (fwrapper_vv_real64) :: f_eqcons
-    type (fwrapper_vv_real64) :: f_ieqcons
+    type (fwrapper_vv) :: f_eqcons
+    type (fwrapper_vv) :: f_ieqcons
     integer, intent(in), optional :: maxiter
     integer (NF_ENUM_KIND), intent(in), optional :: linesearch
     real (PREC), intent(in), optional :: tol
-    type (workspace_real64), intent(inout), optional :: work
-    type (optim_result_real64), intent(inout), optional :: res
+    type (workspace), intent(inout), optional :: work
+    type (optim_result), intent(inout), optional :: res
 
-    type (optim_result_real64), pointer :: ptr_res
+    type (optim_result), pointer :: ptr_res
         !   Pointer to local or user-provided result object
 
     integer :: iter, lmaxiter
     integer (NF_ENUM_KIND) :: llinesearch
     real (PREC) :: acc
 
-    type (slsqp_data_real64) :: dat
+    type (slsqp_data) :: dat
         !   Stores persistent internal data used in SLSQPB routine
-    type (linmin_data_real64) :: dat_lm
+    type (linmin_data) :: dat_lm
         !   Stores persistent internal data used in LINMIN routine
-    type (workspace_real64), pointer :: ptr_work
+    type (workspace), pointer :: ptr_work
     real (PREC), dimension(:), pointer, contiguous :: ptr_xlb, ptr_xub
     real (PREC), dimension(:), pointer, contiguous :: ptr_g, ptr_w, ptr_c
     real (PREC), dimension(:), pointer, contiguous :: ptr_cx_eq, ptr_cx_ieq
@@ -400,7 +386,7 @@ subroutine slsqp_impl_real64 (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
         end if
 
         ! call original SLSQP routine
-        call slsqp_impl (dat, dat_lm, lm, lmeq, lda, n, x, ptr_xlb, ptr_xub, fx, &
+        call slsqp_orig (dat, dat_lm, lm, lmeq, lda, n, x, ptr_xlb, ptr_xub, fx, &
             ptr_c, ptr_g, ptr_a, acc, iter, mode, ptr_w, lw, &
             ptr_work%iwrk, mineq)
 
@@ -433,16 +419,14 @@ end subroutine
 
 
 
-subroutine slsqp_check_input_real64 (x, lbounds, ubounds, m, meq, &
+subroutine slsqp_check_input (x, lbounds, ubounds, m, meq, &
         f_eqcons, f_ieqcons, maxiter, linesearch, tol, status, msg)
-
-    integer, parameter :: PREC = real64
 
     real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(in), dimension(:), optional :: lbounds, ubounds
     integer, intent(in), optional :: m, meq
-    type (fwrapper_vv_real64), intent(in) :: f_eqcons
-    type (fwrapper_vv_real64), optional :: f_ieqcons
+    type (fwrapper_vv), intent(in) :: f_eqcons
+    type (fwrapper_vv), optional :: f_ieqcons
     integer, intent(in), optional :: maxiter
     integer (NF_ENUM_KIND), intent(in), optional :: linesearch
     real (PREC), intent(in), optional :: tol
@@ -512,13 +496,12 @@ end subroutine
 
 
 
-subroutine slsqp_sanitize_bounds_real64 (x, xlb_in, xub_in, xlb, xub, res)
-    integer, parameter :: PREC = real64
+subroutine slsqp_sanitize_bounds (x, xlb_in, xub_in, xlb, xub, res)
 
     real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(in), dimension(:), optional :: xlb_in, xub_in
     real (PREC), intent(out), dimension(:) :: xlb, xub
-    type (optim_result_real64), intent(inout) :: res
+    type (optim_result), intent(inout) :: res
 
     integer :: n, i
     real (PREC) :: POS_INF, NEG_INF
@@ -566,8 +549,7 @@ end subroutine
 
 
 
-subroutine slsqp_clip_init_real64 (x, xlb, xub)
-    integer, parameter :: PREC = real64
+subroutine slsqp_clip_init (x, xlb, xub)
 
     real (PREC), intent(inout), dimension(:) :: x
     real (PREC), intent(in), dimension(:) :: xlb, xub

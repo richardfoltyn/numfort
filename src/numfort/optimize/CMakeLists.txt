@@ -3,20 +3,33 @@ set(COMPONENT_NAME optimize)
 
 set(SOURCE_FILES
     optimize.f90
-    diff_helpers.F90
-    interfaces.F90
-    fwrapper.F90
-    optim_result.F90
-    minimize_bounded.F90
-    minimize_dfls.F90
-    minimize_lbfgsb.f90
-    minimize_simplex.F90
-    minimize_slsqp.f90
-    minpack.F90
-    root_bisect.F90
-    root_brent.F90
-    root_broyden.F90
-    root_newton.F90
+    diff_helpers_real32.F90
+    diff_helpers_real64.F90
+    interfaces_common.f90
+    interfaces_real32.F90
+    interfaces_real64.F90
+    fwrapper_real32.F90
+    fwrapper_real64.F90
+    optim_result_real32.F90
+    optim_result_real64.F90
+    minimize_bounded_real32.F90
+    minimize_bounded_real64.F90
+    minimize_dfls_real32.F90
+    minimize_dfls_real64.F90
+    minimize_lbfgsb_real64.F90
+    minimize_simplex_real32.F90
+    minimize_simplex_real64.F90
+    minimize_slsqp_real64.f90
+    minpack_real64.F90
+    root_bisect_real32.F90
+    root_bisect_real64.F90
+    root_brent_real32.F90
+    root_brent_real64.F90
+    root_broyden_common.f90
+    root_broyden_real32.F90
+    root_broyden_real64.F90
+    root_newton_real32.F90
+    root_newton_real64.F90
     solver_map.f90
     solver_map_common.f90
     solver_map_real32.F90

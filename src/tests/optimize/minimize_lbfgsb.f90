@@ -7,8 +7,7 @@ program test_optimize_minimize_lbfgsb
     use numfort_arrays
     use numfort_common_testing
     use numfort_optimize, workspace => workspace_real64, &
-        optim_result => optim_result_real64, &
-        args_default => args_default_real64
+        optim_result => optim_result_real64
 
     use fcore_common, FC_status_t => status_t
     use fcore_testing

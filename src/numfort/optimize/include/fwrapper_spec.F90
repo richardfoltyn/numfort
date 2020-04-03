@@ -4,26 +4,26 @@
 !   To be included in module specification part.
 !
 
-type, public :: __APPEND(fwrapper_ss,__PREC)
+type, public :: fwrapper_ss
     !*  FWRAPPER_SS implements a function wrapper for a scalar-valued function
     !   f:R->R that can optionally take additional arguments or compute
     !   its first derivative.
     private
-    procedure (__APPEND(fss,__PREC)), pointer, nopass :: fcn => null()
-    procedure (__APPEND(fss,__PREC)), pointer, nopass :: jac => null()
-    procedure (__APPEND(fss_fcn_jac,__PREC)), pointer, nopass :: fcn_jac => null()
-    procedure (__APPEND(fss_fcn_jac_opt,__PREC)), pointer, nopass :: fcn_jac_opt => null()
-    procedure (__APPEND(fss_args,__PREC)), pointer, nopass :: fcn_args => null()
-    procedure (__APPEND(fss_args,__PREC)), pointer, nopass :: jac_args => null()
-    procedure (__APPEND(fss_fcn_jac_args,__PREC)), pointer, nopass :: fcn_jac_args => null()
-    procedure (__APPEND(fss_fcn_jac_opt_args,__PREC)), pointer, nopass :: fcn_jac_opt_args => null()
+    procedure (fss), pointer, nopass :: fcn => null()
+    procedure (fss), pointer, nopass :: jac => null()
+    procedure (fss_fcn_jac), pointer, nopass :: fcn_jac => null()
+    procedure (fss_fcn_jac_opt), pointer, nopass :: fcn_jac_opt => null()
+    procedure (fss_args), pointer, nopass :: fcn_args => null()
+    procedure (fss_args), pointer, nopass :: jac_args => null()
+    procedure (fss_fcn_jac_args), pointer, nopass :: fcn_jac_args => null()
+    procedure (fss_fcn_jac_opt_args), pointer, nopass :: fcn_jac_opt_args => null()
     integer, public :: nfev = 0
         !*  Function evaluation counter
     class (args_data), pointer :: ptr_args => null()
         !*  Pointer to (optional) additional arguments
-    real (__PREC) :: eps = sqrt(epsilon(__APPEND(0.0,__PREC)))
+    real (PREC) :: eps = sqrt(epsilon(0.0))
         !*  Step size to use for numerical differentiation
-    real (__PREC) :: reps = sqrt(epsilon(__APPEND(0.0,__PREC)))
+    real (PREC) :: reps = sqrt(epsilon(0.0))
         !*  Relative step size for numerical differentiation.
     logical :: rel_diff = .false.
         !*  Flag determining whether absolute or relative step size will be
@@ -34,46 +34,46 @@ type, public :: __APPEND(fwrapper_ss,__PREC)
 end type
 
 interface dispatch_fcn_jac
-    procedure __APPEND(fss_dispatch_fcn_jac,__PREC)
+    procedure fss_dispatch_fcn_jac
 end interface
 
 interface dispatch_jac
-    procedure __APPEND(fss_dispatch_jac,__PREC)
+    procedure fss_dispatch_jac
 end interface
 
 interface dispatch
-    procedure __APPEND(fss_dispatch_fcn,__PREC)
+    procedure fss_dispatch_fcn
 end interface
 
 interface wrap_procedure
-    procedure __APPEND(fss_init,__PREC)
+    procedure fss_init
 end interface
 
 interface is_associated
-    procedure __APPEND(fss_is_associated,__PREC)
+    procedure fss_is_associated
 end interface
 
 ! ------------------------------------------------------------------------------
 ! Wrapper for functions mapping vectors into scalars
 
 
-type, public :: __APPEND(fwrapper_vs,__PREC)
+type, public :: fwrapper_vs
     private
-    procedure (__APPEND(fvs_fcn,__PREC)), pointer, nopass :: fcn => null()
-    procedure (__APPEND(fvs_jac,__PREC)), pointer, nopass :: jac => null()
-    procedure (__APPEND(fvs_fcn_jac,__PREC)), pointer, nopass :: fcn_jac => null()
-    procedure (__APPEND(fvs_fcn_jac_opt,__PREC)), pointer, nopass :: fcn_jac_opt => null()
-    procedure (__APPEND(fvs_fcn_args,__PREC)), pointer, nopass :: fcn_args => null()
-    procedure (__APPEND(fvs_jac_args,__PREC)), pointer, nopass :: jac_args => null()
-    procedure (__APPEND(fvs_fcn_jac_args,__PREC)), pointer, nopass :: fcn_jac_args => null()
-    procedure (__APPEND(fvs_fcn_jac_opt_args,__PREC)), pointer, nopass :: fcn_jac_opt_args => null()
+    procedure (fvs_fcn), pointer, nopass :: fcn => null()
+    procedure (fvs_jac), pointer, nopass :: jac => null()
+    procedure (fvs_fcn_jac), pointer, nopass :: fcn_jac => null()
+    procedure (fvs_fcn_jac_opt), pointer, nopass :: fcn_jac_opt => null()
+    procedure (fvs_fcn_args), pointer, nopass :: fcn_args => null()
+    procedure (fvs_jac_args), pointer, nopass :: jac_args => null()
+    procedure (fvs_fcn_jac_args), pointer, nopass :: fcn_jac_args => null()
+    procedure (fvs_fcn_jac_opt_args), pointer, nopass :: fcn_jac_opt_args => null()
     integer, public :: nfev = 0
         !*  Function evaluation counter
     class (args_data), pointer :: ptr_args => null()
         !*  Pointer to (optional) additional arguments
-    real (__PREC) :: eps = sqrt(epsilon(__APPEND(0.0,__PREC)))
+    real (PREC) :: eps = sqrt(epsilon(0.0))
         !*  Step size to use for numerical differentiation
-    real (__PREC) :: reps = sqrt(epsilon(__APPEND(0.0,__PREC)))
+    real (PREC) :: reps = sqrt(epsilon(0.0))
         !*  Relative step size for numerical differentiation.
     logical :: rel_diff = .false.
         !*  Flag determining whether absolute or relative step size will be
@@ -84,45 +84,45 @@ type, public :: __APPEND(fwrapper_vs,__PREC)
 end type
 
 interface wrap_procedure
-    procedure __APPEND(fvs_init,__PREC)
+    procedure fvs_init
 end interface
 
 interface dispatch
-    module procedure __APPEND(fvs_dispatch_fcn,__PREC)
+    module procedure fvs_dispatch_fcn
 end interface
 
 interface dispatch_jac
-    procedure __APPEND(fvs_dispatch_jac,__PREC)
+    procedure fvs_dispatch_jac
 end interface
 
 interface dispatch_fcn_jac
-    procedure __APPEND(fvs_dispatch_fcn_jac,__PREC)
+    procedure fvs_dispatch_fcn_jac
 end interface
 
 interface is_associated
-    procedure __APPEND(fvs_is_associated,__PREC)
+    procedure fvs_is_associated
 end interface
 
 ! ------------------------------------------------------------------------------
 ! Wrapper for function mapping vectors into vectors
 
-type, public :: __APPEND(fwrapper_vv,__PREC)
+type, public :: fwrapper_vv
     private
-    procedure (__APPEND(fvv_fcn,__PREC)), pointer, nopass :: fcn => null()
-    procedure (__APPEND(fvv_jac,__PREC)), pointer, nopass :: jac => null()
-    procedure (__APPEND(fvv_fcn_jac,__PREC)), pointer, nopass :: fcn_jac => null()
-    procedure (__APPEND(fvv_fcn_jac_opt,__PREC)), pointer, nopass :: fcn_jac_opt => null()
-    procedure (__APPEND(fvv_fcn_args,__PREC)), pointer, nopass :: fcn_args => null()
-    procedure (__APPEND(fvv_jac_args,__PREC)), pointer, nopass :: jac_args => null()
-    procedure (__APPEND(fvv_fcn_jac_args,__PREC)), pointer, nopass :: fcn_jac_args => null()
-    procedure (__APPEND(fvv_fcn_jac_opt_args,__PREC)), pointer, nopass :: fcn_jac_opt_args => null()
+    procedure (fvv_fcn), pointer, nopass :: fcn => null()
+    procedure (fvv_jac), pointer, nopass :: jac => null()
+    procedure (fvv_fcn_jac), pointer, nopass :: fcn_jac => null()
+    procedure (fvv_fcn_jac_opt), pointer, nopass :: fcn_jac_opt => null()
+    procedure (fvv_fcn_args), pointer, nopass :: fcn_args => null()
+    procedure (fvv_jac_args), pointer, nopass :: jac_args => null()
+    procedure (fvv_fcn_jac_args), pointer, nopass :: fcn_jac_args => null()
+    procedure (fvv_fcn_jac_opt_args), pointer, nopass :: fcn_jac_opt_args => null()
     integer, public :: nfev = 0
         !*  Function evaluation counter
     class (args_data), pointer :: ptr_args => null()
         !*  Pointer to (optional) additional arguments
-    real (__PREC) :: eps = sqrt(epsilon(__APPEND(0.0,__PREC)))
+    real (PREC) :: eps = sqrt(epsilon(0.0))
         !*  Step size to use for numerical differentiation
-    real (__PREC) :: reps = sqrt(epsilon(__APPEND(0.0,__PREC)))
+    real (PREC) :: reps = sqrt(epsilon(0.0))
         !*  Relative step size for numerical differentiation.
     logical :: rel_diff = .false.
         !*  Flag determining whether absolute or relative step size will be
@@ -133,22 +133,22 @@ type, public :: __APPEND(fwrapper_vv,__PREC)
 end type
 
 interface wrap_procedure
-    procedure __APPEND(fvv_init,__PREC)
+    procedure fvv_init
 end interface
 
 interface dispatch
-    module procedure __APPEND(fvv_dispatch_fcn,__PREC)
+    module procedure fvv_dispatch_fcn
 end interface
 
 interface dispatch_jac 
-    procedure __APPEND(fvv_dispatch_jac,__PREC)
+    procedure fvv_dispatch_jac
 end interface
 
 interface dispatch_fcn_jac
-    procedure __APPEND(fvv_dispatch_fcn_jac,__PREC)
+    procedure fvv_dispatch_fcn_jac
 end interface
 
 interface is_associated
-    procedure __APPEND(fvv_is_associated,__PREC)
+    procedure fvv_is_associated
 end interface
 

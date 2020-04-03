@@ -2,31 +2,30 @@
 !-------------------------------------------------------------------------------
 ! Routines for FWRAPPER_SS
 
-subroutine __APPEND(fss_init,__PREC) (self, fcn, jac, fcn_jac, fcn_jac_opt, &
+subroutine fss_init (self, fcn, jac, fcn_jac, fcn_jac_opt, &
         fcn_args, jac_args, fcn_jac_args, fcn_jac_opt_args, args, eps, reps)
     !*  FSS_INIT intializes a wrapper found a scalar-valued function f:R->R.
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_ss,__PREC)), intent(inout) :: self
-    procedure (__APPEND(fss,__PREC)), optional :: fcn
+    type (fwrapper_ss), intent(inout) :: self
+    procedure (fss), optional :: fcn
         !*  Pointer to function that returns the function value
-    procedure (__APPEND(fss,__PREC)), optional :: jac
+    procedure (fss), optional :: jac
         !*  Pointer to function that returns the first derivative
-    procedure (__APPEND(fss_fcn_jac,__PREC)), optional :: fcn_jac
+    procedure (fss_fcn_jac), optional :: fcn_jac
         !*  Pointer to function that returns the function value and the
         !   first derivative in a single call.
-    procedure (__APPEND(fss_fcn_jac_opt,__PREC)), optional :: fcn_jac_opt
+    procedure (fss_fcn_jac_opt), optional :: fcn_jac_opt
         !*  Pointer to function that returns the function value and/or the
         !   first derivative in a single call.
-    procedure (__APPEND(fss_args,__PREC)), optional :: fcn_args
+    procedure (fss_args), optional :: fcn_args
         !*  Pointer to function that returns the function value and accepts
         !   additional arguments.
-    procedure (__APPEND(fss_args,__PREC)), optional :: jac_args
+    procedure (fss_args), optional :: jac_args
         !*  Pointer to function that returns the first derivative and accepts
         !   additional arguments.
-    procedure (__APPEND(fss_fcn_jac_args,__PREC)), optional :: fcn_jac_args
+    procedure (fss_fcn_jac_args), optional :: fcn_jac_args
         !*  Pointer to function that returns the function value and the
         !   first derivative in a single call and accepts additional arguments.
-    procedure (__APPEND(fss_fcn_jac_opt_args,__PREC)), optional :: fcn_jac_opt_args
+    procedure (fss_fcn_jac_opt_args), optional :: fcn_jac_opt_args
         !*  Pointer to function that returns the function value and/or the
         !   first derivative in a single call and accepts additional arguments.
     class (args_data), intent(in), optional, target :: args
@@ -82,10 +81,11 @@ subroutine __APPEND(fss_init,__PREC) (self, fcn, jac, fcn_jac, fcn_jac_opt, &
 
 end subroutine
 
-recursive subroutine __APPEND(fss_dispatch_fcn,__PREC) (self, x, fx)
+
+
+recursive subroutine fss_dispatch_fcn (self, x, fx)
     !*  DISPATCH_FCN returns the value of the wrapped function at a given point.
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_ss,__PREC)), intent(inout) :: self
+    type (fwrapper_ss), intent(inout) :: self
     real (PREC), intent(in) :: x
     real (PREC), intent(out) :: fx
 
@@ -119,11 +119,11 @@ recursive subroutine __APPEND(fss_dispatch_fcn,__PREC) (self, x, fx)
 end subroutine
 
 
-recursive subroutine __APPEND(fss_dispatch_jac,__PREC) (self, x, fpx, fx)
+
+recursive subroutine fss_dispatch_jac (self, x, fpx, fx)
     !*  DISPATH_JAC returns the first derivative of the wrapped function
     !   at a given point.
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_ss,__PREC)), intent(inout) :: self
+    type (fwrapper_ss), intent(inout) :: self
     real (PREC), intent(in) :: x
     real (PREC), intent(out) :: fpx
     real (PREC), intent(in), optional :: fx
@@ -183,11 +183,11 @@ recursive subroutine __APPEND(fss_dispatch_jac,__PREC) (self, x, fpx, fx)
 end subroutine
 
 
-recursive subroutine __APPEND(fss_dispatch_fcn_jac,__PREC) (self, x, fx, fpx)
+
+recursive subroutine fss_dispatch_fcn_jac (self, x, fx, fpx)
     !*  DISPATCH_FCN_JAC returns the function value and first derivative
     !   of the wrapped function at a given point.
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_ss,__PREC)), intent(inout) :: self
+    type (fwrapper_ss), intent(inout) :: self
     real (PREC), intent(in) :: x
     real (PREC), intent(out) :: fx
     real (PREC), intent(out) :: fpx
@@ -245,10 +245,11 @@ recursive subroutine __APPEND(fss_dispatch_fcn_jac,__PREC) (self, x, fx, fpx)
 end subroutine
 
 
-pure function __APPEND(fss_is_associated,__PREC) (self) result(res)
+
+pure function fss_is_associated (self) result(res)
     !*  IS_ASSOCIATED returns TRUE if the wrapper object is associated 
     !   with any user-provided routine.
-    type (__APPEND(fwrapper_ss,__PREC)), intent(in) :: self
+    type (fwrapper_ss), intent(in) :: self
     logical :: res 
     
     res = associated(self%fcn) .or. associated(self%fcn_args) &
@@ -261,31 +262,30 @@ end function
 !-------------------------------------------------------------------------------
 ! Routines for FWRAPPER_VS
 
-subroutine __APPEND(fvs_init,__PREC) (self, fcn, jac, fcn_jac, &
+subroutine fvs_init (self, fcn, jac, fcn_jac, &
         fcn_jac_opt, fcn_args, jac_args, fcn_jac_args, fcn_jac_opt_args, &
         args, eps, reps)
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_vs,__PREC)), intent(inout) :: self
-    procedure (__APPEND(fvs_fcn,__PREC)), optional :: fcn
+    type (fwrapper_vs), intent(inout) :: self
+    procedure (fvs_fcn), optional :: fcn
         !*  Pointer to function that returns the function value
-    procedure (__APPEND(fvs_jac,__PREC)), optional :: jac
+    procedure (fvs_jac), optional :: jac
         !*  Pointer to function that returns the first derivative
-    procedure (__APPEND(fvs_fcn_jac,__PREC)), optional :: fcn_jac
+    procedure (fvs_fcn_jac), optional :: fcn_jac
         !*  Pointer to function that returns the function value and the
         !   first derivative in a single call.
-    procedure (__APPEND(fvs_fcn_jac_opt,__PREC)), optional :: fcn_jac_opt
+    procedure (fvs_fcn_jac_opt), optional :: fcn_jac_opt
         !*  Pointer to function that returns the function value and/or the
         !   first derivative in a single call.
-    procedure (__APPEND(fvs_fcn_args,__PREC)), optional :: fcn_args
+    procedure (fvs_fcn_args), optional :: fcn_args
         !*  Pointer to function that returns the function value and accepts
         !   additional arguments.
-    procedure (__APPEND(fvs_jac_args,__PREC)), optional :: jac_args
+    procedure (fvs_jac_args), optional :: jac_args
         !*  Pointer to function that returns the first derivative and accepts
         !   additional arguments.
-    procedure (__APPEND(fvs_fcn_jac_args,__PREC)), optional :: fcn_jac_args
+    procedure (fvs_fcn_jac_args), optional :: fcn_jac_args
         !*  Pointer to function that returns the function value and the
         !   first derivative in a single call and accepts additional arguments.
-    procedure (__APPEND(fvs_fcn_jac_opt_args,__PREC)), optional :: fcn_jac_opt_args
+    procedure (fvs_fcn_jac_opt_args), optional :: fcn_jac_opt_args
         !*  Pointer to function that returns the function value and/or the
         !   first derivative in a single call and accepts additional arguments.
     class (args_data), intent(in), optional, target :: args
@@ -342,10 +342,9 @@ end subroutine
 
 
 
-recursive subroutine __APPEND(fvs_dispatch_fcn,__PREC) (self, x, fx)
+recursive subroutine fvs_dispatch_fcn (self, x, fx)
     !*  DISPATCH_FCN returns the value of the wrapped function at a given point.
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_vs,__PREC)), intent(inout) :: self
+    type (fwrapper_vs), intent(inout) :: self
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(out) :: fx
 
@@ -383,11 +382,11 @@ recursive subroutine __APPEND(fvs_dispatch_fcn,__PREC) (self, x, fx)
 end subroutine
 
 
-recursive subroutine __APPEND(fvs_dispatch_jac,__PREC) (self, x, fpx, fx)
+
+recursive subroutine fvs_dispatch_jac (self, x, fpx, fx)
     !*  DISPATH_JAC returns the first derivative of the wrapped function
     !   at a given point.
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_vs,__PREC)), intent(inout) :: self
+    type (fwrapper_vs), intent(inout) :: self
     real (PREC), intent(in), dimension(:), contiguous  :: x
     real (PREC), intent(out), dimension(:), contiguous :: fpx
     real (PREC), intent(in), optional :: fx
@@ -447,11 +446,11 @@ recursive subroutine __APPEND(fvs_dispatch_jac,__PREC) (self, x, fpx, fx)
 end subroutine
 
 
-recursive subroutine __APPEND(fvs_dispatch_fcn_jac,__PREC) (self, x, fx, fpx)
+
+recursive subroutine fvs_dispatch_fcn_jac (self, x, fx, fpx)
     !*  DISPATCH_FCN_JAC returns the function value and first derivative
     !   of the wrapped function at a given point.
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_vs,__PREC)), intent(inout) :: self
+    type (fwrapper_vs), intent(inout) :: self
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(out) :: fx
     real (PREC), intent(out), dimension(:), contiguous :: fpx
@@ -508,10 +507,12 @@ recursive subroutine __APPEND(fvs_dispatch_fcn_jac,__PREC) (self, x, fx, fpx)
     end if
 end subroutine
 
-pure function __APPEND(fvs_is_associated,__PREC) (self) result(res)
+
+
+pure function fvs_is_associated (self) result(res)
     !*  IS_ASSOCIATED returns TRUE if the wrapper object is associated 
     !   with any user-provided routine.
-    type (__APPEND(fwrapper_vs,__PREC)), intent(in) :: self
+    type (fwrapper_vs), intent(in) :: self
     logical :: res 
     
     res = associated(self%fcn) .or. associated(self%fcn_args) &
@@ -522,30 +523,29 @@ end function
 !-------------------------------------------------------------------------------
 ! Routines for FWRAPPER_VV
 
-subroutine __APPEND(fvv_init,__PREC) (self, fcn, jac, fcn_jac, fcn_jac_opt, &
+subroutine fvv_init (self, fcn, jac, fcn_jac, fcn_jac_opt, &
         fcn_args, jac_args, fcn_jac_args, fcn_jac_opt_args, args, eps, reps)
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_vv,__PREC)), intent(inout) :: self
-    procedure (__APPEND(fvv_fcn,__PREC)), optional :: fcn
+    type (fwrapper_vv), intent(inout) :: self
+    procedure (fvv_fcn), optional :: fcn
         !*  Pointer to function that returns the function value
-    procedure (__APPEND(fvv_jac,__PREC)), optional :: jac
+    procedure (fvv_jac), optional :: jac
         !*  Pointer to function that returns the first derivative
-    procedure (__APPEND(fvv_fcn_jac,__PREC)), optional :: fcn_jac
+    procedure (fvv_fcn_jac), optional :: fcn_jac
         !*  Pointer to function that returns the function value and the
         !   first derivative in a single call.
-    procedure (__APPEND(fvv_fcn_jac_opt,__PREC)), optional :: fcn_jac_opt
+    procedure (fvv_fcn_jac_opt), optional :: fcn_jac_opt
         !*  Pointer to function that returns the function value and/or the
         !   first derivative in a single call.
-    procedure (__APPEND(fvv_fcn_args,__PREC)), optional :: fcn_args
+    procedure (fvv_fcn_args), optional :: fcn_args
         !*  Pointer to function that returns the function value and accepts
         !   additional arguments.
-    procedure (__APPEND(fvv_jac_args,__PREC)), optional :: jac_args
+    procedure (fvv_jac_args), optional :: jac_args
         !*  Pointer to function that returns the first derivative and accepts
         !   additional arguments.
-    procedure (__APPEND(fvv_fcn_jac_args,__PREC)), optional :: fcn_jac_args
+    procedure (fvv_fcn_jac_args), optional :: fcn_jac_args
         !*  Pointer to function that returns the function value and the
         !   first derivative in a single call and accepts additional arguments.
-    procedure (__APPEND(fvv_fcn_jac_opt_args,__PREC)), optional :: fcn_jac_opt_args
+    procedure (fvv_fcn_jac_opt_args), optional :: fcn_jac_opt_args
         !*  Pointer to function that returns the function value and/or the
         !   first derivative in a single call and accepts additional arguments.
     class (args_data), intent(in), optional, target :: args
@@ -602,10 +602,9 @@ end subroutine
 
 
 
-recursive subroutine __APPEND(fvv_dispatch_fcn,__PREC) (self, x, fx)
+recursive subroutine fvv_dispatch_fcn (self, x, fx)
     !*  DISPATCH_FCN returns the value of the wrapped function at a given point.
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_vv,__PREC)), intent(inout) :: self
+    type (fwrapper_vv), intent(inout) :: self
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(out), dimension(:), contiguous :: fx
 
@@ -643,11 +642,11 @@ recursive subroutine __APPEND(fvv_dispatch_fcn,__PREC) (self, x, fx)
 end subroutine
 
 
-recursive subroutine __APPEND(fvv_dispatch_jac,__PREC) (self, x, fpx, fx)
+
+recursive subroutine fvv_dispatch_jac (self, x, fpx, fx)
     !*  DISPATH_JAC returns the first derivative of the wrapped function
     !   at a given point.
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_vv,__PREC)), intent(inout) :: self
+    type (fwrapper_vv), intent(inout) :: self
     real (PREC), intent(in), dimension(:), contiguous  :: x
     real (PREC), intent(out), dimension(:,:), contiguous :: fpx
     real (PREC), intent(in), dimension(:), optional, contiguous :: fx
@@ -711,11 +710,11 @@ recursive subroutine __APPEND(fvv_dispatch_jac,__PREC) (self, x, fpx, fx)
 end subroutine
 
 
-recursive subroutine __APPEND(fvv_dispatch_fcn_jac,__PREC) (self, x, fx, fpx)
+
+recursive subroutine fvv_dispatch_fcn_jac (self, x, fx, fpx)
     !*  DISPATCH_FCN_JAC returns the function value and first derivative
     !   of the wrapped function at a given point.
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_vv,__PREC)), intent(inout) :: self
+    type (fwrapper_vv), intent(inout) :: self
     real (PREC), intent(in), dimension(:), contiguous :: x
     real (PREC), intent(out), dimension(:), contiguous :: fx
     real (PREC), intent(out), dimension(:,:), contiguous :: fpx
@@ -773,10 +772,11 @@ recursive subroutine __APPEND(fvv_dispatch_fcn_jac,__PREC) (self, x, fx, fpx)
 end subroutine
 
 
-pure function __APPEND(fvv_is_associated,__PREC) (self) result(res)
+
+pure function fvv_is_associated (self) result(res)
     !*  IS_ASSOCIATED returns TRUE if the wrapper object is associated 
     !   with any user-provided routine.
-    type (__APPEND(fwrapper_vv,__PREC)), intent(in) :: self
+    type (fwrapper_vv), intent(in) :: self
     logical :: res 
     
     res = associated(self%fcn) .or. associated(self%fcn_args) &

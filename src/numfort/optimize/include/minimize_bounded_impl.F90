@@ -1,9 +1,8 @@
 
 
-subroutine __APPEND(minimize_bounded,__PREC) (fcn, a, b, x, maxfun, xtol, res)
+subroutine minimize_bounded (fcn, a, b, x, maxfun, xtol, res)
 
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss,__PREC)) :: fcn
+    procedure (fss) :: fcn
         !*  Objective function
     real (PREC), intent(in) :: a
         !*  Lower bound of minimizer domain.
@@ -16,11 +15,11 @@ subroutine __APPEND(minimize_bounded,__PREC) (fcn, a, b, x, maxfun, xtol, res)
         !*  Max. number of function evaluations.
     real (PREC), intent(in), optional :: xtol
         !*  Absolute tolerance for termination.
-    type (__APPEND(optim_result,__PREC)), intent(in out), optional :: res
+    type (optim_result), intent(inout), optional :: res
         !*  Optimization result.
 
-    type (__APPEND(fwrapper_ss,__PREC)) :: fcn_wrapper
-    type (__APPEND(optim_result,__PREC)), pointer :: ptr_res
+    type (fwrapper_ss) :: fcn_wrapper
+    type (optim_result), pointer :: ptr_res
     integer :: lmaxfun
     real (PREC) :: lxtol
 
@@ -47,10 +46,9 @@ subroutine __APPEND(minimize_bounded,__PREC) (fcn, a, b, x, maxfun, xtol, res)
 end subroutine
 
 
-subroutine __APPEND(minimize_bounded_args,__PREC) (fcn, a, b, x, args, maxfun, xtol, res)
+subroutine minimize_bounded_args (fcn, a, b, x, args, maxfun, xtol, res)
 
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss_args,__PREC)) :: fcn
+    procedure (fss_args) :: fcn
         !*  Objective function
     real (PREC), intent(in) :: a
         !*  Lower bound of minimizer domain.
@@ -65,11 +63,11 @@ subroutine __APPEND(minimize_bounded_args,__PREC) (fcn, a, b, x, args, maxfun, x
         !*  Max. number of function evaluations.
     real (PREC), intent(in), optional :: xtol
         !*  Absolute tolerance for termination.
-    type (__APPEND(optim_result,__PREC)), intent(in out), optional :: res
+    type (optim_result), intent(inout), optional :: res
         !*  Optimization result.
 
-    type (__APPEND(fwrapper_ss,__PREC)) :: fcn_wrapper
-    type (__APPEND(optim_result,__PREC)), pointer :: ptr_res
+    type (fwrapper_ss) :: fcn_wrapper
+    type (optim_result), pointer :: ptr_res
     integer :: lmaxfun
     real (PREC) :: lxtol
 
@@ -96,13 +94,12 @@ subroutine __APPEND(minimize_bounded_args,__PREC) (fcn, a, b, x, args, maxfun, x
 end subroutine
 
 
-subroutine __APPEND(check_input,__PREC) (a, b, maxfun, xtol, res)
-    integer, parameter :: PREC = __PREC
+subroutine check_input (a, b, maxfun, xtol, res)
     real (PREC), intent(in) :: a
     real (PREC), intent(in) :: b
     integer, intent(in), optional :: maxfun
     real (PREC), intent(in), optional :: xtol
-    type (__APPEND(optim_result,__PREC)), intent(in out) :: res
+    type (optim_result), intent(inout) :: res
 
     res%status = NF_STATUS_OK
     res%msg = ""
@@ -124,17 +121,16 @@ end subroutine
 
 
 
-subroutine __APPEND(minimize_bounded_impl,__PREC) (fcn, xlb, xub, maxfun, &
+subroutine minimize_bounded_impl (fcn, xlb, xub, maxfun, &
         xtol, res)
     !*  MINIMIZE_BOUNDED_IMPL minimizes a scalar function on a bounded interval.
     !   Fortran port of Scipy's fminbound/_minimize_scalar_bounded.
 
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_ss,__PREC)), intent(in out) :: fcn
+    type (fwrapper_ss), intent(inout) :: fcn
     real (PREC), intent(in) :: xlb, xub
     integer, intent(in) :: maxfun
     real (PREC), intent(in) :: xtol
-    type (__APPEND(optim_result,__PREC)), intent(in out) :: res
+    type (optim_result), intent(inout) :: res
 
     real (PREC) :: a, b, e, golden_mean, nfc, xf, x, xm, sqrt_eps, rat
     real (PREC) :: fulc, ffulc, fnfc, fx, fu

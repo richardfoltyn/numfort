@@ -1,19 +1,24 @@
-module numfort_optimize_minpack
+
+
+module numfort_optimize_minpack_real64
 
     use, intrinsic :: iso_fortran_env, only: real64
 
     use numfort_common
-    use numfort_common_workspace
+    use numfort_common_workspace, workspace => workspace_real64
     use numfort_common_input_checks
-    use numfort_optimize_result
-    use numfort_optimize_interfaces
-    use numfort_optimize_fwrapper
+    use numfort_optimize_result_real64
+    use numfort_optimize_interfaces_real64
+    use numfort_optimize_fwrapper_real64
 
-    use minpack_real64, only: minpack_hybrd_real64 => hybrd, &
-        minpack_lmdif_real64 => lmdif, minpack_lmder_real64 => lmder, &
-        minpack_hybrj_real64 => hybrj, minpack_chkder => chkder
+    use minpack_real64, only: minpack_hybrd => hybrd, &
+        minpack_lmdif => lmdif, minpack_lmder => lmder, &
+        minpack_hybrj => hybrj, minpack_chkder => chkder
 
     implicit none
+
+    integer, parameter :: PREC = real64
+
     private
 
     public :: root_hybrd
@@ -21,18 +26,11 @@ module numfort_optimize_minpack
     public :: root_lm
     public :: chkder
 
-    integer, parameter :: PREC = real64
     ! size of character variable for diagnostic messages
     integer, parameter :: MSG_LENGTH = 100
 
     abstract interface
-        subroutine func_vec_vec_real64 (x, fx)
-            import PREC
-            real (PREC), dimension(:), intent(in), contiguous :: x
-            real (PREC), dimension(:), intent(out), contiguous :: fx
-        end subroutine
-
-        subroutine func_jac_real64 (x, fx, jac, task)
+        subroutine func_jac (x, fx, jac, task)
             import PREC
             real (PREC), dimension(:), intent(in), contiguous :: x
             real (PREC), dimension(:), intent(out), contiguous :: fx
@@ -42,32 +40,24 @@ module numfort_optimize_minpack
     end interface
 
     interface root_hybrd
-        module procedure root_hybrd_real64
+        module procedure root_hybrd
     end interface
 
     interface root_hybrj
-        module procedure root_hybrj_real64
+        module procedure root_hybrj
     end interface
 
     interface root_lm
-        procedure root_lm_real64, &
-            root_lm_jac_real64, &
-            root_lm_fcn_jac_real64, &
-            root_lm_args_real64, &
-            root_lm_jac_args_real64, &
-            root_lm_fcn_jac_args_real64
-    end interface
-
-    interface root_lm_impl
-        procedure root_lm_impl_real64
-    end interface
-    
-    interface lm_check_input
-        procedure lm_check_input_real64
+        procedure root_lm, &
+            root_lm_jac, &
+            root_lm_fcn_jac, &
+            root_lm_args, &
+            root_lm_jac_args, &
+            root_lm_fcn_jac_args
     end interface
 
     interface chkder
-        module procedure chkder_real64
+        module procedure chkder
     end interface
 
     contains
@@ -76,16 +66,15 @@ module numfort_optimize_minpack
 #include "minpack_lm_impl.F90"
 
 
-subroutine root_hybrd_real64 (func, x, fx, xtol, maxfev, ml, mu, eps, factor, diag, work, res)
-    integer, parameter :: PREC = real64
-    procedure (func_vec_vec_real64) :: func
+subroutine root_hybrd (func, x, fx, xtol, maxfev, ml, mu, eps, factor, diag, work, res)
+    procedure (fvv_fcn) :: func
     ! Note: will be passed using F77 implicit interface, ensure contiguous array.
     real (PREC), dimension(:), contiguous :: x, fx
     real (PREC), dimension(:), target, contiguous :: diag
     real (PREC) :: xtol, eps, factor
     integer :: maxfev, ml, mu
-    type (workspace_real64), intent(inout), target, optional :: work
-    type (optim_result_real64), intent(inout), optional :: res
+    type (workspace), intent(inout), target, optional :: work
+    type (optim_result), intent(inout), optional :: res
 
     intent (in) :: xtol, maxfev, eps, factor, diag, ml, mu
     intent (inout) :: x, fx
@@ -99,7 +88,7 @@ subroutine root_hybrd_real64 (func, x, fx, xtol, maxfev, ml, mu, eps, factor, di
     type (status_t) :: status
     character (MSG_LENGTH) :: msg
     integer :: n, nrwrk, mode, info, i, nfev
-    type (workspace_real64), pointer :: ptr_work
+    type (workspace), pointer :: ptr_work
     ! pointers to various arrays that need to be passed to hybrd() that are
     ! segments of memory allocated in workspace
     real (PREC), dimension(:), pointer, contiguous :: ptr_fjac, ptr_r, ptr_qtf, &
@@ -168,7 +157,7 @@ subroutine root_hybrd_real64 (func, x, fx, xtol, maxfev, ml, mu, eps, factor, di
     i = i + n
     ptr_wa4 => ptr_work%rwrk(i+1:i+n)
 
-    call minpack_hybrd_real64 (fwrapper, n, x, fx, lxtol, lmaxfev, lml, lmu, leps, ptr_diag, &
+    call minpack_hybrd (fwrapper, n, x, fx, lxtol, lmaxfev, lml, lmu, leps, ptr_diag, &
         mode, lfactor, lnprint, info, nfev, ptr_fjac, n, ptr_r, lr, ptr_qtf, &
         ptr_wa1, ptr_wa2, ptr_wa3, ptr_wa4)
 
@@ -216,9 +205,8 @@ contains
 end subroutine
 
 
-subroutine root_hybrj_real64 (func, x, fx, xtol, maxfev, factor, diag, work, res)
-    integer, parameter :: PREC = real64
-    procedure (func_jac_real64) :: func
+subroutine root_hybrj (func, x, fx, xtol, maxfev, factor, diag, work, res)
+    procedure (func_jac) :: func
     ! Note: will be passed using F77 implicit interface, ensure contiguous array.
     real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(inout), dimension(:), contiguous :: fx
@@ -226,8 +214,8 @@ subroutine root_hybrj_real64 (func, x, fx, xtol, maxfev, factor, diag, work, res
     integer, intent(in), optional :: maxfev
     real (PREC), intent(in), optional :: factor
     real (PREC), intent(in), dimension(:), target, optional, contiguous :: diag
-    type (workspace_real64), intent(inout), target, optional :: work
-    type (optim_result_real64), intent(inout), optional :: res
+    type (workspace), intent(inout), target, optional :: work
+    type (optim_result), intent(inout), optional :: res
 
     ! local default values for optional arguments
     real (PREC) :: lxtol, lfactor
@@ -236,7 +224,7 @@ subroutine root_hybrj_real64 (func, x, fx, xtol, maxfev, factor, diag, work, res
     type (status_t) :: status
     character (MSG_LENGTH) :: msg
     integer :: n, nrwrk, mode, info, i, nfev, njev
-    type (workspace_real64), pointer :: ptr_work
+    type (workspace), pointer :: ptr_work
     ! pointers to various arrays that need to be passed to hybrd() that are
     ! segments of memory allocated in workspace
     real (PREC), dimension(:), pointer, contiguous :: ptr_fjac, ptr_r, ptr_qtf, &
@@ -300,7 +288,7 @@ subroutine root_hybrj_real64 (func, x, fx, xtol, maxfev, factor, diag, work, res
     i = i + n
     ptr_wa4 => ptr_work%rwrk(i+1:i+n)
 
-    call minpack_hybrj_real64 (fwrapper, n, x, fx, ptr_fjac, n, lxtol, lmaxfev, ptr_diag, &
+    call minpack_hybrj (fwrapper, n, x, fx, ptr_fjac, n, lxtol, lmaxfev, ptr_diag, &
         mode, lfactor, lnprint, info, nfev, njev, ptr_r, lr, ptr_qtf, &
         ptr_wa1, ptr_wa2, ptr_wa3, ptr_wa4)
 
@@ -349,10 +337,10 @@ end subroutine
 
 
 
-recursive subroutine chkder_real64 (fcn, x, err, status)
+recursive subroutine chkder (fcn, x, err, status)
     !*  CHKDER verifies that the Jacobian of a function f: R^n -> R^m
     !   is reasonably close to a Jacobian obtained by numerical differentiation.
-    procedure (func_jac_real64) :: fcn
+    procedure (func_jac) :: fcn
 
     real (PREC), intent(in), dimension(:), contiguous :: x
         !!  Point in function domain where derivative should be evaluated

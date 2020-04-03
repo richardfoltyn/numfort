@@ -1,15 +1,13 @@
 
-subroutine __APPEND(root_brentq,__PREC) (f, a, b, xtol, rtol, maxiter, x0, res)
+subroutine root_brentq (f, a, b, xtol, rtol, maxiter, x0, res)
 
-    integer, parameter :: PREC = __PREC
-
-    procedure (__APPEND(fcn,__PREC)) :: f
+    procedure (fss) :: f
     real (PREC), intent(in) :: a, b
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: rtol
     real (PREC), intent(out) :: x0
     integer, intent(in), optional :: maxiter
-    type (__APPEND(optim_result,__PREC)), intent(in out), optional :: res
+    type (optim_result), intent(inout), optional :: res
 
     real (PREC) :: lxtol, lrtol, fx0
     ! maximum iterations, number of function evaluations
@@ -36,14 +34,14 @@ subroutine __APPEND(root_brentq,__PREC) (f, a, b, xtol, rtol, maxiter, x0, res)
 
 end subroutine
 
-subroutine __APPEND(root_brentq_impl,__PREC) (f, a, b, xtol, rtol, maxiter, &
+
+
+subroutine root_brentq_impl (f, a, b, xtol, rtol, maxiter, &
         x0, fx0, iter, nfev, status)
     !*  ROOT_BRENTQ_IMPL is a F90 port of Brent's method as implemented
     !   in Scipy's brentq()
 
-    integer, parameter :: PREC = __PREC
-
-    procedure (__APPEND(fcn,__PREC)) :: f
+    procedure (fss) :: f
     real (PREC) :: a, b, xtol, rtol, x0, fx0
     integer :: maxiter, nfev, iter
     type (status_t), intent(out) :: status

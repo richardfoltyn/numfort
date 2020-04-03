@@ -1,8 +1,7 @@
 
 
-pure subroutine __APPEND(update_ss,__PREC) (res, x, fx, status, nit, nfev, msg)
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(optim_result,__PREC)), intent(inout) :: res
+pure subroutine update_ss (res, x, fx, status, nit, nfev, msg)
+    type (optim_result), intent(inout) :: res
     real (PREC), intent(in) :: x, fx
     type (status_t), intent(in), optional :: status
     integer, intent(in), optional :: nit
@@ -17,9 +16,10 @@ pure subroutine __APPEND(update_ss,__PREC) (res, x, fx, status, nit, nfev, msg)
     call result_update (res, x1, fx1, status, nit, nfev, msg)
 end subroutine
 
-pure subroutine __APPEND(update_vs,__PREC) (res, x, fx, status, nit, nfev, msg)
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(optim_result,__PREC)), intent(inout) :: res
+
+
+pure subroutine update_vs (res, x, fx, status, nit, nfev, msg)
+    type (optim_result), intent(inout) :: res
     real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(in) :: fx
     type (status_t), intent(in), optional :: status
@@ -34,9 +34,10 @@ pure subroutine __APPEND(update_vs,__PREC) (res, x, fx, status, nit, nfev, msg)
     call result_update (res, x, fx1, status, nit, nfev, msg)
 end subroutine
 
-pure subroutine __APPEND(update,__PREC) (res, x, fx, status, nit, nfev, msg)
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(optim_result,__PREC)), intent(inout) :: res
+
+
+pure subroutine update (res, x, fx, status, nit, nfev, msg)
+    type (optim_result), intent(inout) :: res
     real (PREC), intent(in), dimension(:), optional :: x
     real (PREC), intent(in), dimension(:), optional :: fx
     type (status_t), intent(in), optional :: status
@@ -61,9 +62,9 @@ pure subroutine __APPEND(update,__PREC) (res, x, fx, status, nit, nfev, msg)
 end subroutine
 
 
-pure subroutine __APPEND(reset,__PREC) (res)
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(optim_result,__PREC)), intent(inout) :: res
+
+pure subroutine reset (res)
+    type (optim_result), intent(inout) :: res
 
     res%nit = UNINITIALIZED_COUNTER
     res%nfev = UNINITIALIZED_COUNTER
@@ -75,9 +76,10 @@ pure subroutine __APPEND(reset,__PREC) (res)
 end subroutine
 
 
-pure subroutine __APPEND(assert_alloc_ptr,__PREC) (res, ptr)
-    type (__APPEND(optim_result,__PREC)), intent(inout), target, optional :: res
-    type (__APPEND(optim_result,__PREC)), pointer, intent(inout) :: ptr
+
+pure subroutine assert_alloc_ptr (res, ptr)
+    type (optim_result), intent(inout), target, optional :: res
+    type (optim_result), pointer, intent(inout) :: ptr
 
     if (present(res)) then
         ptr => res
@@ -87,9 +89,10 @@ pure subroutine __APPEND(assert_alloc_ptr,__PREC) (res, ptr)
 end subroutine
 
 
-pure subroutine __APPEND(assert_dealloc_ptr,__PREC) (res, ptr)
-    type (__APPEND(optim_result,__PREC)), intent(inout), target, optional :: res
-    type (__APPEND(optim_result,__PREC)), pointer, intent(inout) :: ptr
+
+pure subroutine assert_dealloc_ptr (res, ptr)
+    type (optim_result), intent(inout), target, optional :: res
+    type (optim_result), pointer, intent(inout) :: ptr
 
     if (associated(ptr)) then
         if (.not. present(res)) then
@@ -102,9 +105,11 @@ pure subroutine __APPEND(assert_dealloc_ptr,__PREC) (res, ptr)
     end if
 end subroutine
 
-subroutine __APPEND(result_finalize,__PREC) (self)
+
+
+subroutine result_finalize (self)
     !*  RESULT_FINALIZE deallocates any allocated (allocatable) attributes.
-    type (__APPEND(optim_result,__PREC)), intent(inout) :: self
+    type (optim_result), intent(inout) :: self
 
     if (allocated(self%x)) deallocate (self%x)
     if (allocated(self%fx)) deallocate (self%fx)

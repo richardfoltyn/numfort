@@ -1,8 +1,24 @@
 
+pure function get_print_level (val) result(res)
+    integer (NF_ENUM_KIND), intent(in) :: val
+    integer :: res
 
-subroutine __APPEND(dfls_check_input,__PREC) (x, m, rhobeg, rhoend, nint, iprint, &
-        maxfev, status, msg)
-    integer, parameter :: PREC = __PREC
+    select case (val)
+    case (NF_PRINT_ALL)
+        res = 3
+    case (NF_PRINT_VERBOSE)
+        res = 2
+    case (NF_PRINT_MINIMAL)
+        res = 1
+    case default
+        res = 0
+    end select
+end function
+
+
+
+subroutine dfls_check_input (x, m, rhobeg, rhoend, nint, iprint, maxfev, &
+        status, msg)
     real (PREC), intent(in), dimension(:) :: x
     integer, intent(in) :: m
     real (PREC), intent(in) :: rhobeg, rhoend
@@ -57,12 +73,11 @@ end subroutine
 
 
 
-subroutine __APPEND(minimize_dfls,__PREC) (fcn, x, m, rhobeg, rhoend, nint, &
-        iprint, maxfev, work, res)
+subroutine minimize_dfls (fcn, x, m, rhobeg, rhoend, nint, iprint, maxfev, &
+        work, res)
     !*  Minime function f:R^n->R^m in the least-square sense using a
     !   modified version of Powell's NEWUOA algorithm.
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fvv_fcn,__PREC)) :: fcn
+    procedure (fvv_fcn) :: fcn
         !*  Objective function f:R^n->R^m to be minimized in a least-square
         !   sense.
     real (PREC), intent(inout), dimension(:), contiguous :: x
@@ -86,10 +101,10 @@ subroutine __APPEND(minimize_dfls,__PREC) (fcn, x, m, rhobeg, rhoend, nint, &
         !*  Option log level for diagnostic messages
     integer, intent(in), optional :: maxfev
         !*  Optional maximum number of function evaluations
-    type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (workspace), intent(inout), optional :: work
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_vv,__PREC)) :: fcn_wrapper
+    type (fwrapper_vv) :: fcn_wrapper
 
     call wrap_procedure (fcn_wrapper, fcn=fcn)
 
@@ -99,12 +114,11 @@ subroutine __APPEND(minimize_dfls,__PREC) (fcn, x, m, rhobeg, rhoend, nint, &
 end subroutine
 
 
-subroutine __APPEND(minimize_dfls_args,__PREC) (fcn, x, args, m, rhobeg, rhoend, &
-        nint, iprint, maxfev, work, res)
+subroutine minimize_dfls_args (fcn, x, args, m, rhobeg, rhoend, nint, iprint, &
+        maxfev, work, res)
     !*  Minime function f:R^n->R^m in the least-square sense using a
     !   modified version of Powell's NEWUOA algorithm.
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fvv_fcn,__PREC)) :: fcn
+    procedure (fvv_fcn) :: fcn
         !*  Objective function f:R^n->R^m to be minimized in a least-square
         !   sense.
     real (PREC), intent(inout), dimension(:), contiguous :: x
@@ -130,10 +144,10 @@ subroutine __APPEND(minimize_dfls_args,__PREC) (fcn, x, args, m, rhobeg, rhoend,
         !*  Option log level for diagnostic messages
     integer, intent(in), optional :: maxfev
         !*  Optional maximum number of function evaluations
-    type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (workspace), intent(inout), optional :: work
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_vv,__PREC)) :: fcn_wrapper
+    type (fwrapper_vv) :: fcn_wrapper
 
     call wrap_procedure (fcn_wrapper, fcn=fcn, args=args)
 
@@ -144,10 +158,9 @@ end subroutine
 
 
 
-subroutine __APPEND(minimize_dfls_impl,__PREC) (fcn, x, m, rhobeg, rhoend, &
-        nint, iprint, maxfev, work, res)
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_vv,__PREC)), intent(inout) :: fcn
+subroutine minimize_dfls_impl (fcn, x, m, rhobeg, rhoend, nint, iprint, maxfev, &
+        work, res)
+    type (fwrapper_vv), intent(inout) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
         !*  Vector containing the initial value on entry and the
         !   minimizer on exit.
@@ -168,13 +181,13 @@ subroutine __APPEND(minimize_dfls_impl,__PREC) (fcn, x, m, rhobeg, rhoend, &
         !*  Option log level for diagnostic messages
     integer, intent(in), optional :: maxfev
         !*  Optional maximum number of function evaluations
-    type (__APPEND(workspace,__PREC)), intent(inout), optional :: work
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (workspace), intent(inout), optional :: work
+    type (optim_result), intent(inout), optional :: res
 
     integer :: lmaxfev, lnint, nfev
     integer (NF_ENUM_KIND) :: liprint, iprint_impl
-    type (__APPEND(workspace,__PREC)), pointer :: ptr_work
-    type (__APPEND(optim_result,__PREC)), pointer :: ptr_res
+    type (workspace), pointer :: ptr_work
+    type (optim_result), pointer :: ptr_res
 
     integer :: nrwrk, n
     real (PREC), dimension(:), pointer, contiguous :: ptr_w

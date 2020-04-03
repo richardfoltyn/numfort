@@ -1,15 +1,14 @@
 
 
-pure subroutine __APPEND(check_inputs,__PREC) (xtol, tol, maxiter, xtol2, res)
+pure subroutine check_inputs (xtol, tol, maxiter, xtol2, res)
     !*  CHECK_INPUTS performs input validation for both the
     !   plain Newton and the Halley root-finding algorithms.
 
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
     real (PREC), intent(in), optional :: xtol2
-    type (__APPEND(optim_result,__PREC)), intent(inout) :: res
+    type (optim_result), intent(inout) :: res
 
     res%status = NF_STATUS_OK
 
@@ -32,13 +31,13 @@ pure subroutine __APPEND(check_inputs,__PREC) (xtol, tol, maxiter, xtol2, res)
 end subroutine
 
 
-pure subroutine __APPEND(check_bracket,__PREC) (x, a, b, res)
+
+pure subroutine check_bracket (x, a, b, res)
     !*  CHECK_BRACKET verifies that if A, B are present, A < B and
     !   X >= A, X <= B.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in) :: x
     real (PREC), intent(in), optional :: a, b
-    type (__APPEND(optim_result,__PREC)), intent(inout) :: res
+    type (optim_result), intent(inout) :: res
 
     res%status = NF_STATUS_OK
 
@@ -69,9 +68,9 @@ pure subroutine __APPEND(check_bracket,__PREC) (x, a, b, res)
     res%status = NF_STATUS_INVALID_ARG
 end subroutine
 
-pure subroutine __APPEND(set_defaults,__PREC) (xtol_in, tol_in, maxiter_in, &
-        xtol, tol, maxiter)
-    integer, parameter :: PREC = __PREC
+
+
+pure subroutine set_defaults (xtol_in, tol_in, maxiter_in, xtol, tol, maxiter)
     real (PREC), intent(in), optional :: xtol_in
     real (PREC), intent(in), optional :: tol_in
     integer, intent(in), optional :: maxiter_in
@@ -90,10 +89,10 @@ pure subroutine __APPEND(set_defaults,__PREC) (xtol_in, tol_in, maxiter_in, &
 end subroutine
 
 
-subroutine __APPEND(root_newton_args,__PREC) (fcn, x, args, ndiff, xtol, tol, &
-        maxiter, xtol2, dstep, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss_args,__PREC)) :: fcn
+
+subroutine root_newton_args (fcn, x, args, ndiff, xtol, tol, maxiter, xtol2, &
+        dstep, res)
+    procedure (fss_args) :: fcn
     real (PREC), intent(inout) :: x
     class (args_data), intent(inout) :: args
     logical, intent(in) :: ndiff
@@ -105,9 +104,9 @@ subroutine __APPEND(root_newton_args,__PREC) (fcn, x, args, ndiff, xtol, tol, &
         !   and take the midpoint of [X(n), X(n-1)] as the next candidate root
         !   whenever such cycles occur.
     real (PREC), intent(in), optional :: dstep
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_ss,__PREC)) :: fwrapper
+    type (fwrapper_ss) :: fwrapper
 
     ! Force NDIFF argument to be TRUE
     if (.not. ndiff) then
@@ -123,11 +122,11 @@ subroutine __APPEND(root_newton_args,__PREC) (fcn, x, args, ndiff, xtol, tol, &
 
 end subroutine
 
-subroutine __APPEND(root_newton_jac_args,__PREC) (fcn, jac, x, args, xtol, &
-        tol, maxiter, xtol2, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss_args,__PREC)) :: fcn
-    procedure (__APPEND(fss_args,__PREC)) :: jac
+
+
+subroutine root_newton_jac_args (fcn, jac, x, args, xtol, tol, maxiter, xtol2, res)
+    procedure (fss_args) :: fcn
+    procedure (fss_args) :: jac
     real (PREC), intent(inout) :: x
     class (args_data), intent(inout) :: args
     real (PREC), intent(in), optional :: xtol
@@ -137,9 +136,9 @@ subroutine __APPEND(root_newton_jac_args,__PREC) (fcn, jac, x, args, xtol, &
         !*  If present, identify period-2 cycles if |X(n)-X(n-2)| < XTOL2
         !   and take the midpoint of [X(n), X(n-1)] as the next candidate root
         !   whenever such cycles occur.
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_ss,__PREC)) :: fwrapper
+    type (fwrapper_ss) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn_args=fcn, jac_args=jac, args=args)
 
@@ -147,10 +146,10 @@ subroutine __APPEND(root_newton_jac_args,__PREC) (fcn, jac, x, args, xtol, &
 
 end subroutine
 
-subroutine __APPEND(root_newton_fcn_jac_args,__PREC) (fcn, x, args, xtol, &
-        tol, maxiter, xtol2, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss_fcn_jac_args,__PREC)) :: fcn
+
+
+subroutine root_newton_fcn_jac_args (fcn, x, args, xtol, tol, maxiter, xtol2, res)
+    procedure (fss_fcn_jac_args) :: fcn
     real (PREC), intent(inout) :: x
     class (args_data), intent(inout) :: args
     real (PREC), intent(in), optional :: xtol
@@ -160,9 +159,9 @@ subroutine __APPEND(root_newton_fcn_jac_args,__PREC) (fcn, x, args, xtol, &
         !*  If present, identify period-2 cycles if |X(n)-X(n-2)| < XTOL2
         !   and take the midpoint of [X(n), X(n-1)] as the next candidate root
         !   whenever such cycles occur.
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_ss,__PREC)) :: fwrapper
+    type (fwrapper_ss) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn_jac_args=fcn, args=args)
 
@@ -171,10 +170,9 @@ subroutine __APPEND(root_newton_fcn_jac_args,__PREC) (fcn, x, args, xtol, &
 end subroutine
 
 
-subroutine __APPEND(root_newton,__PREC) (fcn, x, ndiff, xtol, tol, &
-        maxiter, xtol2, dstep, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss,__PREC)) :: fcn
+
+subroutine root_newton (fcn, x, ndiff, xtol, tol, maxiter, xtol2, dstep, res)
+    procedure (fss) :: fcn
     real (PREC), intent(inout) :: x
     logical, intent(in) :: ndiff
     real (PREC), intent(in), optional :: xtol
@@ -185,9 +183,9 @@ subroutine __APPEND(root_newton,__PREC) (fcn, x, ndiff, xtol, tol, &
         !   and take the midpoint of [X(n), X(n-1)] as the next candidate root
         !   whenever such cycles occur.
     real (PREC), intent(in), optional :: dstep
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_ss,__PREC)) :: fwrapper
+    type (fwrapper_ss) :: fwrapper
 
     ! Force NDIFF argument to be TRUE
     if (.not. ndiff) then
@@ -204,11 +202,11 @@ subroutine __APPEND(root_newton,__PREC) (fcn, x, ndiff, xtol, tol, &
 
 end subroutine
 
-subroutine __APPEND(root_newton_jac,__PREC) (fcn, jac, x, xtol, &
-        tol, maxiter, xtol2, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss,__PREC)) :: fcn
-    procedure (__APPEND(fss,__PREC)) :: jac
+
+
+subroutine root_newton_jac (fcn, jac, x, xtol, tol, maxiter, xtol2, res)
+    procedure (fss) :: fcn
+    procedure (fss) :: jac
     real (PREC), intent(inout) :: x
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
@@ -217,9 +215,9 @@ subroutine __APPEND(root_newton_jac,__PREC) (fcn, jac, x, xtol, &
         !*  If present, identify period-2 cycles if |X(n)-X(n-2)| < XTOL2
         !   and take the midpoint of [X(n), X(n-1)] as the next candidate root
         !   whenever such cycles occur.
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_ss,__PREC)) :: fwrapper
+    type (fwrapper_ss) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn=fcn, jac=jac)
 
@@ -227,10 +225,10 @@ subroutine __APPEND(root_newton_jac,__PREC) (fcn, jac, x, xtol, &
 
 end subroutine
 
-subroutine __APPEND(root_newton_fcn_jac,__PREC) (fcn, x, xtol, &
-        tol, maxiter, xtol2, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss_fcn_jac,__PREC)) :: fcn
+
+
+subroutine root_newton_fcn_jac (fcn, x, xtol, tol, maxiter, xtol2, res)
+    procedure (fss_fcn_jac) :: fcn
     real (PREC), intent(inout) :: x
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
@@ -239,9 +237,9 @@ subroutine __APPEND(root_newton_fcn_jac,__PREC) (fcn, x, xtol, &
         !*  If present, identify period-2 cycles if |X(n)-X(n-2)| < XTOL2
         !   and take the midpoint of [X(n), X(n-1)] as the next candidate root
         !   whenever such cycles occur.
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_ss,__PREC)) :: fwrapper
+    type (fwrapper_ss) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn_jac=fcn)
 
@@ -251,10 +249,8 @@ end subroutine
 
 
 
-subroutine __APPEND(root_newton_impl,__PREC) (fcn, x, xtol, tol, maxiter, &
-        xtol2, res)
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_ss,__PREC)), intent(inout) :: fcn
+subroutine root_newton_impl (fcn, x, xtol, tol, maxiter, xtol2, res)
+    type (fwrapper_ss), intent(inout) :: fcn
     real (PREC), intent(inout) :: x
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
@@ -263,13 +259,13 @@ subroutine __APPEND(root_newton_impl,__PREC) (fcn, x, xtol, tol, maxiter, &
         !*  If present, identify period-2 cycles if |X(n)-X(n-2)| < XTOL2
         !   and take the midpoint of [X(n), X(n-1)] as the next candidate root
         !   whenever such cycles occur.
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional, target :: res
+    type (optim_result), intent(inout), optional, target :: res
 
     real (PREC) :: fx, fpx, x0
     real (PREC) :: x2
     integer :: iter
 
-    type (__APPEND(optim_result,__PREC)), pointer :: ptr_res
+    type (optim_result), pointer :: ptr_res
     real (PREC) :: lxtol, ltol
     integer :: lmaxiter
     logical :: do_xtol, check_cycle
@@ -344,10 +340,9 @@ subroutine __APPEND(root_newton_impl,__PREC) (fcn, x, xtol, tol, maxiter, &
 end subroutine
 
 
-subroutine __APPEND(newton_bisect_args,__PREC) (fcn, x, args, ndiff, a, b, xtol, &
-        tol, maxiter, dstep, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss_args,__PREC)) :: fcn
+subroutine newton_bisect_args (fcn, x, args, ndiff, a, b, xtol, tol, maxiter, &
+        dstep, res)
+    procedure (fss_args) :: fcn
     real (PREC), intent(inout) :: x
     class (args_data), intent(inout) :: args
     logical, intent(in) :: ndiff
@@ -356,9 +351,9 @@ subroutine __APPEND(newton_bisect_args,__PREC) (fcn, x, args, ndiff, a, b, xtol,
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
     real (PREC), intent(in), optional :: dstep
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_ss,__PREC)) :: fwrapper
+    type (fwrapper_ss) :: fwrapper
 
     ! Force NDIFF argument to be TRUE
     if (.not. ndiff) then
@@ -374,20 +369,20 @@ subroutine __APPEND(newton_bisect_args,__PREC) (fcn, x, args, ndiff, a, b, xtol,
 
 end subroutine
 
-subroutine __APPEND(newton_bisect_jac_args,__PREC) (fcn, jac, x, args, a, b, &
-        xtol, tol, maxiter, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss_args,__PREC)) :: fcn
-    procedure (__APPEND(fss_args,__PREC)) :: jac
+
+
+subroutine newton_bisect_jac_args (fcn, jac, x, args, a, b, xtol, tol, maxiter, res)
+    procedure (fss_args) :: fcn
+    procedure (fss_args) :: jac
     real (PREC), intent(inout) :: x
     class (args_data), intent(inout) :: args
     real (PREC), intent(in), optional :: a, b
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_ss,__PREC)) :: fwrapper
+    type (fwrapper_ss) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn_args=fcn, jac_args=jac, args=args)
 
@@ -396,10 +391,9 @@ subroutine __APPEND(newton_bisect_jac_args,__PREC) (fcn, jac, x, args, a, b, &
 end subroutine
 
 
-subroutine __APPEND(newton_bisect,__PREC) (fcn, x, ndiff, a, b, xtol, tol, &
-        maxiter, dstep, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss,__PREC)) :: fcn
+
+subroutine newton_bisect (fcn, x, ndiff, a, b, xtol, tol, maxiter, dstep, res)
+    procedure (fss) :: fcn
     real (PREC), intent(inout) :: x
     logical, intent(in) :: ndiff
     real (PREC), intent(in), optional :: a, b
@@ -407,9 +401,9 @@ subroutine __APPEND(newton_bisect,__PREC) (fcn, x, ndiff, a, b, xtol, tol, &
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
     real (PREC), intent(in), optional :: dstep
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_ss,__PREC)) :: fwrapper
+    type (fwrapper_ss) :: fwrapper
 
     ! Force NDIFF argument to be TRUE
     if (.not. ndiff) then
@@ -426,19 +420,19 @@ subroutine __APPEND(newton_bisect,__PREC) (fcn, x, ndiff, a, b, xtol, tol, &
 
 end subroutine
 
-subroutine __APPEND(newton_bisect_jac,__PREC) (fcn, jac, x, a, b, xtol, &
-        tol, maxiter, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss,__PREC)) :: fcn
-    procedure (__APPEND(fss,__PREC)) :: jac
+
+
+subroutine newton_bisect_jac (fcn, jac, x, a, b, xtol, tol, maxiter, res)
+    procedure (fss) :: fcn
+    procedure (fss) :: jac
     real (PREC), intent(inout) :: x
     real (PREC), intent(in), optional :: a, b
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_ss,__PREC)) :: fwrapper
+    type (fwrapper_ss) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn=fcn, jac=jac)
 
@@ -447,18 +441,17 @@ subroutine __APPEND(newton_bisect_jac,__PREC) (fcn, jac, x, a, b, xtol, &
 end subroutine
 
 
-subroutine __APPEND(newton_bisect_fcn_jac,__PREC) (fcn, x, a, b, xtol, &
-        tol, maxiter, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss_fcn_jac,__PREC)) :: fcn
+
+subroutine newton_bisect_fcn_jac (fcn, x, a, b, xtol, tol, maxiter, res)
+    procedure (fss_fcn_jac) :: fcn
     real (PREC), intent(inout) :: x
     real (PREC), intent(in), optional :: a, b
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_ss,__PREC)) :: fwrapper
+    type (fwrapper_ss) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn_jac=fcn)
 
@@ -468,19 +461,17 @@ end subroutine
 
 
 
-subroutine __APPEND(newton_bisect_fcn_jac_args,__PREC) (fcn, x, args, a, b, xtol, &
-        tol, maxiter, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fss_fcn_jac_args,__PREC)) :: fcn
+subroutine newton_bisect_fcn_jac_args (fcn, x, args, a, b, xtol, tol, maxiter, res)
+    procedure (fss_fcn_jac_args) :: fcn
     real (PREC), intent(inout) :: x
     real (PREC), intent(in), optional :: a, b
     class (args_data), intent(inout) :: args
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (optim_result), intent(inout), optional :: res
 
-    type (__APPEND(fwrapper_ss,__PREC)) :: fwrapper
+    type (fwrapper_ss) :: fwrapper
 
     call wrap_procedure (fwrapper, fcn_jac_args=fcn, args=args)
 
@@ -489,16 +480,15 @@ subroutine __APPEND(newton_bisect_fcn_jac_args,__PREC) (fcn, x, args, a, b, xtol
 end subroutine
 
 
-subroutine __APPEND(newton_bisect_impl,__PREC) (fcn, x, a, b, xtol, tol, &
-        maxiter, res)
-    integer, parameter :: PREC = __PREC
-    type (__APPEND(fwrapper_ss,__PREC)), intent(inout) :: fcn
+
+subroutine newton_bisect_impl (fcn, x, a, b, xtol, tol, maxiter, res)
+    type (fwrapper_ss), intent(inout) :: fcn
     real (PREC), intent(inout) :: x
     real (PREC), intent(in), optional :: a, b
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional, target :: res
+    type (optim_result), intent(inout), optional, target :: res
 
     real (PREC) :: fx, fpx, x0
     real (PREC) :: xlb, xub, s, xstart, slb, sub, dub, dlb
@@ -506,7 +496,7 @@ subroutine __APPEND(newton_bisect_impl,__PREC) (fcn, x, a, b, xtol, tol, &
     integer :: iter
     logical :: has_bracket
 
-    type (__APPEND(optim_result,__PREC)), pointer :: ptr_res
+    type (optim_result), pointer :: ptr_res
     real (PREC) :: lxtol, ltol
     integer :: lmaxiter
 
@@ -690,47 +680,45 @@ subroutine __APPEND(newton_bisect_impl,__PREC) (fcn, x, a, b, xtol, tol, &
 end subroutine
 
 
-subroutine __APPEND(root_halley_args,__PREC) (fcn, x, args, xtol, tol, &
-        maxiter, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fcn_der2_args,__PREC)) :: fcn
+
+subroutine root_halley_args (fcn, x, args, xtol, tol, maxiter, res)
+    procedure (fcn_der2_args) :: fcn
     real (PREC), intent(inout) :: x
     real (PREC), intent(inout), dimension(:) :: args
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (optim_result), intent(inout), optional :: res
 
     call root_halley_impl (x, xtol, tol, maxiter, res, fcn_args=fcn, args=args)
 end subroutine
 
 
-subroutine __APPEND(root_halley,__PREC) (fcn, x, xtol, tol, maxiter, res)
-    integer, parameter :: PREC = __PREC
-    procedure (__APPEND(fcn_der2,__PREC)) :: fcn
+
+subroutine root_halley (fcn, x, xtol, tol, maxiter, res)
+    procedure (fcn_der2) :: fcn
     real (PREC), intent(inout) :: x
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
+    type (optim_result), intent(inout), optional :: res
 
     call root_halley_impl (x, xtol, tol, maxiter, res, fcn=fcn)
 end subroutine
 
 
-subroutine __APPEND(root_halley_impl,__PREC) (x, xtol, tol, &
-        maxiter, res, fcn, fcn_args, args)
-    integer, parameter :: PREC = __PREC
+
+subroutine root_halley_impl (x, xtol, tol, maxiter, res, fcn, fcn_args, args)
     real (PREC), intent(inout) :: x
     real (PREC), intent(in), optional :: xtol
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
-    type (__APPEND(optim_result,__PREC)), intent(inout), optional :: res
-    procedure (__APPEND(fcn_der2,__PREC)), optional :: fcn
-    procedure (__APPEND(fcn_der2_args,__PREC)), optional :: fcn_args
+    type (optim_result), intent(inout), optional :: res
+    procedure (fcn_der2), optional :: fcn
+    procedure (fcn_der2_args), optional :: fcn_args
     real (PREC), intent(inout), dimension(:), optional :: args
 
-    type (__APPEND(optim_result,__PREC)), pointer :: ptr_res
+    type (optim_result), pointer :: ptr_res
     real (PREC) :: lxtol, ltol
     integer :: lmaxiter
 

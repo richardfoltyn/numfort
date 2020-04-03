@@ -7,8 +7,7 @@ program test_optimize_minimize_dfls
 
     use numfort_common
     use numfort_common_testing
-    use numfort_optimize_result, optim_result => optim_result_real64
-    use numfort_optimize_dfls
+    use numfort_optimize, optim_result => optim_result_real64
 
     use numfort_stats
 
