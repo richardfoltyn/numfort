@@ -7,6 +7,7 @@ find_package(OpenMP)
 
 set(SOURCE_FILES
     linear_omp.f90
+    minpack.f90
 )
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY
@@ -14,9 +15,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY
 )
 
 if (OPENMP_FOUND)
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
     foreach (test_source IN LISTS SOURCE_FILES)
         get_filename_component(exe_name "${test_source}" NAME_WE)
-        set(target_name ${_dir}_${exe_name})
+        set(target_name test_${_dir}_${exe_name})
         add_executable(${target_name} "${test_source}")
 
         target_link_libraries(${target_name} ${NUMFORT_LIBRARY_NAME}
