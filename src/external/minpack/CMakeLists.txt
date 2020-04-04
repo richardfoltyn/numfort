@@ -49,11 +49,27 @@ else ()
 	message(STATUS "Building ${PROJECT_NAME_PRETTY} as standalone project")
 endif ()
 
+
+################################################################################
+# Custom compiler flags
+
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+    set(_FFLAGS "-Wuninitialized -Wconversion")
+elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+    if (WIN32)
+        set(_FFLAGS "/warn:all")
+    else ()
+        set(_FFLAGS "-warn all")
+    endif (WIN32)
+endif ()
+
+set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS}")
+
 ################################################################################
 # Target definitions
 
 set(SOURCE_FILES
-    minpack_real64.f
+    minpack_real64.F
 )
 
 set(_name ${LIBRARY_NAME})

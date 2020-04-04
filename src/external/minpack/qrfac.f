@@ -2,7 +2,7 @@
       integer m,n,lda,lipvt
       integer ipvt(lipvt)
       logical pivot
-      double precision a(lda,n),rdiag(n),acnorm(n),wa(n)
+      real (PREC) :: a(lda,n),rdiag(n),acnorm(n),wa(n)
 c     **********
 c
 c     subroutine qrfac
@@ -79,12 +79,11 @@ c     burton s. garbow, kenneth e. hillstrom, jorge j. more
 c
 c     **********
       integer i,j,jp1,k,kmax,minmn
-      double precision ajnorm,epsmch,one,p05,sum,temp,zero
-      data one,p05,zero /1.0d0,5.0d-2,0.0d0/
+      real (PREC) :: ajnorm,sum,temp
 c
 c     epsmch is the machine precision.
 c
-      epsmch = dpmpar(1)
+      real (PREC), parameter :: epsmch = epsilon(0.0_PREC)
 c
 c     compute the initial column norms and initialize several arrays.
 c

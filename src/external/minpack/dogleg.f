@@ -1,7 +1,7 @@
       subroutine dogleg(n,r,lr,diag,qtb,delta,x,wa1,wa2)
       integer n,lr
-      double precision delta
-      double precision r(lr),diag(n),qtb(n),x(n),wa1(n),wa2(n)
+      real (PREC) :: delta
+      real (PREC) :: r(lr),diag(n),qtb(n),x(n),wa1(n),wa2(n)
 c     **********
 c
 c     subroutine dogleg
@@ -60,13 +60,11 @@ c     burton s. garbow, kenneth e. hillstrom, jorge j. more
 c
 c     **********
       integer i,j,jj,jp1,k,l
-      double precision alpha,bnorm,epsmch,gnorm,one,qnorm,sgnorm,sum,
-     *                 temp,zero
-      data one,zero /1.0d0,0.0d0/
+      real (PREC) :: alpha,bnorm,gnorm,qnorm,sgnorm,sum,temp
 c
 c     epsmch is the machine precision.
 c
-      epsmch = dpmpar(1)
+      real (PREC), parameter :: epsmch = epsilon(0.0_PREC)
 c
 c     first, calculate the gauss-newton direction.
 c

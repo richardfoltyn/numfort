@@ -2,8 +2,8 @@
      *                 factor,nprint,info,nfev,njev,r,lr,qtf,wa1,wa2,
      *                 wa3,wa4)
       integer n,ldfjac,maxfev,mode,nprint,info,nfev,njev,lr
-      double precision xtol,factor
-      double precision x(n),fvec(n),fjac(ldfjac,n),diag(n),r(lr),
+      real (PREC) :: xtol,factor
+      real (PREC) :: x(n),fvec(n),fjac(ldfjac,n),diag(n),r(lr),
      *                 qtf(n),wa1(n),wa2(n),wa3(n),wa4(n)
       procedure (hybrj_fcn_real64) :: fcn
 c     **********
@@ -30,7 +30,7 @@ c         calling program, and should be written as follows.
 c
 c         subroutine fcn(n,x,fvec,fjac,ldfjac,iflag)
 c         integer n,ldfjac,iflag
-c         double precision x(n),fvec(n),fjac(ldfjac,n)
+c         real (PREC) :: x(n),fvec(n),fjac(ldfjac,n)
 c         ----------
 c         if iflag = 1 calculate the functions at x and
 c         return this vector in fvec. do not alter fjac.
@@ -152,15 +152,12 @@ c     **********
       integer i,iflag,iter,j,jm1,l,ncfail,ncsuc,nslow1,nslow2
       integer iwa(1)
       logical jeval,sing
-      double precision actred,delta,epsmch,fnorm,fnorm1,one,pnorm,
-     *                 prered,p1,p5,p001,p0001,ratio,sum,temp,xnorm,
-     *                 zero
-      data one,p1,p5,p001,p0001,zero
-     *     /1.0d0,1.0d-1,5.0d-1,1.0d-3,1.0d-4,0.0d0/
+      real (PREC) :: actred,delta,fnorm,fnorm1,pnorm,
+     *                 prered,ratio,sum,temp,xnorm
 c
 c     epsmch is the machine precision.
 c
-      epsmch = dpmpar(1)
+      real (PREC), parameter :: epsmch = epsilon(0.0_PREC)
 c
       info = 0
       iflag = 0

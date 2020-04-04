@@ -1,6 +1,6 @@
       subroutine chkder(m,n,x,fvec,fjac,ldfjac,xp,fvecp,mode,err)
       integer m,n,ldfjac,mode
-      double precision x(n),fvec(m),fjac(ldfjac,n),xp(n),fvecp(m),
+      real (PREC) :: x(n),fvec(m),fjac(ldfjac,n),xp(n),fvecp(m),
      *                 err(m)
 c     **********
 c
@@ -84,12 +84,12 @@ c     burton s. garbow, kenneth e. hillstrom, jorge j. more
 c
 c     **********
       integer i,j
-      double precision eps,epsf,epslog,epsmch,factor,one,temp,zero
-      data factor,one,zero /1.0d2,1.0d0,0.0d0/
+      real (PREC) :: eps,epsf,epslog,temp
+      real (PREC), parameter :: factor = 100.0_PREC
 c
 c     epsmch is the machine precision.
 c
-      epsmch = dpmpar(1)
+      real (PREC), parameter :: epsmch = epsilon(0.0_PREC)
 c
       eps = dsqrt(epsmch)
 c

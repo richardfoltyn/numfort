@@ -1,7 +1,7 @@
       subroutine rwupdt(n,r,ldr,w,b,alpha,cos,sin)
       integer n,ldr
-      double precision alpha
-      double precision r(ldr,n),w(n),b(n),cos(n),sin(n)
+      real (PREC) :: alpha
+      real (PREC) :: r(ldr,n),w(n),b(n),cos(n),sin(n)
 c     **********
 c
 c     subroutine rwupdt
@@ -64,8 +64,7 @@ c     jorge j. more
 c
 c     **********
       integer i,j,jm1
-      double precision cotan,one,p5,p25,rowj,tan,temp,zero
-      data one,p5,p25,zero /1.0d0,5.0d-1,2.5d-1,0.0d0/
+      real (PREC) :: cotan,rowj,tan,temp
 c
       do 60 j = 1, n
          rowj = w(j)

@@ -1,8 +1,8 @@
       subroutine fdjac1(fcn,n,x,fvec,fjac,ldfjac,iflag,ml,mu,epsfcn,
      *                  wa1,wa2)
       integer n,ldfjac,iflag,ml,mu
-      double precision epsfcn
-      double precision x(n),fvec(n),fjac(ldfjac,n),wa1(n),wa2(n)
+      real (PREC) :: epsfcn
+      real (PREC) :: x(n),fvec(n),fjac(ldfjac,n),wa1(n),wa2(n)
       procedure (hybrd_fcn_real64) :: fcn
 c     **********
 c
@@ -28,7 +28,7 @@ c         program, and should be written as follows.
 c
 c         subroutine fcn(n,x,fvec,iflag)
 c         integer n,iflag
-c         double precision x(n),fvec(n)
+c         real (PREC) :: x(n),fvec(n)
 c         ----------
 c         calculate the functions at x and
 c         return this vector in fvec.
@@ -90,12 +90,11 @@ c     burton s. garbow, kenneth e. hillstrom, jorge j. more
 c
 c     **********
       integer i,j,k,msum
-      double precision eps,epsmch,h,temp,zero
-      data zero /0.0d0/
+      real (PREC) :: eps,h,temp
 c
 c     epsmch is the machine precision.
 c
-      epsmch = dpmpar(1)
+      real (PREC), parameter :: epsmch = epsilon(0.0_PREC)
 c
       eps = dsqrt(dmax1(epsfcn,epsmch))
       msum = ml + mu + 1

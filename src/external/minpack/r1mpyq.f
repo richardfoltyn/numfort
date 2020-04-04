@@ -1,6 +1,6 @@
       subroutine r1mpyq(m,n,a,lda,v,w)
       integer m,n,lda
-      double precision a(lda,n),v(n),w(n)
+      real (PREC) :: a(lda,n),v(n),w(n)
 c     **********
 c
 c     subroutine r1mpyq
@@ -51,8 +51,7 @@ c     burton s. garbow, kenneth e. hillstrom, jorge j. more
 c
 c     **********
       integer i,j,nmj,nm1
-      double precision cos,one,sin,temp
-      data one /1.0d0/
+      real (PREC) :: cos,sin,temp
 c
 c     apply the first set of givens rotations to a.
 c

@@ -1,7 +1,7 @@
       subroutine r1updt(m,n,s,ls,u,v,w,sing)
       integer m,n,ls
       logical sing
-      double precision s(ls),u(m),v(n),w(m)
+      real (PREC) :: s(ls),u(m),v(n),w(m)
 c     **********
 c
 c     subroutine r1updt
@@ -71,13 +71,11 @@ c     john l. nazareth
 c
 c     **********
       integer i,j,jj,l,nmj,nm1
-      double precision cos,cotan,giant,one,p5,p25,sin,tan,tau,temp,
-     *                 zero
-      data one,p5,p25,zero /1.0d0,5.0d-1,2.5d-1,0.0d0/
+      real (PREC) :: cos,cotan,sin,tan,tau,temp
 c
 c     giant is the largest magnitude.
 c
-      giant = dpmpar(3)
+      real (PREC), parameter :: giant = huge(0.0_PREC)
 c
 c     initialize the diagonal element pointer.
 c

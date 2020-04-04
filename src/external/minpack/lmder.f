@@ -3,8 +3,8 @@
      *                 ipvt,qtf,wa1,wa2,wa3,wa4)
       integer m,n,ldfjac,maxfev,mode,nprint,info,nfev,njev
       integer ipvt(n)
-      double precision ftol,xtol,gtol,factor
-      double precision x(n),fvec(m),fjac(ldfjac,n),diag(n),qtf(n),
+      real (PREC) :: ftol,xtol,gtol,factor
+      real (PREC) :: x(n),fvec(m),fjac(ldfjac,n),diag(n),qtf(n),
      *                 wa1(n),wa2(n),wa3(n),wa4(m)
       procedure (lmder_fcn_real64) :: fcn
 c     **********
@@ -31,7 +31,7 @@ c         calling program, and should be written as follows.
 c
 c         subroutine fcn(m,n,x,fvec,fjac,ldfjac,iflag)
 c         integer m,n,ldfjac,iflag
-c         double precision x(n),fvec(m),fjac(ldfjac,n)
+c         real (PREC) :: x(n),fvec(m),fjac(ldfjac,n)
 c         ----------
 c         if iflag = 1 calculate the functions at x and
 c         return this vector in fvec. do not alter fjac.
@@ -185,15 +185,13 @@ c     burton s. garbow, kenneth e. hillstrom, jorge j. more
 c
 c     **********
       integer i,iflag,iter,j,l
-      double precision actred,delta,dirder,epsmch,fnorm,fnorm1,gnorm,
-     *                 one,par,pnorm,prered,p1,p5,p25,p75,p0001,ratio,
-     *                 sum,temp,temp1,temp2,xnorm,zero
-      data one,p1,p5,p25,p75,p0001,zero
-     *     /1.0d0,1.0d-1,5.0d-1,2.5d-1,7.5d-1,1.0d-4,0.0d0/
+      real (PREC) :: actred,delta,dirder,fnorm,fnorm1,gnorm,
+     *                 par,pnorm,prered,ratio,
+     *                 sum,temp,temp1,temp2,xnorm
 c
 c     epsmch is the machine precision.
 c
-      epsmch = dpmpar(1)
+      real (PREC), parameter :: epsmch = epsilon(0.0_PREC)
 c
       info = 0
       iflag = 0

@@ -5,8 +5,6 @@
 unset(_FFLAGS)
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
-    # there shouldn't be many issues with LHS reallocation or temporary arrays
-    # in old F77 code, but still add this.
     set(_FFLAGS "-Wall -Wno-uninitialized -Wno-conversion -Wno-unused -Wno-tabs -Wno-unused-dummy-argument")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)

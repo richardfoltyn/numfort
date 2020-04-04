@@ -39,9 +39,10 @@ c     burton s. garbow, kenneth e. hillstrom, jorge j. more
 c
 c     **********
       integer i
-      double precision agiant,floatn,one,rdwarf,rgiant,s1,s2,s3,xabs,
-     *                 x1max,x3max,zero
-      data one,zero,rdwarf,rgiant /1.0d0,0.0d0,3.834d-20,1.304d19/
+      double precision agiant,floatn,s1,s2,s3,xabs,
+     *                 x1max,x3max
+      real (PREC), parameter :: rdwarf = 3.834e-20_PREC
+      real (PREC), parameter :: rgiant = 1.304e19_PREC
       s1 = zero
       s2 = zero
       s3 = zero

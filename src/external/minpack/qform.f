@@ -1,6 +1,6 @@
       subroutine qform(m,n,q,ldq,wa)
       integer m,n,ldq
-      double precision q(ldq,m),wa(m)
+      real (PREC) :: q(ldq,m),wa(m)
 c     **********
 c
 c     subroutine qform
@@ -39,8 +39,7 @@ c     burton s. garbow, kenneth e. hillstrom, jorge j. more
 c
 c     **********
       integer i,j,jm1,k,l,minmn,np1
-      double precision one,sum,temp,zero
-      data one,zero /1.0d0,0.0d0/
+      real (PREC) :: sum,temp
 c
 c     zero out upper triangle of q in the first min(m,n) columns.
 c

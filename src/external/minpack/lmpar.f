@@ -2,8 +2,8 @@
      *                 wa2)
       integer n,ldr
       integer ipvt(n)
-      double precision delta,par
-      double precision r(ldr,n),diag(n),qtb(n),x(n),sdiag(n),wa1(n),
+      real (PREC) :: delta,par
+      real (PREC) :: r(ldr,n),diag(n),qtb(n),x(n),sdiag(n),wa1(n),
      *                 wa2(n)
 c     **********
 c
@@ -100,13 +100,12 @@ c     burton s. garbow, kenneth e. hillstrom, jorge j. more
 c
 c     **********
       integer i,iter,j,jm1,jp1,k,l,nsing
-      double precision dxnorm,dwarf,fp,gnorm,parc,parl,paru,p1,p001,
-     *                 sum,temp,zero
-      data p1,p001,zero /1.0d-1,1.0d-3,0.0d0/
+      real (PREC) :: dxnorm,fp,gnorm,parc,parl,paru,
+     *                 sum,temp
 c
 c     dwarf is the smallest positive magnitude.
 c
-      dwarf = dpmpar(2)
+      real (PREC), parameter :: dwarf = tiny(0.0_PREC)
 c
 c     compute and store in x the gauss-newton direction. if the
 c     jacobian is rank-deficient, obtain a least squares solution.

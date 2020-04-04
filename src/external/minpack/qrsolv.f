@@ -1,7 +1,7 @@
       subroutine qrsolv(n,r,ldr,ipvt,diag,qtb,x,sdiag,wa)
       integer n,ldr
       integer ipvt(n)
-      double precision r(ldr,n),diag(n),qtb(n),x(n),sdiag(n),wa(n)
+      real (PREC) :: r(ldr,n),diag(n),qtb(n),x(n),sdiag(n),wa(n)
 c     **********
 c
 c     subroutine qrsolv
@@ -80,8 +80,7 @@ c     burton s. garbow, kenneth e. hillstrom, jorge j. more
 c
 c     **********
       integer i,j,jp1,k,kp1,l,nsing
-      double precision cos,cotan,p5,p25,qtbpj,sin,sum,tan,temp,zero
-      data p5,p25,zero /5.0d-1,2.5d-1,0.0d0/
+      real (PREC) :: cos,cotan,qtbpj,sin,sum,tan,temp
 c
 c     copy r and (q transpose)*b to preserve input and initialize s.
 c     in particular, save the diagonal elements of r in x.

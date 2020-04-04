@@ -3,6 +3,8 @@
         implicit none
         private
 
+        integer, parameter :: PREC = real64
+
         abstract interface
           subroutine lmder_fcn_real64 (m,n,x,fvec,fjac,ldfjac,iflag)
               integer :: m, n, ldfjac, iflag
@@ -35,28 +37,36 @@
         public :: hybrj_fcn_real64
         public :: chkder
 
+        real (PREC), parameter :: one   = 1.0_PREC
+        real (PREC), parameter :: zero  = 0.0_PREC
+        real (PREC), parameter :: p1    = 0.1_PREC
+        real (PREC), parameter :: p5    = 0.5_PREC
+        real (PREC), parameter :: p25   = 0.25_PREC
+        real (PREC), parameter :: p75   = 0.75_PREC
+        real (PREC), parameter :: p05   = 0.05_PREC
+        real (PREC), parameter :: p001  = 1.0e-3_PREC
+        real (PREC), parameter :: p0001 = 1.0e-4_PREC
 
       contains
 
       ! driver routines
-      include "hybrd.f"
-      include "hybrj.f"
-      include "lmder.f"
-      include "lmdif.f"
+#include "hybrd.f"
+#include "hybrj.f"
+#include "lmder.f"
+#include "lmdif.f"
 
       ! helper routines
-      include "chkder.f"
-      include "dogleg.f"
-      include "dpmpar.f"
-      include "enorm.f"
-      include "fdjac1.f"
-      include "fdjac2.f"
-      include "lmpar.f"
-      include "qform.f"
-      include "qrfac.f"
-      include "qrsolv.f"
-      include "r1mpyq.f"
-      include "r1updt.f"
+#include "chkder.f"
+#include "dogleg.f"
+#include "enorm.f"
+#include "fdjac1.f"
+#include "fdjac2.f"
+#include "lmpar.f"
+#include "qform.f"
+#include "qrfac.f"
+#include "qrsolv.f"
+#include "r1mpyq.f"
+#include "r1updt.f"
 
 
 
