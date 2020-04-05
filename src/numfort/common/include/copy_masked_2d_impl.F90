@@ -68,6 +68,13 @@ else
     end if
 end if
 
+if (Nvalid == size(mask) .and. shape_equal (src, dst)) then
+    ! Shortcut: if everything is to be included and arrays are of equal size,
+    ! copy over data directly.
+    dst(:,:) = src
+    goto 100
+end if
+
 m = size(src, 1)
 n = size(src, 2)
 
@@ -84,7 +91,7 @@ if (ldim == 1) then
     end do
 
     do j = 1, n
-        dst(1:Nvalid,j) = src(idims, i)
+        dst(1:Nvalid,j) = src(idims, j)
     end do
 else
     ! Copy by column, skipping those that are marked as invalid
