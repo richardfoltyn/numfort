@@ -62,7 +62,7 @@ if (ldim == 1) then
         goto 100
     end if
 else
-    if (size(src, 1) /= size(src, 2) .or. size(dst, 2) < Nvalid) then
+    if (size(src, 1) /= size(dst, 1) .or. size(dst, 2) < Nvalid) then
         lstatus = NF_STATUS_INVALID_ARG
         goto 100
     end if
