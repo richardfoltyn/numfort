@@ -5,7 +5,9 @@ module numfort_stats
     use numfort_common_status
 
     use numfort_stats_common
-    use numfort_stats_core
+
+    use numfort_stats_core_real32
+    use numfort_stats_core_real64
 
     use numfort_stats_random
     use numfort_stats_dfrechet

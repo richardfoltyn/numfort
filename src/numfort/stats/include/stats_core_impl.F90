@@ -1,11 +1,8 @@
 ! ------------------------------------------------------------------------------
 ! Input checker for mean and std routines
 
-pure subroutine __APPEND(mean_std_check_input,__PREC) (nvars, nobs, out1, out2, dof, status)
+pure subroutine mean_std_check_input (nvars, nobs, out1, out2, dof, status)
     !*  Check user-supplied input (other than dim) for errors
-
-    integer, parameter :: PREC = __PREC
-
     integer, intent(in), optional :: nvars
         !!  Number of variables in 2d array
     integer, intent(in) :: nobs
@@ -41,11 +38,8 @@ end subroutine
 ! ------------------------------------------------------------------------------
 ! MEAN for 1d arrays
 
-pure subroutine __APPEND(mean_1d,__PREC) (x, m, dim, status)
+pure subroutine mean_1d (x, m, dim, status)
     !*  Compute mean of values in 1d array.
-
-    integer, parameter :: PREC = __PREC
-
     real (PREC), intent(in), dimension(:) :: x
         !!  Array containing numbers for which mean should be computed.
     real (PREC), intent(out) :: m
@@ -90,10 +84,8 @@ end subroutine
 ! ------------------------------------------------------------------------------
 ! MEAN routine for 2d input arrays
 
-pure subroutine __APPEND(mean_2d,__PREC) (x, m, dim, status)
+pure subroutine mean_2d (x, m, dim, status)
     !*  MEAN computes the mean of array elements along a dimension.
-
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:,:) :: x
         !*  Input data. Variables can either be stored column-wise (default)
         !   or row-wise. (see DIM argument)
@@ -156,11 +148,9 @@ end subroutine
 ! ------------------------------------------------------------------------------
 ! SD for 1d input arrays
 
-pure subroutine __APPEND(std_1d,__PREC) (x, s, m, dof, dim, status)
+pure subroutine std_1d (x, s, m, dof, dim, status)
     !*  Compute standard deviation (and optionally mean) for data given in
     !   1d array.
-
-    integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in), dimension(:) :: x
         !   Array containing numbers for which standard deviation should be
@@ -233,20 +223,15 @@ end subroutine
 ! ------------------------------------------------------------------------------
 ! SD for 2d input arrays
 
-pure subroutine __APPEND(std_2d,__PREC) (x, s, m, dof, dim, status)
+pure subroutine std_2d (x, s, m, dof, dim, status)
     !*  Compute standard deviation (and optionally) mean of data in 2d-array
     !   along the desired dimension.
-
-    integer, parameter :: PREC = __PREC
-
     real (PREC), intent(in), dimension(:,:) :: x
         !*  2d-array containing data for which standard deviation should be
         !   computed.
-
     real (PREC), intent(out), dimension(:) :: s
         !*  On exit, contains standard deviations along desired dimension.
         !   Array size must be sufficient to hold computed values.
-
     real (PREC), intent(out), dimension(:), optional :: m
         !*  If present, contains vector of means computed along desired dimension.
         !   Array size must be sufficient to hold computed values.
@@ -255,7 +240,6 @@ pure subroutine __APPEND(std_2d,__PREC) (x, s, m, dof, dim, status)
         !   standard deviation as sum of squared deviations divided by (N-dof).
     integer, intent(in), optional :: dim
         !*  If present, specifies dimension along which std/mean should be computed.
-
     type (status_t), intent(out), optional :: status
         !*  If present, returns NF_STATUS_OK on exit if operation was successful,
         !   and status > 0 if an error was encountered
@@ -332,14 +316,11 @@ end subroutine
 ! ------------------------------------------------------------------------------
 ! NORMALIZE implementation
 
-pure subroutine __APPEND(normalize_2d,__PREC) (x, m, s, dim, center, scale, &
+pure subroutine normalize_2d (x, m, s, dim, center, scale, &
         dof, status)
     !*  NORMALIZE centers and optionally scales input data
     !   such that the resulting array has zero mean and unity standard deviation
     !   along the specified dimension.
-
-    integer, parameter :: PREC = __PREC
-
     real (PREC), intent(inout), dimension(:,:) :: x
         !*  Data that should be normalized. Multiple 'variables' are supported
         !   and can be organized either in rows or columns (goverened by
@@ -431,11 +412,10 @@ end subroutine
 ! ------------------------------------------------------------------------------
 ! QUANTILE ROUTINES
 
-pure subroutine __APPEND(quantile_bins_check_input,__PREC) (x, pmf, q, pctl, &
+pure subroutine quantile_bins_check_input (x, pmf, q, pctl, &
         interp, status)
     !*  QUANTILE_BINS_CHECK_INPUT performs input validation for the
     !   QUANTILE_BINS routine.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(in), dimension(:) :: pmf
     real (PREC), intent(in), dimension(:) :: q
@@ -468,11 +448,10 @@ end subroutine
 
 
 
-pure subroutine __APPEND(quantile_discrete_check_input,__PREC) (x, pmf, q, &
+pure subroutine quantile_discrete_check_input (x, pmf, q, &
         pctl, status)
     !*  QUANTILE_DISCRETE_CHECK_INPUT performs input validation for the
     !   QUANTILE_DISCRETE routine.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:) :: x
     real (PREC), intent(in), dimension(:) :: pmf
     real (PREC), intent(in), dimension(:) :: q
@@ -496,9 +475,7 @@ end subroutine
 
 
 
-pure subroutine __APPEND(quantile_bins,__PREC) (x, pmf, rnk, q, interp, status)
-    integer, parameter :: PREC = __PREC
-
+pure subroutine quantile_bins (x, pmf, rnk, q, interp, status)
     real (PREC), intent(in), dimension(:), contiguous :: x
         !*  Array of bin edges (or bin midpoints) in increasing order
     real (PREC), intent(in), dimension(:), contiguous :: pmf
@@ -621,9 +598,7 @@ end subroutine
 
 
 
-subroutine __APPEND(quantile_discrete,__PREC) (x, pmf, rnk, q, sort, status)
-    integer, parameter :: PREC = __PREC
-
+subroutine quantile_discrete (x, pmf, rnk, q, sort, status)
     real (PREC), intent(in), dimension(:) :: x
         !*  Array containing state space of a discrete random variable.
     real (PREC), intent(in), dimension(:) :: pmf
@@ -702,10 +677,7 @@ end subroutine
 
 
 
-subroutine __APPEND(quantile_dispatch,__PREC) (x, pmf, rnk, q, &
-        interp, sort, status)
-    integer, parameter :: PREC = __PREC
-
+subroutine quantile_dispatch (x, pmf, rnk, q, interp, sort, status)
     real (PREC), intent(in), dimension(:), contiguous :: x
         !*  Array of bin edges (or bin midpoints) in increasing order
     real (PREC), intent(in), dimension(:), contiguous :: pmf
@@ -739,10 +711,7 @@ end subroutine
 
 
 
-subroutine __APPEND(quantile_dispatch_scalar,__PREC) (x, pmf, rnk, q, &
-        interp, sort, status)
-    integer, parameter :: PREC = __PREC
-
+subroutine quantile_dispatch_scalar (x, pmf, rnk, q, interp, sort, status)
     real (PREC), intent(in), dimension(:), contiguous :: x
         !*  Array of bin edges (or bin midpoints) in increasing order
     real (PREC), intent(in), dimension(:), contiguous :: pmf
@@ -775,8 +744,7 @@ end subroutine
 
 
 
-subroutine __APPEND(cov_check_input,__PREC) (x, cov, dim, dof, status)
-    integer, parameter :: PREC = __PREC
+subroutine cov_check_input (x, cov, dim, dof, status)
     real (PREC), intent(in), dimension(:,:) :: x
     real (PREC), intent(in), dimension(:,:) :: cov
     integer, intent(in), optional :: dim
@@ -811,16 +779,14 @@ end subroutine
 
 
 
-
-subroutine __APPEND(cov,__PREC) (x, cov, dim, dof, status)
+subroutine cov (x, vcv, dim, dof, status)
     !*  COV estimates the variance-covariance matrix for a given set of
     !   variables.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:,:), contiguous :: x
         !*  Array of input data. If DIM=1 (the default), it is assumed that
         !   each column contains a variable, while for DIM=2 each column
         !   contains one (multivariate) observation.
-    real (PREC), intent(out), dimension(:,:), contiguous :: cov
+    real (PREC), intent(out), dimension(:,:), contiguous :: vcv
         !*  Estimated variance-covariance matrix
     integer, intent(in), optional :: dim
         !*  Dimension along which covariances should be computed (default: dim=1
@@ -843,14 +809,14 @@ subroutine __APPEND(cov,__PREC) (x, cov, dim, dof, status)
 
     lstatus = NF_STATUS_OK
 
-    call cov_check_input (x, cov, dim, dof, lstatus)
+    call cov_check_input (x, vcv, dim, dof, lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
     shp = shape(x)
     nvars = shp(3-ldim)
     nobs = shp(ldim)
 
-    cov = 0.0
+    vcv = 0.0
     ! Covariance is zero in degenerate cases
     if (nobs < 2) goto 100
 
@@ -861,7 +827,7 @@ subroutine __APPEND(cov,__PREC) (x, cov, dim, dof, status)
 
     ! Compute outer product m x m' = E[X] * E[X']
     call BLAS_GER (m=nvars, n=nvars, alpha=1.0_PREC, x=m, incx=1, y=m, &
-        incy=1, a=cov, lda=nvars)
+        incy=1, a=vcv, lda=nvars)
 
     ! Note on DOF correction: Assume we are computing the sample
     ! Covariance as
@@ -878,12 +844,12 @@ subroutine __APPEND(cov,__PREC) (x, cov, dim, dof, status)
         ! X has shape [NOBS, NVARS], need to compute X'X
         call BLAS_GEMM (transa='T', transb='N', m=nvars, n=nvars, k=nobs, &
             alpha=alpha, a=x, lda=nobs, b=x, ldb=nobs, beta=beta, &
-            c=cov, ldc=nvars)
+            c=vcv, ldc=nvars)
     else
         ! X has shape [NVARS, NOBS], need to compute XX'
         call BLAS_GEMM (transa='N', transb='T', m=nvars, n=nvars, k=nobs, &
             alpha=alpha, a=x, lda=nvars, b=x, ldb=nvars, beta=beta, &
-            c=cov, ldc=nvars)
+            c=vcv, ldc=nvars)
     end if
 
 100 continue
@@ -894,11 +860,9 @@ end subroutine
 
 
 
-
-subroutine __APPEND(corrcoef,__PREC) (x, corr, dim, dof, status)
+subroutine corrcoef (x, corr, dim, dof, status)
     !*  CORRCOEF estimates the Pearson's correlation coefficient for a given
     !   set of vaiables.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:,:), contiguous :: x
         !*  Array of input data. If DIM=1 (the default), it is assumed that
         !   each column contains a variable, while for DIM=2 each column

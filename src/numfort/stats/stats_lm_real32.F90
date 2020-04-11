@@ -6,7 +6,7 @@ module numfort_stats_lm_real32
 
     use numfort_common
     use numfort_common_alloc
-    use numfort_stats_core, only: normalize, mean, std
+    use numfort_stats_core_real32, only: normalize, mean, std
     use numfort_stats_lm_common
 
     use blas_interfaces, only: BLAS_DOT => DOT, BLAS_GEMV => GEMV, BLAS_GEMM => GEMM

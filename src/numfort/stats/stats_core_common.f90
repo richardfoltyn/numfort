@@ -1,32 +1,14 @@
 
-#include <numfort.h>
 
-module numfort_stats_core
 
-    use, intrinsic :: iso_fortran_env
+module numfort_stats_core_common
 
-    use numfort_arrays, only: argsort
-    use numfort_common
-    use numfort_interpolate
 
-    use blas_interfaces, only: BLAS_GER => GER, BLAS_GEMM => GEMM
+    use numfort_common_strings
+    use numfort_common_kinds
+    use numfort_common_status
 
     implicit none
-    private
-
-    public :: mean
-    public :: std
-    public :: cov
-    public :: corrcoef
-    public :: normalize
-    public :: quantile
-
-
-#include <numfort_real32.h>
-#include "stats_core_spec.F90"
-
-#include <numfort_real64.h>
-#include "stats_core_spec.F90"
 
     integer (NF_ENUM_KIND), parameter :: NF_STATS_QUANTILE_LINEAR = 1
     integer (NF_ENUM_KIND), parameter :: NF_STATS_QUANTILE_LOWER = 2
@@ -35,6 +17,7 @@ module numfort_stats_core
     integer (NF_ENUM_KIND), parameter :: NF_STATS_QUANTILE_MIDPOINT = 16
 
     contains
+
 
 pure subroutine mean_std_init (shp, dim, ldim, nvars, nobs, status)
     !*  MEAN_STD_INIT sets the number of variables and number of observations
@@ -70,6 +53,7 @@ pure subroutine mean_std_init (shp, dim, ldim, nvars, nobs, status)
 end subroutine
 
 
+
 pure function quantile_interp_to_enum (interp) result(res)
     !*  PERCENTILE_INTEPR_TO_ENUM converts the character-type interpolation
     !   method to its integer representation.
@@ -97,12 +81,5 @@ pure function quantile_interp_to_enum (interp) result(res)
     end select
 end function
 
-
-
-#include <numfort_real32.h>
-#include "stats_core_impl.F90"
-
-#include <numfort_real64.h>
-#include "stats_core_impl.F90"
 
 end module
