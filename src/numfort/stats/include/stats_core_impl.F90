@@ -40,7 +40,7 @@ end subroutine
 
 pure subroutine mean_1d (x, m, dim, status)
     !*  Compute mean of values in 1d array.
-    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: x
         !!  Array containing numbers for which mean should be computed.
     real (PREC), intent(out) :: m
         !!  Computed mean.
@@ -86,10 +86,10 @@ end subroutine
 
 pure subroutine mean_2d (x, m, dim, status)
     !*  MEAN computes the mean of array elements along a dimension.
-    real (PREC), intent(in), dimension(:,:) :: x
+    real (PREC), intent(in), dimension(:,:), contiguous :: x
         !*  Input data. Variables can either be stored column-wise (default)
         !   or row-wise. (see DIM argument)
-    real (PREC), intent(out), dimension(:) :: m
+    real (PREC), intent(out), dimension(:), contiguous :: m
         !*  Array of means, needs to be at least as large as the number of
         !   variables.
     integer, intent(in), optional :: dim
@@ -152,7 +152,7 @@ pure subroutine std_1d (x, s, m, dof, dim, status)
     !*  Compute standard deviation (and optionally mean) for data given in
     !   1d array.
 
-    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: x
         !   Array containing numbers for which standard deviation should be
         !   computed
     real (PREC), intent(out) :: s
@@ -226,13 +226,13 @@ end subroutine
 pure subroutine std_2d (x, s, m, dof, dim, status)
     !*  Compute standard deviation (and optionally) mean of data in 2d-array
     !   along the desired dimension.
-    real (PREC), intent(in), dimension(:,:) :: x
+    real (PREC), intent(in), dimension(:,:), contiguous :: x
         !*  2d-array containing data for which standard deviation should be
         !   computed.
-    real (PREC), intent(out), dimension(:) :: s
+    real (PREC), intent(out), dimension(:), contiguous :: s
         !*  On exit, contains standard deviations along desired dimension.
         !   Array size must be sufficient to hold computed values.
-    real (PREC), intent(out), dimension(:), optional :: m
+    real (PREC), intent(out), dimension(:), contiguous, optional :: m
         !*  If present, contains vector of means computed along desired dimension.
         !   Array size must be sufficient to hold computed values.
     integer, intent(in), optional :: dof
@@ -321,11 +321,11 @@ pure subroutine normalize_2d (x, m, s, dim, center, scale, &
     !*  NORMALIZE centers and optionally scales input data
     !   such that the resulting array has zero mean and unity standard deviation
     !   along the specified dimension.
-    real (PREC), intent(inout), dimension(:,:) :: x
+    real (PREC), intent(inout), dimension(:,:), contiguous :: x
         !*  Data that should be normalized. Multiple 'variables' are supported
         !   and can be organized either in rows or columns (goverened by
         !   the dim argument)
-    real (PREC), intent(out), dimension(:), optional :: m, s
+    real (PREC), intent(out), dimension(:), contiguous, optional :: m, s
         !*  If present, contain the per-variable means and standard deviations
         !   on exit. Arrays need to be at least as large as the number of variables.
     integer, intent(in), optional :: dim
@@ -599,14 +599,14 @@ end subroutine
 
 
 subroutine quantile_discrete (x, pmf, rnk, q, sort, status)
-    real (PREC), intent(in), dimension(:) :: x
+    real (PREC), intent(in), dimension(:), contiguous :: x
         !*  Array containing state space of a discrete random variable.
-    real (PREC), intent(in), dimension(:) :: pmf
+    real (PREC), intent(in), dimension(:), contiguous :: pmf
         !*  PMF associated with bins defined by X
-    real (PREC), intent(in), dimension(:) :: rnk
+    real (PREC), intent(in), dimension(:), contiguous :: rnk
         !*  Array of quantiles "ranks" to compute which must be between
         !   0 and 1 inclusive.
-    real (PREC), intent(out), dimension(:) :: q
+    real (PREC), intent(out), dimension(:), contiguous :: q
         !*  Output array storing (interpolated) quantiles corresponding to RNK
     logical, intent(in), optional :: sort
     type (status_t), intent(out), optional :: status
