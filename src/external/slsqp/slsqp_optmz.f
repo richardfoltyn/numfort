@@ -563,6 +563,16 @@ C   L*D*L'*S
           CALL dscal(n, dat%h4, u, 1)
           CALL daxpy(n, one-dat%h4, v, 1, u, 1)
       ENDIF
+      IF (dat%h1 .EQ. 0.0 .OR. dat%h2 .EQ. 0.0) THEN
+C         RF: Apply bug fix from Scipy's version, GH 8b9ef42
+C         Singular update: reset hessian.  The code jumps to 255 if too
+C         many resets are encountered, expecting h3 to store current
+C         constraint violation. But h3 has been overwritten at this
+C         point, so set it to nan to avoid spurious exit.
+C         RF: Scipy code sets h3 to inf, despite the comment.
+          dat%h3 = IEEE_VALUE (0.0_PREC, IEEE_POSITIVE_INF)
+          GO TO 110
+      END IF
       CALL ldl(n, l, u, +one/dat%h1, v)
       CALL ldl(n, l, v, -one/dat%h2, u)
 
