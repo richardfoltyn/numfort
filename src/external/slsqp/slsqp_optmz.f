@@ -504,6 +504,16 @@ C   CHECK CONVERGENCE
 C   CHECK relaxed CONVERGENCE in case of positive directional derivative
 
   255 CONTINUE
+C     RF: Apply Scipy patch, GH 0f6ad3a
+      dat%h3 = ZERO
+      DO 256 j=1,m
+         IF (j.LE.meq) THEN
+             dat%h1 = c(j)
+         ELSE
+             dat%h1 = ZERO
+         ENDIF
+         dat%h3 = dat%h3 + MAX(-c(j),dat%h1)
+  256 CONTINUE
       IF ((ABS(f-dat%f0).LT.dat%tol .OR. dnrm2(n,s,1).LT.dat%tol)
      *      .AND. dat%h3.LT.dat%tol .AND. .NOT. badlin)
      *   THEN
@@ -565,12 +575,8 @@ C   L*D*L'*S
       ENDIF
       IF (dat%h1 .EQ. 0.0 .OR. dat%h2 .EQ. 0.0) THEN
 C         RF: Apply bug fix from Scipy's version, GH 8b9ef42
-C         Singular update: reset hessian.  The code jumps to 255 if too
-C         many resets are encountered, expecting h3 to store current
-C         constraint violation. But h3 has been overwritten at this
-C         point, so set it to nan to avoid spurious exit.
-C         RF: Scipy code sets h3 to inf, despite the comment.
-          dat%h3 = IEEE_VALUE (0.0_PREC, IEEE_POSITIVE_INF)
+C         RF: Apply but fix from Scipy's version, GH 0f6ad3a
+C         Singular update: reset hessian.
           GO TO 110
       END IF
       CALL ldl(n, l, u, +one/dat%h1, v)
