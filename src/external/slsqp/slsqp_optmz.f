@@ -419,8 +419,9 @@ C   UPDATE MULTIPLIERS FOR L1-TEST
 C   CHECK CONVERGENCE
 
       mode = 0
+C     RF: Apply Scipy GH 99b0c50, check that f is not NaN
       IF (dat%h1.LT.acc .AND. dat%h2.LT.acc .AND.
-     *      .NOT. badlin) GO TO 330
+     *      .NOT. badlin .AND. f .EQ. f) GO TO 330
       dat%h1 = ZERO
       DO 180 j=1,m
          IF (j.LE.meq) THEN
@@ -492,8 +493,9 @@ C   CHECK CONVERGENCE
          ENDIF
          dat%h3 = dat%h3 + MAX(-c(j),dat%h1)
   250 CONTINUE
+C     RF: Apply Scipy GH 99b0c50, check that f is not NaN
       IF ((ABS(f-dat%f0).LT.acc .OR. dnrm2(n,s,1).LT.acc)
-     *      .AND. dat%h3.LT.acc .AND. .NOT. badlin)
+     *      .AND. dat%h3.LT.acc .AND. .NOT. badlin .AND. f .EQ. f)
      *   THEN
             mode = 0
          ELSE
@@ -514,8 +516,9 @@ C     RF: Apply Scipy patch, GH 0f6ad3a
          ENDIF
          dat%h3 = dat%h3 + MAX(-c(j),dat%h1)
   256 CONTINUE
+C     RF: Apply Scipy GH 99b0c50, check that f is not NaN
       IF ((ABS(f-dat%f0).LT.dat%tol .OR. dnrm2(n,s,1).LT.dat%tol)
-     *      .AND. dat%h3.LT.dat%tol .AND. .NOT. badlin)
+     *      .AND. dat%h3.LT.dat%tol .AND. .NOT. badlin .AND. f .EQ. f)
      *   THEN
             mode = 0
          ELSE
