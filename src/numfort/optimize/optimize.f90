@@ -43,6 +43,8 @@ module numfort_optimize
 
     use numfort_optimize_slsqp_real64
 
+    use numfort_optimize_slsqp_ng_real64
+
     use numfort_optimize_solver_map
 
     implicit none

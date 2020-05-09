@@ -223,8 +223,8 @@ C       declared with the SAVE attribute in LINMIN.
       integer, intent(in) :: m, meq, la, n, l_w, l_jw
       integer, intent(inout) :: iter, imode
       integer, intent(inout) :: jw(l_jw)
-      real (PREC), intent(in) :: xl(n), xu(n)
-      real (PREC), intent(in) :: a(la,n+1), c(la), f, g(n+1)
+      real (PREC), intent(inout) :: xl(n), xu(n)
+      real (PREC), intent(inout) :: a(la,n+1), c(la), f, g(n+1)
       real (PREC), intent(inout) :: acc
       real (PREC), intent(inout) :: x(n), w(l_w)
 
@@ -254,11 +254,9 @@ C   CHECK LENGTH OF WORKING ARRAYS
 C   PREPARE DATA FOR CALLING SQPBDY  -  INITIAL ADDRESSES IN W
 
       im = 1
-      il = im + MAX(1,m)
       il = im + la
       ix = il + n1*n/2 + 1
       ir = ix + n
-      is = ir + n + n + MAX(1,m)
       is = ir + n + n + la
       iu = is + n1
       iv = iu + n1

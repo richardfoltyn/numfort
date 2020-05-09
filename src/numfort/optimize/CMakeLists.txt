@@ -20,6 +20,8 @@ set(SOURCE_FILES
     minimize_simplex_real32.F90
     minimize_simplex_real64.F90
     minimize_slsqp_real64.f90
+    minimize_slsqp_ng_common.f90
+    minimize_slsqp_ng_real64.F90
     minpack_real64.F90
     root_bisect_real32.F90
     root_bisect_real64.F90
