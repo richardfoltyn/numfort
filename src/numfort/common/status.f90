@@ -59,7 +59,7 @@ module numfort_common_status
     end interface
 
     interface operator (.in.)
-        module procedure operator_in_int_status
+        module procedure operator_in_int_status, operator_in_status_int_list
     end interface
 
     interface char
@@ -218,6 +218,19 @@ elemental function operator_in_int_status (lhs, rhs) result(res)
     type (status_t), intent(in) :: rhs
     logical :: res
     res = (iand(lhs, rhs%code) == lhs)
+end function
+
+function operator_in_status_int_list (lhs, rhs) result(res)
+    type (status_t), intent(in) :: lhs
+    integer (NF_ENUM_KIND), intent(in), dimension(:) :: rhs
+    logical :: res
+
+    integer :: i
+
+    res = .false.
+    do i = 1, size(rhs)
+        res = res .or. (iand(rhs(i), lhs%code) == rhs(i))
+    end do
 end function
 
 
