@@ -8,6 +8,7 @@ module numfort_common_input_checks
 
     private
 
+    public :: check_cond
     public :: check_positive
     public :: check_nonneg
     public :: check_nonzero
@@ -32,6 +33,31 @@ module numfort_common_input_checks
     end interface
 
 contains
+
+
+! ------------------------------------------------------------------------------
+! Check generic logical condition
+
+pure subroutine check_cond (cond, prefix, lmsg, status, msg)
+    logical, intent(in) :: cond
+    character (*), intent(in) :: prefix
+    character (*), intent(in) :: lmsg
+    type (status_t), intent(out) :: status
+    character (*), intent(out), optional :: msg
+
+    status = NF_STATUS_OK
+    if (.not. cond) then
+        status = NF_STATUS_INVALID_ARG
+        if (present(msg)) then
+            if (len_trim(prefix) > 0) then
+                msg = prefix // ': ' // lmsg
+            else
+                msg = lmsg
+            end if
+        end if
+    end if
+end subroutine
+
 
 ! ------------------------------------------------------------------------------
 ! CHECK_POSITIVE routines
