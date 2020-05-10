@@ -16,6 +16,7 @@ module lapack_interfaces
     public :: GESV
     public :: GESVD
     public :: SYEVD
+    public :: LARTGP
 
     interface GETRF
         procedure sgetrf, dgetrf, cgetrf, zgetrf
@@ -54,7 +55,11 @@ module lapack_interfaces
     interface SYEVD
         procedure SSYEVD, DSYEVD
     end interface
-    
+
+    interface LARTGP
+        procedure SLARTGP, DLARTGP
+    end interface
+
     interface
         subroutine sgetrf (m, n, a, lda, ipiv, info)
             import SP
@@ -329,5 +334,18 @@ module lapack_interfaces
             real (DP)               :: a(lda,*), w(*), work(*)
         end subroutine
     end interface
+
+    interface
+        subroutine SLARTGP (f, g, cs, sn, r)
+            real :: f, g
+            real :: cs, sn, r
+        end subroutine
+
+        subroutine DLARTGP (f, g, cs, sn, r)
+            double precision :: f, g
+            double precision :: cs, sn, r
+        end subroutine
+    end interface
+
 
 end module
