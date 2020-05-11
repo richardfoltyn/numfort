@@ -1060,10 +1060,9 @@ C               3: ITERATION COUNT EXCEEDED BY NNLS
 C               4: INEQUALITY CONSTRAINTS INCOMPATIBLE
 
       real (PREC) g,h,x,xnorm,w,u,v,
-     .                 fac,rnorm,diff
+     .                 fac,rnorm
       INTEGER          INDEX,i,IF,iw,iwdual,iy,iz,j,m,mg,mode,n,n1
       DIMENSION        g(mg,n),h(m),x(n),w(*),INDEX(m)
-      diff(u,v)=       u-v
 
       mode=2
       IF(n.LE.0)                    GOTO 50
@@ -1167,13 +1166,12 @@ C            3    ITERATION COUNT EXCEEDED, MORE THAN 3*N ITERATIONS.
       INTEGER          i,ii,ip,iter,itmax,iz,izmax,iz1,iz2,j,jj,jz,
      *                 k,l,m,mda,mode,n,npp1,nsetp,INDEX(n)
 
-      real (PREC) a(mda,n),b(m),x(n),w(n),z(m),asave,diff,
+      real (PREC) a(mda,n),b(m),x(n),w(n),z(m),asave,
      *                 wmax,alpha,
      *                 c,s,t,u,v,up,rnorm,unorm
 
-      diff(u,v)=       u-v
-
       real (PREC), parameter :: factor = 1.0d-2
+
 
 c     revised          Dieter Kraft, March 1983
 
@@ -1350,9 +1348,8 @@ C                      RECORDING PERMUTATION INDICES OF COLUMN VECTORS
       INTEGER          i,j,jb,k,kp1,krank,l,ldiag,lmax,m,
      .                 mda,mdb,n,nb,ip(n)
       real (PREC) a(mda,n),b(mdb,nb),h(n),g(n),rnorm(nb),
-     .                 tau,hmax,diff,tmp,u,v
+     .                 tau,hmax,tmp,u,v
       real (PREC), parameter :: factor = 1.0d-3
-      diff(u,v)=       u-v
 
       k=0
       ldiag=MIN(m,n)
@@ -1868,3 +1865,11 @@ C        Note that xl(i) and xu(i) may be NaN to indicate no bound
          end if
       end do
       end subroutine bound
+
+
+      function diff (u, v) result(res)
+        real (PREC), intent(in) :: u, v
+        real (PREC) :: res
+
+        res = u - v
+      end function
