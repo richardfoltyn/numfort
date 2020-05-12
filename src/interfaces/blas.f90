@@ -14,8 +14,9 @@ module blas_interfaces
     public :: AXPY
     public :: COPY
     public :: DOT
+    public :: NRM2
     public :: SCAL
-    
+
     ! Exported BLAS 2 routines
     public :: GEMV
     public :: GER
@@ -34,7 +35,11 @@ module blas_interfaces
     interface DOT
         procedure SDOT, DDOT
     end interface
-    
+
+    interface NRM2
+        procedure SNRM2, DNRM2
+    end interface
+
     interface SCAL
         procedure SSCAL, DSCAL, CSCAL, ZSCAL
     end interface
@@ -241,6 +246,20 @@ module blas_interfaces
             complex (COMPLEX_DP)    :: a
             complex (COMPLEX_DP)    :: x(*), y(*)
         end subroutine
+    end interface
+
+    interface
+        function DNRM2 (n, x, incx)
+            integer :: n, incx
+            double precision :: x(*)
+            double precision :: DNRM2
+        end function
+
+        function SNRM2 (n, x, incx)
+            integer :: n, incx
+            real :: x(*)
+            real :: SNRM2
+        end function
     end interface
     
     ! -------------------------------------------------------------------------- 
