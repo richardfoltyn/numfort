@@ -164,7 +164,7 @@ subroutine minimize_slsqp_impl (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     integer :: nrwrk, niwrk, ioffset
     integer, dimension(2) :: shp
 
-    integer :: n, n1, mineq, mode, lmeq, lm, mieq, k, lda, lw
+    integer :: n, n1, mineq, imode, lmeq, lm, mieq, k, lda, lw
     logical :: has_eq, has_ieq
     real (PREC) :: fx, ltol
     type (status_t) :: status
@@ -275,7 +275,7 @@ subroutine minimize_slsqp_impl (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     call slsqp_clip_init (x, ptr_xlb, ptr_xub)
 
     ! initial value for mode parameter
-    mode = 0
+    imode = 0
 
     ! SLSQP implementation expects gradient array to be of size (n+1)
     call workspace_get_ptr (ptr_work, n+1, ptr_g, status)
@@ -348,7 +348,7 @@ subroutine minimize_slsqp_impl (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
     iter = lmaxiter
 
     do while (.true.)
-        if (mode == MODE_INIT .or. mode == MODE_EVAL_FUNCS) then
+        if (imode == MODE_INIT .or. imode == MODE_EVAL_FUNCS) then
             ! Compute objective function fx
             call dispatch (fobj, x, fx)
 
@@ -363,7 +363,7 @@ subroutine minimize_slsqp_impl (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
             end if
         end if
 
-        if (mode == MODE_INIT .or. mode == MODE_EVAL_JAC) then
+        if (imode == MODE_INIT .or. imode == MODE_EVAL_JAC) then
             ! Compute gradient of objective function
             call dispatch_jac (fobj, x, fpx=ptr_g(1:n))
 
@@ -387,15 +387,15 @@ subroutine minimize_slsqp_impl (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
 
         ! call original SLSQP routine
         call slsqp_orig (dat, dat_lm, lm, lmeq, lda, n, x, ptr_xlb, ptr_xub, fx, &
-            ptr_c, ptr_g, ptr_a, acc, iter, mode, ptr_w, lw, &
+            ptr_c, ptr_g, ptr_a, acc, iter, imode, ptr_w, lw, &
             ptr_work%iwrk, mineq)
 
         ! Exit in all cases when there is an error or convergence was achieved.
-        if (mode /= MODE_EVAL_FUNCS .and. mode /= MODE_EVAL_JAC) then
+        if (imode /= MODE_EVAL_FUNCS .and. imode /= MODE_EVAL_JAC) then
             ! Update status code and status message on termination
-            status = SLSQP_STATUS_MAP(mode)
-            status%code_orig = mode
-            call result_update (ptr_res, msg=SLSQP_MSG_MAP(mode))
+            status = SLSQP_STATUS_MAP(imode)
+            status%code_orig = imode
+            call result_update (ptr_res, msg=SLSQP_MSG_MAP(imode))
             goto 100
         end if
     end do

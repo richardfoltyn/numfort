@@ -35,7 +35,7 @@ C
 ************************************************************************
 
       SUBROUTINE slsqp (dat, dat_lm, m, meq, la, n, x, xl, xu, f, c, g,
-     *                  a, acc, iter, mode, w, l_w, jw, l_jw)
+     *                  a, acc, iter, imode, w, l_w, jw, l_jw)
 
 C   SLSQP       S EQUENTIAL  L EAST  SQ UARES  P ROGRAMMING
 C            TO SOLVE GENERAL NONLINEAR OPTIMIZATION PROBLEMS
@@ -221,7 +221,7 @@ C       Container object used to store variables that should have been
 C       declared with the SAVE attribute in LINMIN.
 
       integer, intent(in) :: m, meq, la, n, l_w, l_jw
-      integer, intent(inout) :: iter, mode
+      integer, intent(inout) :: iter, imode
       integer, intent(inout) :: jw(l_jw)
       real (PREC), intent(in) :: xl(n), xu(n)
       real (PREC), intent(in) :: a(la,n+1), c(la), f, g(n+1)
@@ -246,8 +246,8 @@ C   CHECK LENGTH OF WORKING ARRAYS
      .n1*n/2 + 2*m + 3*n + 4*n1 + 1
       im = MAX(mineq, n1-meq)
       IF (l_w .LT. il .OR. l_jw .LT. im) THEN
-          mode = 1000*MAX(10,il)
-          mode = mode+MAX(10,im)
+          imode = 1000*MAX(10,il)
+          imode = imode+MAX(10,im)
           RETURN
       ENDIF
 
@@ -265,14 +265,14 @@ C   PREPARE DATA FOR CALLING SQPBDY  -  INITIAL ADDRESSES IN W
       iw = iv + n1
 
       CALL slsqpb  (dat, dat_lm, m, meq, la, n, x, xl, xu, f, c, g, a,
-     *  acc, iter, mode, w(ir), w(il), w(ix), w(im), w(is), w(iu),
+     *  acc, iter, imode, w(ir), w(il), w(ix), w(im), w(is), w(iu),
      *  w(iv), w(iw), jw)
 
       END
 
       SUBROUTINE slsqpb (dat, dat_lm, m, meq, la, n, x, xl, xu, f, c,
      *                   g, a, acc,
-     *                   iter, mode, r, l, x0, mu, s, u, v, w, iw)
+     *                   iter, imode, r, l, x0, mu, s, u, v, w, iw)
 
 C   NONLINEAR PROGRAMMING BY SOLVING SEQUENTIALLY QUADRATIC PROGRAMS
 
@@ -282,7 +282,7 @@ C                      BODY SUBROUTINE FOR SLSQP
       type (slsqp_data), intent(inout) :: dat
       type (linmin_data), intent(inout) :: dat_lm
 
-      INTEGER          iw(*), i, iter, k, j, la, m, meq, mode, n
+      INTEGER          iw(*), i, iter, k, j, la, m, meq, imode, n
 
       real (PREC) a(la,n+1), c(la), g(n+1), l((n+1)*(n+2)/2),
      *                 mu(la), r(m+n+n+2), s(n+1), u(n+1), v(n+1), w(*),
@@ -301,7 +301,7 @@ C     The badlin flag keeps track whether the SQP problem on the current
 C     iteration was inconsistent or not.
       badlin = .FALSE.
 
-      IF (mode) 260, 100, 220
+      IF (imode) 260, 100, 220
 
   100 dat%itermx = iter
       IF (acc.GE.ZERO) THEN
@@ -336,7 +336,7 @@ C   RESET BFGS MATRIX
 C   MAIN ITERATION : SEARCH DIRECTION, STEPLENGTH, LDL'-UPDATE
 
   130 iter = iter + 1
-      mode = 9
+      imode = 9
       IF (iter.GT.dat%itermx) GO TO 330
 
 C   SEARCH DIRECTION AS SOLUTION OF QP - SUBPROBLEM
@@ -347,7 +347,7 @@ C   SEARCH DIRECTION AS SOLUTION OF QP - SUBPROBLEM
       CALL daxpy(n, -one, x, 1, v, 1)
       dat%h4 = one
       CALL lsq (m, meq, n, dat%n3, la, l, g, a, c, u, v, s, r, w, iw,
-     *   mode)
+     *   imode)
 
 C   AUGMENTED PROBLEM FOR INCONSISTENT LINEARIZATION
 C
@@ -356,12 +356,12 @@ C   disallow termination with convergence on this iteration,
 C   even if the augmented problem was solved.
 
       badlin = .FALSE.
-      IF (mode.EQ.6) THEN
+      IF (imode.EQ.6) THEN
           IF (n.EQ.meq) THEN
-              mode = 4
+              imode = 4
           ENDIF
       ENDIF
-      IF (mode.EQ.4) THEN
+      IF (imode.EQ.4) THEN
           badlin = .TRUE.
           DO 140 j=1,m
              IF (j.LE.meq) THEN
@@ -380,17 +380,17 @@ C   even if the augmented problem was solved.
           v(dat%n1) = one
           dat%incons = 0
   150     CALL lsq (m, meq, dat%n1, dat%n3, la, l, g, a, c, u, v, s, r,
-     *              w, iw, mode)
+     *              w, iw, imode)
           dat%h4 = one - s(dat%n1)
-          IF (mode.EQ.4) THEN
+          IF (imode.EQ.4) THEN
               l(dat%n3) = ten*l(dat%n3)
               dat%incons = dat%incons + 1
               IF (dat%incons.GT.5) GO TO 330
               GOTO 150
-          ELSE IF (mode.NE.1) THEN
+          ELSE IF (imode.NE.1) THEN
               GOTO 330
           ENDIF
-      ELSE IF (mode.NE.1) THEN
+      ELSE IF (imode.NE.1) THEN
           GOTO 330
       ENDIF
 
@@ -418,7 +418,7 @@ C   UPDATE MULTIPLIERS FOR L1-TEST
 
 C   CHECK CONVERGENCE
 
-      mode = 0
+      imode = 0
 C     RF: Apply Scipy GH 99b0c50, check that f is not NaN
       IF (dat%h1.LT.acc .AND. dat%h2.LT.acc .AND.
      *      .NOT. badlin .AND. f .EQ. f) GO TO 330
@@ -433,7 +433,7 @@ C     RF: Apply Scipy GH 99b0c50, check that f is not NaN
   180 CONTINUE
       dat%t0 = f + dat%h1
       dat%h3 = dat%gs - dat%h1*dat%h4
-      mode = 8
+      imode = 8
       IF (dat%h3.GE.ZERO) GO TO 110
 
 C   LINE SEARCH WITH AN L1-TESTFUNCTION
@@ -449,7 +449,7 @@ C   INEXACT LINESEARCH
           CALL dscal(n, dat%alpha, s, 1)
           CALL dcopy(n, x0, 1, x, 1)
           CALL daxpy(n, one, s, 1, x, 1)
-          mode = 1
+          imode = 1
           GO TO 330
   200         IF (dat%h1.LE.dat%h3/ten .OR. dat%line.GT.10) GO TO 240
               dat%alpha = MAX(dat%h3/(two*(dat%h3-dat%h1)),alfmin)
@@ -462,7 +462,7 @@ C   EXACT LINESEARCH
      *                 dat%alpha)
           CALL dcopy(n, x0, 1, x, 1)
           CALL daxpy(n, dat%alpha, s, 1, x, 1)
-          mode = 1
+          imode = 1
           GOTO 330
       ENDIF
       CALL dscal(n, dat%alpha, s, 1)
@@ -497,9 +497,9 @@ C     RF: Apply Scipy GH 99b0c50, check that f is not NaN
       IF ((ABS(f-dat%f0).LT.acc .OR. dnrm2(n,s,1).LT.acc)
      *      .AND. dat%h3.LT.acc .AND. .NOT. badlin .AND. f .EQ. f)
      *   THEN
-            mode = 0
+            imode = 0
          ELSE
-            mode = -1
+            imode = -1
          ENDIF
       GO TO 330
 
@@ -520,9 +520,9 @@ C     RF: Apply Scipy GH 99b0c50, check that f is not NaN
       IF ((ABS(f-dat%f0).LT.dat%tol .OR. dnrm2(n,s,1).LT.dat%tol)
      *      .AND. dat%h3.LT.dat%tol .AND. .NOT. badlin .AND. f .EQ. f)
      *   THEN
-            mode = 0
+            imode = 0
          ELSE
-            mode = 8
+            imode = 8
          ENDIF
       GO TO 330
 
@@ -594,7 +594,7 @@ C   END OF SLSQPB
   330 END
 
 
-      SUBROUTINE lsq(m,meq,n,nl,la,l,g,a,b,xl,xu,x,y,w,jw,mode)
+      SUBROUTINE lsq(m,meq,n,nl,la,l,g,a,b,xl,xu,x,y,w,jw,imode)
 
 C   MINIMIZE with respect to X
 
@@ -640,8 +640,8 @@ c     revised                        march 1989
       real (PREC) l,g,a,b,w,xl,xu,x,y,
      .                 diag,xnorm
 
-      INTEGER          jw(*),i,ic,id,ie,IF,ig,ih,il,ip,iw,
-     .     i1,i2,i3,i4,la,m,meq,mineq,mode,m1,n,nl,n1,n2,n3,
+      INTEGER          jw(*),i,ic,id,ie,jf,ig,ih,il,ip,iw,
+     .     i1,i2,i3,i4,la,m,meq,mineq,imode,m1,n,nl,n1,n2,n3,
      .     nancnt,j
 
       DIMENSION        a(la,n), b(la), g(n), l(nl),
@@ -674,7 +674,7 @@ C  RECOVER MATRIX E AND VECTOR F FROM L AND G
       i3 = 1
       i4 = 1
       ie = 1
-      IF = n*n+1
+      jf = n*n+1
       DO 10 i=1,n3
          i1 = n1-i
          diag = SQRT (l(i2))
@@ -683,7 +683,7 @@ C  RECOVER MATRIX E AND VECTOR F FROM L AND G
          CALL dcopy (i1-n2, l(i2), 1, w(i3), n)
          CALL dscal (i1-n2,     diag, w(i3), n)
          w(i3) = diag
-         w(IF-1+i) = (g(i) - ddot (i-1, w(i4), 1, w(IF), 1))/diag
+         w(jf-1+i) = (g(i) - ddot (i-1, w(i4), 1, w(jf), 1))/diag
          i2 = i2 + i1 - n2
          i3 = i3 + n1
          i4 = i4 + n
@@ -692,11 +692,11 @@ C  RECOVER MATRIX E AND VECTOR F FROM L AND G
           w(i3) = l(nl)
           w(i4) = ZERO
           CALL dcopy (n3, w(i4), 0, w(i4), 1)
-          w(IF-1+n) = ZERO
+          w(jf-1+n) = ZERO
       ENDIF
-      CALL dscal (n, - one, w(IF), 1)
+      CALL dscal (n, - one, w(jf), 1)
 
-      ic = IF + n
+      ic = jf + n
       id = ic + meq*n
 
       IF (meq .GT. 0) THEN
@@ -778,10 +778,10 @@ C  NaN value indicates no bound
          end if
  50   CONTINUE
 
-      CALL lsei (w(ic), w(id), w(ie), w(IF), w(ig), w(ih), MAX(1,meq),
-     .           meq, n, n, m1, m1-nancnt, n, x, xnorm, w(iw), jw, mode)
+      CALL lsei (w(ic), w(id), w(ie), w(jf), w(ig), w(ih), MAX(1,meq),
+     .         meq, n, n, m1, m1-nancnt, n, x, xnorm, w(iw), jw, imode)
 
-      IF (mode .EQ. 1) THEN
+      IF (imode .EQ. 1) THEN
 
 c   restore Lagrange multipliers (only for user-defined variables)
 
@@ -805,7 +805,7 @@ C   END OF SUBROUTINE LSQ
       END
 
 
-      SUBROUTINE lsei(c,d,e,f,g,h,lc,mc,LE,me,lg,mg,n,x,xnrm,w,jw,mode)
+      SUBROUTINE lsei(c,d,e,f,g,h,lc,mc,LE,me,lg,mg,n,x,xnrm,w,jw,imode)
 
 C     FOR MODE=1, THE SUBROUTINE RETURNS THE SOLUTION X OF
 C     EQUALITY & INEQUALITY CONSTRAINED LEAST SQUARES PROBLEM LSEI :
@@ -849,8 +849,8 @@ C               7: RANK DEFECT IN HFTI
 C     18.5.1981, DIETER KRAFT, DFVLR OBERPFAFFENHOFEN
 C     20.3.1987, DIETER KRAFT, DFVLR OBERPFAFFENHOFEN
 
-      INTEGER          jw(*),i,ie,IF,ig,iw,j,k,krank,l,lc,LE,lg,
-     .                 mc,mc1,me,mg,mode,n
+      INTEGER          jw(*),i,ie,jf,ig,iw,j,k,krank,l,lc,LE,lg,
+     .                 mc,mc1,me,mg,imode,n
       real (PREC) c(lc,n),e(LE,n),g(lg,n),d(lc),f(LE),h(lg),x(n),
      .                 w(*),t,xnrm
 
@@ -859,14 +859,14 @@ C       fix a compile error with gfortran.)
       real (PREC) :: xnrm1(1)
 
 
-      mode=2
+      imode=2
       IF(mc.GT.n)                      GOTO 75
       l=n-mc
       mc1=mc+1
       iw=(l+1)*(mg+2)+2*mg+mc
       ie=iw+mc+1
-      IF=ie+me*l
-      ig=IF+me
+      jf=ie+me*l
+      ig=jf+me
 
 C  TRIANGULARIZE C AND APPLY FACTORS TO E AND G
 
@@ -878,19 +878,19 @@ C  TRIANGULARIZE C AND APPLY FACTORS TO E AND G
 
 C  SOLVE C*X=D AND MODIFY F
 
-      mode=6
+      imode=6
       DO 15 i=1,mc
           IF(ABS(c(i,i)).LT.epmach)    GOTO 75
           x(i)=(d(i)-ddot(i-1,c(i,1),lc,x,1))/c(i,i)
    15 CONTINUE
-      mode=1
+      imode=1
       w(mc1) = ZERO
       CALL dcopy (mg-mc,w(mc1),0,w(mc1),1)
 
       IF(mc.EQ.n)                      GOTO 50
 
       DO 20 i=1,me
-   20     w(IF-1+i)=f(i)-ddot(mc,e(i,1),LE,x,1)
+   20     w(jf-1+i)=f(i)-ddot(mc,e(i,1),LE,x,1)
 
 C  STORE TRANSFORMED E & G
 
@@ -903,28 +903,28 @@ C  STORE TRANSFORMED E & G
 
 C  SOLVE LS WITHOUT INEQUALITY CONSTRAINTS
 
-      mode=7
+      imode=7
       k=MAX(LE,n)
       t=SQRT(epmach)
 C   RF: change call to HFTI such that actual argument bound to rnorm
 C   is a 1d-array, not a scalar. Fixes compile error with gfortran.
       xnrm1(1) = xnrm
-      CALL hfti (w(ie),me,me,l,w(IF),k,1,t,krank,xnrm1,w,w(l+1),jw)
+      CALL hfti (w(ie),me,me,l,w(jf),k,1,t,krank,xnrm1,w,w(l+1),jw)
       xnrm = xnrm1(1)
-      CALL dcopy(l,w(IF),1,x(mc1),1)
+      CALL dcopy(l,w(jf),1,x(mc1),1)
       IF(krank.NE.l)                   GOTO 75
-      mode=1
+      imode=1
                                        GOTO 50
 C  MODIFY H AND SOLVE INEQUALITY CONSTRAINED LS PROBLEM
 
    40 DO 45 i=1,mg
    45     h(i)=h(i)-ddot(mc,g(i,1),lg,x,1)
       CALL lsi
-     . (w(ie),w(IF),w(ig),h,me,me,mg,mg,l,x(mc1),xnrm,w(mc1),jw,mode)
+     . (w(ie),w(jf),w(ig),h,me,me,mg,mg,l,x(mc1),xnrm,w(mc1),jw,imode)
       IF(mc.EQ.0)                      GOTO 75
       t=dnrm2(mc,x,1)
       xnrm=SQRT(xnrm*xnrm+t*t)
-      IF(mode.NE.1)                    GOTO 75
+      IF(imode.NE.1)                    GOTO 75
 
 C  SOLUTION OF ORIGINAL PROBLEM AND LAGRANGE MULTIPLIERS
 
@@ -946,7 +946,7 @@ C  END OF SUBROUTINE LSEI
    75                                  END
 
 
-      SUBROUTINE lsi(e,f,g,h,LE,me,lg,mg,n,x,xnorm,w,jw,mode)
+      SUBROUTINE lsi(e,f,g,h,LE,me,lg,mg,n,x,xnorm,w,jw,imode)
 
 C     FOR MODE=1, THE SUBROUTINE RETURNS THE SOLUTION X OF
 C     INEQUALITY CONSTRAINED LINEAR LEAST SQUARES PROBLEM:
@@ -984,7 +984,7 @@ C               5: MATRIX E IS NOT OF FULL RANK
 C     03.01.1980, DIETER KRAFT: CODED
 C     20.03.1987, DIETER KRAFT: REVISED TO FORTRAN 77
 
-      INTEGER          i,j,LE,lg,me,mg,mode,n,jw(lg)
+      INTEGER          i,j,LE,lg,me,mg,imode,n,jw(lg)
       real (PREC) e(LE,n),f(LE),g(lg,n),h(lg),x(n),w(*),
      .                 xnorm,t
 
@@ -997,7 +997,7 @@ C  QR-FACTORS OF E AND APPLICATION TO F
 
 C  TRANSFORM G AND H TO GET LEAST DISTANCE PROBLEM
 
-      mode=5
+      imode=5
       DO 30 i=1,mg
           DO 20 j=1,n
               IF (.NOT. ABS(e(j,j)).GE.epmach) GOTO 50
@@ -1006,8 +1006,8 @@ C  TRANSFORM G AND H TO GET LEAST DISTANCE PROBLEM
 
 C  SOLVE LEAST DISTANCE PROBLEM
 
-      CALL ldp(g,lg,mg,n,h,x,xnorm,w,jw,mode)
-      IF (mode.NE.1)                     GOTO 50
+      CALL ldp(g,lg,mg,n,h,x,xnorm,w,jw,imode)
+      IF (imode.NE.1)                     GOTO 50
 
 C  SOLUTION OF ORIGINAL PROBLEM
 
@@ -1023,7 +1023,7 @@ C  END OF SUBROUTINE LSI
 
    50                                    END
 
-      SUBROUTINE ldp(g,mg,m,n,h,x,xnorm,w,INDEX,mode)
+      SUBROUTINE ldp(g,mg,m,n,h,x,xnorm,w,INDEX,imode)
 
 C                     T
 C     MINIMIZE   1/2 X X    SUBJECT TO   G * X >= H.
@@ -1061,15 +1061,15 @@ C               4: INEQUALITY CONSTRAINTS INCOMPATIBLE
 
       real (PREC) g,h,x,xnorm,w,u,v,
      .                 fac,rnorm
-      INTEGER          INDEX,i,IF,iw,iwdual,iy,iz,j,m,mg,mode,n,n1
+      INTEGER          INDEX,i,jf,iw,iwdual,iy,iz,j,m,mg,imode,n,n1
       DIMENSION        g(mg,n),h(m),x(n),w(*),INDEX(m)
 
-      mode=2
+      imode=2
       IF(n.LE.0)                    GOTO 50
 
 C  STATE DUAL PROBLEM
 
-      mode=1
+      imode=1
       x(1)=ZERO
       CALL dcopy(n,x(1),0,x,1)
       xnorm=ZERO
@@ -1081,7 +1081,7 @@ C  STATE DUAL PROBLEM
    10         w(iw)=g(j,i)
           iw=iw+1
    20     w(iw)=h(j)
-      IF=iw+1
+      jf=iw+1
       DO 30 i=1,n
           iw=iw+1
    30     w(iw)=ZERO
@@ -1093,17 +1093,17 @@ C  STATE DUAL PROBLEM
 
 C  SOLVE DUAL PROBLEM
 
-      CALL nnls (w,n1,n1,m,w(IF),w(iy),rnorm,w(iwdual),w(iz),INDEX,mode)
+      CALL nnls(w,n1,n1,m,w(jf),w(iy),rnorm,w(iwdual),w(iz),INDEX,imode)
 
-      IF(mode.NE.1)                 GOTO 50
-      mode=4
+      IF(imode.NE.1)                 GOTO 50
+      imode=4
       IF(rnorm.LE.ZERO)             GOTO 50
 
 C  COMPUTE SOLUTION OF PRIMAL PROBLEM
 
       fac=one-ddot(m,h,1,w(iy),1)
       IF(.NOT. diff(one+fac,one).GT.ZERO) GOTO 50
-      mode=1
+      imode=1
       fac=one/fac
       DO 40 j=1,n
    40     x(j)=fac*ddot(m,g(1,j),1,w(iy),1)
@@ -1120,7 +1120,7 @@ C  END OF SUBROUTINE LDP
    50                               END
 
 
-      SUBROUTINE nnls (a, mda, m, n, b, x, rnorm, w, z, INDEX, mode)
+      SUBROUTINE nnls (a, mda, m, n, b, x, rnorm, w, z, INDEX, imode)
 
 C     C.L.LAWSON AND R.J.HANSON, JET PROPULSION LABORATORY:
 C     'SOLVING LEAST SQUARES PROBLEMS'. PRENTICE-HALL.1974
@@ -1164,7 +1164,7 @@ C                 EITHER M <= 0 OR N <= 0.
 C            3    ITERATION COUNT EXCEEDED, MORE THAN 3*N ITERATIONS.
 
       INTEGER          i,ii,ip,iter,itmax,iz,izmax,iz1,iz2,j,jj,jz,
-     *                 k,l,m,mda,mode,n,npp1,nsetp,INDEX(n)
+     *                 k,l,m,mda,imode,n,npp1,nsetp,INDEX(n)
 
       real (PREC) a(mda,n),b(m),x(n),w(n),z(m),asave,
      *                 wmax,alpha,
@@ -1175,9 +1175,9 @@ C            3    ITERATION COUNT EXCEEDED, MORE THAN 3*N ITERATIONS.
 
 c     revised          Dieter Kraft, March 1983
 
-      mode=2
+      imode=2
       IF(m.LE.0.OR.n.LE.0)            GOTO 290
-      mode=1
+      imode=1
       iter=0
       itmax=3*n
 
@@ -1254,7 +1254,7 @@ C .....ENTRY LOOP B
   200    z(ip)=z(ip)/a(ip,jj)
       iter=iter+1
       IF(iter.LE.itmax)               GOTO 220
-  210 mode=3
+  210 imode=3
                                       GOTO 280
 C STEP SEVEN TO TEN (STEP LENGTH ALGORITHM)
 
@@ -1441,7 +1441,7 @@ C   REORDER SOLUTION ACCORDING TO PREVIOUS COLUMN INTERCHANGES
   270 krank=k
       END
 
-      SUBROUTINE h12 (mode,lpivot,l1,m,u,iue,up,c,ice,icv,ncv)
+      SUBROUTINE h12 (imode,lpivot,l1,m,u,iue,up,c,ice,icv,ncv)
 
 C     C.L.LAWSON AND R.J.HANSON, JET PROPULSION LABORATORY, 1973 JUN 12
 C     TO APPEAR IN 'SOLVING LEAST SQUARES PROBLEMS', PRENTICE-HALL, 1974
@@ -1471,14 +1471,14 @@ C     ICV    STORAGE INCREMENT BETWEEN VECTORS IN C().
 C     NCV    NUMBER OF VECTORS IN C() TO BE TRANSFORMED.
 C            IF NCV <= 0 NO OPERATIONS WILL BE DONE ON C().
 
-      INTEGER          incr, ice, icv, iue, lpivot, l1, mode, ncv
+      INTEGER          incr, ice, icv, iue, lpivot, l1, imode, ncv
       INTEGER          i, i2, i3, i4, j, m
       real (PREC) u,up,c,cl,clinv,b,sm
       DIMENSION        u(iue,*), c(*)
 
       IF (0.GE.lpivot.OR.lpivot.GE.l1.OR.l1.GT.m) GOTO 80
       cl=ABS(u(1,lpivot))
-      IF (mode.EQ.2)                              GOTO 30
+      IF (imode.EQ.2)                              GOTO 30
 
 C     ****** CONSTRUCT THE TRANSFORMATION ******
 
@@ -1610,7 +1610,7 @@ C HERE UPDATING BEGINS
 C END OF LDL
       END
 
-      pure subroutine linmin (dat, mode, ax, bx, f, tol, res)
+      pure subroutine linmin (dat, imode, ax, bx, f, tol, res)
 C   LINMIN  LINESEARCH WITHOUT DERIVATIVES
 
 C   PURPOSE:
@@ -1659,7 +1659,7 @@ C   SUBROUTINES REQUIRED: NONE
       type (linmin_data), intent(inout) :: dat
 C       Container object to store variables that need to be persistent
 C       across calls.
-      integer, intent(inout) :: mode
+      integer, intent(inout) :: imode
       real (PREC), intent(in) :: ax, bx
       real (PREC), intent(in) :: f
       real (PREC), intent(in) :: tol
@@ -1673,7 +1673,7 @@ C  EPS = SQUARE - ROOT OF MACHINE PRECISION
       real (PREC), parameter :: eps = sqrt(epsilon(0.0_PREC))
 
 
-      GOTO (10, 55), mode
+      GOTO (10, 55), imode
 
 C  INITIALIZATION
 
@@ -1684,7 +1684,7 @@ C  INITIALIZATION
       dat%w = dat%v
       dat%x = dat%w
       res = dat%x
-      mode = 1
+      imode = 1
       GOTO 100
 
 C  MAIN LOOP STARTS HERE
@@ -1742,7 +1742,7 @@ C  F MUST NOT BE EVALUATED TOO CLOSE TO X
    50 IF (ABS(dat%d) .LT. tol1) dat%d = SIGN(tol1, dat%d)
       dat%u = dat%x + dat%d
       res = dat%u
-      mode = 2
+      imode = 2
       GOTO 100
    55 dat%fu = f
 
@@ -1776,7 +1776,7 @@ C  UPDATE A, B, V, W, AND X
 C  END OF MAIN LOOP
 
    90 res = dat%x
-      mode = 3
+      imode = 3
   100 RETURN
 
 C  END OF LINMIN
