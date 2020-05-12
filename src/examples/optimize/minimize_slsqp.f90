@@ -48,18 +48,12 @@ subroutine example1 ()
     call fconstr (x, c)
     print 100, 'SLSQP-NG', fx, c
 
-    print '(tr1, "Min. at x=", 2(f0.8,:,", "), "; fx=", f0.8, "; iter=", i0, "; nfev=", i0)', &
-        res%x, res%fx, res%nit, res%nfev
-
     ! Repeat with exact line search
     x0 = xlb + 0.5*(xub-xlb)
 !    call minimize_slsqp (fobj, x0, xlb, xub, m, f_ieqcons=fconstr, tol=tol, &
 !        res=res, linesearch=NF_LINESEARCH_EXACT)
 
-    print '(tr1, "Min. at x=", 2(f0.8,:,", "), "; fx=", f0.8, "; iter=", i0, "; nfev=", i0)', &
-        res%x, res%fx, res%nit, res%nfev
-
-100 format (a10, ': f(x): ', es20.12e2, '; c(x): ', *(es14.6e2, :, ', '))
+100 format (a10, ': f(x): ', es20.12e2, '; c(x): ', *(es20.12e2, :, ', '))
 
 end subroutine
 
@@ -99,18 +93,12 @@ subroutine example2 ()
     call fconstr2 (x, c)
     print 100, 'SLSQP-NG', fx, c
 
-    print '(tr1, "Min. at x=", 2(f0.8,:,", "), "; fx=", f0.8, "; iter=", i0, "; nfev=", i0)', &
-        res%x, res%fx, res%nit, res%nfev
-
     ! Repeat with exact line search
     x0 = sqrt(0.5)
 !    call minimize_slsqp (fobj, x0, xlb, xub, m, f_eqcons=fconstr2, tol=tol, &
 !        res=res, linesearch=NF_LINESEARCH_EXACT)
 
-    print '(tr1, "Min. at x=", 2(f0.8,:,", "), "; fx=", f0.8, "; iter=", i0, "; nfev=", i0)', &
-        res%x, res%fx, res%nit, res%nfev
-
-100 format (a10, ': f(x): ', es20.12e2, '; c(x): ', *(es14.6e2, :, ', '))
+100 format (a10, ': f(x): ', es20.12e2, '; c(x): ', *(es20.12e2, :, ', '))
 
 end subroutine
 
@@ -141,7 +129,7 @@ subroutine example3 ()
         res=res)
     call fobj (x, fx)
     call fconstr (x, c)
-    print 100, 'SLSQP-NG', fx, c
+    print 100, 'SLSQP', fx, c
 
     nfev = 0
     ncev = 0
@@ -152,18 +140,12 @@ subroutine example3 ()
     call fconstr (x, c)
     print 100, 'SLSQP-NG', fx, c
 
-    print '(tr1, "Min. at x=", 2(f0.8,:,", "), "; fx=", f0.8, "; iter=", i0, "; nfev=", i0)', &
-        res%x, res%fx, res%nit, res%nfev
-
     ! Repeat with exact line search
     x0 = xlb + 0.1
 !    call minimize_slsqp (fobj, x0, xlb, xub, m, f_ieqcons=fconstr, tol=tol, &
 !        res=res, linesearch=NF_LINESEARCH_EXACT)
 
-    print '(tr1, "Min. at x=", 2(f0.8,:,", "), "; fx=", f0.8, "; iter=", i0, "; nfev=", i0)', &
-        res%x, res%fx, res%nit, res%nfev
-
-100 format (a10, ': f(x): ', es20.12e2, '; c(x): ', *(es14.6e2, :, ', '))
+100 format (a10, ': f(x): ', es20.12e2, '; c(x): ', *(es20.12e2, :, ', '))
 
 end subroutine
 
