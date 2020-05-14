@@ -707,7 +707,7 @@ recursive subroutine lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, iline, &
     type (status_t), intent(out) :: status
     character (*), intent(out) :: msg
 
-    integer :: n, m, i
+    integer :: n, m
     real (PREC) :: alpha, t, xnorm, h1, fx0, dfx
 
     integer, parameter :: MAXITER = MAX_INEXACT_LINESEARCH + 1
@@ -739,8 +739,8 @@ recursive subroutine lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, iline, &
     do iline = 1, MAXITER
 
         h3 = alpha * h3
-        forall (i=1:n) s(i) = s(i) * alpha
-        x(1:n) = x0 + s(1:n)
+        s = s * alpha
+        x = x0 + s
 
         ! Evaluate objective and constraint functions
         if (fuse_calls .or. iline == MAXITER) then
