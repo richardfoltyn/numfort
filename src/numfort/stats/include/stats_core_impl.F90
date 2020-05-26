@@ -370,6 +370,9 @@ pure subroutine normalize_2d (x, m, s, dim, center, scale, &
     allocate (lmean(nvars), source=0.0_PREC)
     allocate (lstd(nvars), source=1.0_PREC)
 
+    ! Terminate immediately if there's nothing to do
+    if (.not. (lscale .or. lcenter)) goto 50
+
     ! Compute mean (and std) as required.
     ! If only centering is requested (no scaling), compute only
     ! mean and set std = 1.0
@@ -398,6 +401,8 @@ pure subroutine normalize_2d (x, m, s, dim, center, scale, &
             forall (iv = 1:nvars) x(iv, iobs) = (x(iv, iobs) - lmean(iv)) / lstd(iv)
         end do
     end if
+
+50  continue
 
     ! Return mean and std. only if 1) output arrays are present; and 2)
     ! centering / scaling was actually performed.

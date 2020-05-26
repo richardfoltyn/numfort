@@ -2,7 +2,8 @@
 
 
 
-subroutine prepare_regressors (xin, xout, status, add_const, trans)
+subroutine prepare_regressors (xin, xout, status, add_const, trans, center, &
+        scale, mean_x, std_x)
     !*  PREPARE_REGRESSORS processes the regressor matrix to obtain
     !   the shape used by estimation routines (observations along first
     !   dimension), and optioanlly adds an intercept.
@@ -15,9 +16,15 @@ subroutine prepare_regressors (xin, xout, status, add_const, trans)
         !*  Add intercept to regressor matrix
     logical, intent(in), optional :: trans
         !*  Transpose regressor matrix
+    logical, intent(in), optional :: center
+    logical, intent(in), optional :: scale
+    real (PREC), intent(out), dimension(:), contiguous, optional :: mean_x
+    real (PREC), intent(out), dimension(:), contiguous, optional :: std_x
 
     integer :: nconst, nobs, nvars, ncoefs, i
     logical :: ladd_const, ltrans
+    ! Arguments for NORMALIZE
+    integer, parameter :: dim = 1, dof = 0
 
     status = NF_STATUS_OK
 
@@ -51,6 +58,11 @@ subroutine prepare_regressors (xin, xout, status, add_const, trans)
     else
         xout(:, 1+nconst:ncoefs) = xin
     end if
+
+    ! Use helper routine to center and scale X, if applicable
+    call normalize (xout(:,1+nconst:ncoefs), mean_x, std_x, dim, center, &
+        scale, dof, status=status)
+    if (status /= NF_STATUS_OK) return
 
     if (ladd_const) xout(:, 1) = 1.0_PREC
 
@@ -886,7 +898,7 @@ pure subroutine pcr_pca_check_input (lhs, rhs, ncomp, ncomp_min, coefs, &
     ! Check that coefficient array can hold coefs for all components
     ! Allow for more columns to be present, but not for more rows.
     if (size(coefs, 2) < nlhs) return
-    if (ncoefs /= (nvars + nconst)) return
+    if (size(coefs, 1) /= ncoefs) return
     if (present(var_min)) then
         if (var_min < 0.0_PREC .or. var_min > 1.0_PREC) return
     end if
@@ -1069,7 +1081,56 @@ end subroutine
 
 
 
-subroutine ridge_2d (y, x, lambda, coefs, add_const, trans_x, rcond, rank, res, status)
+pure subroutine ridge_check_input (y, x, lambda, coefs, add_const, trans_x, &
+        rcond, res, status)
+
+    real (PREC), intent(in), dimension(:,:) :: y
+    real (PREC), intent(in), dimension(:,:) :: x
+    real (PREC), intent(in) :: lambda
+    real (PREC), intent(in), dimension(:,:), optional :: coefs
+    logical, intent(in) :: add_const
+    logical, intent(in) :: trans_x
+    real (PREC), intent(in), optional :: rcond
+    type (lm_data), intent(in), dimension(:), optional :: res
+    type (status_t), intent(out) :: status
+
+    integer :: nobs, nvars, nlhs, nconst, ncoefs
+
+    status = NF_STATUS_INVALID_ARG
+
+    ! Uses same dimensions as PCR/PCA
+    call pcr_pca_get_dims (y, x, add_const, trans_x, &
+        nobs, nvars, nlhs, ncoefs, nconst)
+
+    if (size(y,1) /= nobs .or. size(y,2) /= nlhs) return
+    ! Check that coefficient array can hold coefs for all components
+    ! Allow for more columns to be present, but not for more rows.
+    if (present(coefs)) then
+        if (size(coefs, 1) /= ncoefs) return
+        if (size(coefs, 2) < nlhs) return
+    end if
+
+    if (nobs < ncoefs) return
+
+    call check_nonneg (0.0_PREC, lambda, 'lambda', status)
+    if (NF_STATUS_INVALID_ARG .in. status) return
+
+    call check_nonneg (0.0_PREC, rcond, 'rcond', status)
+    if (NF_STATUS_INVALID_ARG .in. status) return
+
+    ! Make sure there is a LM_DATA object for each LHS variable
+    if (present(res)) then
+        if (size(res) /= nlhs) return
+    end if
+
+    status = NF_STATUS_OK
+
+end subroutine
+
+
+
+subroutine ridge_2d (y, x, lambda, coefs, add_const, trans_x, center, scale, &
+        rcond, rank, res, status)
     !*  RIDGE_2D computes the ridge regression for given independent
     !   data X and (potentially multiple) dependent variables Y.
     !
@@ -1078,7 +1139,7 @@ subroutine ridge_2d (y, x, lambda, coefs, add_const, trans_x, rcond, rank, res, 
     !   The problem is solved using SVD as implemented in LAPACK's GESDD
     !   routine. The optional argument RCOND can be used to control the
     !   effective rank of the matrix X'X.
-    real (PREC), intent(in), dimension(:,:), contiguous :: y
+    real (PREC), intent(in), dimension(:,:), contiguous, target :: y
         !*  Array of LHS variables (separate regression is performed for each
         !   LHS variables using the same set of RHS variables)
     real (PREC), intent(in), dimension(:,:), contiguous :: x
@@ -1091,6 +1152,8 @@ subroutine ridge_2d (y, x, lambda, coefs, add_const, trans_x, rcond, rank, res, 
         !*  If present and .TRUE., add constant to RHS variables (default: .TRUE.)
     logical, intent(in), optional :: trans_x
         !*  If present and .TRUE., transpose array X of RHS variables.
+    logical, intent(in), optional :: center
+    logical, intent(in), optional :: scale
     real (PREC), intent(in), optional :: rcond
         !*  Optional argument to control the effective rank of the regressor
         !   matrix.
@@ -1102,12 +1165,13 @@ subroutine ridge_2d (y, x, lambda, coefs, add_const, trans_x, rcond, rank, res, 
     type (status_t), intent(out), optional :: status
         !*  Optional exit code
 
-    logical :: ladd_const, ltrans_x
-    real (PREC) :: lrcond, var_rhs
+    logical :: ladd_const, ltrans_x, lcenter, lscale
+    real (PREC) :: lrcond, var_rhs, const
     real (PREC), dimension(:,:), allocatable :: lx
     integer :: nobs, nvars, ncoefs, nconst, nlhs, i
     type (status_t) :: lstatus
-    real (PREC), dimension(:,:), pointer, contiguous :: ptr_coefs
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_coefs, ptr_y
+    real (PREC), dimension(:), allocatable :: mean_x, std_x, mean_y
 
     ! GESDD arguments
     real (PREC), dimension(:), allocatable :: sval, work
@@ -1125,34 +1189,55 @@ subroutine ridge_2d (y, x, lambda, coefs, add_const, trans_x, rcond, rank, res, 
     lstatus = NF_STATUS_OK
 
     nullify (ptr_coefs)
+    nullify (ptr_y)
 
     ladd_const = .true.
-    if (present(add_const)) ladd_const = add_const
-
     ltrans_x = .false.
-    if (present(trans_x)) ltrans_x = trans_x
+    lcenter = .true.
+    lscale = .true.
+    lrcond = 0.0
 
-    ! Use default value from LAPACK95 GELS wrapper
-    lrcond = 100 * epsilon(1.0_PREC)
+    if (present(add_const)) ladd_const = add_const
+    if (present(trans_x)) ltrans_x = trans_x
+    if (present(center)) lcenter = center
+    if (present(scale)) lscale = scale
     if (present(rcond)) lrcond = rcond
 
-    call ols_check_input (y, x, coefs, ladd_const, ltrans_x, lrcond, res, lstatus)
+    call ridge_check_input (y, x, lambda, coefs, ladd_const, ltrans_x, &
+        lrcond, res, lstatus)
     if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
-    call check_nonneg (0.0_PREC, lambda, 'lambda', lstatus)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    call pcr_pca_get_dims (y, x, ladd_const, ltrans_x, nobs, nvars, nlhs, &
+        ncoefs, nconst)
 
-    call ols_get_dims (y, x, ladd_const, ltrans_x, nobs, nvars, nlhs, ncoefs, nconst)
+    ! --- Prepare dependent variable ---
+
+    if (lcenter) then
+        allocate (ptr_y(nobs, nlhs), source=y)
+        allocate (mean_y(nlhs))
+
+        call normalize (ptr_y, mean_y, dim=1, center=.true., scale=.false., status=status)
+        if (status /= NF_STATUS_OK) goto 100
+    else
+        allocate (mean_y(nlhs), source=0.0_PREC)
+        ptr_y => y
+    end if
+
+    ! --- Prepare regressors ---
 
     ! Allocate (possibly transposed) array to store X variables; will be
     ! overwritten by GELSD, so we have to allocate in any case.
-    ! Add constant as requested.
     allocate (lx(nobs,ncoefs))
 
-    call prepare_regressors (x, lx, lstatus, ladd_const, ltrans_x)
+    ! Mean and std.
+    allocate (mean_x(nvars), source=0.0_PREC)
+    allocate (std_x(nvars), source=1.0_PREC)
+
+    call prepare_regressors (x, lx, lstatus, ladd_const, ltrans_x, lcenter, &
+        lscale, mean_x, std_x)
     if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
 
-    ! --- SVD decomposition via GESDD --
+    ! --- SVD decomposition via GESDD ---
 
     ! Set up GESDD call
     m = nobs
@@ -1206,7 +1291,7 @@ subroutine ridge_2d (y, x, lambda, coefs, add_const, trans_x, rcond, rank, res, 
     allocate (mat_Uty(lrank, nlhs))
 
     call BLAS_GEMM (transa='T', transb='N', m=lrank, n=nlhs, k=nobs, &
-        alpha=1.0_PREC, a=lx, lda=nobs, b=y, ldb=nobs, beta=0.0_PREC, &
+        alpha=1.0_PREC, a=lx, lda=nobs, b=ptr_y, ldb=nobs, beta=0.0_PREC, &
         c=mat_Uty, ldc=lrank)
 
     ! --- Rescale by inverse of diagonal matrix ---
@@ -1239,6 +1324,26 @@ subroutine ridge_2d (y, x, lambda, coefs, add_const, trans_x, rcond, rank, res, 
         alpha=1.0_PREC, a=vt, lda=ncoefs, b=mat_Uty, ldb=lrank, beta=0.0_PREC, &
         c=ptr_coefs, ldc=size(ptr_coefs,1))
 
+    ! --- Undo rescaling ---
+
+    ! 1. Rescale regression coefficients
+    if (lscale) then
+        do i = 1, nlhs
+            ptr_coefs(1+nconst:ncoefs,i) = ptr_coefs(1+nconst:ncoefs,i) / std_x
+        end do
+    end if
+
+    ! --- Recover intercept ---
+
+    if (ladd_const) then
+        do i = 1, nlhs
+            const = mean_y(i) - dot_product (ptr_coefs(1+nconst:ncoefs,i), mean_x)
+            ptr_coefs(1,i) = const
+        end do
+    end if
+
+    ! --- Process return args ---
+
     ! Copy over optional output arguments
     if (present(rank)) rank = lrank
 
@@ -1265,13 +1370,18 @@ subroutine ridge_2d (y, x, lambda, coefs, add_const, trans_x, rcond, rank, res, 
         end if
     end if
 
+    if (associated (ptr_y)) then
+        if (.not. associated (ptr_y, y)) deallocate (ptr_y)
+    end if
+
     if (present(status)) status = lstatus
 
 end subroutine
 
 
 
-subroutine ridge_1d (y, x, lambda, coefs, add_const, trans_x, rcond, rank, res, status)
+subroutine ridge_1d (y, x, lambda, coefs, add_const, trans_x, scale, center, &
+        rcond, rank, res, status)
     !*  RIDGE_1D computes the ridge regression for given independent
     !   data X and a single dependent variables Y.
     !
@@ -1293,6 +1403,8 @@ subroutine ridge_1d (y, x, lambda, coefs, add_const, trans_x, rcond, rank, res, 
         !*  If present and .TRUE., add constant to RHS variables (default: .TRUE.)
     logical, intent(in), optional :: trans_x
         !*  If present and .TRUE., transpose array X of RHS variables.
+    logical, intent(in), optional :: center
+    logical, intent(in), optional :: scale
     real (PREC), intent(in), optional :: rcond
         !*  Optional argument to control the effective rank of the regressor
         !   matrix.
@@ -1327,8 +1439,8 @@ subroutine ridge_1d (y, x, lambda, coefs, add_const, trans_x, rcond, rank, res, 
         allocate (res1d(1))
     end if
 
-    call ridge (ptr_y, x, lambda, ptr_coefs, add_const, trans_x, rcond, rank, &
-        res1d, lstatus)
+    call ridge (ptr_y, x, lambda, ptr_coefs, add_const, trans_x, center, &
+        scale, rcond, rank, res1d, lstatus)
 
     if (lstatus == NF_STATUS_OK) then
         if (present(res)) res = res1d(1)
