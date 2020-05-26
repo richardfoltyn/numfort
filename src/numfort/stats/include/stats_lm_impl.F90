@@ -1,5 +1,63 @@
 
 
+
+
+subroutine prepare_regressors (xin, xout, status, add_const, trans)
+    !*  PREPARE_REGRESSORS processes the regressor matrix to obtain
+    !   the shape used by estimation routines (observations along first
+    !   dimension), and optioanlly adds an intercept.
+    real (PREC), intent(in), dimension(:,:), contiguous :: xin
+        !*  User-provided regressor matrix
+    real (PREC), intent(out), dimension(:,:), contiguous :: xout
+        !*  Processed regressor matrix
+    type (status_t), intent(out) :: status
+    logical, intent(in), optional :: add_const
+        !*  Add intercept to regressor matrix
+    logical, intent(in), optional :: trans
+        !*  Transpose regressor matrix
+
+    integer :: nconst, nobs, nvars, ncoefs, i
+    logical :: ladd_const, ltrans
+
+    status = NF_STATUS_OK
+
+    ltrans = .false.
+    ladd_const = .false.
+    if (present(trans)) ltrans = trans
+    if (present(add_const)) ladd_const = add_const
+
+    nobs = size(xin, 1)
+    nvars = size(xin, 2)
+    nconst = 0
+    ncoefs = nvars
+
+    if (ltrans) then
+        nobs = size(xin, 2)
+        nvars = size(xin, 1)
+    end if
+
+    if (ladd_const) then
+        nconst = 1
+        ncoefs = nvars + 1
+    end if
+
+    if (size(xout, 1) /= nobs .or. size(xout, 2) /= ncoefs) then
+        status = NF_STATUS_INVALID_ARG
+        return
+    end if
+
+    if (ltrans) then
+        forall (i=1:nvars) xout(:,nconst+i) = xin(i,:)
+    else
+        xout(:, 1+nconst:ncoefs) = xin
+    end if
+
+    if (ladd_const) xout(:, 1) = 1.0_PREC
+
+end subroutine
+
+
+
 !-------------------------------------------------------------------------------
 ! OLS
 
@@ -1008,6 +1066,278 @@ subroutine pcr_pca_1d (lhs, rhs, coefs, ncomp, ncomp_min, add_const, center, &
     if (present(coefs)) coefs = coefs2d(:,1)
 
 end subroutine
+
+
+
+subroutine ridge_2d (y, x, lambda, coefs, add_const, trans_x, rcond, rank, res, status)
+    !*  RIDGE_2D computes the ridge regression for given independent
+    !   data X and (potentially multiple) dependent variables Y.
+    !
+    !   Note that a regression constant is added by default.
+    !
+    !   The problem is solved using SVD as implemented in LAPACK's GESDD
+    !   routine. The optional argument RCOND can be used to control the
+    !   effective rank of the matrix X'X.
+    real (PREC), intent(in), dimension(:,:), contiguous :: y
+        !*  Array of LHS variables (separate regression is performed for each
+        !   LHS variables using the same set of RHS variables)
+    real (PREC), intent(in), dimension(:,:), contiguous :: x
+        !*  Array of RHS variables
+    real (PREC), intent(in) :: lambda
+        !*  Ridge parameter controlling the penalty for large coefficients.
+    real (PREC), intent(out), dimension(:,:), contiguous, optional, target :: coefs
+        !*  Array of estimated coefficients.
+    logical, intent(in), optional :: add_const
+        !*  If present and .TRUE., add constant to RHS variables (default: .TRUE.)
+    logical, intent(in), optional :: trans_x
+        !*  If present and .TRUE., transpose array X of RHS variables.
+    real (PREC), intent(in), optional :: rcond
+        !*  Optional argument to control the effective rank of the regressor
+        !   matrix.
+    integer, intent(out), optional :: rank
+        !*  Contains effective rank of regressor matrix
+    type (lm_data), dimension(:), optional :: res
+        !*  Optional result objects for linear models. Note that a separate
+        !   object is returned for each LHS variable.
+    type (status_t), intent(out), optional :: status
+        !*  Optional exit code
+
+    logical :: ladd_const, ltrans_x
+    real (PREC) :: lrcond, var_rhs
+    real (PREC), dimension(:,:), allocatable :: lx
+    integer :: nobs, nvars, ncoefs, nconst, nlhs, i
+    type (status_t) :: lstatus
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_coefs
+
+    ! GESDD arguments
+    real (PREC), dimension(:), allocatable :: sval, work
+    real (PREC), dimension(:,:), allocatable :: vt
+    real (PREC), dimension(1) :: qwork
+    integer, dimension(:), allocatable :: iwork
+    character (1), parameter :: jobz = 'O'
+    real (PREC), dimension(0,0) :: u
+    integer :: lrank
+    integer :: lwork, info, m, n, lda, ldvt, ldu, mn
+
+    ! GEMM arguments
+    real (PREC), dimension(:,:), allocatable :: mat_Uty
+
+    lstatus = NF_STATUS_OK
+
+    nullify (ptr_coefs)
+
+    ladd_const = .true.
+    if (present(add_const)) ladd_const = add_const
+
+    ltrans_x = .false.
+    if (present(trans_x)) ltrans_x = trans_x
+
+    ! Use default value from LAPACK95 GELS wrapper
+    lrcond = 100 * epsilon(1.0_PREC)
+    if (present(rcond)) lrcond = rcond
+
+    call ols_check_input (y, x, coefs, ladd_const, ltrans_x, lrcond, res, lstatus)
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+
+    call check_nonneg (0.0_PREC, lambda, 'lambda', lstatus)
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+
+    call ols_get_dims (y, x, ladd_const, ltrans_x, nobs, nvars, nlhs, ncoefs, nconst)
+
+    ! Allocate (possibly transposed) array to store X variables; will be
+    ! overwritten by GELSD, so we have to allocate in any case.
+    ! Add constant as requested.
+    allocate (lx(nobs,ncoefs))
+
+    call prepare_regressors (x, lx, lstatus, ladd_const, ltrans_x)
+    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+
+    ! --- SVD decomposition via GESDD --
+
+    ! Set up GESDD call
+    m = nobs
+    n = ncoefs
+    mn = max(1, min(m, n))
+    lda = nobs
+    ldvt = n
+    ldu = m
+
+    allocate (iwork(8*mn))
+    allocate (vt(n, n))
+    allocate (sval(mn))
+
+    ! workspace query
+    lwork = -1
+    call LAPACK_GESDD (jobz, m, n, lx, lda, sval, u, ldu, vt, ldvt, qwork, &
+        lwork, iwork, info)
+
+    ! Recover minimal work space size
+    if (info /= 0) then
+        lstatus = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+    lwork = int(qwork(1))
+
+    ! perform actual SVD
+    allocate (work(lwork))
+
+    call LAPACK_GESDD (jobz, m, n, lx, lda, sval, u, ldu, vt, ldvt, work, &
+        lwork, iwork, info)
+
+    if (info /= 0) then
+        if (info < 0) then
+            ! This should not happen since we checked arguments before
+            lstatus = NF_STATUS_INVALID_ARG
+        else
+            lstatus = NF_STATUS_NOT_CONVERGED
+        end if
+        goto 100
+    end if
+
+    ! --- Determine effective rank of X ---
+
+    ! We have rank <= ncoefs
+    lrank = count(sval > lrcond)
+
+    ! --- Compute U'y ---
+
+    ! At this point we have: first NCOEFS columns of U stored in matrix X
+
+    allocate (mat_Uty(lrank, nlhs))
+
+    call BLAS_GEMM (transa='T', transb='N', m=lrank, n=nlhs, k=nobs, &
+        alpha=1.0_PREC, a=lx, lda=nobs, b=y, ldb=nobs, beta=0.0_PREC, &
+        c=mat_Uty, ldc=lrank)
+
+    ! --- Rescale by inverse of diagonal matrix ---
+
+    ! Compute (diag(s^2) + lambda I)^{-1} diag(s)
+    ! and then (diag(s^2) + lambda I)^{-1} diag(s) U'y
+
+    do i = 1, lrank
+        sval(i) = sval(i) / (sval(i)**2.0_PREC + lambda)
+    end do
+
+    ! Apply scaling factors by columns
+    do i = 1, nlhs
+        mat_Uty(:,i) = mat_Uty(:,i) * sval(1:lrank)
+    end do
+
+    ! --- Last step: premulitply with (V')^(-1) ---
+
+    ! Due to properties of V we have
+    ! V'V = I => V' = V^(-1) => (V')^(-1) = V
+    ! Note that GESDD returns V' which is stored in the matrix VT
+
+    if (present(coefs)) then
+        ptr_coefs => coefs
+    else
+        allocate (ptr_coefs(ncoefs,nlhs))
+    end if
+
+    call BLAS_GEMM (transa='T', transb='N', m=ncoefs, n=nlhs, k=lrank, &
+        alpha=1.0_PREC, a=vt, lda=ncoefs, b=mat_Uty, ldb=lrank, beta=0.0_PREC, &
+        c=ptr_coefs, ldc=size(ptr_coefs,1))
+
+    ! Copy over optional output arguments
+    if (present(rank)) rank = lrank
+
+    if (present(res)) then
+        ! Update LM_DATA result objects for OLS model
+
+        ! Fraction of RHS variance used, analogous to PCR regression
+        ! (only applicable if RHS matrix does not have full rank)
+        var_rhs = sum(sval(1:lrank) ** 2.0_PREC) / sum(sval**2.0_PREC)
+
+        do i = 1, nlhs
+            call lm_data_update (res(i), model=NF_STATS_LM_RIDGE, &
+                coefs=ptr_coefs(1:ncoefs,i), nobs=nobs, nvars=nvars, &
+                var_expl=var_rhs, rank_rhs=lrank, trans_rhs=ltrans_x, &
+                add_const=ladd_const)
+        end do
+    end if
+
+100 continue
+
+    if (.not. present (coefs)) then
+        if (associated(ptr_coefs)) then
+            deallocate (ptr_coefs)
+        end if
+    end if
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+
+subroutine ridge_1d (y, x, lambda, coefs, add_const, trans_x, rcond, rank, res, status)
+    !*  RIDGE_1D computes the ridge regression for given independent
+    !   data X and a single dependent variables Y.
+    !
+    !   Note that a regression constant is added by default.
+    !
+    !   The problem is solved using SVD as implemented in LAPACK's GESDD
+    !   routine. The optional argument RCOND can be used to control the
+    !   effective rank of the matrix X'X.
+    real (PREC), intent(in), dimension(:), contiguous, target :: y
+        !*  Array of LHS variables (separate regression is performed for each
+        !   LHS variables using the same set of RHS variables)
+    real (PREC), intent(in), dimension(:,:), contiguous :: x
+        !*  Array of RHS variables
+    real (PREC), intent(in) :: lambda
+        !*  Ridge parameter controlling the penalty for large coefficients.
+    real (PREC), intent(out), dimension(:), contiguous, optional, target :: coefs
+        !*  Array of estimated coefficients.
+    logical, intent(in), optional :: add_const
+        !*  If present and .TRUE., add constant to RHS variables (default: .TRUE.)
+    logical, intent(in), optional :: trans_x
+        !*  If present and .TRUE., transpose array X of RHS variables.
+    real (PREC), intent(in), optional :: rcond
+        !*  Optional argument to control the effective rank of the regressor
+        !   matrix.
+    integer, intent(out), optional :: rank
+        !*  Contains effective rank of regressor matrix
+    type (lm_data), optional :: res
+        !*  Optional result objects for linear models.
+    type (status_t), intent(out), optional :: status
+        !*  Optional exit code
+
+    real (PREC), dimension(:,:), contiguous, pointer :: ptr_coefs, ptr_y
+
+    type (lm_data), dimension(:), allocatable :: res1d
+
+    integer :: nobs, ncoefs
+    type (status_t) :: lstatus
+
+    lstatus = NF_STATUS_OK
+
+    nullify (ptr_coefs, ptr_y)
+
+    nobs = size(y)
+    ncoefs = size(coefs)
+
+    ptr_y(1:nobs,1:1) => y
+
+    if (present(coefs)) then
+        ptr_coefs(1:ncoefs,1:1) => coefs
+    end if
+
+    if (present(res)) then
+        allocate (res1d(1))
+    end if
+
+    call ridge (ptr_y, x, lambda, ptr_coefs, add_const, trans_x, rcond, rank, &
+        res1d, lstatus)
+
+    if (lstatus == NF_STATUS_OK) then
+        if (present(res)) res = res1d(1)
+    end if
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
 
 
 subroutine lm_post_estim (model, lhs, rhs, rsq, status)

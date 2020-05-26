@@ -6,6 +6,7 @@ module numfort_stats_lm_real32
 
     use numfort_common
     use numfort_common_alloc
+    use numfort_common_input_checks
     use numfort_stats_core_real32, only: normalize, mean, std
     use numfort_stats_lm_common
 
@@ -18,6 +19,7 @@ module numfort_stats_lm_real32
 
     public :: ols, pca, pcr
     public :: finalize
+    public :: ridge
     public :: post_estim
 
     public :: lm_data
@@ -38,6 +40,10 @@ module numfort_stats_lm_real32
 
     interface pcr
         procedure pcr_pca_1d, pcr_pca_2d
+    end interface
+
+    interface ridge
+        procedure ridge_1d, ridge_2d
     end interface
 
     interface post_estim
