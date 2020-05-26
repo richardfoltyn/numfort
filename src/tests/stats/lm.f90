@@ -911,7 +911,8 @@ subroutine test_ridge_1d (tests)
     ! Test with lambda = 0.0
     status = NF_STATUS_UNDEFINED
     lambda = 0.0
-    call ridge (y, x, lambda, beta, add_const=add_const, rank=rank, res=lm, status=status)
+    call ridge (y, x, lambda, beta, add_const=add_const, center=.false., &
+        scale=.false., rank=rank, res=lm, status=status)
 
     values_ok = all_close (beta, beta_ok, rtol=RTOL, atol=ATOL)
     call tc%assert_true (status == NF_STATUS_OK .and. values_ok, &
@@ -921,7 +922,8 @@ subroutine test_ridge_1d (tests)
     status = NF_STATUS_UNDEFINED
     lambda = 0.1
     beta(:) = 0.0
-    call ridge (y, x, lambda, beta, add_const=add_const, rank=rank, res=lm, status=status)
+    call ridge (y, x, lambda, beta, add_const=add_const, center=.false., &
+        scale=.false., rank=rank, res=lm, status=status)
 
     ssq = sum(beta**2.0)
     ssq_ols = sum(beta_ols**2.0)
@@ -953,7 +955,8 @@ subroutine test_ridge_1d (tests)
     ! Lambda = 0
     status = NF_STATUS_UNDEFINED
     lambda = 0.0
-    call ridge (y, x, lambda, beta, add_const=add_const, rank=rank, status=status)
+    call ridge (y, x, lambda, beta, add_const=add_const, center=.false., &
+        scale=.false., rank=rank, status=status)
 
     values_ok = all_close (beta, beta_ok, rtol=RTOL, atol=ATOL)
     call tc%assert_true (status == NF_STATUS_OK .and. values_ok, &
@@ -962,7 +965,8 @@ subroutine test_ridge_1d (tests)
     ! Lambda > 0
     status = NF_STATUS_UNDEFINED
     lambda = 0.1d0
-    call ridge (y, x, lambda, beta, add_const=add_const, rank=rank, status=status)
+    call ridge (y, x, lambda, beta, add_const=add_const, center=.false., &
+        scale=.false., rank=rank, status=status)
 
     ssq = sum(beta**2.0)
     ssq_ols = sum(beta_ols**2.0)
