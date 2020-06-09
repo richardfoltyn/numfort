@@ -21,6 +21,14 @@ module numfort_common_swap
     end interface
 
     interface swap
+        procedure swap_3d_real32, swap_3d_real64, swap_3d_int32, swap_3d_int64
+    end interface
+
+    interface swap
+        procedure swap_4d_real32, swap_4d_real64, swap_4d_int32, swap_4d_int64
+    end interface
+
+    interface swap
         procedure swap_real32, swap_real64
     end interface
 
@@ -123,6 +131,110 @@ subroutine swap_2d_int64 (ptr1, ptr2)
     integer (INTSIZE), intent(inout), dimension(:,:), pointer :: ptr2
 
     integer (INTSIZE), dimension(:,:), pointer :: ptr_tmp
+
+    ptr_tmp => ptr1
+    ptr1 => ptr2
+    ptr2 => ptr_tmp
+end subroutine
+
+
+! ------------------------------------------------------------------------------
+! 3d-arrays
+
+subroutine swap_3d_real32 (ptr1, ptr2)
+    integer, parameter :: PREC = real32
+    real (PREC), intent(inout), dimension(:,:,:), pointer :: ptr1
+    real (PREC), intent(inout), dimension(:,:,:), pointer :: ptr2
+
+    real (PREC), dimension(:,:,:), pointer :: ptr_tmp
+
+    ptr_tmp => ptr1
+    ptr1 => ptr2
+    ptr2 => ptr_tmp
+end subroutine
+
+subroutine swap_3d_real64 (ptr1, ptr2)
+    integer, parameter :: PREC = real64
+    real (PREC), intent(inout), dimension(:,:,:), pointer :: ptr1
+    real (PREC), intent(inout), dimension(:,:,:), pointer :: ptr2
+
+    real (PREC), dimension(:,:,:), pointer :: ptr_tmp
+
+    ptr_tmp => ptr1
+    ptr1 => ptr2
+    ptr2 => ptr_tmp
+end subroutine
+
+subroutine swap_3d_int32 (ptr1, ptr2)
+    integer, parameter :: INTSIZE = int32
+    integer (INTSIZE), intent(inout), dimension(:,:,:), pointer :: ptr1
+    integer (INTSIZE), intent(inout), dimension(:,:,:), pointer :: ptr2
+
+    integer (INTSIZE), dimension(:,:,:), pointer :: ptr_tmp
+
+    ptr_tmp => ptr1
+    ptr1 => ptr2
+    ptr2 => ptr_tmp
+end subroutine
+
+subroutine swap_3d_int64 (ptr1, ptr2)
+    integer, parameter :: INTSIZE = int64
+    integer (INTSIZE), intent(inout), dimension(:,:,:), pointer :: ptr1
+    integer (INTSIZE), intent(inout), dimension(:,:,:), pointer :: ptr2
+
+    integer (INTSIZE), dimension(:,:,:), pointer :: ptr_tmp
+
+    ptr_tmp => ptr1
+    ptr1 => ptr2
+    ptr2 => ptr_tmp
+end subroutine
+
+
+! ------------------------------------------------------------------------------
+! 4d-arrays
+
+subroutine swap_4d_real32 (ptr1, ptr2)
+    integer, parameter :: PREC = real32
+    real (PREC), intent(inout), dimension(:,:,:,:), pointer :: ptr1
+    real (PREC), intent(inout), dimension(:,:,:,:), pointer :: ptr2
+
+    real (PREC), dimension(:,:,:,:), pointer :: ptr_tmp
+
+    ptr_tmp => ptr1
+    ptr1 => ptr2
+    ptr2 => ptr_tmp
+end subroutine
+
+subroutine swap_4d_real64 (ptr1, ptr2)
+    integer, parameter :: PREC = real64
+    real (PREC), intent(inout), dimension(:,:,:,:), pointer :: ptr1
+    real (PREC), intent(inout), dimension(:,:,:,:), pointer :: ptr2
+
+    real (PREC), dimension(:,:,:,:), pointer :: ptr_tmp
+
+    ptr_tmp => ptr1
+    ptr1 => ptr2
+    ptr2 => ptr_tmp
+end subroutine
+
+subroutine swap_4d_int32 (ptr1, ptr2)
+    integer, parameter :: INTSIZE = int32
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:), pointer :: ptr1
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:), pointer :: ptr2
+
+    integer (INTSIZE), dimension(:,:,:,:), pointer :: ptr_tmp
+
+    ptr_tmp => ptr1
+    ptr1 => ptr2
+    ptr2 => ptr_tmp
+end subroutine
+
+subroutine swap_4d_int64 (ptr1, ptr2)
+    integer, parameter :: INTSIZE = int64
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:), pointer :: ptr1
+    integer (INTSIZE), intent(inout), dimension(:,:,:,:), pointer :: ptr2
+
+    integer (INTSIZE), dimension(:,:,:,:), pointer :: ptr_tmp
 
     ptr_tmp => ptr1
     ptr1 => ptr2
