@@ -2,6 +2,9 @@ module numfort_arrays_setops
 
     use, intrinsic :: iso_fortran_env
     use m_unirnk, only: unirnk
+
+    use numfort_common_status
+    use numfort_common_input_checks
     use numfort_arrays_sort
 
     implicit none
@@ -9,22 +12,27 @@ module numfort_arrays_setops
     private
 
     public :: unique, setdiff, intersect, union
+    public :: split_uniform
     public :: operator(.in.)
 
     interface unique
-        module procedure unique_real32, unique_real64, unique_int32
+        procedure unique_real32, unique_real64, unique_int32
     end interface
 
     interface setdiff
-        module procedure setdiff_real32, setdiff_real64, setdiff_int32
+        procedure setdiff_real32, setdiff_real64, setdiff_int32
     end interface
 
     interface intersect
-        module procedure intersect_real32, intersect_real64, intersect_int32
+        procedure intersect_real32, intersect_real64, intersect_int32
     end interface
 
     interface union
-        module procedure union_real32, union_real64, union_int32
+        procedure union_real32, union_real64, union_int32
+    end interface
+
+    interface split_uniform
+        procedure split_uniform_int32
     end interface
 
     interface operator(.in.)
@@ -319,6 +327,65 @@ pure function set_in_int64 (needle, haystack) result(res)
     end do
 
 end function
+
+
+
+pure subroutine split_uniform_int32 (n, nchunks, ifrom, chunk_size, status)
+    !*  SPLIT_UNIFORM partitions a sequence of size N into a given number
+    !   of chunks which are of approximately uniform size.
+    integer, intent(in) :: n
+        !*  Number of elements to partition
+    integer, intent(in) :: nchunks
+        !*  Number of chunks (partitions) to create
+    integer, intent(out), dimension(:) :: ifrom
+        !*  Array to store the starting index of each chunk
+    integer, intent(out), dimension(:) :: chunk_size
+        !*  Array to store the number of elements in each chunk
+    type (status_t), intent(out), optional :: status
+        !*  Optional exit code
+
+    integer :: k, i, ioffset
+    type (status_t) :: lstatus
+    character (*), parameter :: NAME = 'SPLIT_UNIFORM'
+
+    lstatus = NF_STATUS_OK
+
+    ! --- Input checks ---
+
+    call check_cond (n > 0, NAME, 'N: Invalid value', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    call check_cond (nchunks > 0, NAME, 'NCHUNKS: Invalid value', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    if (size(ifrom) /= size(chunk_size) .or. (size(ifrom) /= nchunks)) then
+        lstatus = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+
+    ! --- Implementation ---
+
+    if (n >= nchunks) then
+        chunk_size = n / nchunks
+        k = modulo (n, nchunks)
+        chunk_size(1:k) = chunk_size(1:k) + 1
+    else
+        chunk_size = 0
+        chunk_size(1:n) = 1
+    end if
+
+    ioffset = 1
+    do i = 1, nchunks
+        ifrom(i) = ioffset
+        ioffset = ioffset + chunk_size(i)
+    end do
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
 
 
 end module
