@@ -14,6 +14,7 @@ module numfort_common_input_checks
     public :: check_nonzero
     public :: check_enum
     public :: check_range
+    public :: set_optional_arg
 
     interface check_positive
         procedure check_positive_real32, check_positive_real64, &
@@ -30,6 +31,12 @@ module numfort_common_input_checks
 
     interface check_range
         procedure check_range_real32, check_range_real64
+    end interface
+
+    interface set_optional_arg
+        procedure set_optional_arg_logical, set_optional_arg_int32, &
+            set_optional_arg_int64, set_optional_arg_real32, &
+            set_optional_arg_real32_real64, set_optional_arg_real64
     end interface
 
 contains
@@ -190,6 +197,110 @@ pure subroutine check_enum (val, valid, name, status, msg)
         end if
    end if
 end subroutine
+
+
+
+! ------------------------------------------------------------------------------
+! SET_OPTIONAL_ARG routines
+
+
+pure subroutine set_optional_arg_logical (xin, xdefault, xout)
+    !*  SET_OPTIONAL_ARG assigns the value of an output argument depending
+    !   on whether an optional input argument is present.
+    logical, intent(in), optional :: xin
+    logical, intent(in) :: xdefault
+    logical, intent(out) :: xout
+
+    if (present(xin)) then
+        xout = xin
+    else
+        xout = xdefault
+    end if
+end subroutine
+
+
+pure subroutine set_optional_arg_int32 (xin, xdefault, xout)
+    !*  SET_OPTIONAL_ARG assigns the value of an output argument depending
+    !   on whether an optional input argument is present.
+    integer, parameter :: INTSIZE = int32
+    integer (INTSIZE), intent(in), optional :: xin
+    integer (INTSIZE), intent(in) :: xdefault
+    integer (INTSIZE), intent(out) :: xout
+
+    if (present(xin)) then
+        xout = xin
+    else
+        xout = xdefault
+    end if
+end subroutine
+
+
+pure subroutine set_optional_arg_int64 (xin, xdefault, xout)
+    !*  SET_OPTIONAL_ARG assigns the value of an output argument depending
+    !   on whether an optional input argument is present.
+    integer, parameter :: INTSIZE = int64
+    integer (INTSIZE), intent(in), optional :: xin
+    integer (INTSIZE), intent(in) :: xdefault
+    integer (INTSIZE), intent(out) :: xout
+
+    if (present(xin)) then
+        xout = xin
+    else
+        xout = xdefault
+    end if
+end subroutine
+
+
+pure subroutine set_optional_arg_real32 (xin, xdefault, xout)
+    !*  SET_OPTIONAL_ARG assigns the value of an output argument depending
+    !   on whether an optional input argument is present.
+    integer, parameter :: PREC = real32
+    real (PREC), intent(in), optional :: xin
+    real (PREC), intent(in) :: xdefault
+    real (PREC), intent(out) :: xout
+
+    if (present(xin)) then
+        xout = xin
+    else
+        xout = xdefault
+    end if
+end subroutine
+
+
+pure subroutine set_optional_arg_real32_real64 (xin, xdefault, xout)
+    !*  SET_OPTIONAL_ARG assigns the value of an output argument depending
+    !   on whether an optional input argument is present.
+    !
+    !   Note: Convenience method that accepts REAL64 default argument.
+    integer, parameter :: PREC = real32
+    real (PREC), intent(in), optional :: xin
+    real (real64), intent(in) :: xdefault
+        !*  Defeault argument of REAL64 kind
+    real (PREC), intent(out) :: xout
+
+    if (present(xin)) then
+        xout = xin
+    else
+        xout = real(xdefault, PREC)
+    end if
+end subroutine
+
+
+pure subroutine set_optional_arg_real64 (xin, xdefault, xout)
+    !*  SET_OPTIONAL_ARG assigns the value of an output argument depending
+    !   on whether an optional input argument is present.
+    integer, parameter :: PREC = real64
+    real (PREC), intent(in), optional :: xin
+    real (PREC), intent(in) :: xdefault
+    real (PREC), intent(out) :: xout
+
+    if (present(xin)) then
+        xout = xin
+    else
+        xout = xdefault
+    end if
+end subroutine
+
 
 ! ------------------------------------------------------------------------------
 ! HELPER ROUTINES
