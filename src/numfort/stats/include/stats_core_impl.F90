@@ -1,88 +1,68 @@
-! ------------------------------------------------------------------------------
-! Input checker for mean and std routines
 
-pure subroutine mean_std_check_input (nvars, nobs, out1, out2, dof, status)
-    !*  Check user-supplied input (other than dim) for errors
-    integer, intent(in), optional :: nvars
-        !!  Number of variables in 2d array
-    integer, intent(in) :: nobs
-        !!  Number of observations
-    real (PREC), intent(in), dimension(:) :: out1
-        !!  Array to store mandatory output (mean or std)
-    real (PREC), intent(in), dimension(:), optional :: out2
-        !!  Optional array to store additional output (mean)
-    integer, intent(in), optional :: dof
-        !!  Optional degrees of freedom correction
-    type (status_t), intent(out) :: status
 
-    status = NF_STATUS_INVALID_ARG
 
-    if (nobs < 1) return
+pure subroutine get_data_dims (x, dim, nvars, nobs, status)
+    !*  GET_DATA_DIMS sets the number of variables and number of observations
+    !   of for a given 2-dimensional array.
+    real (PREC), intent(in), dimension(:,:) :: x
+        !*  Data array
+    integer, intent(in) :: dim
+        !*  Dimension along with reduction should be performed
+    integer, intent(out) :: nvars
+        !*  Number of variables
+    integer, intent(out) :: nobs
+        !*  Number of observations
+    type (status_t), intent(out), optional :: status
+        !*  Exit code (either NF_STATUS_OK or NF_STATUS_INVALID_ARG)
 
-    if (present(nvars)) then
-        if (nvars < 1) return
-        if (size(out1) < nvars) return
-        if (present(out2)) then
-            if (size(out2) < nvars) return
+    nobs = 0
+    nvars = 0
+
+    if (present(status)) then
+        status = NF_STATUS_OK
+        if (dim /= 1 .and. dim /= 2) then
+            status = NF_STATUS_INVALID_ARG
+            return
         end if
     end if
 
-    if (present(dof)) then
-        if (dof < 0) return
-    end if
-
-    status = NF_STATUS_OK
+    nvars = size(x, 3-dim)
+    nobs = size(x, dim)
 end subroutine
 
 
-! ------------------------------------------------------------------------------
-! MEAN for 1d arrays
 
 pure subroutine mean_1d (x, m, dim, status)
-    !*  Compute mean of values in 1d array.
-    real (PREC), intent(in), dimension(:), contiguous :: x
-        !!  Array containing numbers for which mean should be computed.
+    !*  MEAN computes the mean of values in array X.
+    real (PREC), intent(in), dimension(:), contiguous, target :: x
+        !*  Array containing numbers for which mean should be computed.
     real (PREC), intent(out) :: m
-        !!  Computed mean.
+        !*  Computed mean
     integer, intent(in), optional :: dim
-        !*  Ignored for 1d-arrays, present to support same API as for higher-rank
-        !   arrays
+        !*  Ignored for 1d-arrays, present to support same API as for
+        !   higher-rank arrays
     type (status_t), intent(out), optional :: status
-        !*  Ignored for 1d-arrays, present to support same API as for higher-rank
-        !   arrays
+        !*  Exit code
 
-    ! compute in double precision regardless of input/output kind
-    real (PREC) :: m_old, m_new
     type (status_t) :: lstatus
-    integer :: i
 
     ! initialize to default values
     lstatus = NF_STATUS_OK
-    m = 0.0_PREC
 
-    if (size(x) == 0) then
-        lstatus = NF_STATUS_INVALID_ARG
-        goto 100
-    end if
+    ! --- Input checks ---
 
-    ! compute running mean using Welford's method; see
-    ! http://www.johndcook.com/blog/standard_deviation/
+    call check_cond (size(x) > 0, 'MEAN', 'X: Non-zero number of observations required', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
 
-    m_new = x(1)
-    m_old = x(1)
+    ! --- Implementation ---
 
-    do i = 2, size(x)
-        m_new = m_old + (x(i) - m_old) / i
-        m_old = m_new
-    end do
-    m = m_new
+    call mean_impl_1d (x, m, dim=1)
 
 100 continue
     if (present(status)) status = lstatus
 end subroutine
 
-! ------------------------------------------------------------------------------
-! MEAN routine for 2d input arrays
+
 
 pure subroutine mean_2d (x, m, dim, status)
     !*  MEAN computes the mean of array elements along a dimension.
@@ -90,68 +70,143 @@ pure subroutine mean_2d (x, m, dim, status)
         !*  Input data. Variables can either be stored column-wise (default)
         !   or row-wise. (see DIM argument)
     real (PREC), intent(out), dimension(:), contiguous :: m
-        !*  Array of means, needs to be at least as large as the number of
-        !   variables.
+        !*  Array of means for each variable in X
     integer, intent(in), optional :: dim
         !*  If present, specifies the dimension along which to compute means
         !   (default: dim=1 implies that variables are stored column-wise)
     type (status_t), intent(out), optional :: status
         !*  Optional exit status
 
-    real (PREC), dimension(:), allocatable :: m_old, m_new
     type (status_t) :: lstatus
     ! iv indexes variables, iobs individual observations
-    integer :: iv, iobs, nvars, nobs, ldim
-    integer, dimension(2) :: shp
+    integer :: nvars, nobs, ldim
 
     ! default values
     lstatus = NF_STATUS_OK
-    m = 0.0_PREC
-    shp = shape(x)
+
     ! initialize to something so gfortran does not complain
     nvars = -1
     nobs = -1
 
-    call mean_std_init (shp, dim, ldim, nvars, nobs, status=lstatus)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    ! --- Input checks ---
 
-    call mean_std_check_input (nvars, nobs, m, status=lstatus)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    call set_optional_arg (dim, 1, ldim)
 
-    ! compute mean and std. dev. using Welford's method; see
-    ! http://www.johndcook.com/blog/standard_deviation/
+    call get_data_dims (x, ldim, nvars, nobs, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
 
-    if (ldim == 1) then
-        ! If variables are stored in columns, use 1d mean routine
-        do iv = 1, nvars
-            call mean (x(:, iv), m(iv))
-        end do
-    else if (ldim == 2) then
-        ! Compute running mean and std if variables are stored in rows
-        allocate (m_new(nvars), m_old(nvars))
-        m_new(:) = x(:, 1)
-        m_old(:) = x(:, 1)
+    call check_cond (size(m) == nvars, 'MEAN', 'M: Non-conformable array size', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
 
-        ! Compute running means for all variables simultaneuosly
-        do iobs = 2, nobs
-            m_new(:) = m_old + (x(:, iobs) - m_old) / iobs
-            m_old(:) = m_new
-        end do
+    call check_cond (nobs > 0, 'MEAN', 'X: Non-zero number of observations required', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
 
-        m(:) = m_new
-    end if
+    ! --- Implementation ---
+
+    call mean_impl (x, m, ldim)
 
 100 continue
     if (present(status)) status = lstatus
 end subroutine
 
-! ------------------------------------------------------------------------------
-! SD for 1d input arrays
+
+
+pure subroutine mean_impl_1d (x, m, dim)
+    !*  MEAN computes the mean of values in array X.
+    !
+    !   Implementation routine, does NOT perform any input checks.
+    real (PREC), intent(in), dimension(:), contiguous, target :: x
+        !*  Array containing numbers for which mean should be computed.
+    real (PREC), intent(out) :: m
+        !*  Computed mean
+    integer, intent(in), optional :: dim
+        !*  Ignored for 1d-arrays, present to support same API as for higher-rank
+        !   arrays
+
+    integer :: iobs, nobs
+    real (PREC) :: m_old, m_new
+
+    nobs = size(x)
+
+    ! --- Quick termination ---
+
+    if (nobs == 0) return
+
+    ! --- Implementation ---
+
+    ! Implementation note: implement this directly here without calling
+    ! MEAN_IMPL_2D, since in a pure procedure we cannot create a 2d pointer
+    ! to point to X to construct a 2d argument.
+    m_new = x(1)
+    m_old = m_new
+
+    do iobs = 2, nobs
+        m_new = m_old + (x(iobs) - m_old)  / iobs
+        m_old = m_new
+    end do
+
+    m = m_new
+
+end subroutine
+
+
+
+pure subroutine mean_impl_2d (x, m, dim)
+    !*  MEAN computes the mean of array elements along a dimension.
+    !
+    !   Implementation routine, does NOT perform any input checks.
+    real (PREC), intent(in), dimension(:,:), contiguous :: x
+        !*  Input data. Variables can either be stored column-wise
+        !   or row-wise. (see DIM argument)
+    real (PREC), intent(out), dimension(:), contiguous, target :: m
+        !*  Array of means, needs to be at least as large as the number of
+        !   variables.
+    integer, intent(in) :: dim
+        !*  Dimension along which to compute means
+
+    real (PREC), dimension(:), allocatable :: m_old
+
+    ! iv indexes variables, iobs individual observations
+    integer :: iv, iobs, nvars, nobs
+
+    ! initialize to something so gfortran does not complain
+    nvars = size(x, 3-dim)
+    nobs = size(x, dim)
+
+    ! --- Quick termination ---
+
+    if (nobs == 0 .or. nvars == 0) return
+
+    ! --- Implementation ---
+
+    ! compute mean and std. dev. using Welford's method; see
+    ! http://www.johndcook.com/blog/standard_deviation/
+
+    if (dim == 1) then
+        ! If variables are stored in columns, use 1d mean routine
+        do iv = 1, nvars
+            call mean_impl (x(:,iv), m(iv))
+        end do
+    else
+        ! Compute running mean and std if variables are stored in rows
+        allocate (m_old(nvars))
+        m = x(:, 1)
+        m_old(:) = m
+
+        ! Compute running means for all variables simultaneuosly
+        do iobs = 2, nobs
+            m = m_old + (x(:, iobs) - m_old) / iobs
+            m_old(:) = m
+        end do
+    end if
+
+end subroutine
+
+
 
 pure subroutine std_1d (x, s, m, dof, dim, status)
     !*  Compute standard deviation (and optionally mean) for data given in
     !   1d array.
-
     real (PREC), intent(in), dimension(:), contiguous :: x
         !   Array containing numbers for which standard deviation should be
         !   computed
@@ -169,59 +224,31 @@ pure subroutine std_1d (x, s, m, dof, dim, status)
         !*  Ignored for 1d-arrays, present to support same API as for higher-rank
         !   arrays
 
-    real (PREC) :: m_old, m_new, s_old, s_new, lm, x_i
-    integer :: i, ldof
+    integer :: ldof
     type (status_t) :: lstatus
 
     ! initiliaze default values
     lstatus = NF_STATUS_OK
-    ldof = 1
-    s = 0.0_PREC
-    if (present(m)) m = 0.0_PREC
 
-    if (present(dof)) then
-        if (dof < 0) then
-            lstatus = NF_STATUS_INVALID_ARG
-            goto 100
-        end if
-        ldof = dof
-    end if
+    ! --- Input checks ---
 
-    if (size(x) == 0) then
-        lstatus = NF_STATUS_INVALID_ARG
-        goto 100
-    end if
+    call set_optional_arg (dof, 1, ldof)
 
-    ! compute mean and std. dev. using Welford's method; see
-    ! http://www.johndcook.com/blog/standard_deviation/
+    call check_cond (ldof == 0 .or. ldof == 1, 'STD', 'DOF: Invalid value', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
 
-    m_new = x(1)
-    m_old = m_new
-    s_new = 0.0_PREC
-    s_old = 0.0_PREC
+    call check_cond (size(x) > 0, 'STD', 'X: Non-zero number of observations required', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
 
-    do i = 2, size(x)
-        x_i = x(i)
-        m_new = m_old + (x_i - m_old) / i
-        s_new = s_old + (x_i - m_old) * (x_i - m_new)
+    ! --- Implementation ---
 
-        m_old = m_new
-        s_old = s_new
-    end do
-
-    lm = m_new
-    if (size(x) > 1) then
-        s = sqrt(s_new / (size(x)-ldof))
-    end if
-
-    if (present(m)) m = lm
+    call std_impl (x, s, m, ldof)
 
 100 continue
     if (present(status)) status = lstatus
 end subroutine
 
-! ------------------------------------------------------------------------------
-! SD for 2d input arrays
+
 
 pure subroutine std_2d (x, s, m, dof, dim, status)
     !*  Compute standard deviation (and optionally) mean of data in 2d-array
@@ -244,77 +271,191 @@ pure subroutine std_2d (x, s, m, dof, dim, status)
         !*  If present, returns NF_STATUS_OK on exit if operation was successful,
         !   and status > 0 if an error was encountered
 
-    real (PREC), dimension(:), allocatable :: lm
-    real (PREC), dimension(:), allocatable :: m_old, s_old, s_new
     type (status_t) :: lstatus
     ! iv indexes variables, iobs individual observations
-    integer :: iv, iobs, nvars, nobs, ldof, ldim
-    integer, dimension(2) :: shp
+    integer :: nvars, nobs, ldof, ldim
 
     ! set default values
     lstatus = NF_STATUS_OK
-    s = 0.0_PREC
-    ldof = 1
-    if (present(m)) m = 0.0_PREC
+
+    ! --- Input checks ---
+
+    call set_optional_arg (dof, 1, ldof)
+    call set_optional_arg (dim, 1, ldim)
+
     ! Initialize to something so gfortran does not complain
     nvars = -1
     nobs = -1
+    call get_data_dims (x, ldim, nvars, nobs, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
 
-    shp = shape(x)
-    call mean_std_init (shp, dim, ldim, nvars, nobs, status=lstatus)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    call check_cond (ldof == 0 .or. ldof == 1, 'STD', 'DOF: Invalid value', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
 
-    ! Note: Array s must come before m, as m is optional and needs to 
-    ! be associated with optional dummy argument.
-    call mean_std_check_input (nvars, nobs, s, m, dof, status=lstatus)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    call check_cond (nobs > 0, 'STD', 'X: Non-zero number of observations required', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
 
-    if (present(dof)) ldof = dof
+    call check_cond (size(s) == nvars, 'STD', 'S: Non-conformable array size', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
 
-    allocate (lm(nvars), source=0.0_PREC)
-
-    ! compute mean and std. dev. using Welford's method; see
-    ! http://www.johndcook.com/blog/standard_deviation/
-
-    if (ldim == 1) then
-        ! If data is organized in columns we can use 1d routine without
-        ! hurting cache locality
-        do iv = 1, nvars
-            call std (x(:, iv), s(iv), lm(iv), dof=ldof)
-        end do
-    else if (ldim == 2) then
-        ! Compute running mean and std if variables are stored in rows
-        ! In this case we don't use 1d method as this would result in
-        ! inefficient memory access patterns
-        lm(:) = x(:, 1)
-        allocate (m_old(nvars), source=x(:, 1))
-        allocate (s_new(nvars), source=0.0_PREC)
-        allocate (s_old(nvars), source=0.0_PREC)
-
-        ! Compute means / std for all variables simultaneously
-        do iobs = 2, nobs
-            lm(:) = m_old + (x(:, iobs) - m_old) / iobs
-            s_new(:) = s_old + (x(:, iobs) - m_old) * (x(:, iobs) - lm)
-
-            m_old(:) = lm
-            s_old(:) = s_new
-        end do
-
-        if (nobs > 1) then
-            s = sqrt(s_new / (nobs - ldof))
-        end if
+    if (present(m)) then
+        call check_cond (size(m) == nvars, 'STD', 'M: Non-conformable array size', lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
     end if
 
-    if (present(m)) m = lm
+    ! --- Implementation ---
+
+    call std_impl (x, s, m, ldof, ldim)
 
 100 continue
-    ! Error handling
+
     if (present(status)) status = lstatus
 
 end subroutine
 
-! ------------------------------------------------------------------------------
-! NORMALIZE implementation
+
+
+pure subroutine std_impl_1d (x, s, m, dof, dim)
+    !*  Compute standard deviation (and optionally mean) for data given in
+    !   1d array.
+    !
+    !   Implementation routine, does NOT perform any input checks.
+    real (PREC), intent(in), dimension(:), contiguous :: x
+        !   Array containing numbers for which standard deviation should be
+        !   computed
+    real (PREC), intent(out) :: s
+        !   Contains computed standard deviation on exit.
+    real (PREC), intent(out), optional :: m
+        !   If present, contains computed mean on exit.
+    integer, intent(in), optional :: dof
+        !*  Degrees of freedom correction to use (default: 1). Computes
+        !   standard deviation as sum of squared deviations divided by (N-dof).
+    integer, intent(in), optional :: dim
+        !*  Ignored for 1d-arrays, present to support same API as for higher-rank
+        !   arrays
+
+    real (PREC) :: m_old, m_new, s_old, s_new, x_i
+    integer :: iobs, nobs
+
+    nobs = size(x)
+
+    ! --- Quick termination ---
+
+    if (nobs == 0) return
+
+    ! --- Implementation ----
+
+    ! compute mean and std. dev. using Welford's method; see
+    ! http://www.johndcook.com/blog/standard_deviation/
+
+    ! Note on implementation: We cannot create a 2d pointer to X in order
+    ! to call the 2d implementation in a PURE procedure, so we
+    ! implement the 1d case directly here.
+    m_new = x(1)
+    m_old = m_new
+    s_new = 0.0_PREC
+    s_old = 0.0_PREC
+
+    do iobs = 2, nobs
+        x_i = x(iobs)
+        m_new = m_old + (x_i - m_old) / iobs
+        s_new = s_old + (x_i - m_old) * (x_i - m_new)
+
+        m_old = m_new
+        s_old = s_new
+    end do
+
+    s = s_new
+
+    if (nobs > 1) then
+        s = sqrt(s_new / (nobs - dof))
+    end if
+
+    if (present(m)) m = m_new
+
+end subroutine
+
+
+
+pure subroutine std_impl_2d (x, s, m, dof, dim)
+    !*  STD_IMPL computes the standard deviations (and optionally) means of
+    !   data in 2d-array along the desired dimension.
+    real (PREC), intent(in), dimension(:,:), contiguous :: x
+        !*  2d-array containing data for which standard deviation should be
+        !   computed.
+    real (PREC), intent(out), dimension(:), contiguous :: s
+        !*  On exit, contains standard deviations along desired dimension.
+        !   Array size must be sufficient to hold computed values.
+    real (PREC), intent(out), dimension(:), contiguous, optional, target :: m
+        !*  If present, contains vector of means computed along desired dimension.
+        !   Array size must be sufficient to hold computed values.
+    integer, intent(in) :: dof
+        !*  Degrees of freedom correction to use (default: 1). Computes
+        !   standard deviation as sum of squared deviations divided by (N-dof).
+    integer, intent(in) :: dim
+        !*  Dimension along which std/mean should be computed.
+
+    real (PREC), dimension(:), pointer, contiguous :: ptr_m
+    real (PREC), dimension(:), allocatable :: m_old, s_old
+    integer :: iv, iobs, nvars, nobs
+
+    nullify (ptr_m)
+
+    ! Initialize to something so gfortran does not complain
+    nvars = size(x, 3-dim)
+    nobs = size(x, dim)
+
+    ! --- Quick termination ---
+
+    if (nobs == 0 .or. nvars == 0) return
+
+    ! --- Implementation ---
+
+    if (present(m)) then
+        ptr_m(1:nvars) => m
+    else
+        allocate (ptr_m(nvars))
+    end if
+
+    ! compute mean and std. dev. using Welford's method; see
+    ! http://www.johndcook.com/blog/standard_deviation/
+
+    if (dim == 1) then
+        ! If data is organized in columns we can use 1d routine without
+        ! hurting cache locality
+        do iv = 1, nvars
+            call std_impl (x(:, iv), s(iv), ptr_m(iv), dof)
+        end do
+    else if (dim == 2) then
+        ! Compute running mean and std if variables are stored in rows
+        ! In this case we don't use 1d method as this would result in
+        ! inefficient memory access patterns
+        ptr_m(:) = x(:, 1)
+        s = 0.0_PREC
+
+        allocate (m_old(nvars), source=x(:, 1))
+        allocate (s_old(nvars), source=0.0_PREC)
+
+        ! Compute means / std for all variables simultaneously
+        do iobs = 2, nobs
+            ptr_m(:) = m_old + (x(:, iobs) - m_old) / iobs
+            s(:) = s_old + (x(:, iobs) - m_old) * (x(:, iobs) - ptr_m)
+
+            m_old(:) = ptr_m
+            s_old(:) = s
+        end do
+
+        if (nobs > 1) then
+            s = sqrt(s / (nobs - dof))
+        end if
+    end if
+
+    ! Clean up potentially allocated array
+    call assert_dealloc_ptr (m, ptr_m)
+
+end subroutine
+
+
 
 pure subroutine normalize_2d (x, m, s, dim, center, scale, &
         dof, status)
@@ -413,6 +554,410 @@ pure subroutine normalize_2d (x, m, s, dim, center, scale, &
     if (present(status)) status = lstatus
 
 end subroutine
+
+
+
+pure subroutine standardize_1d (x, dim, center, scale, skip_const, dof, mean_x, &
+        std_x, shift_x, scale_x, status)
+    !*  STANDARDIZE centers and scales input data such that the resulting
+    !   array has zero mean and unit standard deviation
+    real (PREC), intent(inout), dimension(:), contiguous :: x
+        !*  Data that should be standardized.
+    integer, intent(in), optional :: dim
+        !*  Ignored for 1d array, only present for API compatibility.
+    logical, intent(in), optional :: center
+        !*  If present and true, center input data around its mean
+        !   (default: true)
+    logical, intent(in), optional :: scale
+        !*  If true, divide each variable by its standard deviation
+        !   (default: true)
+    logical, intent(in), optional :: skip_const
+        !*  If true, do not scale constant "variables" in X to avoid
+        !   division by zero (default: true)
+    integer, intent(in), optional :: dof
+        !*  Degrees of freedom correction for computing std. deviation
+        !   (default: 1)
+    real (PREC), intent(out), optional :: mean_x
+        !*  If present, stores the mean of X.
+    real (PREC), intent(out), optional :: std_x
+        !*  If present, stores the std. dev. of X.
+    real (PREC), intent(out), optional :: shift_x
+        !*  If present, stores the quantity by which the elements in X
+        !   were shifted (for center=.true., SHIFT_X contains the mean of X,
+        !   and otherwise is zero)
+    real (PREC), intent(out), optional :: scale_x
+        !*  If present, stores the quantity by which the elements in X
+        !   were scaled (for scale=.true., SCALE_X contains the std. dev. of X,
+        !   and otherwise is one).
+    type (status_t), intent(out), optional :: status
+        !*  Exit code
+
+    integer :: ldof
+    type (status_t) :: lstatus
+    ! iv indexes variables, iobs individual observations
+    integer :: nobs
+    logical :: lscale, lcenter, lskip_const, need_std, need_mean_only
+    real (PREC) :: lmean_x, lstd_x
+    character (*), parameter :: NAME = 'STANDARDIZE'
+
+    lstatus = NF_STATUS_OK
+    nobs = size(x)
+
+    ! --- Quick termination ---
+
+    if (nobs == 0) then
+        lstatus = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+
+    ! --- Input checks ---
+
+    call set_optional_arg (center, .true., lcenter)
+    call set_optional_arg (scale, .true., lscale)
+    call set_optional_arg (skip_const, .false., lskip_const)
+    call set_optional_arg (dof, 1, ldof)
+
+    call check_cond (ldof == 0 .or. ldof == 1, NAME, 'DOF: invalid value', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! --- Implementation ---
+
+    lmean_x = 0.0
+    lstd_x = 1.0
+
+    need_std = lscale .or. present(std_x)
+    need_mean_only = (lcenter .or. present(mean_x)) .and. .not. need_std
+
+    if (need_std) then
+        call std_impl (x, dof=ldof, s=lstd_x, m=lmean_x)
+    else if (need_mean_only) then
+        call mean_impl (x, m=lmean_x)
+    end if
+
+    if (lskip_const .and. lscale) then
+        ! We use modified STD_X only for the impl. routine, the
+        ! user will get the correct STD_X if the argument is present,
+        ! the SCALE_X value will be correctly set to 1.0 for constant
+        ! variable.
+        call standardize_impl (x, lmean_x, std_x=1.0_PREC, dim=1, center=lcenter, &
+            scale=lscale, shift_x=shift_x, scale_x=scale_x)
+    else
+        call standardize_impl (x, lmean_x, lstd_x, dim=1, center=lcenter, &
+            scale=lscale, shift_x=shift_x, scale_x=scale_x)
+    end if
+
+
+    if (present(mean_x)) mean_x = lmean_x
+    if (present(std_x)) std_x = lstd_x
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+
+pure subroutine standardize_2d (x, dim, center, scale, skip_const, dof, mean_x, &
+        std_x, shift_x, scale_x, status)
+    !*  STANDARDIZE centers and scales input data such that the resulting
+    !   array has zero mean and unit standard deviation along the specified
+    !   dimension.
+    real (PREC), intent(inout), dimension(:,:), contiguous :: x
+        !*  Data that should be standardized. Multiple 'variables' are supported
+        !   and can be organized either in rows or columns (goverened by
+        !   the dim argument)
+    integer, intent(in), optional :: dim
+        !*  Dimension along which to normalize (default: dim=1)
+    logical, intent(in), optional :: center
+        !*  If present and true, center input data around its mean
+        !   (default: true)
+    logical, intent(in), optional :: scale
+        !*  If true, divide each variable by its standard deviation
+        !   (default: true)
+    logical, intent(in), optional :: skip_const
+        !*  If true, do not scale constant "variables" in X to avoid
+        !   division by zero (default: true)
+    integer, intent(in), optional :: dof
+        !*  Degrees of freedom correction for computing std. deviation
+        !   (default: 1)
+    real (PREC), intent(out), dimension(:), contiguous, optional, target :: mean_x
+        !*  Array of means of variables in X over dimension DIM.
+    real (PREC), intent(out), dimension(:), contiguous, optional, target :: std_x
+        !*  Array of standard deviations of variables in X over dimension DIM.
+    real (PREC), intent(out), dimension(:), contiguous, optional :: shift_x
+        !*  If present, stores the quantities by which each variable in
+        !   X was shifted (for center=.true., SHIFT_X contains the means of X,
+        !   otherwise zeros).
+    real (PREC), intent(out), dimension(:), contiguous, optional :: scale_x
+        !*  If present, stores the quantities by which each variable in
+        !   X was scaled (for scale=.true., SCALE_X contains the std. dev. of X,
+        !   otherwise ones).
+    type (status_t), intent(out), optional :: status
+        !*  Exit code
+
+    integer :: ldim, ldof
+    type (status_t) :: lstatus
+    ! iv indexes variables, iobs individual observations
+    integer :: nvars, nobs
+    logical :: lscale, lcenter, lskip_const, need_std, need_mean_only
+    real (PREC), dimension(:), pointer, contiguous :: ptr_mean_x, ptr_std_x
+    real (PREC), dimension(:), allocatable :: lstd_x
+    character (*), parameter :: NAME = 'STANDARDIZE'
+
+    lstatus = NF_STATUS_OK
+    nullify (ptr_mean_x, ptr_std_x)
+
+    ! --- Input checks ---
+
+    call set_optional_arg (dim, 1, ldim)
+
+    ! Get data dimensions; this also checks validity of DIM argument
+    call get_data_dims (x, dim, nvars, nobs, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    call check_cond (nobs > 0, NAME, 'X: Too few observations', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! --- Quick termination ---
+
+    ! STATUS should remain at its value NF_STATUS_OK!
+    if (nvars == 0) goto 100
+
+    ! --- Remaining input checks
+
+    call set_optional_arg (center, .true., lcenter)
+    call set_optional_arg (scale, .true., lscale)
+    call set_optional_arg (skip_const, .false., lskip_const)
+    call set_optional_arg (dof, 1, ldof)
+
+    call check_cond (ldof == 0 .or. ldof == 1, NAME, 'DOF: invalid value', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    if (present(mean_x)) then
+        call check_cond (size(mean_x) == nvars, NAME, &
+            'MEAN_X: Non-conformable array size', lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+    end if
+
+    if (present(std_x)) then
+        call check_cond (size(std_x) == nvars, NAME, &
+            'STD_X: Non-conformable array size', lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+    end if
+
+    if (present(shift_x)) then
+        call check_cond (size(shift_x) == nvars, NAME, &
+            'SHIFT_X: Non-conformable array size', lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+    end if
+
+    if (present(scale_x)) then
+        call check_cond (size(scale_x) == nvars, NAME, &
+            'SCALE_X: Non-conformable array size', lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+    end if
+
+    ! --- Compute moments ---
+
+    need_std = lscale .or. present(std_x)
+    need_mean_only = (lcenter .or. present(mean_x)) .and. .not. need_std
+
+    if (need_std) then
+        call assert_alloc_ptr (mean_x, nvars, ptr_mean_x)
+        call assert_alloc_ptr (std_x, nvars, ptr_std_x)
+        call std_impl (x, dim=ldim, dof=ldof, s=ptr_std_x(1:nvars), m=ptr_mean_x(1:nvars))
+    else if (need_mean_only) then
+        call assert_alloc_ptr (mean_x, nvars, ptr_mean_x)
+        call mean_impl (x, dim=ldim, m=ptr_mean_x(1:nvars))
+    end if
+
+    ! --- Implementation ---
+
+    if (lskip_const .and. lscale) then
+        ! Adjust STD_X so that constant "variables" in X will not be
+        ! modified
+        allocate (lstd_x(size(ptr_std_x)), source=ptr_std_x)
+        where (lstd_x == 0.0_PREC)
+            lstd_x = 1.0
+        end where
+
+        ! We use modified STD_X array only for the impl. routine, the
+        ! user will get the correct STD_X if the argument is present,
+        ! the SCALE_X values will be correctly set to 1.0 for constant
+        ! variables.
+        call standardize_impl (x, ptr_mean_x, lstd_x, ldim, lcenter, lscale, &
+            shift_x, scale_x)
+    else
+        call standardize_impl (x, ptr_mean_x, ptr_std_x, ldim, lcenter, lscale, &
+            shift_x, scale_x)
+    end if
+
+    call assert_dealloc_ptr (mean_x, ptr_mean_x)
+    call assert_dealloc_ptr (std_x, ptr_std_x)
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+
+pure subroutine standardize_impl_1d (x, mean_x, std_x, dim, center, scale, &
+        shift_x, scale_x)
+    !*  STANDARDIZE_IMPL centers and scales input data
+    !   such that the resulting array has zero mean and unit standard deviation
+    !   along the specified dimension.
+    !
+    !   Implementation routine, does NOT perform any input checks.
+    real (PREC), intent(inout), dimension(:), contiguous :: x
+        !*  Data that should be standardized. Multiple 'variables' are supported
+        !   and can be organized either in rows or columns (goverened by
+        !   the dim argument)
+    real (PREC), intent(in), optional :: mean_x
+        !*  Array of means of variables in X over dimension DIM.
+    real (PREC), intent(in), optional :: std_x
+        !*  Array of standard deviations of variables in X over dimension DIM.
+    integer, intent(in) :: dim
+        !*  Ignored for 1d arrays, present only for API compatibility
+    logical, intent(in) :: center
+        !*  If true, center input data around its mean.
+    logical, intent(in) :: scale
+        !*  If true, divide each variable by its standard deviation
+    real (PREC), intent(out), optional :: shift_x
+        !*  If present, stores the quantity by which elements in
+        !   X were shifted (for center=.true., SHIFT_X contains the mean of X,
+        !   and otherwise is zero).
+    real (PREC), intent(out), optional :: scale_x
+        !*  If present, stores the quantity by which elements in
+        !   X were scaled (for scale=.true., SCALE_X contains the std. dev. of X,
+        !   and otherwise is ones).
+
+    integer :: nobs
+
+    nobs = size(x)
+
+    ! --- Quick termination ---
+
+    if (nobs == 0) return
+
+    ! --- Implementation ---
+
+    if (center .and. present(mean_x)) then
+        x = x - mean_x
+        if (present(shift_x)) then
+            shift_x = mean_x
+        end if
+    else
+        if (present(shift_x)) then
+            shift_x = 0.0_PREC
+        end if
+    end if
+
+    if (scale .and. present(std_x)) then
+        x = x / std_x
+        if (present(scale_x)) then
+            scale_x = std_x
+        end if
+    else
+        if (present(scale_x)) then
+            scale_x = 1.0_PREC
+        end if
+    end if
+
+end subroutine
+
+
+
+pure subroutine standardize_impl_2d (x, mean_x, std_x, dim, center, scale, &
+        shift_x, scale_x)
+    !*  STANDARDIZE_IMPL centers and scales input data
+    !   such that the resulting array has zero mean and unit standard deviation
+    !   along the specified dimension.
+    !
+    !   Implementation routine, does NOT perform any input checks.
+    real (PREC), intent(inout), dimension(:,:), contiguous :: x
+        !*  Data that should be standardized. Multiple 'variables' are supported
+        !   and can be organized either in rows or columns (goverened by
+        !   the dim argument)
+    real (PREC), intent(in), dimension(:), contiguous, optional :: mean_x
+        !*  Array of means of variables in X over dimension DIM.
+    real (PREC), intent(in), dimension(:), contiguous, optional :: std_x
+        !*  Array of standard deviations of variables in X over dimension DIM.
+    integer, intent(in) :: dim
+        !*  Dimension along which to normalize.
+    logical, intent(in) :: center
+        !*  If true, center input data around its mean.
+    logical, intent(in) :: scale
+        !*  If true, divide each variable by its standard deviation
+    real (PREC), intent(out), dimension(:), contiguous, optional :: shift_x
+        !*  If present, stores the quantities by which each variable in
+        !   X was shifted (for center=.true., SHIFT_X contains the means of X,
+        !   otherwise zeros).
+    real (PREC), intent(out), dimension(:), contiguous, optional :: scale_x
+        !*  If present, stores the quantities by which each variable in
+        !   X was scaled (for scale=.true., SCALE_X contains the std. dev. of X,
+        !   otherwise ones).
+
+    ! iv indexes variables, iobs individual observations
+    integer :: iv, iobs, nvars, nobs
+
+    ! Initialize to supress gfortran warnings
+    nvars = size(x, 3-dim)
+    nobs = size(x, dim)
+
+    ! --- Quick termination ---
+
+    if (nobs == 0 .or. nvars == 0) return
+
+    ! --- Implementation ---
+
+    ! We don't check whether these arrays are possibily too large, so
+    ! erase any "excess" data that will not be overwritten below.
+    ! These are also the default values if no centering or scaling is performed.
+    if (present(shift_x)) then
+        shift_x = 0.0_PREC
+    end if
+
+    if (present(scale_x)) then
+        scale_x = 1.0_PREC
+    end if
+
+    if (center .and. present(mean_x)) then
+        if (dim == 1) then
+            do iv = 1, nvars
+                x(:,iv) = x(:,iv) - mean_x(iv)
+            end do
+        else
+            do iobs = 1, nobs
+                x(:,iobs) = x(:,iobs) - mean_x
+            end do
+        end if
+
+        if (present(shift_x)) then
+            shift_x(1:nvars) = mean_x(1:nvars)
+        end if
+    end if
+
+    if (scale .and. present(std_x)) then
+        if (dim == 1) then
+            do iv = 1, nvars
+                x(:,iv) = x(:,iv) / std_x(iv)
+            end do
+        else
+            do iobs = 1, nobs
+                x(:,iobs) = x(:,iobs) / std_x
+            end do
+        end if
+
+        if (present(scale_x)) then
+            scale_x(1:nvars) = std_x(1:nvars)
+        end if
+    end if
+
+end subroutine
+
 
 ! ------------------------------------------------------------------------------
 ! QUANTILE ROUTINES
