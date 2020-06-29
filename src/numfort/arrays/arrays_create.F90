@@ -8,6 +8,7 @@ module numfort_arrays_create
     private
 
     public :: arange, linspace, powerspace
+    public :: logspace
     public :: diag, identity
     public :: vander
     public :: kron
@@ -22,6 +23,10 @@ module numfort_arrays_create
 
     interface powerspace
         procedure powerspace_real32, powerspace_real64
+    end interface
+
+    interface logspace
+        procedure logspace_real32, logspace_real64
     end interface
 
     interface diag
@@ -111,6 +116,77 @@ pure subroutine powerspace_real64 (x, xmin, xmax, pow)
     integer, parameter :: PREC = real64
 #include "powerspace_impl.f90"
 end subroutine
+
+
+! ------------------------------------------------------------------------------
+! LOGSPACE routines
+
+
+pure subroutine logspace_real32 (x, logx_min, logx_max, base)
+    !*  LOGSPACE returns numbers evenly spaced on a log scale.
+    !
+    !   To be compatible with Numpy, the start and end points need to be
+    !   provided in logs.
+    integer, parameter :: PREC = real32
+    real (PREC), intent(out), dimension(:) :: x
+        !*  Array containing samples equally spaced on a log scale
+    real (PREC), intent(in) :: logx_min
+        !*  Starting value of the sequence in logs, ie. sequence starts
+        !   at base ** logx_min.
+    real (PREC), intent(in) :: logx_max
+        !*  Terminal value of the sequence in logs, ie. sequence ends at
+        !   base ** logx_max.
+    real (PREC), intent(in), optional :: base
+        !*  The base of the log space (default: 10)
+
+    real (PREC) :: lbase
+    integer :: i
+
+    lbase = 10.0
+    if (present(base)) lbase = base
+
+    call linspace (x, logx_min, logx_max)
+
+    do i = 1, size(x)
+        x(i) = lbase ** x(i)
+    end do
+
+
+end subroutine
+
+
+
+pure subroutine logspace_real64 (x, logx_min, logx_max, base)
+    !*  LOGSPACE returns numbers evenly spaced on a log scale.
+    !
+    !   To be compatible with Numpy, the start and end points need to be
+    !   provided in logs.
+    integer, parameter :: PREC = real64
+    real (PREC), intent(out), dimension(:) :: x
+    !*  Array containing samples equally spaced on a log scale
+    real (PREC), intent(in) :: logx_min
+    !*  Starting value of the sequence in logs, ie. sequence starts
+    !   at base ** logx_min.
+    real (PREC), intent(in) :: logx_max
+    !*  Terminal value of the sequence in logs, ie. sequence ends at
+    !   base ** logx_max.
+    real (PREC), intent(in), optional :: base
+    !*  The base of the log space (default: 10)
+
+    real (PREC) :: lbase
+    integer :: i
+
+    lbase = 10.0
+    if (present(base)) lbase = base
+
+    call linspace (x, logx_min, logx_max)
+
+    do i = 1, size(x)
+        x(i) = lbase ** x(i)
+    end do
+
+end subroutine
+
 
 
 ! ******************************************************************************
