@@ -11,11 +11,16 @@ module numfort_common_alloc
     public :: assert_alloc_ptr, assert_dealloc_ptr
 
     interface assert_alloc_ptr
-        module procedure assert_alloc_ptr_1d_real32, assert_alloc_ptr_1d_real64
+        procedure assert_alloc_ptr_1d_real32, assert_alloc_ptr_1d_real64
     end interface
 
     interface assert_dealloc_ptr
-        module procedure assert_dealloc_ptr_1d_real32, assert_dealloc_ptr_1d_real64
+        procedure assert_dealloc_ptr_1d_int32, assert_dealloc_ptr_1d_int64, &
+            assert_dealloc_ptr_1d_real32, assert_dealloc_ptr_1d_real64
+    end interface
+
+    interface assert_dealloc_ptr
+        procedure assert_dealloc_ptr_2d_real32, assert_dealloc_ptr_2d_real64
     end interface
 
 contains
@@ -67,6 +72,49 @@ end subroutine
 ! ------------------------------------------------------------------------------
 ! ASSERT_DEALLOC_PTR routines
 
+
+pure subroutine assert_dealloc_ptr_1d_int32 (x, ptr_x)
+    !*  ASSERT_DEALLOC_PTR ensures that memory that was dynamically allocated
+    !   by ASSERT_ALLOC_PTR is released. The memory pointed to by ptr_x
+    !   needs to be released only if argument x is not present, as only then
+    !   a new array was allocated by ASSERT_ALLOC_PTR, which is referenced
+    !   by ptr_x.
+
+    integer, parameter :: INTSIZE = int32
+
+    integer (INTSIZE), intent(in), dimension(:), target, optional :: x
+    integer (INTSIZE), intent(inout), dimension(:), pointer :: ptr_x
+
+    if (associated(ptr_x)) then
+        if (.not. present(x)) then
+            deallocate (ptr_x)
+        else if (.not. associated(ptr_x, x)) then
+            deallocate (ptr_x)
+        end if
+    end if
+end subroutine
+
+pure subroutine assert_dealloc_ptr_1d_int64 (x, ptr_x)
+    !*  ASSERT_DEALLOC_PTR ensures that memory that was dynamically allocated
+    !   by ASSERT_ALLOC_PTR is released. The memory pointed to by ptr_x
+    !   needs to be released only if argument x is not present, as only then
+    !   a new array was allocated by ASSERT_ALLOC_PTR, which is referenced
+    !   by ptr_x.
+
+    integer, parameter :: INTSIZE = int64
+
+    integer (INTSIZE), intent(in), dimension(:), target, optional :: x
+    integer (INTSIZE), intent(inout), dimension(:), pointer :: ptr_x
+
+    if (associated(ptr_x)) then
+        if (.not. present(x)) then
+            deallocate (ptr_x)
+        else if (.not. associated(ptr_x, x)) then
+            deallocate (ptr_x)
+        end if
+    end if
+end subroutine
+
 pure subroutine assert_dealloc_ptr_1d_real32 (x, ptr_x)
     !*  ASSERT_DEALLOC_PTR ensures that memory that was dynamically allocated
     !   by ASSERT_ALLOC_PTR is released. The memory pointed to by ptr_x
@@ -77,7 +125,7 @@ pure subroutine assert_dealloc_ptr_1d_real32 (x, ptr_x)
     integer, parameter :: PREC = real32
 
     real (PREC), intent(in), dimension(:), target, optional :: x
-    real (PREC), intent(in out), dimension(:), pointer :: ptr_x
+    real (PREC), intent(inout), dimension(:), pointer :: ptr_x
 
     if (associated(ptr_x)) then
         if (.not. present(x)) then
@@ -92,7 +140,7 @@ pure subroutine assert_dealloc_ptr_1d_real64 (x, ptr_x)
     integer, parameter :: PREC = real64
 
     real (PREC), intent(in), dimension(:), target, optional :: x
-    real (PREC), intent(in out), dimension(:), pointer :: ptr_x
+    real (PREC), intent(inout), dimension(:), pointer :: ptr_x
 
     if (associated(ptr_x)) then
         if (.not. present(x)) then
@@ -102,5 +150,42 @@ pure subroutine assert_dealloc_ptr_1d_real64 (x, ptr_x)
         end if
     end if
 end subroutine
+
+pure subroutine assert_dealloc_ptr_2d_real32 (x, ptr_x)
+    !*  ASSERT_DEALLOC_PTR ensures that memory that was dynamically allocated
+    !   by ASSERT_ALLOC_PTR is released. The memory pointed to by ptr_x
+    !   needs to be released only if argument x is not present, as only then
+    !   a new array was allocated by ASSERT_ALLOC_PTR, which is referenced
+    !   by ptr_x.
+
+    integer, parameter :: PREC = real32
+
+    real (PREC), intent(in), dimension(:,:), target, optional :: x
+    real (PREC), intent(inout), dimension(:,:), pointer :: ptr_x
+
+    if (associated(ptr_x)) then
+        if (.not. present(x)) then
+            deallocate (ptr_x)
+        else if (.not. associated(ptr_x, x)) then
+            deallocate (ptr_x)
+        end if
+    end if
+end subroutine
+
+pure subroutine assert_dealloc_ptr_2d_real64 (x, ptr_x)
+    integer, parameter :: PREC = real64
+
+    real (PREC), intent(in), dimension(:,:), target, optional :: x
+    real (PREC), intent(inout), dimension(:,:), pointer :: ptr_x
+
+    if (associated(ptr_x)) then
+        if (.not. present(x)) then
+            deallocate (ptr_x)
+        else if (.not. associated(ptr_x, x)) then
+            deallocate (ptr_x)
+        end if
+    end if
+end subroutine
+
 
 end module
