@@ -1,6 +1,6 @@
 
 
-program numfort_common_copy_masked
+program test_numfort_common_copy_masked
     ! Unit tests for masked copy routines
 
     use, intrinsic :: iso_fortran_env
