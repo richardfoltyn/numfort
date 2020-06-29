@@ -11,9 +11,11 @@ module blas_interfaces
     integer, parameter :: COMPLEX_DP = kind((1.0d0, 1.0d0))
     
     ! Exported BLAS 1 routines
+    public :: ASUM
     public :: AXPY
     public :: COPY
     public :: DOT
+    public :: IAMAX
     public :: NRM2
     public :: SCAL
 
@@ -24,6 +26,10 @@ module blas_interfaces
     ! Exported BLAS 3 routines
     public :: GEMM
     
+    interface ASUM
+        procedure SASUM, DASUM
+    end interface
+
     interface AXPY
         procedure SAXPY, DAXPY, CAXPY, ZAXPY
     end interface
@@ -34,6 +40,10 @@ module blas_interfaces
     
     interface DOT
         procedure SDOT, DDOT
+    end interface
+
+    interface IAMAX
+        procedure ISAMAX, IDAMAX
     end interface
 
     interface NRM2
@@ -54,6 +64,19 @@ module blas_interfaces
     
     interface GEMM
         procedure SGEMM, DGEMM, CGEMM, ZGEMM
+    end interface
+
+
+    interface 
+        real function SASUM (n, x, incx)
+            integer :: n, incx
+            real :: x(*)
+        end function
+
+        double precision function DASUM (n, x, incx)
+            integer :: n, incx
+            double precision :: x(*)
+        end function
     end interface
 
     interface
@@ -163,6 +186,18 @@ module blas_interfaces
             integer         :: n, incx, incy
             real (DP)       :: x(*), y(*)
             real (DP)       :: res
+        end function
+    end interface
+
+    interface
+        integer function ISAMAX (n, x, incx)
+            integer :: n, incx
+            real :: x(*)
+        end function
+
+        integer function IDAMAX (n, x, incx)
+            integer :: n, incx
+            double precision :: x(*)
         end function
     end interface
     
