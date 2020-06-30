@@ -11,5 +11,6 @@ set(${COMPONENT_NAME}_FILES
     dnorm.f90
     lm.f90
     markov.f90
+    glmnet.f90
     PARENT_SCOPE
 )
