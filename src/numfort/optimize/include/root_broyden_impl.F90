@@ -328,7 +328,7 @@ recursive subroutine root_broyden_impl (fcn, x, tol, xtol, &
     ! Workspace array size
     nrwrk = 2*n*n + 8*n
     ! Working arrays needed for INV
-    call inv_work_query (n, lwork_inv, liwork_inv)
+    call inv_work_query (0.0_PREC, n, lwork_inv, liwork_inv)
     nrwrk = nrwrk + lwork_inv
     niwrk = liwork_inv
 

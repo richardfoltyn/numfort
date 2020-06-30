@@ -1,8 +1,8 @@
 
-subroutine __APPEND(inv_work_query_mat,__PREC) (A, lwork, liwork, status)
+
+subroutine inv_work_query_matrix (A, lwork, liwork, status)
     !*  INV_WORK_QUERY returns the optimal workspace sizes for real and
     !   integer working arrays needed by the INV routine.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:,:) :: A
         !*  Matrix that should be inverted.
     integer, intent(out) :: lwork
@@ -12,20 +12,64 @@ subroutine __APPEND(inv_work_query_mat,__PREC) (A, lwork, liwork, status)
     type (status_t), intent(out), optional :: status
         !*  Exit status.
 
-    call inv_work_query (size(A,1), lwork, liwork, status)
+    call inv_work_query (0.0_PREC, size(A,1), lwork, liwork, status)
 
 end subroutine
 
 
-subroutine __APPEND(inv,__PREC) (A, Ainv, work, rwork, iwork, status)
+
+subroutine inv_work_query_dims (dummy, n, lwork, liwork, status)
+    !*  INV_WORK_QUERY returns the optimal workspace sizes for real and
+    !   integer working arrays needed by the INV routine.
+    real (PREC), intent(in) :: dummy
+    integer, intent(in) :: n
+    !*  Number of rows (columns) of square matrix to be inverted.
+    integer, intent(out) :: lwork
+    !*  Optimal REAL working array size
+    integer, intent(out) :: liwork
+    !*  INTEGER working array size
+    type (status_t), intent(out), optional :: status
+    !*  Exit status.
+
+    type (status_t) :: lstatus
+    integer :: lda, info
+    integer, dimension(1) :: idummy1d
+    real (PREC), dimension(1) :: rdummy1d
+    real (PREC), dimension(1,1) :: rdummy2d
+
+    lstatus = NF_STATUS_OK
+
+    liwork = -1
+
+    ! Workspace query for GETRI
+    lda = n
+    lwork = -1
+    call LAPACK_GETRI (n, rdummy2d, lda, idummy1d, rdummy1d, lwork, info)
+    if (info /= 0) then
+        lstatus = NF_STATUS_INVALID_STATE
+        goto 100
+    end if
+
+    ! Optimal array size stored in first element of RWORK1
+    lwork = int(rdummy1d(1))
+    liwork = n
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+
+subroutine inv (A, Ainv, work, rwork, iwork, status)
     !*  INV computes the inverse of a matrix using the LAPACK routines
     !   GETRF and GETRI.
-    integer, parameter :: PREC = __PREC
     real (PREC), intent(in), dimension(:,:), contiguous :: A
         !*  Input matrix to be inversted
     real (PREC), intent(out), dimension(:,:), contiguous :: Ainv
         !*  On exit, contains inverse of A if routine exits without errors.
-    type (__APPEND(workspace,__PREC)), intent(inout), optional, target :: work
+    type (workspace), intent(inout), optional, target :: work
         !*  Workspace object (optional)
     real (PREC), intent(inout), dimension(:), optional, contiguous, target :: rwork
         !*  Working array for reals. If present, takes precedence over WORK.
@@ -34,7 +78,7 @@ subroutine __APPEND(inv,__PREC) (A, Ainv, work, rwork, iwork, status)
     type (status_t), intent(out), optional :: status
         !*  Exit status (optoinal)
 
-    type (__APPEND(workspace,__PREC)), pointer :: ptr_ws
+    type (workspace), pointer :: ptr_ws
 
     ! Arguments to LAPACK routines
     integer, dimension(:), pointer, contiguous :: ptr_ipiv
@@ -125,14 +169,13 @@ end subroutine
 
 
 
-subroutine __APPEND(det,__PREC) (A, d, work, status)
-    integer, parameter :: PREC = __PREC
+subroutine det (A, d, work, status)
     real (PREC), intent(in), dimension(:,:), contiguous :: A
     real (PREC), intent(out) :: d
-    type (__APPEND(workspace,__PREC)), intent(inout), optional, target :: work
+    type (workspace), intent(inout), optional, target :: work
     type (status_t), intent(out), optional :: status
 
-    type (__APPEND(workspace,__PREC)), pointer :: ptr_ws
+    type (workspace), pointer :: ptr_ws
     integer :: nrwrk, niwrk
     integer, dimension(2) :: shp2d
     integer :: pow, i
