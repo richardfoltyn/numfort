@@ -43,7 +43,7 @@ module numfort_common_status
     end type
 
     interface operator(+)
-        module procedure add_int_status, add_status_int
+        module procedure add_int_status, add_status_int, add_status_status
     end interface
 
     interface assignment (=)
@@ -159,6 +159,14 @@ elemental function add_int_status (lhs, rhs) result(res)
     type (status_t), intent(in) :: rhs
     type (status_t) :: res
     res%code = ior(lhs, rhs%code)
+end function
+
+elemental function add_status_status (lhs, rhs) result(res)
+    type (status_t), intent(in) :: lhs
+    type (status_t), intent(in) :: rhs
+    type (status_t) :: res
+
+    res%code = ior (lhs%code, rhs%code)
 end function
 
 elemental subroutine assign_int_status (lhs, rhs)
