@@ -18,6 +18,9 @@ set(SOURCE_FILES
     dfrechet.F90
     dgenpareto.F90
     dlognorm.F90
+    glmnet.f90
+    glmnet_real32.F90
+    glmnet_real64.F90
     markov.f90
     markov_real64.F90
     markov_simulate_real64.F90
