@@ -8,8 +8,11 @@ module numfort_linalg_core_real32
 
     use numfort_common_status
     use numfort_common, only: shape_equal
+    use numfort_common_strings
+    use numfort_common_input_checks
     use numfort_common_workspace, workspace => workspace_real32
     use lapack_interfaces, only: LAPACK_GETRF => GETRF, LAPACK_GETRI => GETRI
+    use blas_interfaces, only: BLAS_SYRK => SYRK
 
     implicit none
 
@@ -18,6 +21,7 @@ module numfort_linalg_core_real32
     public :: inv
     public :: inv_work_query
     public :: det
+    public :: gram
 
     interface inv
         procedure inv
@@ -29,6 +33,10 @@ module numfort_linalg_core_real32
 
     interface det
         procedure det
+    end interface
+
+    interface gram
+        procedure gram
     end interface
 
     integer, parameter :: PREC = real32

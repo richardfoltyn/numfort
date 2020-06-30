@@ -237,3 +237,75 @@ subroutine det (A, d, work, status)
     call assert_dealloc_ptr (work, ptr_ws)
 
 end subroutine
+
+
+
+subroutine gram (a, g, trans, status)
+    !*  GRAM computes the Gram matrix G = A'A, or alternatively
+    !   the left Gram matrix G = AA'.
+    real (PREC), dimension(:,:), intent(in), contiguous :: a
+        !*   Matrix A.
+    real (PREC), dimension(:,:), intent(out), contiguous :: g
+        !*  Gram matrix
+    character (1), intent(in), optional :: trans
+        !*  If present and equal to T, the Gram matrix G = A'A is returned.
+        !   If present and equal to N, the left Gram matrix G = AA'
+        !   is computed (default: trans = 'T').
+    type (status_t), intent(out), optional :: status
+        !*  Exit code.
+
+    type (status_t) :: lstatus
+    integer :: k, n, lda, ldc, i, j
+    character (1) :: ltrans
+    character (*), parameter :: NAME = 'GRAM'
+    character (*), parameter :: UPLO = 'U'
+    real (PREC), parameter :: alpha = 1.0_PREC
+    real (PREC), parameter :: beta = 0.0_PREC
+
+    lstatus = NF_STATUS_OK
+
+    ! --- Input checks ---
+
+    ltrans = 'T'
+    if (present(trans)) ltrans = trans
+
+    call lower (ltrans)
+
+    call check_cond (ltrans == 't' .or. ltrans == 'n', NAME, &
+        'TRANS: Invalid value', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! Determine dimensions of the problem, using the same naming scheme as SYRK
+    if (ltrans == 't') then
+        k = size(a, 1)
+        n = size(a, 2)
+    else
+        k = size(a, 2)
+        n = size(a, 1)
+    end if
+
+    call check_cond (size(g,1) == n .and. size(g,2) == n, NAME, &
+        'G: Non-conformable array size', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! --- Implementation ---
+
+    lda = size(a, 1)
+    ldc = n
+
+    call BLAS_SYRK (uplo, ltrans, n, k, alpha, a, lda, beta, g, ldc)
+
+    ! Reflect matrix G along its diagonal. SYRK writes data to upper triangular
+    ! portion of G.
+
+    do j = 1, n
+        do i = j+1, n
+            g(i,j) = g(j,i)
+        end do
+    end do
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
