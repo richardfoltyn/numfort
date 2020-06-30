@@ -63,6 +63,7 @@ list(APPEND COMPONENTS
     integrate
     interpolate
     io
+    linalg
     optimize
     polynomial
     stats
