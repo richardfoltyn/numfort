@@ -3,6 +3,9 @@ get_filename_component(COMPONENT_NAME "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
 
 set(SOURCE_FILES
     common.f90
+    data_helpers.f90
+    data_helpers_real32.F90
+    data_helpers_real64.F90
     random.F90
     stats_core.f90
     stats_core_common.f90
