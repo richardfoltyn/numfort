@@ -25,6 +25,7 @@ module blas_interfaces
     
     ! Exported BLAS 3 routines
     public :: GEMM
+    public :: SYRK
     
     interface ASUM
         procedure SASUM, DASUM
@@ -64,6 +65,10 @@ module blas_interfaces
     
     interface GEMM
         procedure SGEMM, DGEMM, CGEMM, ZGEMM
+    end interface
+
+    interface SYRK
+        procedure SSYRK, DSYRK
     end interface
 
 
@@ -314,6 +319,22 @@ module blas_interfaces
             integer             :: m, n, incx, incy, lda
             real (DP)           :: alpha
             real (DP)           :: x(*), y(*), a(lda,*)
+        end subroutine
+    end interface
+
+    interface
+        subroutine SSYRK (uplo, trans, n, k, alpha, a, lda, beta, c, ldc)
+            character uplo, trans
+            integer n, k, lda, ldc
+            real alpha, beta
+            real a(lda,*), c(ldc,*)
+        end subroutine
+
+        subroutine DSYRK (uplo, trans, n, k, alpha, a, lda, beta, c, ldc)
+            character uplo, trans
+            integer n, k, lda, ldc
+            double precision alpha, beta
+            double precision a(lda,*), c(ldc,*)
         end subroutine
     end interface
 end module
