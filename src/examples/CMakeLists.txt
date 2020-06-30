@@ -1,4 +1,9 @@
 # CMake configuration for numfort examples
+find_package(OpenMP)
+
+if (OPENMP_FOUND)
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
+endif()
 
 ################################################################################
 # Additional compiler flags for examples
@@ -99,9 +104,7 @@ foreach (_comp IN LISTS _MODULES)
 
 endforeach ()
 
-find_package(OpenMP)
 
 if (OPENMP_FOUND)
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
     add_subdirectory(openmp)
 endif()
