@@ -2,10 +2,13 @@
 # Configuration file for numfort unit tests
 
 find_package(fcore REQUIRED)
-find_package(OpenMP)
 
-if (OPENMP_FOUND)
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
+if (USE_OPENMP)
+    find_package(OpenMP)
+
+    if (OPENMP_FOUND)
+        set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
+    endif()
 endif()
 
 ################################################################################
