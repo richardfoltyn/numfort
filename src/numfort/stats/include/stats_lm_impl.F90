@@ -657,15 +657,15 @@ subroutine pcr_2d (lhs, scores, sval, loadings, coefs, mean_x, std_x, &
     real (PREC), intent(in), dimension(:), contiguous :: sval
     real (PREC), intent(in), dimension(:,:), contiguous :: loadings
     real (PREC), intent(out), dimension(:,:), contiguous :: coefs
-    real (PREC), intent(in), dimension(:), contiguous, optional :: mean_x
-    real (PREC), intent(in), dimension(:), contiguous, optional :: std_x
+    real (PREC), intent(in), dimension(:), contiguous, optional, target :: mean_x
+    real (PREC), intent(in), dimension(:), contiguous, optional, target :: std_x
     logical, intent(in), optional :: add_const
     logical, intent(in), optional :: center
     type (status_t), intent(out), optional :: status
 
     logical :: ladd_const, lcenter
     integer :: nvars, nobs, ncomp, nlhs, ncoefs
-    real (PREC), dimension(:), pointer :: ptr_mean_x, ptr_std_x
+    real (PREC), dimension(:), pointer, contiguous :: ptr_mean_x, ptr_std_x
 
     type (status_t) :: lstatus
     integer :: i, nconst
@@ -713,11 +713,17 @@ subroutine pcr_2d (lhs, scores, sval, loadings, coefs, mean_x, std_x, &
     end if
 
     ! sample mean and standard deviation of original x variables
-    call assert_alloc_ptr (mean_x, nvars, ptr_mean_x)
-    call assert_alloc_ptr (std_x, nvars, ptr_std_x)
+    if (present(mean_x)) then
+        ptr_mean_x => mean_x
+    else
+        allocate (ptr_mean_x(nvars), source=0.0_PREC)
+    end if
 
-    if (.not. present(mean_x)) ptr_mean_x = 0.0_PREC
-    if (.not. present(std_x)) ptr_std_x = 1.0_PREC
+    if (present(std_x)) then
+        ptr_std_x => std_x
+    else
+        allocate (ptr_std_x(nvars), source=1.0_PREC)
+    end if
 
     ! Compute regression coefficients of regression y_n on PC
     ! 1. Compute PC'y

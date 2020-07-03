@@ -28,7 +28,7 @@ contains
 ! ------------------------------------------------------------------------------
 ! ASSERT_ALLOC_PTR routines
 
-subroutine assert_alloc_ptr_1d_real32 (x, n, ptr_x)
+pure subroutine assert_alloc_ptr_1d_real32 (x, n, ptr_x)
     !*  ASSERT_ALLOC_PTR ensures that ptr_x points to allocated memory:
     !   If argument x is present, ptr_x points to x and no additional
     !   memory is allocated. If x is not present, then ptr_x points to a newly
@@ -36,7 +36,7 @@ subroutine assert_alloc_ptr_1d_real32 (x, n, ptr_x)
 
     integer, parameter :: PREC = real32
 
-    real (PREC), intent(in), dimension(:), target, optional :: x
+    real (PREC), intent(inout), dimension(:), target, optional :: x
     integer, intent(in) :: n
     real (PREC), intent(out), dimension(:), pointer :: ptr_x
 
@@ -51,10 +51,10 @@ subroutine assert_alloc_ptr_1d_real32 (x, n, ptr_x)
     end if
 end subroutine
 
-subroutine assert_alloc_ptr_1d_real64 (x, n, ptr_x)
+pure subroutine assert_alloc_ptr_1d_real64 (x, n, ptr_x)
     integer, parameter :: PREC = real64
 
-    real (PREC), intent(in), dimension(:), target, optional :: x
+    real (PREC), intent(inout), dimension(:), target, optional :: x
     integer, intent(in) :: n
     real (PREC), intent(out), dimension(:), pointer :: ptr_x
 

@@ -551,7 +551,7 @@ subroutine moments (states, tm, mean, acorr, sigma, sigma_e, &
     real (PREC), intent(out), optional :: sigma_e
         !*  On exit, contains implied std. dev. of AR(1) error
         !   term (ie. conditional std. dev.)
-    real (PREC), intent(in), dimension(:), optional, target :: edist
+    real (PREC), intent(in), dimension(:), contiguous, optional, target :: edist
         !*  If present, contains the ergodic distribution implied by transition
         !   matrix. Will be computed if missing.
     logical, intent(in), optional :: inverse
@@ -563,7 +563,7 @@ subroutine moments (states, tm, mean, acorr, sigma, sigma_e, &
         !   probabolity Prob[x'=i | x=j].
     type (status_t), intent(out), optional :: status
 
-    real (PREC), dimension(:), pointer, contiguous :: ptr_pmf
+    real (PREC), dimension(:), contiguous, pointer :: ptr_pmf
     real (PREC), dimension(:), allocatable :: x
     real (PREC) :: mean_x, var_x, covar_x, acorr_x
     integer :: i, j, n
@@ -576,12 +576,13 @@ subroutine moments (states, tm, mean, acorr, sigma, sigma_e, &
     ltransposed = .false.
     if (present(transposed)) ltransposed = transposed
 
-    call assert_alloc_ptr (edist, n, ptr_pmf)
-
     if (.not. present(edist)) then
+        allocate (ptr_pmf(n))
         call markov_ergodic_dist (tm, ptr_pmf, inverse=inverse, &
             transposed=transposed, status=lstatus)
         if (lstatus /= NF_STATUS_OK) goto 100
+    else
+        ptr_pmf => edist
     end if
 
     ! Unconditional mean
