@@ -7,6 +7,7 @@ program stats_pcr_demo
     use numfort
     use numfort_common
     use numfort_stats, only: std, pcr, pca, ols
+    use numfort_stats_lm, lm_config => lm_config_real64
     use numfort_linalg, only: inv
 
     implicit none
@@ -35,6 +36,7 @@ subroutine example1 ()
     logical :: center, scale, trans_x
     integer :: i, ncomp
     type (status_t) :: status
+    type (lm_config) :: conf_lm
 
     ! Arguments for RANDOM_SEED
     integer :: rnd_size
@@ -89,7 +91,8 @@ subroutine example1 ()
     y = y + shocks
 
     ! Run regular OLS
-    call ols (y, x, coefs(:,1), add_const=.true., status=status)
+    conf_lm = lm_config (add_intercept=.true.)
+    call ols (conf_lm, x, y, coefs(:,1), status=status)
 
     ! Allocate array to store residuals for OLS and for PCR with 1,2,3 components
     allocate (resid(nobs, nvars+1))
@@ -104,8 +107,9 @@ subroutine example1 ()
     allocate (mean_x(nvars), std_x(nvars))
     allocate (propvar(ncomp), sval(ncomp))
 
-    call pca (x, scores, ncomp, center, scale, trans_x, sval, &
-        loadings, mean_x, std_x, propvar, status)
+    call pca (x, trans_x, center, scale, scores=scores(:,1:ncomp), &
+        sval=sval(1:ncomp), loadings=loadings, &
+        shift_x=mean_x, scale_x=std_x, propvar=propvar, status=status)
 
     ! PCR: run for i = 1, 2, 3 principal components
     do i = 1, nvars

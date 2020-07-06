@@ -1,238 +1,314 @@
 
 
+subroutine lm_result_update (self, conf, model, coefs, nobs, nrhs, nlhs, &
+        ncomp, var_rhs, rank_rhs)
 
+    type (lm_result), intent(inout) :: self
+    integer, intent(in), optional :: model
+    type (lm_config), intent(in), optional :: conf
+    real (PREC), intent(in), dimension(:), optional :: coefs
+    integer, intent(in), optional :: nobs
+    integer, intent(in), optional :: nrhs
+    integer, intent(in), optional :: nlhs
+    integer, intent(in), optional :: ncomp
+    real (PREC), intent(in), optional :: var_rhs
+    integer, intent(in), optional :: rank_rhs
 
-subroutine prepare_regressors (xin, xout, status, add_const, trans, center, &
-        scale, mean_x, std_x)
-    !*  PREPARE_REGRESSORS processes the regressor matrix to obtain
-    !   the shape used by estimation routines (observations along first
-    !   dimension), and optioanlly adds an intercept.
-    real (PREC), intent(in), dimension(:,:), contiguous :: xin
-        !*  User-provided regressor matrix
-    real (PREC), intent(out), dimension(:,:), contiguous :: xout
-        !*  Processed regressor matrix
-    type (status_t), intent(out) :: status
-    logical, intent(in), optional :: add_const
-        !*  Add intercept to regressor matrix
-    logical, intent(in), optional :: trans
-        !*  Transpose regressor matrix
-    logical, intent(in), optional :: center
-    logical, intent(in), optional :: scale
-    real (PREC), intent(out), dimension(:), contiguous, optional :: mean_x
-    real (PREC), intent(out), dimension(:), contiguous, optional :: std_x
-
-    integer :: nconst, nobs, nvars, ncoefs, i
-    logical :: ladd_const, ltrans
-    ! Arguments for NORMALIZE
-    integer, parameter :: dim = 1, dof = 0
-
-    status = NF_STATUS_OK
-
-    ltrans = .false.
-    ladd_const = .false.
-    if (present(trans)) ltrans = trans
-    if (present(add_const)) ladd_const = add_const
-
-    nobs = size(xin, 1)
-    nvars = size(xin, 2)
-    nconst = 0
-    ncoefs = nvars
-
-    if (ltrans) then
-        nobs = size(xin, 2)
-        nvars = size(xin, 1)
-    end if
-
-    if (ladd_const) then
-        nconst = 1
-        ncoefs = nvars + 1
-    end if
-
-    if (size(xout, 1) /= nobs .or. size(xout, 2) /= ncoefs) then
-        status = NF_STATUS_INVALID_ARG
-        return
-    end if
-
-    if (ltrans) then
-        forall (i=1:nvars) xout(:,nconst+i) = xin(i,:)
-    else
-        xout(:, 1+nconst:ncoefs) = xin
-    end if
-
-    ! Use helper routine to center and scale X, if applicable
-    call normalize (xout(:,1+nconst:ncoefs), mean_x, std_x, dim, center, &
-        scale, dof, status=status)
-    if (status /= NF_STATUS_OK) return
-
-    if (ladd_const) xout(:, 1) = 1.0_PREC
-
-end subroutine
-
-
-
-!-------------------------------------------------------------------------------
-! OLS
-
-pure subroutine ols_check_input (y, x, coefs, add_const, trans_x, rcond, res, status)
-
-    real (PREC), intent(in), dimension(:,:) :: y
-    real (PREC), intent(in), dimension(:,:) :: x
-    real (PREC), intent(in), dimension(:,:), optional :: coefs
-    logical, intent(in) :: add_const
-    logical, intent(in) :: trans_x
-    real (PREC), intent(in) :: rcond
-    type (lm_data), intent(in), dimension(:), optional :: res
-    type (status_t), intent(out) :: status
-
-    integer :: nvars, nobs, nconst, nlhs, ncoefs
-
-    status = NF_STATUS_INVALID_ARG
-
-    call ols_get_dims (y, x, add_const, trans_x, nobs, nvars, nlhs, ncoefs, nconst)
-
-    if (nobs < ncoefs) return
-    if (size(y, 1) /= nobs) return
     if (present(coefs)) then
-        if (size(coefs, 2) /= nlhs) return
-        if (size(coefs, 1) /= ncoefs) return
-    end if
-    if (rcond < 0) return
-
-    if (present(res)) then
-        if (size(res) /= nlhs) return
+        call copy_alloc (coefs, self%coefs)
     end if
 
-    status = NF_STATUS_OK
+    if (present(model)) self%model = model
+    if (present(conf)) self%conf = conf
+    if (present(nobs)) self%nobs = nobs
+    if (present(nrhs)) self%nrhs = nrhs
+    if (present(nlhs)) self%nlhs = nlhs
+    if (present(ncomp)) self%ncomp = ncomp
+    if (present(var_rhs)) self%var_rhs = var_rhs
+    if (present(rank_rhs)) self%rank_rhs = rank_rhs
+end subroutine
+
+
+
+subroutine lm_result_reset (self)
+    type (lm_result), intent(out) :: self
+
+    ! INTENT(OUT) makes sure that all allocatable attribute arrays are
+    ! deallocated.
+
+    ! Overwrite with default LM_CONFIG, whatever that may be
+    type (lm_config) :: conf
+    self%conf = conf
+
+    self%intercept = 0.0
+
+    self%model = 0
+
+    self%nrhs = 0
+    self%nlhs = 0
+    self%nobs = 0
+    self%ncomp = 0
+
+    self%rank_rhs = 0
+    self%var_rhs = 0.0
 
 end subroutine
 
 
 
-pure subroutine ols_get_dims (y, x, add_const, trans_x, nobs, nvars, nlhs, &
-        ncoefs, nconst)
-    !*  OLS_GET_DIMS returns the number of various dimensions of the least-squares
-    !   problem, depending on input data arrays and whether these should be
-    !   transposed, an intercept added, etc.
+pure subroutine get_dims_2d (X, Y, coefs, intercept, add_intercept, trans_x, &
+        trans_y, trans_coefs, nobs, nrhs, nlhs, ncoefs, nconst_add, nconst_coefs, &
+        status)
+    !*  GET_DIMS returns the dimensions corresponding to various arrays
+    !   used in linear models.
+    real (PREC), intent(in), dimension(:,:) :: X
+    real (PREC), intent(in), dimension(:,:) :: Y
+    real (PREC), intent(in), dimension(:,:), optional :: coefs
+    real (PREC), intent(in), dimension(:), optional :: intercept
+    logical, intent(in), optional :: add_intercept
+    logical, intent(in), optional :: trans_x
+    logical, intent(in), optional :: trans_y
+    logical, intent(in), optional :: trans_coefs
+    integer, intent(out), optional :: nobs, nrhs, nlhs
+    integer, intent(out), optional :: ncoefs
+        !*  Number of coefficients stored in COEFS array.
+    integer, intent(out), optional :: nconst_add
+        !*  Number of constants ADDED to the model (irrespective of what is
+        !   in the user-provided regressor matrix). Either 0 or 1, the latter
+        !   being the case when ADD_INTERCEPT=.TRUE.
+    integer, intent(out), optional :: nconst_coefs
+        !*  Number of constants added to COEFS arrays. This value satisfies
+        !   0 <= Nconst_coefs <= Nconst <= 1.
+        !   Non-zero value can only be returned if COEFS is present, otherwise
+        !   it is impossible to determine from the inputs.
+    type (status_t), intent(out), optional :: status
+        !*  Exit code. Returns NF_STATUS_INVALID_ARG if any of the dimensions
+        !   are non-conformable with the given array sizes.
 
-    real (PREC), intent(in), dimension(:,:) :: x
-    real (PREC), intent(in), dimension(:,:) :: y
-    logical, intent(in) :: add_const
-    logical, intent(in) :: trans_x
-    integer, intent(out) :: nobs, nvars, nlhs, ncoefs, nconst
+    logical :: ltrans_x, ltrans_y, ltrans_coefs
+    logical :: dim_ok
+    integer :: lnrhs, lnlhs, lncoefs, lnobs, lnobs_lhs, dim
+    integer :: lnconst_add, lnconst_coefs
+    type (status_t) :: lstatus
+    character (*), parameter :: NAME = 'GET_DIMS'
+    type (lm_config) :: conf
 
-    nconst = 0
-    if (add_const) nconst = 1
+    lstatus = NF_STATUS_OK
 
-    if (.not. trans_x) then
-        nobs = size(x, 1)
-        nvars = size(x, 2)
+    ! Use CONF values as default values
+    call set_optional_arg (trans_x, conf%trans_x, ltrans_x)
+    call set_optional_arg (trans_y, conf%trans_y, ltrans_y)
+    call set_optional_arg (trans_coefs, conf%trans_coefs, ltrans_coefs)
+
+    lnobs = 0
+    lnrhs = 0
+    lnlhs = 0
+    lncoefs = 0
+    lnconst_add = 0
+    lnconst_coefs = 0
+
+    if (present(add_intercept)) then
+        if (add_intercept) lnconst_add = 1
+    end if
+
+    if (.not. ltrans_x) then
+        lnobs = size(x, 1)
+        lnrhs = size(x, 2)
     else
-        nobs = size(x, 2)
-        nvars = size(x, 1)
+        lnobs = size(x, 2)
+        lnrhs = size(x, 1)
     end if
 
-    nlhs = size(y, 2)
-    ncoefs = nvars + nconst
+    if (ltrans_y) then
+        lnlhs = size(Y, 1)
+        lnobs_lhs = size(Y, 2)
+    else
+        lnlhs = size(Y, 2)
+        lnobs_lhs = size(Y, 1)
+    end if
+
+    if (present(coefs)) then
+        ! Dimensions of COEFS array
+        dim = 1
+        if (ltrans_coefs) dim = 2
+
+        lncoefs = size(coefs,dim)
+        lnconst_coefs = lncoefs - lnrhs
+
+        if (lnconst_coefs < 0 .or. lnconst_coefs > 1) then
+            lstatus = NF_STATUS_INVALID_ARG
+            goto 100
+        end if
+
+        if (present(add_intercept)) then
+            if (.not. add_intercept) then
+                ! Intercept should not be added, so don't allow COEFS
+                ! to have one additional row/column
+                dim_ok = (lncoefs == lnrhs) .and. (size(coefs,3-dim) == lnlhs)
+            else
+                ! Intercept to be added to model, but user still has the option
+                ! of having it stored in COEFS or not, so both are acceptable
+                dim_ok = ((lncoefs == lnrhs) .or. (lncoefs == (lnrhs + 1))) &
+                    .and. (size(coefs,3-dim) == lnlhs)
+            end if
+        else
+            ! ADD_INTERCEPT not present, so we don't know whether COEFS
+            ! has one row/column more than NRHS.
+            ! This is relevant when called from the PREDICT routines.
+            dim_ok = (lncoefs == (lnrhs + 1) .or. lncoefs == lnrhs) &
+                .and. size(coefs,3-dim) == lnlhs
+        end if
+
+        call check_cond (dim_ok, NAME, 'COEFS: Non-conformable array', lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+    end if
+
+    call check_cond (lnobs == lnobs_lhs, NAME, 'Y: Non-conformable array', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    if (present(intercept)) then
+        if (size(intercept) < lnlhs) goto 100
+    end if
+
+100 continue
+
+    if (present(nobs)) nobs = lnobs
+    if (present(nrhs)) nrhs = lnrhs
+    if (present(nlhs)) nlhs = lnlhs
+    if (present(ncoefs)) ncoefs = lncoefs
+    if (present(nconst_add)) nconst_add = lnconst_add
+    if (present(nconst_coefs)) nconst_coefs = lnconst_coefs
+
+    if (present(status)) status = lstatus
 
 end subroutine
 
 
 
-subroutine ols_2d (y, x, coefs, add_const, trans_x, rcond, rank, res, status)
+subroutine ols_2d (conf, X, Y, coefs, intercept, rank, res, status)
     !*  OLS_2D computes the ordinary least-squares problem for given independent
     !   data X and (potentially multiple) dependent variables Y.
-    !
-    !   Note that a regression constant is added by default.
     !
     !   The LS problem is solved using SVD as implemented in LAPACK's GELSD
     !   routine. The optional arguments RCOND and RANK are passed directly
     !   to/from GELSD.
     !
+    !   Intercepts
+    !   ----------
+    !   The routine supports the following scenarios:
+    !       1.  CONF%ADD_INTERCEPT = .FALSE. and INTERCEPT not present.
+    !           No intercept should be added or returned: the model is
+    !           estimated with an intercept if and only if the user
+    !           manually adds a constant to X.
+    !       2.  CONF%ADD_INTERCEPT = .TRUE. and INTERCEPT not present:
+    !           The routine adds an intercept to the model.
+    !       3.  CONF%ADD_INTERCEPT = .FALSE. and INTERCEPT is present:
+    !           The routine adds an intercept to the model and its estimates
+    !           are stored in INTERCEPT.
+    !       4.  ADD_INTERCEPT = .TRUE. and INTERCEPT is present:
+    !           The routine adds an intercept to the model and its estimates
+    !           are stored INTERCEPT.
+    !   Consequently, in cases (2) - (4), the regressor matrix is augmented
+    !   to be [1, X], and the RANK output argument will be the rank of
+    !   this matrix.
+    !
+    !   Additionally, if the array COEFS has shape [NRHS+1,NLHS], the
+    !   estimated intercepts will ADDITIONALLY be stored in the first
+    !   row of COEFS.
+    !
     !   Note that the routine creates copies for input arrays X and Y as these
     !   will be overwritten by GELSD.
-
-    real (PREC), intent(in), dimension(:,:), contiguous :: y
+    type (lm_config), intent(in), optional :: conf
+    real (PREC), intent(in), dimension(:,:), contiguous :: X
+        !*  Array of RHS variables
+    real (PREC), intent(in), dimension(:,:), contiguous :: Y
         !*  Array of LHS variables (separate regression is performed for each
         !   LHS variables using the same set of RHS variables)
-    real (PREC), intent(in), dimension(:,:), contiguous :: x
-        !*  Array of RHS variables
     real (PREC), intent(out), dimension(:,:), contiguous, optional :: coefs
         !*  Array of estimated coefficients. Argument is optional in case
         !   coefficients should only be stored in RES argument.
-    logical, intent(in), optional :: add_const
-        !*  If present and .TRUE., add constant to RHS variables (default: .TRUE.)
-    logical, intent(in), optional :: trans_x
-        !*  If present and .TRUE., transpose array X of RHS variables.
-    real (PREC), intent(in), optional :: rcond
-        !*  Optional argument RCOND passed to LAPACK's GELSD that allows to
-        !   control the effective rank of the regressor matrix.
+    real (PREC), intent(out), dimension(:), optional :: intercept
     integer, intent(out), optional :: rank
         !*  Contains effective rank of regressor matrix
-    type (lm_data), dimension(:), optional :: res
-        !*  Optional result objects for linear models. Note that a separate
-        !   object is returned for each LHS variable.
+    type (lm_result), intent(inout), optional :: res
+        !*  Optional result object for linear models.
     type (status_t), intent(out), optional :: status
         !*  Optional exit code
 
-    logical :: ladd_const, ltrans_x
-    real (PREC) :: lrcond, var_rhs
-    integer :: nobs, nvars, ncoefs, nconst, nlhs, i
+    real (PREC) :: var_rhs
+    integer :: nobs, Nrhs, Ncoefs, nconst_add, nlhs, i
     type (status_t) :: lstatus
+    type (lm_config) :: lconf
+    character (*), parameter :: NAME = 'OLS'
 
     ! GELSD arguments
     real (PREC), dimension(:), allocatable :: work, sval
     integer, dimension(:), allocatable :: iwork
-    real (PREC), dimension(:,:), allocatable :: lx, lhs
+    real (PREC), dimension(:,:), allocatable :: Xp, Yp
     integer :: lrank
-    integer :: lwork, info, m, n, nrhs, lda, ldb, mn, liwork
+    integer :: lwork, info, m, n, lda, ldb, mn, liwork
 
     lstatus = NF_STATUS_OK
 
-    ladd_const = .true.
-    if (present(add_const)) ladd_const = add_const
+    ! --- Input processsing ---
 
-    ltrans_x = .false.
-    if (present(trans_x)) ltrans_x = trans_x
+    if (present(conf)) lconf = conf
 
-    ! Use default value from LAPACK95 GELS wrapper
-    lrcond = 100 * epsilon(1.0_PREC)
-    if (present(rcond)) lrcond = rcond
+    call check_cond (lconf%rcond >= 0.0_PREC, NAME, 'CONF: Invalid value for RCOND', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
 
-    call ols_check_input (y, x, coefs, ladd_const, ltrans_x, lrcond, res, lstatus)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    call get_dims (X, Y, coefs, intercept, lconf%add_intercept, lconf%trans_x, &
+        lconf%trans_y, trans_coefs=lconf%trans_coefs, nobs=nobs, nrhs=Nrhs, &
+        nlhs=Nlhs, ncoefs=Ncoefs, nconst_add=Nconst_add, status=lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
 
-    call ols_get_dims (y, x, ladd_const, ltrans_x, nobs, nvars, nlhs, ncoefs, nconst)
+    call check_cond (Nobs >= (Nrhs + Nconst_add), NAME, 'Too few observations', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    if (present(intercept)) then
+        call check_cond (size(intercept) >= nlhs, NAME, &
+            'INTERCEPT: Non-conformable array', lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+    end if
+
+   ! --- Pre-process data ---
 
     ! Allocate (possibly transposed) array to store X variables; will be
     ! overwritten by GELSD, so we have to allocate in any case.
     ! Add constant as requested.
-    allocate (lx(nobs,ncoefs))
-    if (ltrans_x) then
-        forall (i=1:nvars) lx(:,nconst+i) = x(i,:)
-    else
-        lx(:, 1+nconst:ncoefs) = x
-    end if
-    if (ladd_const) lx(:, 1) = 1.0_PREC
+    allocate (Xp(nobs,Nrhs+Nconst_add))
 
-    ! Set up GELSD call
+    call transform_regressors (X, Xp, trans=lconf%trans_x, drop_na=.false., &
+        add_intercept=lconf%add_intercept, status=lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    if (lconf%trans_y) then
+        allocate (Yp(nobs,Nlhs))
+        call transform_regressors (Y, Yp, trans=lconf%trans_y, drop_na=.false., &
+            status=lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+    else
+        ! Just create a copy since Y would otherwise be overwritten in place
+        allocate (Yp(nobs,nlhs), source=Y)
+    end if
+
+    ! --- GELSD ---
+
     m = nobs
-    n = ncoefs
+    n = Nrhs + Nconst_add
     mn = max(1, min(m, n))
     lda = nobs
     ldb = nobs
-    ! GELSD solves Ax=b, we solve y = Xb, so our nlhs = nrhs in GELSD
-    nrhs = nlhs
+    ! GELSD solves Ax=b, we solve Y = Xb, so our nlhs = nrhs in GELSD notation
     allocate (sval(mn))
-    ! Dummy argument b will be overwritten, create copy
-    allocate (lhs(nobs,nlhs), source=y)
 
     ! 1. Workspace query
     lwork = -1
     allocate (work(1))
     allocate (iwork(1))
 
-    call LAPACK_GELSD (m, n, nrhs, lx, lda, lhs, ldb, sval, lrcond, lrank, work, &
-        lwork, iwork, info)
+    call LAPACK_GELSD (m, n, nlhs, Xp, lda, Yp, ldb, sval, lconf%rcond, lrank, &
+        work, lwork, iwork, info)
 
     if (info < 0) then
         lstatus = NF_STATUS_INVALID_ARG
@@ -247,35 +323,73 @@ subroutine ols_2d (y, x, coefs, add_const, trans_x, rcond, rank, res, status)
     allocate (work(lwork), iwork(liwork))
 
     ! 3. Actual call to perform LS
-    call LAPACK_GELSD (m, n, nrhs, lx, lda, lhs, ldb, sval, lrcond, lrank, work, &
-        lwork, iwork, info)
+    call LAPACK_GELSD (m, n, nlhs, Xp, lda, Yp, ldb, sval, lconf%rcond, lrank, &
+        work, lwork, iwork, info)
 
     ! Check whether algorithm for computing SVD failed to converge
     if (info > 0) then
         lstatus = NF_STATUS_NOT_CONVERGED
         goto 100
+    else if (info < 0) then
+        lstatus = NF_STATUS_INVALID_ARG
+        goto 100
     end if
+
+    ! --- Store results ---
 
     ! Copy coefficients
     if (present(coefs)) then
-        forall (i=1:nlhs) coefs(1:ncoefs,i) = lhs(1:ncoefs,i)
+        if (lconf%trans_coefs) then
+            if (Ncoefs == Nrhs) then
+                ! No intercept should be added to COEFS
+                forall (i=1:Nrhs) coefs(1:Nlhs,i) = Yp(Nconst_add+i,1:Nlhs)
+            else
+                ! Include added intercept in COEFS
+                forall (i=1:Ncoefs) coefs(1:Nlhs,i) = Yp(i,1:Nlhs)
+            end if
+        else
+            if (Ncoefs == Nrhs) then
+                ! No intercept should be added to COEFS
+                forall (i=1:nlhs) coefs(1:Nrhs,i) = Yp(1+Nconst_add:Nrhs+Nconst_add,i)
+            else
+                ! Include added intercept in COEFS
+                forall (i=1:nlhs) coefs(1:Ncoefs,i) = Yp(1:Ncoefs,i)
+            end if
+        end if
+    end if
+
+    if (present(intercept)) then
+        ! Costant was added to X, intercept is in the first row of Yp
+        intercept = 0.0
+        if (lconf%add_intercept) then
+            intercept(1:Nlhs) = Yp(1,:)
+        end if
     end if
 
     ! Copy over optional output arguments
     if (present(rank)) rank = lrank
 
     if (present(res)) then
-        ! Update LM_DATA result objects for OLS model
+        ! Update LM_RESULT object for OLS model
 
         ! Fraction of RHS variance used, analogous to PCR regression
         ! (only applicable if RHS matrix does not have full rank)
         var_rhs = sum(sval(1:lrank) ** 2.0_PREC) / sum(sval**2.0_PREC)
 
-        do i = 1, nlhs
-            call lm_data_update (res(i), model=NF_STATS_LM_OLS, &
-                coefs=lhs(1:ncoefs,i), nobs=nobs, nvars=nvars, var_expl=var_rhs, &
-                rank_rhs=lrank, trans_rhs=ltrans_x, add_const=ladd_const)
-        end do
+        call lm_result_update (res, conf=lconf, model=NF_STATS_LM_OLS, &
+            nobs=nobs, nrhs=Nrhs, nlhs=Nlhs, var_rhs=var_rhs, rank_rhs=lrank)
+
+        ! Never store intercept in first row in RES%COEFS_MULTI array
+        call copy_alloc (Yp(1+Nconst_add:Nrhs+Nconst_add,1:Nlhs), res%coefs_multi)
+
+        if (lconf%add_intercept) then
+            call copy_alloc (Yp(1,1:Nlhs), res%intercept_multi)
+        else
+            ! We cannot leave the array unallocated or initialized, make
+            ! sure that we set intercepts to zero.
+            call cond_alloc (res%intercept_multi, Nlhs)
+            res%intercept_multi(:) = 0.0
+        end if
     end if
 
 100 continue
@@ -285,48 +399,62 @@ end subroutine
 
 
 
-subroutine ols_1d (y, x, coefs, add_const, trans_x, rcond, rank, res, status)
+subroutine ols_1d (conf, X, y, coefs, intercept, rank, res, status)
     !*  OLS_1D provides a convenient wrapper for OLS_2D for one-dimensional
     !   input data (ie for regressions with a single dependent variable).
     !
     !   See the documentation for OLS_2D for details.
-
+    type (lm_config), intent(in), optional :: conf
+    real (PREC), intent(in), dimension(:,:), contiguous :: X
     real (PREC), intent(in), dimension(:), contiguous, target :: y
-    real (PREC), intent(in), dimension(:,:), contiguous :: x
-    real (PREC), intent(out), dimension(:), contiguous, optional :: coefs
-    logical, intent(in), optional :: add_const
-    logical, intent(in), optional :: trans_x
-    real (PREC), intent(in), optional :: rcond
+    real (PREC), intent(out), dimension(:), contiguous, optional, target :: coefs
+    real (PREC), intent(out), optional :: intercept
     integer, intent(out), optional :: rank
-    type (lm_data), intent(out), optional :: res
+    type (lm_result), intent(inout), optional :: res
     type (status_t), intent(out), optional :: status
 
     real (PREC), dimension(:,:), contiguous, pointer :: ptr_y
-    real (PREC), dimension(:,:), allocatable :: coefs2d
-    integer :: nobs, ncoefs
+    real (PREC), dimension(:,:), contiguous, pointer :: ptr_coefs
+    real (PREC), dimension(:), allocatable :: lintercept
     type (status_t) :: lstatus
-    type (lm_data), dimension(:), allocatable :: res1d
+    type (lm_config) :: lconf
 
-    nobs = size(y)
+    nullify (ptr_y, ptr_coefs)
 
-    ptr_y(1:nobs,1:1) => y
+    ptr_y(1:size(y),1:1) => y
+
+    if (present(conf)) then
+        ! Enforce no transposing of data in 1d arrays
+        lconf = conf
+        lconf%trans_y = .false.
+        lconf%trans_coefs = .false.
+    end if
 
     if (present(coefs)) then
-        ncoefs = size(coefs)
-        allocate (coefs2d(ncoefs,1))
+        ptr_coefs(1:size(coefs),1:1) => coefs
     end if
 
-    if (present(res)) then
-        allocate (res1d(1))
+    if (present(intercept)) then
+        allocate (lintercept(1))
     end if
 
-    call ols (ptr_y, x, coefs2d, add_const, trans_x, rcond, rank, res1d, lstatus)
+    call ols (conf, X, ptr_y, ptr_coefs, lintercept, rank, res, lstatus)
 
-    ! Leave output array unmodified if OLS could not be performed correctly
-    ! to be consistent with behavior of OLS_2D.
     if (lstatus == NF_STATUS_OK) then
-        if (present(coefs)) coefs = coefs2d(:,1)
-        if (present(res)) res = res1d(1)
+        if (present(res)) then
+            if (allocated(res%coefs_multi)) then
+                call copy_alloc (res%coefs_multi(:,1), res%coefs)
+            end if
+
+            res%intercept = 0.0
+            if (allocated(res%intercept_multi)) then
+                res%intercept = res%intercept_multi(1)
+            end if
+        end if
+    end if
+
+    if (present(intercept)) then
+        intercept = lintercept(1)
     end if
 
     if (present(status)) status = lstatus
@@ -335,99 +463,27 @@ end subroutine
 
 
 
-!-------------------------------------------------------------------------------
-! PCA (Principal component analysis)
+subroutine pca (X, trans_x, center, scale, scores, sval, loadings, shift_x, &
+        scale_x, propvar, status)
 
-pure subroutine pca_check_input (x, scores, ncomp, trans_x, s, &
-        loadings, mean_x, std_x, propvar, status)
-    real (PREC), intent(in), dimension(:,:) :: x
-    real (PREC), intent(in), dimension(:,:) :: scores
-    integer, intent(in) :: ncomp
-    logical, intent(in) :: trans_x
-    real (PREC), intent(in), dimension(:), optional :: s
-    real (PREC), intent(in), dimension(:,:), optional :: loadings
-    real (PREC), intent(in), dimension(:), optional :: mean_x, std_x
-    real (PREC), intent(in), dimension(:), optional :: propvar
-    type (status_t), intent(out) :: status
-
-    integer :: nobs, nvars
-
-    status = NF_STATUS_INVALID_ARG
-
-    call pca_get_dims (x, trans_x, nobs, nvars)
-
-    if (nobs < 1 .or. nobs < nvars) return
-    if (ncomp < 1 .or. ncomp > nvars) return
-    if (size(scores,1) < nobs .or. size(scores,2) < ncomp) return
-
-    if (present(s)) then
-        if (size(s) < ncomp) return
-    end if
-
-    if (present(loadings)) then
-        if (size(loadings, 1) < nvars .or. size(loadings,2) < ncomp) return
-    end if
-
-    if (present(mean_x)) then
-        if (size(mean_x) < nvars) return
-    end if
-
-    if (present(std_x)) then
-        if (size(std_x) < nvars) return
-    end if
-
-    ! Proportional of variance explained by each of the first ncomp PCs
-    if (present(propvar)) then
-        if (size(propvar) < ncomp) return
-    end if
-
-    status = NF_STATUS_OK
-
-end subroutine
-
-
-pure subroutine pca_get_dims (x, trans_x, nobs, nvars)
-    !*  PCA_GET_DIMS returns the number of various dimensions of the PCA
-    !   problem derived from input data and options (e.g. whether data should
-    !   be transposed).
-
-    real (PREC), intent(in), dimension(:,:) :: x
-    logical, intent(in) :: trans_x
-    integer, intent(out) :: nobs, nvars
-
-    if (trans_x) then
-        nobs = size(x, 2)
-        nvars = size(x, 1)
-    else
-        nobs = size(x, 1)
-        nvars = size(x, 2)
-    end if
-
-end subroutine
-
-
-subroutine pca (x, scores, ncomp, center, scale, trans_x, &
-        sval, loadings, mean_x, std_x, propvar, status)
-
-    real (PREC), intent(in), dimension(:,:), contiguous :: x
-    real (PREC), intent(out), dimension(:,:), contiguous :: scores
-    integer, intent(in) :: ncomp
+    real (PREC), intent(in), dimension(:,:), contiguous :: X
+    logical, intent(in), optional :: trans_x
     logical, intent(in), optional :: center
     logical, intent(in), optional :: scale
-    logical, intent(in), optional :: trans_x
+    real (PREC), intent(out), dimension(:,:), contiguous, optional :: scores
     real (PREC), intent(out), dimension(:), contiguous, optional :: sval
     real (PREC), intent(out), dimension(:,:), contiguous, optional :: loadings
-    real (PREC), intent(out), dimension(:), contiguous, optional :: mean_x
-    real (PREC), intent(out), dimension(:), contiguous, optional :: std_x
+    real (PREC), intent(out), dimension(:), contiguous, optional :: shift_x
+    real (PREC), intent(out), dimension(:), contiguous, optional :: scale_x
     real (PREC), intent(out), dimension(:), contiguous, optional :: propvar
     type (status_t), intent(out), optional :: status
 
     logical :: lscale, lcenter, ltrans_x
     type (status_t) :: lstatus
-    real (PREC), dimension(:,:), allocatable :: x_n, x_tmp
+    real (PREC), dimension(:,:), allocatable :: Xp
     real (PREC), dimension(:), allocatable :: work
-    integer :: nvars, nobs, i
-    real (PREC), dimension(:), allocatable :: lmean_x, lstd_x
+    integer :: Nvars, Nobs, i, Ncomp
+    character (*), parameter :: NAME = 'PCA'
 
     ! Argument for GESDD
     real (PREC), dimension(:), allocatable :: ls
@@ -438,61 +494,53 @@ subroutine pca (x, scores, ncomp, center, scale, trans_x, &
     real (PREC), dimension(0,0) :: u
     integer :: lda, ldu, ldvt, lwork, info, m, n, mn
 
-    ! Arguments for GEMM
-    real (PREC), dimension(:,:), allocatable :: vk
-    character (1) :: transa, transb
-    real (PREC), parameter :: alpha = 1.0_PREC, beta = 0.0_PREC
-    integer :: ldb, ldc, k
-
     lstatus = NF_STATUS_OK
 
-    lcenter = .true.
-    lscale = .true.
-    ltrans_x = .false.
-    if (present(center)) lcenter = center
-    if (present(scale)) lscale = scale
-    if (present(trans_x)) ltrans_x = trans_x
+    ! --- Input processing ---
+    call set_optional_arg (center, .true., lcenter)
+    call set_optional_arg (scale, .true., lscale)
+    call set_optional_arg (trans_x, .false., ltrans_x)
 
-    call pca_check_input (x, scores, ncomp, ltrans_x, sval, loadings, &
-        mean_x, std_x, propvar, lstatus)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    call get_regressor_dims (X, ltrans_x, Nvars=Nvars, Nobs=Nobs)
 
-    call pca_get_dims (x, ltrans_x, nobs, nvars)
+    ! --- Quick termination ---
 
-    ! 1. Normalize data in place; hence we first need to create a copy,
-    ! accounting for the possibility that x needs to be transformed.
-    ! All code below assumed that x_n has shape (noabs, nvars).
-    if (ltrans_x) then
-        allocate (x_n(nobs, nvars))
-        forall (i=1:nvars) x_n(:,i) = x(i,1:nobs)
-    else
-        allocate (x_n(nobs, nvars), source=x)
-    end if
+    call check_cond (Nobs >= Nvars, NAME, 'X: too few observations', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
 
-    allocate (lmean_x(nvars), lstd_x(nvars))
+    ! --- Check remaining inputs ---
 
-    if (lcenter .or. lscale) then
-        ! Compute mean and std. dev. for each variable
-        call std (x_n, s=lstd_x, m=lmean_x, dof=0, dim=1, status=lstatus)
+    if (present(scores)) then
+        ! Do not check second dimension, we will simply fill in as many scores
+        ! as there are columns
+        call check_cond (size(scores, 1) == Nobs, NAME, &
+            'SCORES: Non-conformable array', lstatus)
         if (lstatus /= NF_STATUS_OK) goto 100
-
-        ! de-mean variables
-        if (lcenter) then
-            do i = 1, nvars
-                x_n(:,i) = x_n(:,i) - lmean_x(i)
-            end do
-        end if
-
-        ! rescale variables to have std. dev. of 1
-        if (lscale) then
-            do i = 1, nvars
-                ! Skip constant variables to avoid generating NaNs
-                if (lstd_x(i) > 0.0_PREC) then
-                    x_n(:,i) = x_n(:,i) / lstd_x(i)
-                end if
-            end do
-        end if
     end if
+
+    if (present(loadings)) then
+        ! Don't check second dimension, we will simply fill in as many
+        ! principal components as there are columns
+        call check_cond (size(loadings,1) == Nvars, NAME, &
+            'LOADINGS: Non-conformable array', lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+    end if
+
+    ! --- Pre-process data ---
+
+    ! 1. Standardize data in place; hence we first need to create a copy,
+    ! accounting for the possibility that X needs to be transformed.
+    ! GESDD overwrites its inputs, so we need a copy of X in any case!
+
+    allocate (Xp(Nobs,Nvars))
+
+    call transform_regressors (X, Xp, trans=ltrans_x, center=lcenter, &
+        scale=lscale, shift_x=shift_x, scale_x=scale_x, drop_na=.false., &
+        status=lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! --- GESDD call ---
+
 
     ! Notes on calling GESDD: we are using JOBZ='O' so that only the first
     ! NVARS columns of the matrix U in the SVD X=USV' will be computed and
@@ -501,22 +549,26 @@ subroutine pca (x, scores, ncomp, center, scale, trans_x, &
     ! be written into the array VT and never into X_TMP.
     ! For JOBZ='O' and m >= n, the array U will never be referenced, so we
     ! can just pass a size-0 dummy array.
-    m = nobs
-    n = nvars
-    lda = nobs
+    m = Nobs
+    n = Nvars
+    lda = Nobs
     ldvt = n
     ldu = m
     mn = max(1, min(m, n))
 
-    allocate (iwork(8*mn))
+    ! These arrays need to be allocated irrespective of whether GESDD is
+    ! called or not
     allocate (vt(n, n))
     allocate (ls(mn))
-    ! Contents of x_n will be overwritten by GESDD, make copy
-    allocate (x_tmp(nobs,nvars), source=x_n)
+
+    ! Skip the remaining SVD decomposition of no variables are present
+    if (Nvars == 0) goto 50
+
+    allocate (iwork(8*mn))
 
     ! workspace query
     lwork = -1
-    call LAPACK_GESDD (jobz, m, n, x_tmp, lda, ls, u, ldu, vt, ldvt, qwork, &
+    call LAPACK_GESDD (jobz, m, n, Xp, lda, ls, u, ldu, vt, ldvt, qwork, &
         lwork, iwork, info)
 
     ! Recover minimal work space size
@@ -529,9 +581,8 @@ subroutine pca (x, scores, ncomp, center, scale, trans_x, &
     ! perform actual SVD
     allocate (work(lwork))
 
-    call LAPACK_GESDD (jobz, m, n, x_tmp, lda, ls, u, ldu, vt, ldvt, work, &
+    call LAPACK_GESDD (jobz, m, n, Xp, lda, ls, u, ldu, vt, ldvt, work, &
         lwork, iwork, info)
-    deallocate (x_tmp)
 
     if (info /= 0) then
         if (info < 0) then
@@ -543,913 +594,598 @@ subroutine pca (x, scores, ncomp, center, scale, trans_x, &
         goto 100
     end if
 
-    ! Copy over first ncomp components and transpose
-    allocate (vk(nvars, ncomp))
-    forall (i=1:ncomp) vk(:,i) = vt(i, :)
+    ! --- Store results ---
 
-    ! Compute the first k principal components (scores) as PC_k = X V_k
-    m = nobs
-    n = ncomp
-    k = nvars
-    lda = nobs
-    ldb = nvars
-    ldc = nobs
-    transa = 'N'
-    transb = 'N'
-    call BLAS_GEMM (transa, transb, m, n, k, alpha, x_n, lda, vk, ldb, beta, scores, ldc)
+    ! Jump to this point if SVD decomposition is skipped
+50  continue
 
-    if (present(sval)) sval(1:ncomp) = ls(1:ncomp)
-    if (present(loadings)) then
-        forall (i=1:ncomp) loadings(1:nvars,i) = vk(:, i)
+    if (present(scores)) then
+        ! Compute scores as S(:,i) = U(:,i) * sval(i) = X * V(:,i)
+        ncomp = min(Nvars, size(scores, 2))
+        do i = 1, ncomp
+            scores(1:Nobs,i) = Xp(1:Nobs,i) * ls(i)
+        end do
+
+        ! Set any excess columns to zero
+        scores(:,ncomp+1:) = 0.0
     end if
 
-    ! compute vector of variance share explained by each PC.
+    if (present(sval)) then
+        sval = 0.0
+        ncomp = min(Nvars, size(sval))
+        sval(1:ncomp) = ls(1:ncomp)
+    end if
+
+    if (present(loadings)) then
+        ncomp = min(Nvars, size(loadings, 2))
+        ! V^T returned by GESDD has shape [NCOMP,NVARS] where in that routine
+        ! NCOMP = NVARS. If we want to restrict to NCOMP < NVARS, we have
+        ! to use the first 1:NCOMP rows.
+        do i = 1, ncomp
+            loadings(1:Nvars,i) = vt(i,1:Nvars)
+        end do
+        ! Set any excess columns to zero
+        loadings(:,ncomp+1:) = 0.0
+    end if
+
+    ! compute vector of variance share captured by each PC.
     ! Variance share is given by relative size of each eigenvalue (ie. squared
     ! singular value) relative to sum of all EVs.
     if (present(propvar)) then
-        propvar(1:ncomp) = ls(1:ncomp) ** 2 / sum(ls ** 2)
+        propvar(:) = 0.0
+        if (allocated(ls)) then
+            ncomp = min(Nvars, size(propvar), size(ls))
+            propvar(1:ncomp) = ls(1:ncomp) ** 2 / sum(ls(1:Nvars) ** 2)
+        end if
     end if
-
-    if (present(mean_x) .and. lcenter) mean_x = lmean_x
-    if (present(std_x) .and. lscale) std_x = lstd_x
 
 100 continue
     if (present(status)) status = lstatus
 
 end subroutine
 
-! ------------------------------------------------------------------------------
-! PCR (Principal component regression)
 
 
-pure subroutine pcr_check_input (lhs, scores, sval, loadings, &
-        coefs, mean_x, std_x, add_const, status)
-
-    real (PREC), intent(in), dimension(:,:) :: lhs
-    real (PREC), intent(in), dimension(:,:) :: scores
-    real (PREC), intent(in), dimension(:) :: sval
-    real (PREC), intent(in), dimension(:,:) :: loadings
-    real (PREC), intent(in), dimension(:,:) :: coefs
-    real (PREC), intent(in), dimension(:), optional :: mean_x
-    real (PREC), intent(in), dimension(:), optional :: std_x
-    logical, intent(in) :: add_const
-    type (status_t), intent(out) :: status
-
-    integer :: nobs, nvars, ncomp, nlhs, nconst, ncoefs
-
-    status = NF_STATUS_INVALID_ARG
-
-    call pcr_get_dims (lhs, scores, coefs, add_const, &
-        nobs, nvars, ncomp, nlhs, ncoefs, nconst)
-
-    if (nobs < 1 .or. nobs < ncomp) return
-    ! Check shapes for all arrays, even though some of these were used to
-    ! obtain the dimensions in the first place and are thus by definition true.
-    if (size(lhs,1) /= nobs .or. size(lhs,2) /= nlhs) return
-    if (size(scores,1) /= nobs .or. size(scores,2) /= ncomp) return
-    if (size(sval) < ncomp) return
-    if (size(loadings,1) /= nvars .or. size(loadings,2) /= ncomp) return
-    if (size(coefs,1) /= ncoefs .or. size(coefs,2) /= nlhs) return
-    if (present(mean_x)) then
-        if (size(mean_x) < nvars) return
-    end if
-    if (present(std_x)) then
-        if (size(std_x) < nvars) return
-    end if
-
-    ! Do not support regressing on zero PCs if constant adding constant
-    ! was not requested by user.
-    if (ncomp == 0.0 .and. .not. add_const) return
-
-    status = NF_STATUS_OK
-
-end subroutine
-
-
-
-pure subroutine pcr_get_dims (lhs, scores, coefs, add_const, &
-        nobs, nvars, ncomp, nlhs, ncoefs, nconst)
+pure subroutine pcr_get_dims (Y, coefs, scores, sval, loadings, mean_x, &
+        scale_x, add_intercept, trans_y, trans_coefs, nobs, nrhs, &
+        ncomp, nlhs, ncoefs, nconst_add, nconst_coefs, status)
     !*  PCR_GET_DIMS returns the number of various dimensions of the PCR
     !   problem, depending on input data arrays and whether an intercept
     !   shoud be added, etc.
+    real (PREC), intent(in), dimension(:,:) :: Y
+    real (PREC), intent(in), dimension(:,:) :: coefs
+    real (PREC), intent(in), dimension(:,:) :: scores
+    real (PREC), intent(in), dimension(:) :: sval
+    real (PREC), intent(in), dimension(:,:) :: loadings
+    real (PREC), intent(in), dimension(:), optional :: mean_x, scale_x
+    logical, intent(in), optional :: add_intercept
+    logical, intent(in) :: trans_y
+    logical, intent(in) :: trans_coefs
+    integer, intent(out), optional :: nobs, nrhs, nlhs, ncoefs, nconst_add, ncomp
+    integer, intent(out), optional :: nconst_coefs
+    type (status_t), intent(out), optional :: status
 
-    real (PREC), intent(in), dimension(:,:) :: lhs, scores, coefs
-    logical, intent(in) :: add_const
-    integer, intent(out) :: nobs, nvars, nlhs, ncoefs, nconst, ncomp
+    type (status_t) :: lstatus
+    integer :: lnobs, lnrhs, lnlhs, lncoefs, lnconst_add, lncomp, dim
+    integer :: lnconst_coefs
+    logical :: dim_ok
+    character (*), parameter :: NAME = 'PCR_GET_DIMS'
 
-    nconst = 0
-    if (add_const) nconst = 1
-    ncoefs = size(coefs, 1)
-    nvars = ncoefs - nconst
-    ncomp = size(scores, 2)
-    nobs = size(lhs, 1)
-    nlhs = size(lhs, 2)
+    lstatus = NF_STATUS_INVALID_ARG
+
+    lnobs = 0
+    lnrhs = 0
+    lnlhs = 0
+    lncoefs = 0
+    lnconst_add = 0
+    lnconst_coefs = 0
+    lncomp = 0
+
+    if (present(add_intercept)) then
+        if (add_intercept) lnconst_add = 1
+    end if
+
+    dim = 1
+    if (trans_y) dim = 2
+    lnobs = size(Y, dim)
+    lnlhs = size(Y, 3-dim)
+
+    lnrhs = size(loadings, 1)
+    lncomp = size(scores, 2)
+
+    if (size(scores,1) /= lnobs) goto 100
+    if (size(loadings,2) /= lncomp) goto 100
+
+    ! --- Check COEFS arrays ---
+
+    dim = 1
+    if (trans_coefs) dim = 2
+    lncoefs = size(coefs,dim)
+    lnconst_coefs = lncoefs - lnrhs
+
+    if (lnconst_coefs < 0 .or. lnconst_coefs > 1) then
+        lstatus = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+
+    if (present(add_intercept)) then
+        if (.not. add_intercept) then
+            ! Intercept should not be added, so don't allow COEFS
+            ! to have one additional row/column
+            dim_ok = (lncoefs == lnrhs) .and. (size(coefs,3-dim) == lnlhs)
+        else
+            ! Intercept to be added to model, but user still has the option
+            ! of having it stored in COEFS or not, so both are acceptable
+            dim_ok = ((lncoefs == lnrhs) .or. (lncoefs == (lnrhs + 1))) &
+                .and. (size(coefs,3-dim) == lnlhs)
+        end if
+    else
+        ! ADD_INTERCEPT not present, so we don't know whether COEFS
+        ! has one row/column more than NRHS.
+        ! This is relevant when called from the PREDICT routines.
+        dim_ok = (lncoefs == (lnrhs + 1) .or. lncoefs == lnrhs) &
+            .and. size(coefs,3-dim) == lnlhs
+    end if
+
+    call check_cond (dim_ok, NAME, 'COEFS: Non-conformable array', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    if (present(mean_x)) then
+        if (size(mean_x) /= lnrhs) goto 100
+    end if
+
+    if (present(scale_x)) then
+        if (size(scale_x) /= lnrhs) goto 100
+    end if
+
+    lstatus = NF_STATUS_OK
+
+100 continue
+
+    if (present(nobs)) nobs = lnobs
+    if (present(nrhs)) nrhs = lnrhs
+    if (present(nlhs)) nlhs = lnlhs
+    if (present(ncoefs)) ncoefs = lncoefs
+    if (present(nconst_add)) nconst_add = lnconst_add
+    if (present(nconst_coefs)) nconst_coefs = lnconst_coefs
+    if (present(ncomp)) ncomp = lncomp
+
+    if (present(status)) status = lstatus
 
 end subroutine
 
 
 
-subroutine pcr_2d (lhs, scores, sval, loadings, coefs, mean_x, std_x, &
-        center, add_const, status)
 
-    real (PREC), intent(in), dimension(:,:), contiguous :: lhs
+subroutine pcr_2d (Y, scores, sval, loadings, coefs, shift_x, scale_x, &
+        add_intercept, trans_y, trans_coefs, center, intercept, status)
+    real (PREC), intent(in), dimension(:,:), contiguous, target :: Y
     real (PREC), intent(in), dimension(:,:), contiguous :: scores
     real (PREC), intent(in), dimension(:), contiguous :: sval
     real (PREC), intent(in), dimension(:,:), contiguous :: loadings
     real (PREC), intent(out), dimension(:,:), contiguous :: coefs
-    real (PREC), intent(in), dimension(:), contiguous, optional, target :: mean_x
-    real (PREC), intent(in), dimension(:), contiguous, optional, target :: std_x
-    logical, intent(in), optional :: add_const
+    real (PREC), intent(in), dimension(:), contiguous, optional, target :: shift_x
+    real (PREC), intent(in), dimension(:), contiguous, optional, target :: scale_x
+    logical, intent(in), optional :: add_intercept
+    logical, intent(in), optional :: trans_y
+    logical, intent(in), optional :: trans_coefs
     logical, intent(in), optional :: center
+    real (PREC), intent(out), dimension(:), contiguous, optional, target :: intercept
     type (status_t), intent(out), optional :: status
 
-    logical :: ladd_const, lcenter
-    integer :: nvars, nobs, ncomp, nlhs, ncoefs
-    real (PREC), dimension(:), pointer, contiguous :: ptr_mean_x, ptr_std_x
-
+    logical :: lcenter, ltrans_y, ltrans_coefs
+    integer :: Nrhs, Nobs, ncomp, Nlhs, Ncoefs, Nconst_coefs, dim
+    real (PREC), dimension(:), pointer, contiguous :: ptr_intercept
+    integer :: i
     type (status_t) :: lstatus
-    integer :: i, nconst
 
-    real (PREC), dimension(:,:), allocatable :: y_n, PCy, lcoefs
-    real (PREC), dimension(:), allocatable :: work
-    real (PREC), dimension(:), allocatable :: mean_y
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_Yp
+    real (PREC), dimension(:,:), allocatable :: PCy, lcoefs
+    real (PREC), dimension(:), allocatable :: shift_y
     ! Arguments to GEMM
     character (1) :: transa, transb
     integer :: m, n, k, lda, ldb, ldc
     real (PREC) :: alpha, beta
     ! Arguments to GEMV
-    integer, parameter :: incx = 1, incy = 1
 
-    nullify (ptr_mean_x, ptr_std_x)
+    nullify (ptr_intercept, ptr_Yp)
 
     lstatus = NF_STATUS_OK
 
-    ladd_const = .true.
-    lcenter = .true.
-    if (present(add_const)) ladd_const = add_const
-    if (present(center)) lcenter = center
+    ! --- Input processing ---
 
-    call pcr_check_input (lhs, scores, sval, loadings, coefs, mean_x, std_x, &
-        ladd_const, lstatus)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    call set_optional_arg (center, .true., lcenter)
+    call set_optional_arg (trans_y, .false., ltrans_y)
+    call set_optional_arg (trans_coefs, .false., ltrans_coefs)
 
-    call pcr_get_dims (lhs, scores, coefs, ladd_const, &
-        nobs, nvars, ncomp, nlhs, ncoefs, nconst)
+    call pcr_get_dims (Y, coefs, scores, sval, loadings, shift_x, scale_x, &
+        add_intercept, ltrans_y, ltrans_coefs, nobs=Nobs, nrhs=Nrhs, &
+        ncomp=Ncomp, nlhs=Nlhs, ncoefs=Ncoefs, nconst_coefs=Nconst_coefs, &
+        status=lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
 
-    ! copy over dependent variable, will be overwritten by GELS
-    allocate (y_n(nobs, nlhs), source=lhs)
-    allocate (mean_y(nlhs), source=0.0_PREC)
-    if (lcenter) then
-        call normalize (y_n, m=mean_y, dim=1, center=.true., scale=.false.)
+    ! --- Pre-process data ---
+
+    if (ltrans_y .or. lcenter) then
+        allocate (ptr_Yp(Nobs,Nlhs))
+        allocate (shift_y(Nlhs))
+        call transform_regressors (Y, ptr_Yp, center=lcenter, scale=.false., &
+            trans=ltrans_y, shift_x=shift_y, status=lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+    else
+        ptr_Yp => Y
     end if
 
     ! If no components are present, we can still run a constant-only regression
     ! if requested by user. Otherwise exit doing nothing.
     if (ncomp == 0) then
-        if (ladd_const) then
-            coefs(1,1:nlhs) = mean_y
-        end if
-        goto 100
+        allocate (lcoefs(Nrhs,Nlhs), source=0.0_PREC)
+        goto 50
     end if
 
-    ! sample mean and standard deviation of original x variables
-    if (present(mean_x)) then
-        ptr_mean_x => mean_x
-    else
-        allocate (ptr_mean_x(nvars), source=0.0_PREC)
-    end if
+    ! --- Compute slope coefficients ---
 
-    if (present(std_x)) then
-        ptr_std_x => std_x
-    else
-        allocate (ptr_std_x(nvars), source=1.0_PREC)
-    end if
-
-    ! Compute regression coefficients of regression y_n on PC
+    ! Compute regression coefficients of regression Y on PC
     ! 1. Compute PC'y
     m = ncomp
-    n = nlhs
-    k = nobs
-    lda = nobs
-    ldb = nobs
+    n = Nlhs
+    k = Nobs
+    lda = Nobs
+    ldb = Nobs
     ldc = ncomp
     transa = 'T'
     transb = 'N'
     alpha = 1.0_PREC
     beta = 0.0_PREC
-    allocate (PCy(ncomp, nlhs))
-    call BLAS_GEMM (transa, transb, m, n, k, alpha, scores, lda, y_n, ldb, beta, PCy, ldc)
+    allocate (PCy(ncomp, Nlhs))
+    call BLAS_GEMM (transa, transb, m, n, k, alpha, scores, lda, ptr_Yp, ldb, beta, PCy, ldc)
 
     ! 2. Regression coefficients are given by (diag(sval**2))^{-1} PC'y,
     ! can be computed directly without solving equation system.
-    do i = 1, nlhs
+    do i = 1, Nlhs
         PCy(1:ncomp, i) = PCy(1:ncomp, i) * (sval(1:ncomp) ** (-2.0_PREC))
     end do
 
     ! PCR coefficients derived from regressing on k PC are given by
     ! beta_pcr = V_k * beta_ols
-    m = nvars
-    n = nlhs
+    m = Nrhs
+    n = Nlhs
     k = ncomp
-    lda = nvars
+    lda = Nrhs
     ldb = ncomp
-    ldc = nvars
+    ldc = Nrhs
     transa = 'N'
     transb = 'N'
     alpha = 1.0_PREC
     beta = 0.0_PREC
-    allocate (lcoefs(nvars, nlhs))
+    allocate (lcoefs(Nrhs, Nlhs))
     call BLAS_GEMM (transa, transb, m, n, k, alpha, loadings, lda, PCy, ldb, beta, lcoefs, ldc)
 
     ! Scale back betas if explanatory variables were normalized
-    do i = 1, nlhs
-        ! Prevent NaN's due to constant RHS variables
-        allocate (work(size(std_x)), source=std_x)
-        where (work == 0.0)
-            work = 1.0
-        end where
-
-        lcoefs(:, i) = lcoefs(:, i) / work
-
-        deallocate (work)
-    end do
-
-    ! Add intercept if requested
-    if (ladd_const) then
-        m = nvars
-        n = nlhs
-        lda = nvars
-        transa = 'T'
-        alpha = -1.0_PREC
-        beta = 1.0
-
-        ! Compute intercept as a = mean(y) - mean(x)'b
-        ! where mean(x)'b is stored in temporary array work.
-        ! Manually create temporary array as coefs(1:1,:) is not contiguous
-        ! in memory and ifort issues runtime warning in debug mode every time.
-        allocate (work(nlhs), source=mean_y)
-
-        call BLAS_GEMV (transa, m, n, alpha, lcoefs, lda, mean_x, incx, beta, &
-            work, incy)
-
-        coefs(1,1:nlhs) = work
-
-        deallocate (work)
+    if (present(scale_x)) then
+        do i = 1, Nlhs
+            lcoefs(1:Nrhs, i) = lcoefs(1:Nrhs, i) / scale_x(1:Nrhs)
+        end do
     end if
 
-    ! copy over remaining coefficients
-    forall (i=1:nlhs) coefs(1+nconst:ncoefs,i) = lcoefs(:,i)
+50 continue
+
+    ! --- Recover intercept ---
+
+    dim = 1
+    if (ltrans_coefs) dim = 2
+
+    if (present(intercept) .or. size(coefs,1) > Nrhs) then
+
+        call assert_alloc_ptr (intercept, Nlhs, ptr_intercept)
+
+        ptr_intercept(:) = 0.0
+
+        if (allocated(shift_y)) then
+            ! If LHS variables were centered in this routine, initialize
+            ! intercept using their mean (ie the value by which they were
+            ! shifted).
+            ! SHIFT_Y will be zeros if Y is pre-centered by TRANS_Y=.TRUE.
+            ptr_intercept(1:Nlhs) = shift_y
+        end if
+
+        if (present(shift_x) .and. ncomp > 0) then
+            ! Compute intercept as a = mean(y) - mean(x)'b
+            ! where mean(x)'b is stored in temporary array work.
+            ! Manually create temporary array as coefs(1:1,:) is not contiguous
+            ! in memory and ifort issues runtime warning in debug mode every time.
+
+            call BLAS_GEMV ('T', Nrhs, Nlhs, -1.0_PREC, lcoefs, Nrhs, &
+                shift_x, 1, 1.0_PREC, ptr_intercept, 1)
+        end if
+
+        if (Nconst_coefs == 1) then
+            if (ltrans_coefs) then
+                coefs(1:Nlhs,1) = ptr_intercept
+            else
+                coefs(1,1:Nlhs) = ptr_intercept
+            end if
+        end if
+    end if
+
+    ! --- Store output ---
+
+    if (ltrans_coefs) then
+        forall (i=1:Nrhs) coefs(1:Nlhs,Nconst_coefs+i) = lcoefs(i,1:Nlhs)
+    else
+        forall (i=1:Nlhs) coefs(1+Nconst_coefs:Ncoefs,i) = lcoefs(:,i)
+    end if
 
 100 continue
-    call assert_dealloc_ptr (mean_x, ptr_mean_x)
-    call assert_dealloc_ptr (std_x, ptr_std_x)
+
+    call assert_dealloc_ptr (Y, ptr_Yp)
+    call assert_dealloc_ptr (intercept, ptr_intercept)
+
     if (present(status)) status = lstatus
 
 end subroutine
 
 
 
-subroutine pcr_1d (lhs, scores, sval, loadings, coefs, mean_x, std_x, &
-        add_const, center, status)
+subroutine pcr_1d (y, scores, sval, loadings, coefs, shift_x, scale_x, &
+        add_intercept, center, intercept, status)
 
-    real (PREC), intent(in), dimension(:), contiguous, target :: lhs
+    real (PREC), intent(in), dimension(:), contiguous, target :: y
     real (PREC), intent(in), dimension(:,:), contiguous :: scores
     real (PREC), intent(in), dimensioN(:), contiguous :: sval
     real (PREC), intent(in), dimension(:,:), contiguous :: loadings
     real (PREC), intent(out), dimension(:), contiguous, target :: coefs
-    real (PREC), intent(in), dimension(:), contiguous, optional :: mean_x
-    real (PREC), intent(in), dimension(:), contiguous, optional :: std_x
-    logical, intent(in), optional :: add_const
+    real (PREC), intent(in), dimension(:), contiguous, optional :: shift_x
+    real (PREC), intent(in), dimension(:), contiguous, optional :: scale_x
+    logical, intent(in), optional :: add_intercept
     logical, intent(in), optional :: center
+    real (PREC), intent(out), optional :: intercept
     type (status_t), intent(out), optional :: status
 
-    real (PREC), dimension(:,:), contiguous, pointer :: ptr_lhs, ptr_coefs
-
+    real (PREC), dimension(:,:), contiguous, pointer :: ptr_y, ptr_coefs
+    real (PREC), dimension(:), allocatable :: lintercept
     integer :: ncoefs, nobs
-
-    nobs = size(lhs)
-    ncoefs = size(coefs)
-
-    ptr_lhs(1:nobs,1:1) => lhs
-    ptr_coefs(1:ncoefs,1:1) => coefs
-
-    call pcr (ptr_lhs, scores, sval, loadings, ptr_coefs, &
-        mean_x, std_x, add_const, center, status)
-
-end subroutine
-
-
-pure subroutine pcr_pca_get_dims (lhs, rhs, add_const, trans_rhs, nobs, nvars, &
-        nlhs, ncoefs, nconst)
-    !*  PCR_GET_DIMS returns the number of various dimensions of the PCR
-    !   problem, depending on input data arrays and whether an intercept
-    !   shoud be added, etc.
-
-    real (PREC), intent(in), dimension(:,:) :: lhs, rhs
-    logical, intent(in) :: add_const
-    logical, intent(in) :: trans_rhs
-    integer, intent(out) :: nobs, nvars, nlhs, ncoefs, nconst
-
-    nconst = 0
-    if (add_const) nconst = 1
-
-    if (trans_rhs) then
-        nobs = size(rhs, 2)
-        nvars = size(rhs, 1)
-    else
-        nobs = size(rhs, 1)
-        nvars = size(rhs, 2)
-    end if
-
-    nlhs = size(lhs, 2)
-    ncoefs = nvars + nconst
-
-end subroutine
-
-
-pure subroutine pcr_pca_check_input (lhs, rhs, ncomp, ncomp_min, coefs, &
-        add_const, trans_rhs, var_min, res, status)
-
-    real (PREC), intent(in), dimension(:,:) :: lhs
-    real (PREC), intent(in), dimension(:,:) :: rhs
-    integer, intent(in), optional :: ncomp
-    integer, intent(in), optional :: ncomp_min
-    real (PREC), intent(in), dimension(:,:) :: coefs
-    logical, intent(in) :: add_const
-    logical, intent(in) :: trans_rhs
-    real (PREC), intent(in), optional :: var_min
-    type (lm_data), intent(in), dimension(:), optional :: res
-    type (status_t), intent(out) :: status
-
-    integer :: nobs, nvars, nlhs, nconst, ncoefs
-
-    status = NF_STATUS_INVALID_ARG
-
-    call pcr_pca_get_dims (lhs, rhs, add_const, trans_rhs, &
-        nobs, nvars, nlhs, ncoefs, nconst)
-
-    if (present(ncomp)) then
-        if (ncomp < 1) return
-        if (ncomp > nvars) return
-        if (nobs < ncomp) return
-    end if
-
-    if (present(ncomp_min)) then
-        if (ncomp_min < 1) return
-        if (ncomp_min > nvars) return
-        if (nobs < ncomp_min) return
-    end if
-
-    if (size(lhs,1) /= nobs .or. size(lhs,2) /= nlhs) return
-    ! Check that coefficient array can hold coefs for all components
-    ! Allow for more columns to be present, but not for more rows.
-    if (size(coefs, 2) < nlhs) return
-    if (size(coefs, 1) /= ncoefs) return
-    if (present(var_min)) then
-        if (var_min < 0.0_PREC .or. var_min > 1.0_PREC) return
-    end if
-
-    ! Make sure there is a LM_DATA object for each LHS variable
-    if (present(res)) then
-        if (size(res) /= nlhs) return
-    end if
-
-    status = NF_STATUS_OK
-
-end subroutine
-
-
-subroutine pcr_pca_2d (lhs, rhs, coefs, ncomp, ncomp_min, add_const, center, &
-        trans_rhs, var_min, res, status)
-
-    real (PREC), intent(in), dimension(:,:), contiguous :: lhs
-    real (PREC), intent(in), dimension(:,:), contiguous :: rhs
-    real (PREC), intent(out), dimension(:,:), contiguous :: coefs
-    integer, intent(inout), optional :: ncomp
-        !*  Number of principal components to use. If present, will override
-        !   the effects of NCOMP_MIN and VAR_MIN arguments.
-        !   If present, contains the actual number of PCs used on exit.
-    integer, intent(in), optional :: ncomp_min
-        !*  If present, specifies the min. number of principal components to
-        !   use (default: all). If VAR_SHARE is not given, NCOMP_MIN will
-        !   also be the actual number of components used.
-    logical, intent(in), optional :: add_const
-        !*  If present and true, an intercept will be automatically added
-        !   to the RHS variables (default: true).
-    logical, intent(in), optional :: center
-        !*  If present and true, variables will be centered before running PCR
-        !   (default: true).
-    logical, intent(in), optional :: trans_rhs
-        !*  If present and true, array of RHS variables will be transposed
-        !   prior to running PCR (default: false).
-    real (PREC), intent(in), optional :: var_min
-        !*  If present, specifies the min. share of variance in the RHS
-        !   variables that the (automatically) selected number of principal
-        !   components should explain.
-    type (lm_data), dimension(:), optional :: res
-    type (status_t), intent(out), optional :: status
-
     type (status_t) :: lstatus
-    real (PREC), dimension(:,:), allocatable :: scores, loadings
-    real (PREC), dimension(:), allocatable :: sval, mean_x, std_x, propvar
-    integer :: nvars, nconst, nobs, ncoefs, nlhs, lncomp
-    logical :: ltrans_rhs, lcenter, ladd_const
-    real (PREC) :: var_expl
-    integer :: k
 
     lstatus = NF_STATUS_OK
 
-    ltrans_rhs = .false.
-    lcenter = .true.
-    ladd_const = .true.
-    if (present(add_const)) ladd_const = add_const
-    if (present(center)) lcenter = center
-    if (present(trans_rhs)) ltrans_rhs = trans_rhs
+    nobs = size(y)
+    ncoefs = size(coefs)
 
-    call pcr_pca_check_input (lhs, rhs, ncomp, ncomp_min, coefs, ladd_const, &
-        ltrans_rhs, var_min, res, lstatus)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
+    ptr_y(1:nobs,1:1) => y
+    ptr_coefs(1:ncoefs,1:1) => coefs
 
-    call pcr_pca_get_dims (lhs, rhs, ladd_const, ltrans_rhs, &
-        nobs, nvars, nlhs, ncoefs, nconst)
+    if (present(intercept)) then
+        allocate (lintercept(1))
+    end if
+
+    call pcr (ptr_y, scores, sval, loadings, ptr_coefs, shift_x, scale_x, &
+        add_intercept, center=center, intercept=lintercept, status=lstatus)
+
+    if (lstatus == NF_STATUS_OK) then
+        if (present(intercept)) then
+            intercept = lintercept(1)
+        end if
+    end if
+
+end subroutine
+
+
+
+
+subroutine pcr_pca_2d (conf, X, Y, coefs, ncomp, intercept, res, status)
+    type (lm_config), intent(in), optional :: conf
+    real (PREC), intent(in), dimension(:,:), contiguous :: X
+    real (PREC), intent(in), dimension(:,:), contiguous :: Y
+    real (PREC), intent(out), dimension(:,:), contiguous, optional, target :: coefs
+    integer, intent(out), optional :: ncomp
+        !   If present, contains the actual number of PCs used on exit.
+    real (PREC), intent(out), dimension(:), optional, contiguous, target :: intercept
+    type (lm_result), intent(inout), optional, target :: res
+    type (status_t), intent(out), optional :: status
+
+    type (status_t) :: lstatus
+    type (lm_config) :: lconf
+    real (PREC), dimension(:,:), allocatable :: lcoefs
+    real (PREC), dimension(:), allocatable :: lintercept
+    real (PREC), dimension(:,:), allocatable :: scores, loadings
+    real (PREC), dimension(:), allocatable :: sval, shift_x, scale_x, propvar
+    integer :: Nrhs, Nconst_add, nobs, ncoefs, Nlhs, lncomp, Nconst_coefs
+    logical :: trans_coefs
+    real (PREC) :: var_rhs
+    integer :: k, i
+    character (*), parameter :: NAME = 'PCR_PCA'
+
+    lstatus = NF_STATUS_OK
+
+    if (present(conf)) lconf = conf
+
+    ! --- Input checks ---
+
+    call get_dims (X, Y, coefs, intercept, lconf%add_intercept, lconf%trans_x, &
+        lconf%trans_y, lconf%trans_coefs, nobs=nobs, nrhs=Nrhs, nlhs=nlhs, &
+        ncoefs=ncoefs, nconst_add=Nconst_add, nconst_coefs=Nconst_coefs, &
+        status=lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    call check_cond (Nobs >= (Nrhs + Nconst_add), NAME, 'Too few observations', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    call check_cond (lconf%var_rhs_min >= 0.0_PREC .and. &
+        lconf%var_rhs_min <= 1.0_PREC, NAME, 'CONF: Invalid value for VAR_RHS_MIN', &
+        lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    call check_cond (lconf%ncomp_min >= 0 .and. lconf%ncomp_min <= Nrhs, &
+        NAME, 'CONF: Invalid value for NCOMP_MIN', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    if (lconf%ncomp /= DEFAULT_PCR_NCOMP) then
+        call check_cond (lconf%ncomp >= 0 .and. lconf%ncomp <= Nrhs, NAME, &
+            'CONF: Invalid value for NCOMP', lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+    end if
+
+    ! --- Run PCA ---
 
     ! Allocate working arrays
     ! Preliminary number of components: use all available, restrict below.
-    lncomp = nvars
+    lncomp = Nrhs
     allocate (scores(nobs, lncomp))
-    allocate (loadings(nvars, lncomp))
+    allocate (loadings(Nrhs, lncomp))
     allocate (sval(lncomp))
-    allocate (mean_x(nvars), std_x(nvars))
-    allocate (propvar(nvars), source=0.0_PREC)
+    allocate (shift_x(Nrhs), scale_x(Nrhs))
+    allocate (propvar(Nrhs), source=0.0_PREC)
+
+    ! Skip PCA if no RHS are present
+    if (Nrhs == 0) goto 50
 
     ! Perform principal component analysis
-    call pca (rhs, scores, lncomp, center=.true., scale=.true., trans_x=ltrans_rhs, &
-        sval=sval, loadings=loadings, mean_x=mean_x, std_x=std_x, &
-        propvar=propvar, status=lstatus)
+    call pca (X, center=lconf%center, scale=lconf%scale, trans_x=lconf%trans_x, &
+        scores=scores, sval=sval, loadings=loadings, shift_x=shift_x, &
+        scale_x=scale_x, propvar=propvar, status=lstatus)
     if (.not. (NF_STATUS_OK .in. lstatus)) goto 100
 
-    ! Select number of principal components to use, if applicable
-    ! 1. Select by min. variance, if applicable
-    if (present(var_min)) then
-        var_expl = 0.0
-        do k = 1, nvars
-            var_expl = var_expl + propvar(k)
-            if (var_expl >= var_min) exit
-        end do
-        lncomp = min(k, nvars)
+    ! Select number of principal components to use:
+    ! 1. Select by min. variance, if applicable;
+    var_rhs = 0.0
+    do k = 1, Nrhs
+        var_rhs = var_rhs + propvar(k)
+        if ((var_rhs - lconf%var_rhs_min) >= 0.0_PREC) exit
+    end do
+    lncomp = min(k, Nrhs)
+
+    ! 2. Select by NCOMP_MIN
+    lncomp = max(lconf%ncomp_min, lncomp)
+
+    ! 3. User-imposed fixed number of components
+    if (lconf%ncomp >= 0 .and. lconf%ncomp <= Nrhs) then
+        lncomp = lconf%ncomp
     end if
 
-    ! 2. Select by NCOMP_MIN, if applicable
-    if (present(ncomp_min)) lncomp = max(ncomp_min, lncomp)
+    ! Jump to this point of PCA is skipped because of no RHS variables.
+50  continue
 
-    ! 3. Select by user-provided value
-    if (present(ncomp)) lncomp = ncomp
+    allocate (lcoefs(Nrhs,Nlhs))
+    allocate (lintercept(Nlhs))
+    ! Save user-provided TRANS_COEFS
+    trans_coefs = lconf%trans_coefs
+    lconf%trans_coefs = .false.
 
     ! Run principal component regression
-    call pcr (lhs, scores(:,1:lncomp), sval(1:lncomp), loadings(:,1:lncomp), &
-        coefs, mean_x, std_x, lcenter, ladd_const, lstatus)
+    call pcr (Y, scores(:,1:lncomp), sval(1:lncomp), loadings(:,1:lncomp), &
+        lcoefs, shift_x, scale_x, lconf%add_intercept, lconf%trans_y,  &
+        lconf%trans_coefs, lconf%center, lintercept, lstatus)
+
+    ! Restore user-provided TRANS_COEFS
+    lconf%trans_coefs = trans_coefs
+
     if (.not. (NF_STATUS_OK .in. lstatus)) goto 100
 
+    ! --- Store result object ---
+
+    if (present(intercept)) then
+        intercept = 0.0
+        intercept(1:Nlhs) = lintercept(1:Nlhs)
+    end if
+
+    if (present(coefs)) then
+        if (lconf%trans_coefs) then
+            do i = 1, Nlhs
+                coefs(i,1+Nconst_coefs:Ncoefs) = lcoefs(1:Nrhs,i)
+            end do
+            if (Nconst_coefs == 1) then
+                coefs(1:Nlhs,1) = lintercept
+            end if
+        else
+            do i = 1, Nlhs
+                coefs(1+Nconst_coefs:Ncoefs,i) = lcoefs(1:Nrhs,i)
+            end do
+            if (Nconst_coefs == 1) then
+                coefs(1,1:Nlhs) = lintercept
+            end if
+        end if
+    end if
+
     if (present(res)) then
-        var_expl = sum(propvar(1:lncomp))
-        ! Update one LM_DATA object for each LHS
-        do k = 1, size(res)
-            call lm_data_update (res(k), model=NF_STATS_LM_PCR, coefs=coefs(:,k), &
-                nobs=nobs, nvars=nvars, ncomp=lncomp, var_expl=var_expl, &
-                add_const=ladd_const, trans_rhs=ltrans_rhs)
-        end do
+        var_rhs = sum(propvar(1:lncomp))
+        call lm_result_update (res, lconf, model=NF_STATS_LM_PCR, &
+            nobs=nobs, nrhs=Nrhs, nlhs=Nlhs, ncomp=lncomp, var_rhs=var_rhs)
+
+        if (allocated(res%coefs_multi)) then
+            call copy_alloc (lcoefs, res%coefs_multi)
+        else
+            call move_alloc (lcoefs, res%coefs_multi)
+        end if
+
+        if (allocated(res%intercept_multi)) then
+            call copy_alloc (lintercept, res%intercept_multi)
+        else
+            call move_alloc (lintercept, res%intercept_multi)
+        end if
     end if
 
     if (present(ncomp)) ncomp = lncomp
 
 100 continue
 
-    if (allocated(scores)) deallocate (scores)
-    if (allocated(loadings)) deallocate (loadings)
-    if (allocated(sval)) deallocate (sval)
-    if (allocated(mean_x)) deallocate (mean_x)
-    if (allocated(std_x)) deallocate (std_x)
-    if (allocated(propvar)) deallocate (propvar)
-
     if (present(status)) status = lstatus
 
 end subroutine
 
 
 
-subroutine pcr_pca_1d (lhs, rhs, coefs, ncomp, ncomp_min, add_const, center, &
-        trans_rhs, var_min, res, status)
-
-    real (PREC), intent(in), dimension(:), contiguous, target :: lhs
-    real (PREC), intent(in), dimension(:,:), contiguous :: rhs
-    real (PREC), intent(out), dimension(:), contiguous, optional :: coefs
-    integer, intent(inout), optional :: ncomp
-    integer, intent(in), optional :: ncomp_min
-    logical, intent(in), optional :: add_const
-    logical, intent(in), optional :: center
-    logical, intent(in), optional :: trans_rhs
-    real (PREC), intent(in), optional :: var_min
-    type (lm_data), intent(inout), optional :: res
-    type (status_t), intent(out), optional :: status
-
-    real (PREC), dimension(:,:), pointer, contiguous :: ptr_lhs
-    real (PREC), dimension(:,:), allocatable :: coefs2d
-    type (lm_data), dimension(1) :: res1d
-
-    integer :: nobs, ncoefs, nconst, nvars, nlhs
-    logical :: ladd_const, ltrans_rhs
-
-    ladd_const = .false.
-    ltrans_rhs = .false.
-    if (present(add_const)) ladd_const = add_const
-    if (present(trans_rhs)) ltrans_rhs = trans_rhs
-
-    nobs = size(lhs)
-    ptr_lhs(1:nobs,1:1) => lhs
-
-    call pcr_pca_get_dims (ptr_lhs, rhs, ladd_const, ltrans_rhs, &
-        nobs, nvars, nlhs, ncoefs, nconst)
-
-    allocate (coefs2d(ncoefs,1))
-
-    if (present(res)) then
-        call pcr (ptr_lhs, rhs, coefs2d, ncomp, ncomp_min, add_const, center, &
-            trans_rhs, var_min, res1d, status)
-        res = res1d(1)
-    else
-        call pcr (ptr_lhs, rhs, coefs2d, ncomp, ncomp_min, add_const, center, &
-            trans_rhs, var_min, status=status)
-    end if
-
-    if (present(coefs)) coefs = coefs2d(:,1)
-
-end subroutine
-
-
-
-pure subroutine ridge_check_input (y, x, lambda, coefs, add_const, trans_x, &
-        rcond, res, status)
-
-    real (PREC), intent(in), dimension(:,:) :: y
-    real (PREC), intent(in), dimension(:,:) :: x
-    real (PREC), intent(in) :: lambda
-    real (PREC), intent(in), dimension(:,:), optional :: coefs
-    logical, intent(in) :: add_const
-    logical, intent(in) :: trans_x
-    real (PREC), intent(in), optional :: rcond
-    type (lm_data), intent(in), dimension(:), optional :: res
-    type (status_t), intent(out) :: status
-
-    integer :: nobs, nvars, nlhs, nconst, ncoefs
-
-    status = NF_STATUS_INVALID_ARG
-
-    ! Uses same dimensions as PCR/PCA
-    call pcr_pca_get_dims (y, x, add_const, trans_x, &
-        nobs, nvars, nlhs, ncoefs, nconst)
-
-    if (size(y,1) /= nobs .or. size(y,2) /= nlhs) return
-    ! Check that coefficient array can hold coefs for all components
-    ! Allow for more columns to be present, but not for more rows.
-    if (present(coefs)) then
-        if (size(coefs, 1) /= ncoefs) return
-        if (size(coefs, 2) < nlhs) return
-    end if
-
-    if (nobs < ncoefs) return
-
-    call check_nonneg (0.0_PREC, lambda, 'lambda', status)
-    if (NF_STATUS_INVALID_ARG .in. status) return
-
-    call check_nonneg (0.0_PREC, rcond, 'rcond', status)
-    if (NF_STATUS_INVALID_ARG .in. status) return
-
-    ! Make sure there is a LM_DATA object for each LHS variable
-    if (present(res)) then
-        if (size(res) /= nlhs) return
-    end if
-
-    status = NF_STATUS_OK
-
-end subroutine
-
-
-
-subroutine ridge_2d (y, x, lambda, coefs, add_const, trans_x, center, scale, &
-        rcond, rank, res, status)
-    !*  RIDGE_2D computes the ridge regression for given independent
-    !   data X and (potentially multiple) dependent variables Y.
-    !
-    !   Note that a regression constant is added by default.
-    !
-    !   The problem is solved using SVD as implemented in LAPACK's GESDD
-    !   routine. The optional argument RCOND can be used to control the
-    !   effective rank of the matrix X'X.
-    real (PREC), intent(in), dimension(:,:), contiguous, target :: y
-        !*  Array of LHS variables (separate regression is performed for each
-        !   LHS variables using the same set of RHS variables)
-    real (PREC), intent(in), dimension(:,:), contiguous :: x
-        !*  Array of RHS variables
-    real (PREC), intent(in) :: lambda
-        !*  Ridge parameter controlling the penalty for large coefficients.
-    real (PREC), intent(out), dimension(:,:), contiguous, optional, target :: coefs
-        !*  Array of estimated coefficients.
-    logical, intent(in), optional :: add_const
-        !*  If present and .TRUE., add constant to RHS variables (default: .TRUE.)
-    logical, intent(in), optional :: trans_x
-        !*  If present and .TRUE., transpose array X of RHS variables.
-    logical, intent(in), optional :: center
-    logical, intent(in), optional :: scale
-    real (PREC), intent(in), optional :: rcond
-        !*  Optional argument to control the effective rank of the regressor
-        !   matrix.
-    integer, intent(out), optional :: rank
-        !*  Contains effective rank of regressor matrix
-    type (lm_data), dimension(:), optional :: res
-        !*  Optional result objects for linear models. Note that a separate
-        !   object is returned for each LHS variable.
-    type (status_t), intent(out), optional :: status
-        !*  Optional exit code
-
-    logical :: ladd_const, ltrans_x, lcenter, lscale
-    real (PREC) :: lrcond, var_rhs, const
-    real (PREC), dimension(:,:), allocatable :: lx
-    integer :: nobs, nvars, ncoefs, nconst, nlhs, i
-    type (status_t) :: lstatus
-    real (PREC), dimension(:,:), pointer, contiguous :: ptr_coefs, ptr_y
-    real (PREC), dimension(:), allocatable :: mean_x, std_x, mean_y
-
-    ! GESDD arguments
-    real (PREC), dimension(:), allocatable :: sval, work
-    real (PREC), dimension(:,:), allocatable :: vt
-    real (PREC), dimension(1) :: qwork
-    integer, dimension(:), allocatable :: iwork
-    character (1), parameter :: jobz = 'O'
-    real (PREC), dimension(0,0) :: u
-    integer :: lrank
-    integer :: lwork, info, m, n, lda, ldvt, ldu, mn
-
-    ! GEMM arguments
-    real (PREC), dimension(:,:), allocatable :: mat_Uty
-
-    lstatus = NF_STATUS_OK
-
-    nullify (ptr_coefs)
-    nullify (ptr_y)
-
-    ladd_const = .true.
-    ltrans_x = .false.
-    lcenter = .true.
-    lscale = .true.
-    lrcond = 0.0
-
-    if (present(add_const)) ladd_const = add_const
-    if (present(trans_x)) ltrans_x = trans_x
-    if (present(center)) lcenter = center
-    if (present(scale)) lscale = scale
-    if (present(rcond)) lrcond = rcond
-
-    call ridge_check_input (y, x, lambda, coefs, ladd_const, ltrans_x, &
-        lrcond, res, lstatus)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
-
-    call pcr_pca_get_dims (y, x, ladd_const, ltrans_x, nobs, nvars, nlhs, &
-        ncoefs, nconst)
-
-    ! --- Prepare dependent variable ---
-
-    if (lcenter) then
-        allocate (ptr_y(nobs, nlhs), source=y)
-        allocate (mean_y(nlhs))
-
-        call normalize (ptr_y, mean_y, dim=1, center=.true., scale=.false., status=status)
-        if (status /= NF_STATUS_OK) goto 100
-    else
-        allocate (mean_y(nlhs), source=0.0_PREC)
-        ptr_y => y
-    end if
-
-    ! --- Prepare regressors ---
-
-    ! Allocate (possibly transposed) array to store X variables; will be
-    ! overwritten by GELSD, so we have to allocate in any case.
-    allocate (lx(nobs,ncoefs))
-
-    ! Mean and std.
-    allocate (mean_x(nvars), source=0.0_PREC)
-    allocate (std_x(nvars), source=1.0_PREC)
-
-    call prepare_regressors (x, lx, lstatus, ladd_const, ltrans_x, lcenter, &
-        lscale, mean_x, std_x)
-    if (NF_STATUS_INVALID_ARG .in. lstatus) goto 100
-
-    ! --- SVD decomposition via GESDD ---
-
-    ! Set up GESDD call
-    m = nobs
-    n = ncoefs
-    mn = max(1, min(m, n))
-    lda = nobs
-    ldvt = n
-    ldu = m
-
-    allocate (iwork(8*mn))
-    allocate (vt(n, n))
-    allocate (sval(mn))
-
-    ! workspace query
-    lwork = -1
-    call LAPACK_GESDD (jobz, m, n, lx, lda, sval, u, ldu, vt, ldvt, qwork, &
-        lwork, iwork, info)
-
-    ! Recover minimal work space size
-    if (info /= 0) then
-        lstatus = NF_STATUS_INVALID_ARG
-        goto 100
-    end if
-    lwork = int(qwork(1))
-
-    ! perform actual SVD
-    allocate (work(lwork))
-
-    call LAPACK_GESDD (jobz, m, n, lx, lda, sval, u, ldu, vt, ldvt, work, &
-        lwork, iwork, info)
-
-    if (info /= 0) then
-        if (info < 0) then
-            ! This should not happen since we checked arguments before
-            lstatus = NF_STATUS_INVALID_ARG
-        else
-            lstatus = NF_STATUS_NOT_CONVERGED
-        end if
-        goto 100
-    end if
-
-    ! --- Determine effective rank of X ---
-
-    ! We have rank <= ncoefs
-    lrank = count(sval > lrcond)
-
-    ! --- Compute U'y ---
-
-    ! At this point we have: first NCOEFS columns of U stored in matrix X
-
-    allocate (mat_Uty(lrank, nlhs))
-
-    call BLAS_GEMM (transa='T', transb='N', m=lrank, n=nlhs, k=nobs, &
-        alpha=1.0_PREC, a=lx, lda=nobs, b=ptr_y, ldb=nobs, beta=0.0_PREC, &
-        c=mat_Uty, ldc=lrank)
-
-    ! --- Rescale by inverse of diagonal matrix ---
-
-    ! Compute (diag(s^2) + lambda I)^{-1} diag(s)
-    ! and then (diag(s^2) + lambda I)^{-1} diag(s) U'y
-
-    do i = 1, lrank
-        sval(i) = sval(i) / (sval(i)**2.0_PREC + lambda)
-    end do
-
-    ! Apply scaling factors by columns
-    do i = 1, nlhs
-        mat_Uty(:,i) = mat_Uty(:,i) * sval(1:lrank)
-    end do
-
-    ! --- Last step: premulitply with (V')^(-1) ---
-
-    ! Due to properties of V we have
-    ! V'V = I => V' = V^(-1) => (V')^(-1) = V
-    ! Note that GESDD returns V' which is stored in the matrix VT
-
-    if (present(coefs)) then
-        ptr_coefs => coefs
-    else
-        allocate (ptr_coefs(ncoefs,nlhs))
-    end if
-
-    call BLAS_GEMM (transa='T', transb='N', m=ncoefs, n=nlhs, k=lrank, &
-        alpha=1.0_PREC, a=vt, lda=ncoefs, b=mat_Uty, ldb=lrank, beta=0.0_PREC, &
-        c=ptr_coefs, ldc=size(ptr_coefs,1))
-
-    ! --- Undo rescaling ---
-
-    ! 1. Rescale regression coefficients
-    if (lscale) then
-        do i = 1, nlhs
-            ptr_coefs(1+nconst:ncoefs,i) = ptr_coefs(1+nconst:ncoefs,i) / std_x
-        end do
-    end if
-
-    ! --- Recover intercept ---
-
-    if (ladd_const) then
-        do i = 1, nlhs
-            const = mean_y(i) - dot_product (ptr_coefs(1+nconst:ncoefs,i), mean_x)
-            ptr_coefs(1,i) = const
-        end do
-    end if
-
-    ! --- Process return args ---
-
-    ! Copy over optional output arguments
-    if (present(rank)) rank = lrank
-
-    if (present(res)) then
-        ! Update LM_DATA result objects for OLS model
-
-        ! Fraction of RHS variance used, analogous to PCR regression
-        ! (only applicable if RHS matrix does not have full rank)
-        var_rhs = sum(sval(1:lrank) ** 2.0_PREC) / sum(sval**2.0_PREC)
-
-        do i = 1, nlhs
-            call lm_data_update (res(i), model=NF_STATS_LM_RIDGE, &
-                coefs=ptr_coefs(1:ncoefs,i), nobs=nobs, nvars=nvars, &
-                var_expl=var_rhs, rank_rhs=lrank, trans_rhs=ltrans_x, &
-                add_const=ladd_const)
-        end do
-    end if
-
-100 continue
-
-    if (.not. present (coefs)) then
-        if (associated(ptr_coefs)) then
-            deallocate (ptr_coefs)
-        end if
-    end if
-
-    if (associated (ptr_y)) then
-        if (.not. associated (ptr_y, y)) deallocate (ptr_y)
-    end if
-
-    if (present(status)) status = lstatus
-
-end subroutine
-
-
-
-subroutine ridge_1d (y, x, lambda, coefs, add_const, trans_x, scale, center, &
-        rcond, rank, res, status)
-    !*  RIDGE_1D computes the ridge regression for given independent
-    !   data X and a single dependent variables Y.
-    !
-    !   Note that a regression constant is added by default.
-    !
-    !   The problem is solved using SVD as implemented in LAPACK's GESDD
-    !   routine. The optional argument RCOND can be used to control the
-    !   effective rank of the matrix X'X.
+subroutine pcr_pca_1d (conf, X, y, coefs, ncomp, intercept, res, status)
+    type (lm_config), intent(in), optional :: conf
+    real (PREC), intent(in), dimension(:,:), contiguous :: X
     real (PREC), intent(in), dimension(:), contiguous, target :: y
-        !*  Array of LHS variables (separate regression is performed for each
-        !   LHS variables using the same set of RHS variables)
-    real (PREC), intent(in), dimension(:,:), contiguous :: x
-        !*  Array of RHS variables
-    real (PREC), intent(in) :: lambda
-        !*  Ridge parameter controlling the penalty for large coefficients.
     real (PREC), intent(out), dimension(:), contiguous, optional, target :: coefs
-        !*  Array of estimated coefficients.
-    logical, intent(in), optional :: add_const
-        !*  If present and .TRUE., add constant to RHS variables (default: .TRUE.)
-    logical, intent(in), optional :: trans_x
-        !*  If present and .TRUE., transpose array X of RHS variables.
-    logical, intent(in), optional :: center
-    logical, intent(in), optional :: scale
-    real (PREC), intent(in), optional :: rcond
-        !*  Optional argument to control the effective rank of the regressor
-        !   matrix.
-    integer, intent(out), optional :: rank
-        !*  Contains effective rank of regressor matrix
-    type (lm_data), optional :: res
-        !*  Optional result objects for linear models.
+    integer, intent(inout), optional :: ncomp
+    real (PREC), intent(out), optional :: intercept
+    type (lm_result), intent(inout), optional :: res
     type (status_t), intent(out), optional :: status
-        !*  Optional exit code
 
-    real (PREC), dimension(:,:), contiguous, pointer :: ptr_coefs, ptr_y
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_y
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_coefs
+    real (PREC), dimension(:), allocatable :: lintercept
 
-    type (lm_data), dimension(:), allocatable :: res1d
-
-    integer :: nobs, ncoefs
     type (status_t) :: lstatus
+    type (lm_config) :: lconf
 
     lstatus = NF_STATUS_OK
 
     nullify (ptr_coefs, ptr_y)
 
-    nobs = size(y)
-    ncoefs = size(coefs)
+    if (present(conf)) lconf = conf
+    lconf%trans_y = .false.
+    lconf%trans_coefs = .false.
 
-    ptr_y(1:nobs,1:1) => y
+    ptr_y(1:size(y),1:1) => y
 
     if (present(coefs)) then
-        ptr_coefs(1:ncoefs,1:1) => coefs
+        ptr_coefs(1:size(coefs),1:1) => coefs
     end if
 
-    if (present(res)) then
-        allocate (res1d(1))
+    if (present(intercept)) then
+        allocate (lintercept(1))
     end if
 
-    call ridge (ptr_y, x, lambda, ptr_coefs, add_const, trans_x, center, &
-        scale, rcond, rank, res1d, lstatus)
+    call pcr (lconf, X, ptr_y, ptr_coefs, ncomp, lintercept, res, lstatus)
 
     if (lstatus == NF_STATUS_OK) then
-        if (present(res)) res = res1d(1)
+        if (present(res)) then
+            if (allocated(res%coefs_multi)) then
+                call copy_alloc (res%coefs_multi(:,1), res%coefs)
+            end if
+
+            if (allocated(res%intercept_multi)) then
+                res%intercept = res%intercept_multi(1)
+            end if
+        end if
+
+        if (present(intercept)) then
+            intercept = lintercept(1)
+        end if
     end if
 
     if (present(status)) status = lstatus
@@ -1458,41 +1194,36 @@ end subroutine
 
 
 
-subroutine lm_post_estim (model, lhs, rhs, rsq, status)
+subroutine lm_post_estim (model, X, y, trans_x, rsq, status)
     !*  LM_POST_ESTIM computes common post-estimation statistics such as
     !   R^2 for a given linear model. The model must have been estimated
     !   using before invoking this routine.
-    type (lm_data), intent(in) :: model
+    type (lm_result), intent(in) :: model
         !*  Estimated model
-    real (PREC), intent(in), dimension(:), contiguous :: lhs
+    real (PREC), intent(in), dimension(:,:), contiguous :: X
+        !*  Array of explanatory (RHS) variables used to estimate model.
+        !   Array is assumed to have shape [NOBS, NRHS], unless
+        !   TRANS_RHS is present and has value .TRUE.
+    real (PREC), intent(in), dimension(:), contiguous :: y
         !*  Vector of observations of the dependent variable used to estimate
         !   model.
-    real (PREC), intent(in), dimension(:,:), contiguous :: rhs
-        !*  Array of explanatory (RHS) variables used to estimate model.
-        !   Array is assumed to have shape [NOBS, NVARS], unless
-        !   TRANS_RHS is present and has value .TRUE.
+    logical, intent(in), optional :: trans_x
     real (PREC), intent(out), optional :: rsq
         !*  If present, contains the model's R^2 on exit.
     type (status_t), intent(out), optional :: status
+        !*  Exit code
 
-    logical :: need_resid
-    real (PREC), dimension(:), allocatable :: resid
+    logical :: ltrans_x
+    real (PREC), dimension(:), allocatable :: resid, y_pred
+    character (*), parameter :: NAME = 'POST_ESTIM'
 
     type (status_t) :: lstatus
-    real (PREC) :: var_u, var_y
-    real (PREC), dimension(:), allocatable :: coefs
-    integer :: ncoefs
-
-    ! Variables used for BLAS routines
-    integer, parameter :: incx = 1, incy = 1
-    character (1) :: trans
-    real (PREC) :: alpha, beta
-    integer :: m, n, lda
+    real (PREC) :: var_u, var_y, norm_u
+    integer :: Nobs
 
     lstatus = NF_STATUS_OK
 
-    ! List of outputs that require predicted values to compute
-    need_resid = present(rsq)
+    call set_optional_arg (trans_x, model%conf%trans_x, ltrans_x)
 
     ! Check whether model has been estimated
     if (.not. allocated(model%coefs)) then
@@ -1500,48 +1231,22 @@ subroutine lm_post_estim (model, lhs, rhs, rsq, status)
         goto 100
     end if
 
-    ncoefs = size(model%coefs)
+    call get_regressor_dims (X, trans=ltrans_x, nobs=Nobs)
 
-    if (need_resid) then
-        ! Compute YHAT using GEMV BLAS routine
-        allocate (resid(model%nobs), source=lhs)
-
-        if (model%add_const) then
-            ! Constant was added during estimation process but is not present
-            ! in RHS array
-            allocate (coefs(model%nvars), source=model%coefs(2:ncoefs))
-            ! Adjust LHS variable to compensate for "lacking" intercept in YHAT
-            ! Note: At this point RESID contains just Y
-            ! We want resid = y - yhat = y - (alpha + x'b) = (y-alpha) - x'b
-            resid(:) = resid - model%coefs(1)
-        else
-            allocate (coefs(model%nvars), source=model%coefs)
-        end if
-
-        if (model%trans_rhs) then
-            trans = 'T'
-            m = model%nvars
-            n = model%nobs
-        else
-            trans = 'N'
-            m = model%nobs
-            n = model%nvars
-        end if
-
-        lda = m
-        ! Set up ALPHA, BETA such that result of GEMV will be resid = -yhat + y
-        alpha = -1.0_PREC
-        beta = 1.0_PREC
-        call BLAS_GEMV (trans, m, n, alpha, rhs, lda, coefs, incx, beta, resid, incy)
-        deallocate (coefs)
-    end if
+    call check_cond (size(y) == Nobs, NAME, 'Y: Non-conformable array', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
 
     if (present(rsq)) then
+
+        call compute_resid (lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+
         ! Compute variance of residuals
-        var_u = BLAS_DOT (model%nobs, resid, incx, resid, incy) / model%nobs
+        norm_u = BLAS_NRM2 (model%nobs, resid, 1)
+        var_u = norm_u**2.0_PREC / model%nobs
 
         ! Compute variable of LHS variable Y
-        call std (lhs, s=var_y, dof=0)
+        call std (y, s=var_y, dof=0)
         var_y = var_y ** 2.0_PREC
 
         rsq = 0.0_PREC
@@ -1553,7 +1258,615 @@ subroutine lm_post_estim (model, lhs, rhs, rsq, status)
 
 100 continue
 
+    if (allocated(y_pred)) deallocate (y_pred)
     if (allocated(resid)) deallocate (resid)
+
     if (present(status)) status  = lstatus
+
+contains
+
+    subroutine compute_predicted (status)
+        type (status_t), intent(out) :: status
+        if (.not. allocated (y_pred)) then
+            allocate (y_pred(Nobs))
+            call predict (X, model%coefs, y_pred, model%intercept, &
+                trans_x=ltrans_x, trans_y=.false., trans_coefs=.false., &
+                status=status)
+        end if
+    end subroutine
+
+    subroutine compute_resid (status)
+        type (status_t), intent(out) :: status
+
+        call compute_predicted (status)
+        if (status /= NF_STATUS_OK) return
+
+        if (.not. allocated (resid)) then
+            allocate (resid, source=y)
+            resid(:) = resid - y_pred
+        end if
+    end subroutine
+
+end subroutine
+
+
+
+subroutine lm_predict_2d (model, X, Y_pred, trans_x, trans_y, status)
+    type (lm_result), intent(in), target :: model
+    real (PREC), intent(in), dimension(:,:), contiguous :: X
+    real (PREC), intent(out), dimension(:,:), contiguous :: Y_pred
+    logical, intent(in), optional :: trans_x
+    logical, intent(in), optional :: trans_y
+    type (status_t), intent(out), optional :: status
+
+    logical :: ltrans_x, ltrans_y
+    integer :: Nlhs
+    type (status_t) :: lstatus
+    character (*), parameter :: NAME = 'PREDICT'
+
+    lstatus = NF_STATUS_OK
+
+    call set_optional_arg (trans_x, model%conf%trans_x, ltrans_x)
+    call set_optional_arg (trans_y, model%conf%trans_y, ltrans_y)
+
+    call check_cond (allocated(model%coefs_multi), NAME, &
+        'MODEL: COEFS_MULTI not allocated', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    call check_cond (allocated(model%intercept_multi), NAME, &
+        'MODEL: INTERCEPT_MULTI not allocated', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    call get_dims (X, Y_pred, model%coefs_multi, trans_x=ltrans_x, &
+        trans_y=ltrans_y, nlhs=Nlhs, status=lstatus)
+
+    call check_cond (model%nlhs == Nlhs, NAME, 'Y_PRED: Non-conformable array', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    call predict (X, model%coefs_multi, Y_pred, intercept=model%intercept_multi, &
+        trans_x=ltrans_x, trans_y=ltrans_y, trans_coefs=.false., status=lstatus)
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+
+subroutine lm_predict_1d (model, X, y_pred, trans_x, trans_y, status)
+    type (lm_result), intent(in), target :: model
+    real (PREC), intent(in), dimension(:,:), contiguous :: X
+    real (PREC), intent(out), dimension(:), contiguous :: y_pred
+    logical, intent(in), optional :: trans_x
+    logical, intent(in), optional :: trans_y
+        !*  Ignored. Present only for API-compatibility with 2d-variant
+        !   of this routine.
+    type (status_t), intent(out), optional :: status
+
+    logical :: ltrans_x
+    type (status_t) :: lstatus
+    character (*), parameter :: NAME = 'PREDICT'
+    real (PREC), dimension(:), pointer, contiguous :: ptr_coefs
+
+    lstatus = NF_STATUS_OK
+
+    call set_optional_arg (trans_x, model%conf%trans_x, ltrans_x)
+
+    call check_cond (model%nlhs == 1, NAME, 'Y_PRED: Non-conformable array', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    if (allocated(model%coefs)) then
+        ptr_coefs => model%coefs
+    else if (allocated(model%coefs_multi)) then
+        ptr_coefs => model%coefs_multi(:,1)
+    else
+        lstatus = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+
+    ! Prevent intercept being added twice, so pass INTERCEPT argument
+    ! only if intercept is not included in COEFS already.
+    call predict (X, model%coefs, y_pred, intercept=model%intercept, &
+        trans_x=ltrans_x, status=lstatus)
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+
+subroutine predict_2d (X, coefs, Y_pred, intercept, irhs, trans_x, &
+        trans_y, trans_coefs, status)
+    !*  PREDICT computes predicted values for a linear model, ie. it evaluates
+    !   some variant of
+    !       Y_pred = op(X) * op(B)
+    !   or
+    !       Y_pred^T = op(B) * op(X)
+    !   where all three arrays can be optionally provided in transposed form.
+    real (PREC), intent(in), dimension(:,:), contiguous, target :: X
+    real (PREC), intent(in), dimension(:,:), contiguous, target :: coefs
+    !*  Coefficient matrix shaped [NCOEFS,NLHS]
+    real (PREC), intent(out), dimension(:,:), contiguous :: Y_pred
+    real (PREC), intent(in), dimension(:), contiguous, optional :: intercept
+    integer, intent(in), dimension(:), contiguous, optional :: irhs
+    logical, intent(in), optional :: trans_x
+    logical, intent(in), optional :: trans_y
+    logical, intent(in), optional :: trans_coefs
+    type (status_t), intent(out), optional :: status
+
+    logical :: ltrans_y
+
+    call set_optional_arg (trans_y, .false., ltrans_y)
+
+    if (ltrans_y) then
+        call predict_trans_2d (X, coefs, Y_pred, intercept, irhs, trans_x, &
+            trans_coefs, status)
+    else
+        call predict_notrans_2d (X, coefs, Y_pred, intercept, irhs, trans_x, &
+            trans_coefs, status)
+    end if
+
+end subroutine
+
+
+
+subroutine predict_notrans_2d (X, coefs, Y_pred, intercept, irhs, trans_x, &
+        trans_coefs, status)
+    !*  PREDICT_NOTRANS computes predicted values for linear models when
+    !   the outcome variables are not transposed, ie. it returns
+    !       Y = op(X) * op(B)
+    !   where Y has shape [Nobs,Nlhs].
+    real (PREC), intent(in), dimension(:,:), contiguous, target :: X
+    real (PREC), intent(in), dimension(:,:), contiguous, target :: coefs
+        !*  Coefficient matrix shaped [NCOEFS,NLHS]
+    real (PREC), intent(out), dimension(:,:), contiguous :: Y_pred
+    real (PREC), intent(in), dimension(:), contiguous, optional :: intercept
+    integer, intent(in), dimension(:), contiguous, optional :: irhs
+    logical, intent(in), optional :: trans_x
+    logical, intent(in), optional :: trans_coefs
+    type (status_t), intent(out), optional :: status
+
+    type (status_t) :: lstatus
+    logical :: ltrans_x, ltrans_coefs
+    integer :: Nrhs, Nlhs, Nobs, Ncoefs, Nconst_coefs, Nrhs_in
+    integer :: i, j, jrhs
+    character (1) :: transa, transb
+    integer :: m, n, k, lda, ldb, ldc
+    real (PREC) :: beta, b0, b_ij
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_b
+    real (PREC), dimension(:,:), allocatable :: X_in
+    logical :: deallocate_coefs
+
+    character (*), parameter :: NAME = 'PREDICT'
+
+    lstatus = NF_STATUS_OK
+
+    ! --- Input processing ---
+
+    call set_optional_arg (trans_x, .false., ltrans_x)
+    call set_optional_arg (trans_coefs, .false., ltrans_coefs)
+
+    call get_dims (X, Y_pred, coefs, trans_x=ltrans_x, &
+        trans_y=.false., trans_coefs=ltrans_coefs, nrhs=Nrhs, nlhs=Nlhs, &
+        nobs=Nobs, ncoefs=Ncoefs, nconst_coefs=Nconst_coefs, status=lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    if (present(intercept)) then
+        call check_cond (size(intercept) == Nlhs, NAME, &
+            'INTERCEPT: Non-conformable array', lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+    end if
+
+    ! --- Add intercept ---
+
+    if (present(intercept)) then
+        do j = 1, Nlhs
+            Y_pred(:,j) = intercept(j)
+        end do
+        ! Add X'B without intercept in GEMM, GEMV call
+        beta = 1.0
+    else if (Nconst_coefs == 1) then
+        ! Initialize Y with intercepts from first row in COEFS
+        do j = 1, Nlhs
+            if (ltrans_coefs) then
+                b0 = coefs(j,1)
+            else
+                b0 = coefs(1,j)
+            end if
+            Y_pred(:,j) = b0
+        end do
+
+        ! Add X'B without intercept in GEMM calls
+        beta = 1.0
+    else
+        beta = 0.0
+    end if
+
+    ! --- Add XB in some form ---
+
+    if (present(irhs)) then
+        Nrhs_in = size(irhs)
+    else
+        Nrhs_in = Nrhs
+    end if
+
+    ! Exit immediately for degenerate matrix X
+    if (Nrhs_in == 0) goto 100
+
+    ! We need to account for the following variants:
+    !   1.  X and COEFS not transposed: Y += X*B(i:,:)
+    !   2.  X transposed, COEFS not transposed: Y += X^T * B(i:,:)
+    !   3.  X not transposed, COEFS transposed: Y += X * B(:,i:)^T
+    !   4.  X transposed, COEFS transposed: Y += X^T * B(:,i:)^T
+    !
+    !   where the initial row i depends on whether COEFS includes
+    !   an intercept that is not in X.
+
+    if (present(irhs)) then
+        ! Include only selected RHS indices.
+
+        ! If there is no intercept, Y_PREC needs to be initialized to zero.
+        if (.not. (Nconst_coefs == 1 .or. present(intercept))) then
+            Y_pred(:,:) = 0.0
+        end if
+
+        if (.not. ltrans_x) then
+            ! X not tranposed: simple case with mostly memory-contiguous access,
+            ! so that we can just loop through columns of Y and X.
+            do i = 1, Nlhs
+                do j = 1, Nrhs_in
+                    jrhs = irhs(j)
+                    if (ltrans_coefs) then
+                        b_ij = coefs(i,Nconst_coefs+jrhs)
+                    else
+                        b_ij = coefs(Nconst_coefs+jrhs,i)
+                    end if
+
+                    if (b_ij == 0.0_PREC) cycle
+
+                    call BLAS_AXPY (Nobs, b_ij, X(:,jrhs), 1, Y_pred(:,i), 1)
+                end do
+            end do
+        else
+            ! We need to compute
+            !   Y = X(irhs,:)^T * op(B)(Nconst+irhs,:)
+            ! which cannot be accomplished in a contiguous fashion in any
+            ! reasonable way. Instead create a contiguous versions of X.
+            ! and compute
+            !   Y = X_in * op(B)(Nconst+irhs,:)
+
+            ! Allocate packed X and COEFS
+            allocate (X_in(Nobs, Nrhs_in))
+
+            call replay_transform (X, X_in, trans=.true., ikeep=irhs)
+
+            do i = 1, Nlhs
+                do j = 1, Nrhs_in
+                    jrhs = irhs(j)
+                    if (ltrans_coefs) then
+                        b_ij = coefs(i,Nconst_coefs+jrhs)
+                    else
+                        b_ij = coefs(Nconst_coefs+jrhs,i)
+                    end if
+
+                    if (b_ij == 0.0_PREC) cycle
+
+                    call BLAS_AXPY (Nobs, b_ij, X_in(:,j), 1, Y_pred(:,i), 1)
+                end do
+            end do
+        end if
+    else
+        ! Include all RHS variables.
+
+
+        ! Y is not transposed, we compute some variant of
+        ! Y = op(X) * op(B)(1+Nconst:,:)
+        ldc = Nobs
+        m = Nobs
+        n = Nlhs
+        k = Nrhs
+
+        if (ltrans_x) then
+            ! Case 2 + 4
+            ! X provided in transposed form, needs to be transposed back to
+            ! [Nobs,Nrhs]
+            transa = 'T'
+            lda = Nrhs
+        else
+            ! X provided in non-transposed form, remains as is
+            ! Case 1 + 3
+            transa = 'N'
+            lda = Nobs
+        end if
+
+        ! Shift initial relevant row or column depending on whether intecept is
+        ! (additionally) stored in COEFS.
+        deallocate_coefs = .false.
+        if (ltrans_coefs) then
+            ! Case  3 + 4
+            ! COEFS transposed by caller, needs to be transposed back
+            ! to [NCOEFS,NLHS]
+            transb = 'T'
+            ldb = Nlhs
+            ptr_b => coefs(:,1+Nconst_coefs:Ncoefs)
+        else
+            ! Case 1 + 2
+            ! COEFS provided in non-transposed form, remains as is
+            transb = 'N'
+            ldb = Nrhs
+            if (Nconst_coefs == 1) then
+                deallocate_coefs = .true.
+                allocate (ptr_b(Nrhs,Nlhs))
+                do i = 1, Nlhs
+                    call BLAS_COPY (Nrhs, coefs(2:Ncoefs,i), 1, ptr_b(:,i), 1)
+                end do
+            else
+                ptr_b => coefs
+            end if
+        end if
+
+        call BLAS_GEMM (transa, transb, m, n, k, 1.0_PREC, X, lda, &
+            ptr_b, ldb, beta, Y_pred, ldc)
+
+        if (deallocate_coefs) then
+            deallocate (ptr_b)
+        end if
+    end if
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+
+subroutine predict_trans_2d (X, coefs, Y_pred, intercept, irhs, trans_x, &
+        trans_coefs, status)
+    !*  PREDICT_TRANS implements prediction for linear models when
+    !   the outcome array is transposed, ie.
+    !       Y^T = op(B) * op(X)
+    real (PREC), intent(in), dimension(:,:), contiguous, target :: X
+    real (PREC), intent(in), dimension(:,:), contiguous, target :: coefs
+    !*  Coefficient matrix shaped [NCOEFS,NLHS]
+    real (PREC), intent(out), dimension(:,:), contiguous :: Y_pred
+    real (PREC), intent(in), dimension(:), contiguous, optional :: intercept
+    integer, intent(in), dimension(:), contiguous, optional :: irhs
+    logical, intent(in), optional :: trans_x
+    logical, intent(in), optional :: trans_coefs
+    type (status_t), intent(out), optional :: status
+
+    type (status_t) :: lstatus
+    logical :: ltrans_x, ltrans_coefs
+    integer :: Nrhs, Nlhs, Nobs, Ncoefs, Nconst_coefs, Nrhs_in
+    integer :: i, j, jrhs
+    character (1) :: transa, transb
+    integer :: m, n, k, lda, ldb, ldc
+    real (PREC) :: beta
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_b
+    real (PREC), dimension(:,:), allocatable :: X_in_T, coefs_in_T
+    character (*), parameter :: NAME = 'PREDICT'
+    logical :: deallocate_coefs
+
+    lstatus = NF_STATUS_OK
+
+    ! --- Input processing ---
+
+    call set_optional_arg (trans_x, .false., ltrans_x)
+    call set_optional_arg (trans_coefs, .false., ltrans_coefs)
+
+    call get_dims (X, Y_pred, coefs, trans_x=ltrans_x, trans_y=.true., &
+        trans_coefs=ltrans_coefs, nrhs=Nrhs, nlhs=Nlhs, nobs=Nobs, &
+        ncoefs=Ncoefs, nconst_coefs=Nconst_coefs, status=lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    if (present(intercept)) then
+        call check_cond (size(intercept) == Nlhs, NAME, &
+            'INTERCEPT: Non-conformable array', lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+    end if
+
+    ! --- Add intercept ---
+
+    if (present(intercept)) then
+        Y_pred(:,:) = spread(intercept, dim=2, ncopies=Nobs)
+        ! Add X'B without intercept in GEMM, GEMV call
+        beta = 1.0
+    else if (Nconst_coefs == 1) then
+        ! Initialize Y with intercepts from first row in COEFS
+        if (ltrans_coefs) then
+            Y_pred(:,:) = spread(coefs(:,1), dim=2, ncopies=Nobs)
+        else
+            Y_pred(:,:) = spread(coefs(1,:), dim=2, ncopies=Nobs)
+        end if
+
+        ! Add X'B without intercept in GEMM calls
+        beta = 1.0
+    else
+        beta = 0.0
+    end if
+
+    ! --- Add XB in some form ---
+
+    if (present(irhs)) then
+        Nrhs_in = size(irhs)
+    else
+        Nrhs_in = Nrhs
+    end if
+
+    ! Exit immediately for degenerate matrix X
+    if (Nrhs_in == 0) goto 100
+
+    ! We need to account for the following variants:
+    !   1.  X and COEFS not transposed: Y^T += B(i:,:)^T * X^T
+    !   2.  X transposed, COEFS not transposed: Y^T += B(i:,:)^T * X
+    !   3.  X not transposed, COEFS transposed: Y^T += B(:,i:) * X^T
+    !   4.  X transposed, COEFS transposed: Y^T += B(:,i:) * X
+    !
+    !   where the initial row i depends on whether COEFS includes
+    !   an intercept that is not in X.
+
+    if (present(irhs)) then
+        ! Include only selected RHS indices.
+        ! This is impossible to solve in a way that uses contiguous
+        ! memory access, so we first create contiguous packed versions
+        ! of X and COEFS.
+        !
+        ! We need to compute Y^T += B^T * X^T
+        ! so we need to create transposed arrays of B and X, if these
+        ! are not already on entry.
+
+        ! Allocate packed X and COEFS
+        allocate (X_in_T(Nrhs_in, Nobs))
+        allocate (coefs_in_T(Nlhs,Nrhs_in))
+
+        if (ltrans_x) then
+            do i = 1, Nobs
+                do j = 1, Nrhs_in
+                    jrhs = irhs(j)
+                    X_in_T(j,i) = X(jrhs,i)
+                end do
+            end do
+        else
+            do i = 1, Nobs
+                do j = 1, Nrhs_in
+                    jrhs = irhs(j)
+                    X_in_T(j,i) = X(i,jrhs)
+                end do
+            end do
+        end if
+
+        if (ltrans_coefs) then
+            ! Transposed COEFS with shape [NLHS,NCOEFS]
+            do j = 1, Nrhs_in
+                jrhs = irhs(j)
+                coefs_in_T(:,j) = coefs(1:Nlhs,Nconst_coefs+jrhs)
+            end do
+        else
+            ! Non-transposed COEFS with shape [NCOEFS,NLHS]
+            do j = 1, Nrhs_in
+                jrhs = irhs(j)
+                coefs_in_T(:,j) = coefs(Nconst_coefs+jrhs,1:Nlhs)
+            end do
+        end if
+
+        call BLAS_GEMM ('N', 'N', Nlhs, Nobs, Nrhs_in, 1.0_PREC, coefs_in_T, &
+            Nlhs, X_in_T, Nrhs_in, beta, Y_pred, Nlhs)
+    else
+        ! Include all RHS variables.
+
+        ldc = Nlhs
+        m = Nlhs
+        n = Nobs
+        k = Nrhs
+
+        if (ltrans_x) then
+            ! Case 2 + 4
+            ! X provided in transposed form, remains as is
+            transb = 'N'
+            ldb = Nrhs
+        else
+            ! Case 1 + 3
+            ! X provided in non-transposed form, needs to be transposed to
+            ! shape [Nrhs,Nobs]
+            transb = 'T'
+            ldb = Nobs
+        end if
+
+        deallocate_coefs = .false.
+        if (ltrans_coefs) then
+            ! Case 3 + 4
+            ! Already transposed by caller, remains as is
+            transa = 'N'
+            lda = Nlhs
+            ptr_b => coefs(:,1+Nconst_coefs:Ncoefs)
+        else
+            ! Case 1 + 2
+            ! COEFS provided in non-transposed form, needs to be transposed
+            ! to shape [Nlhs,Ncoefs]
+            transa = 'T'
+            lda = Nrhs
+            if (Nconst_coefs == 1) then
+                deallocate_coefs = .true.
+                allocate (ptr_b(Nrhs,Nlhs))
+                do i = 1, Nlhs
+                    call BLAS_COPY (Nrhs, coefs(2:Ncoefs,i), 1, ptr_b(:,i), 1)
+                end do
+            else
+                ptr_b => coefs
+            end if
+        end if
+
+        call BLAS_GEMM (transa, transb, m, n, k, 1.0_PREC, ptr_b, lda, &
+            X, ldb, beta, Y_pred, ldc)
+
+        if (deallocate_coefs) then
+            deallocate (ptr_b)
+        end if
+    end if
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+
+subroutine predict_1d (X, coefs, y_pred, intercept, irhs, trans_x, trans_y, &
+        trans_coefs, status)
+    real (PREC), intent(in), dimension(:,:), contiguous :: X
+    real (PREC), intent(in), dimension(:), contiguous, target :: coefs
+        !*  Coefficient vector of length NCOEFS, where NCOEFS = NRHS + 1
+        !   if ADD_INTERCEPT=.TRUE., and NCOEFS = NRHS otherwise.
+    real (PREC), intent(out), dimension(:), contiguous, target :: y_pred
+    real (PREC), intent(in), optional :: intercept
+    integer, intent(in), dimension(:), contiguous, optional :: irhs
+    logical, intent(in), optional :: trans_x
+    logical, intent(in), optional :: trans_y
+        !*  Ignored. Present only for API compatibility with 2d variant of this
+        !   routine.
+    logical, intent(in), optional :: trans_coefs
+        !*  Ignored. Present only for API compatibility with 2d variant of this
+        !   routine.
+    type (status_t), intent(out), optional :: status
+        !*  Exit code.
+
+    logical :: ltrans_x, ltrans_y, ltrans_coefs
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_y
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_coefs
+    real (PREC), dimension(:), allocatable :: lintercept
+
+    call set_optional_arg (trans_x, .false., ltrans_x)
+
+    if (ltrans_x) then
+        ! The optimal path to take is to compute
+        !   Y^T = B^T * X^T
+        ! at least if IRHS is not present, since that is only one GEMM call
+        ! and no additional memory allocations.
+        ptr_coefs(1:1,1:size(coefs)) => coefs
+        ptr_y(1:1,1:size(y_pred)) => y_pred
+        ltrans_y = .true.
+        ltrans_coefs = .true.
+    else
+        ! The optimal path to take is
+        !   Y = X * B
+        ! since that causes no additional allocations and only uses contiguous
+        ! memory access.
+        ptr_coefs(1:size(coefs),1:1) => coefs
+        ptr_y(1:size(y_pred),1:1) => y_pred
+        ltrans_y = .false.
+        ltrans_coefs = .false.
+    end if
+
+    if (present(intercept)) then
+        allocate (lintercept(1), source=intercept)
+    end if
+
+    call predict (X, ptr_coefs, ptr_y, intercept=lintercept, irhs=irhs, &
+        trans_x=trans_x, trans_y=ltrans_y, trans_coefs=ltrans_coefs, status=status)
 
 end subroutine
