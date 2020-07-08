@@ -272,7 +272,7 @@ subroutine simulate_advanced (tm, s0, seq, atol, rtol, prob_low, prob_scale, &
 
         ! also check that the min. prob. transition is at least sampled at
         ! its expected value
-        if (all_close (freq_w, freq_pop, rtol=lrtol, atol=latol)) then
+        if (all_close_fast (freq_w, freq_pop, rtol=lrtol, atol=latol)) then
             ! add at most k=i-1 elements, ie k-1 transitions, or less if we
             ! cannot store that many
             k = min(nwindow, nobs - ifrom_seq + 1)

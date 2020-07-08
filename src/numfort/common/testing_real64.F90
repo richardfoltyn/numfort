@@ -13,6 +13,7 @@ module numfort_common_testing_real64
     private
 
     public :: all_close
+    public :: all_close_fast
     public :: is_close
 
     integer, parameter :: PREC = real64
@@ -23,6 +24,10 @@ module numfort_common_testing_real64
 
     interface is_close
         procedure is_close
+    end interface
+
+    interface all_close_fast
+        procedure all_close_fast_1d, all_close_fast_2d, all_close_fast_3d
     end interface
 
     contains
