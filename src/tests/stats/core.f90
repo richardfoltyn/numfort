@@ -72,6 +72,38 @@ subroutine test_mean_std_degenerate (tests)
     call tc%assert_true ((NF_STATUS_INVALID_ARG .in. status), &
         "2d input array, Nvars > 0, Nobs=0 (dim=1)")
 
+    status = NF_STATUS_UNDEFINED
+    call std (x, s, status=status)
+    call tc%assert_true (NF_STATUS_INVALID_ARG .in. status, &
+        "STD: degenerate 1d input array")
+
+    status = NF_STATUS_UNDEFINED
+    call std (x10, s1(1:1), dim=2, status=status)
+    call tc%assert_true ((NF_STATUS_INVALID_ARG .in. status), &
+        "2d input array, Nvars > 0, Nobs = 0 (dim=2)")
+
+    status = NF_STATUS_UNDEFINED
+    call std (x01, s1(1:1), dim=1, status=status)
+    call tc%assert_true ((NF_STATUS_INVALID_ARG .in. status), &
+        "2d input array, Nvars > 0, Nobs=0 (dim=1)")
+
+    ! Note: passing zero variables but non-zero observations should return
+    ! NF_STATUS_OK, since the problem is well-defined for all variables
+    ! in this empty set!
+    status = NF_STATUS_UNDEFINED
+    call std (x10, s1(1:0), dim=1, status=status)
+    call tc%assert_true (status == NF_STATUS_OK, &
+        "2d input array, Nvars = 0, Nobs > 0 (dim=1)")
+
+    ! Note: passing zero variables but non-zero observations should return
+    ! NF_STATUS_OK, since the problem is well-defined for all variables
+    ! in this empty set!
+    status = NF_STATUS_UNDEFINED
+    call std (x01, s1(1:0), dim=2, status=status)
+    call tc%assert_true (status == NF_STATUS_OK, &
+        "2d input array, Nvars = 0, Nobs > 0 (dim=2)")
+
+
     ! --- zero-variable inputs ---
 
     status = NF_STATUS_UNDEFINED
@@ -306,6 +338,7 @@ subroutine test_standardize_1d (tests)
 
     class (test_case), pointer :: tc
     real (PREC), dimension(10) :: x, x_ok, x_orig
+    real (PREC), dimension(0) :: x0
     real (PREC) :: std_x, mean_x, shift_x, scale_x, mean_ok, std_ok
     logical :: values_ok
     type (status_t) :: status
@@ -319,6 +352,10 @@ subroutine test_standardize_1d (tests)
     x_ok = x
 
     call std (x, m=mean_ok, s=std_ok)
+
+    ! --- Degenerate input ---
+
+    call standardize (x0, mean_x=mean_x, std_x=std_x, status=status)
 
     ! --- No operation ---
 
@@ -407,6 +444,7 @@ subroutine test_standardize_2d (tests)
     integer, parameter :: m = 7, n = 4
     real (PREC), dimension(m,n) :: x, x_ok, x_orig
     real (PREC), dimension(max(m,n)) :: std_x, mean_x, shift_x, scale_x, mean_ok, std_ok
+    integer :: Nvars, Nobs
     logical :: values_ok
     integer :: k, dim, i
     type (status_t) :: status
@@ -419,6 +457,44 @@ subroutine test_standardize_2d (tests)
     x = x_orig
     x_ok = x
 
+    ! --- Degenerate inputs ---
+
+    ! Zero obs, positive number of variables
+    ! This should be considered as an invalid argument since the
+    ! mean and std. dev. are not defined for 0 obs.
+    Nvars = min(m,n)
+    Nobs = 0
+    dim = 1
+    status = NF_STATUS_UNDEFINED
+    call standardize (x(1:Nobs,1:Nvars), dim=dim, mean_x=mean_x(1:Nvars), &
+        std_x=std_x(1:Nvars), status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
+        'Nobs = 0 , Nvar > 0, dim = 1')
+
+    dim = 2
+    status = NF_STATUS_UNDEFINED
+    call standardize (x(1:Nvars,1:Nobs), dim=dim, mean_x=mean_x(1:Nvars), &
+        std_x=std_x(1:Nvars), status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, &
+        'Nobs = 0 , Nvar > 0, dim = 2')
+
+    ! Zero vars, positive number of variables.
+    ! This should return NF_STATUS_OK.
+    Nvars = 0
+    Nobs = min(m,n)
+    dim = 1
+    status = NF_STATUS_UNDEFINED
+    call standardize (x(1:Nobs,1:Nvars), dim=dim, mean_x=mean_x(1:Nvars), &
+        std_x=std_x(1:Nvars), status=status)
+    call tc%assert_true (status == NF_STATUS_OK, &
+        'Nobs > 0 , Nvar = 0, dim = 1')
+
+    dim = 2
+    status = NF_STATUS_UNDEFINED
+    call standardize (x(1:Nvars,1:Nobs), dim=dim, mean_x=mean_x(1:Nvars), &
+        std_x=std_x(1:Nvars), status=status)
+    call tc%assert_true (status == NF_STATUS_OK, &
+        'Nobs > 0 , Nvar = 0, dim = 2')
 
     ! --- No operation ---
 
@@ -655,7 +731,6 @@ subroutine test_standardize_2d (tests)
     values_ok = all(x == x_ok)
     call tc%assert_true (status == NF_STATUS_OK .and. values_ok, &
         'No optional args present, DIM=1, CENTER=.FALSE., SCALE=.TRUE.')
-
 
 end subroutine
 
