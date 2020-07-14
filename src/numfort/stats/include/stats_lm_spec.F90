@@ -20,6 +20,7 @@ type :: lm_config
         !   used in PCR.
     integer :: ncomp_min = 0
         !*  Min. number of princal components to use for PCR
+    integer :: ncomp_max = -1
     integer :: ncomp = DEFAULT_PCR_NCOMP
         !*  Number of principal components to use for PCR. Overrides any
         !   other setting.
@@ -27,6 +28,11 @@ type :: lm_config
         !*  Argument passed to GELSD for OLS that allows to control the
         !   effective rank of the regressor matrix.
         !   Use same default as Scipy.
+
+    integer :: cv_n = 20
+    logical :: cv_parsimonious = .false.
+    real (PREC) :: cv_se_mult = 1.0
+    logical :: cv_shuffle_obs = .false.
 end type
 
 type :: lm_result
@@ -80,6 +86,10 @@ end interface
 
 interface pcr
     procedure pcr_pca_1d, pcr_pca_2d
+end interface
+
+interface pcr_cv
+    procedure pcr_cv_1d, pcr_cv_2d
 end interface
 
 interface post_estim

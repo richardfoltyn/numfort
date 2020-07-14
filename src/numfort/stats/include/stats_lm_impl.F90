@@ -758,7 +758,7 @@ end subroutine
 
 
 subroutine pcr_2d (Y, scores, sval, loadings, coefs, shift_x, scale_x, &
-        add_intercept, trans_y, trans_coefs, center, intercept, status)
+        add_intercept, trans_y, trans_coefs, center, intercept, weights_sqrt, status)
     real (PREC), intent(in), dimension(:,:), contiguous, target :: Y
     real (PREC), intent(in), dimension(:,:), contiguous :: scores
     real (PREC), intent(in), dimension(:), contiguous :: sval
@@ -771,6 +771,7 @@ subroutine pcr_2d (Y, scores, sval, loadings, coefs, shift_x, scale_x, &
     logical, intent(in), optional :: trans_coefs
     logical, intent(in), optional :: center
     real (PREC), intent(out), dimension(:), contiguous, optional, target :: intercept
+    real (PREC), intent(in), dimension(:), contiguous, optional :: weights_sqrt
     type (status_t), intent(out), optional :: status
 
     logical :: lcenter, ltrans_y, ltrans_coefs
@@ -778,6 +779,7 @@ subroutine pcr_2d (Y, scores, sval, loadings, coefs, shift_x, scale_x, &
     real (PREC), dimension(:), pointer, contiguous :: ptr_intercept
     integer :: i
     type (status_t) :: lstatus
+    character (*), parameter :: NAME = 'PCR'
 
     real (PREC), dimension(:,:), pointer, contiguous :: ptr_Yp
     real (PREC), dimension(:,:), allocatable :: PCy, lcoefs
@@ -804,14 +806,26 @@ subroutine pcr_2d (Y, scores, sval, loadings, coefs, shift_x, scale_x, &
         status=lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
+    if (present(weights_sqrt)) then
+        call check_cond (size(weights_sqrt) == Nobs, NAME, &
+            'WEIGHTS: Non-conformable array', lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+    end if
+
     ! --- Pre-process data ---
 
-    if (ltrans_y .or. lcenter) then
+    if (ltrans_y .or. lcenter .or. present(weights_sqrt)) then
         allocate (ptr_Yp(Nobs,Nlhs))
         allocate (shift_y(Nlhs))
         call transform_regressors (Y, ptr_Yp, center=lcenter, scale=.false., &
             trans=ltrans_y, shift_x=shift_y, status=lstatus)
         if (lstatus /= NF_STATUS_OK) goto 100
+
+        if (present(weights_sqrt)) then
+            do i = 1, Nlhs
+                ptr_Yp(:,i) = ptr_Yp(:,i) * weights_sqrt
+            end do
+        end if
     else
         ptr_Yp => Y
     end if
@@ -928,7 +942,7 @@ end subroutine
 
 
 subroutine pcr_1d (y, scores, sval, loadings, coefs, shift_x, scale_x, &
-        add_intercept, center, intercept, status)
+        add_intercept, center, intercept, weights_sqrt, status)
 
     real (PREC), intent(in), dimension(:), contiguous, target :: y
     real (PREC), intent(in), dimension(:,:), contiguous :: scores
@@ -940,6 +954,7 @@ subroutine pcr_1d (y, scores, sval, loadings, coefs, shift_x, scale_x, &
     logical, intent(in), optional :: add_intercept
     logical, intent(in), optional :: center
     real (PREC), intent(out), optional :: intercept
+    real (PREC), intent(in), dimension(:), contiguous, optional :: weights_sqrt
     type (status_t), intent(out), optional :: status
 
     real (PREC), dimension(:,:), contiguous, pointer :: ptr_y, ptr_coefs
@@ -960,7 +975,8 @@ subroutine pcr_1d (y, scores, sval, loadings, coefs, shift_x, scale_x, &
     end if
 
     call pcr (ptr_y, scores, sval, loadings, ptr_coefs, shift_x, scale_x, &
-        add_intercept, center=center, intercept=lintercept, status=lstatus)
+        add_intercept, center=center, intercept=lintercept, &
+        weights_sqrt=weights_sqrt, status=lstatus)
 
     if (lstatus == NF_STATUS_OK) then
         if (present(intercept)) then
@@ -973,14 +989,15 @@ end subroutine
 
 
 
-subroutine pcr_pca_2d (conf, X, Y, coefs, ncomp, intercept, res, status)
+subroutine pcr_pca_2d (conf, X, Y, coefs, ncomp, intercept, weights, res, status)
     type (lm_config), intent(in), optional :: conf
-    real (PREC), intent(in), dimension(:,:), contiguous :: X
+    real (PREC), intent(in), dimension(:,:), contiguous, target :: X
     real (PREC), intent(in), dimension(:,:), contiguous :: Y
     real (PREC), intent(out), dimension(:,:), contiguous, optional, target :: coefs
     integer, intent(out), optional :: ncomp
         !   If present, contains the actual number of PCs used on exit.
     real (PREC), intent(out), dimension(:), optional, contiguous, target :: intercept
+    real (PREC), intent(in), dimension(:), contiguous, optional :: weights
     type (lm_result), intent(inout), optional, target :: res
     type (status_t), intent(out), optional :: status
 
@@ -990,6 +1007,8 @@ subroutine pcr_pca_2d (conf, X, Y, coefs, ncomp, intercept, res, status)
     real (PREC), dimension(:), allocatable :: lintercept
     real (PREC), dimension(:,:), allocatable :: scores, loadings
     real (PREC), dimension(:), allocatable :: sval, shift_x, scale_x, propvar
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_Xp
+    real (PREC), dimension(:), allocatable :: weights_sqrt
     integer :: Nrhs, Nconst_add, nobs, ncoefs, Nlhs, lncomp, Nconst_coefs
     logical :: trans_coefs
     real (PREC) :: var_rhs
@@ -997,6 +1016,8 @@ subroutine pcr_pca_2d (conf, X, Y, coefs, ncomp, intercept, res, status)
     character (*), parameter :: NAME = 'PCR_PCA'
 
     lstatus = NF_STATUS_OK
+
+    nullify (ptr_Xp)
 
     if (present(conf)) lconf = conf
 
@@ -1011,18 +1032,28 @@ subroutine pcr_pca_2d (conf, X, Y, coefs, ncomp, intercept, res, status)
     call check_cond (Nobs >= (Nrhs + Nconst_add), NAME, 'Too few observations', lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
-    call check_cond (lconf%var_rhs_min >= 0.0_PREC .and. &
-        lconf%var_rhs_min <= 1.0_PREC, NAME, 'CONF: Invalid value for VAR_RHS_MIN', &
-        lstatus)
+    call check_cond (lconf%var_rhs_min <= 1.0_PREC, NAME, &
+        'CONF: Invalid value for VAR_RHS_MIN', lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
     call check_cond (lconf%ncomp_min >= 0 .and. lconf%ncomp_min <= Nrhs, &
         NAME, 'CONF: Invalid value for NCOMP_MIN', lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
+    ! NCOMP will be ignored if negative
+    call check_cond (lconf%ncomp <= Nrhs, NAME, &
+        'CONF: Invalid value for NCOMP', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
     if (lconf%ncomp /= DEFAULT_PCR_NCOMP) then
         call check_cond (lconf%ncomp >= 0 .and. lconf%ncomp <= Nrhs, NAME, &
             'CONF: Invalid value for NCOMP', lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+    end if
+
+    if (present(weights)) then
+        call check_cond (size(weights) == Nobs, NAME, &
+            'WEIGHTS: Non-conformable array', lstatus)
         if (lstatus /= NF_STATUS_OK) goto 100
     end if
 
@@ -1040,28 +1071,63 @@ subroutine pcr_pca_2d (conf, X, Y, coefs, ncomp, intercept, res, status)
     ! Skip PCA if no RHS are present
     if (Nrhs == 0) goto 50
 
+    ! --- Transform X ---
+
+    if (present(weights)) then
+        allocate (weights_sqrt(Nobs))
+        weights_sqrt(:) = sqrt(weights)
+    end if
+
+    if (lconf%trans_x .or. lconf%center .or. lconf%scale .or. present(weights)) then
+        allocate (ptr_Xp(Nobs,Nrhs))
+        call transform_regressors (X, ptr_Xp, trans=lconf%trans_x, &
+            center=lconf%center, scale=lconf%scale, shift_x=shift_x, &
+            scale_x=scale_x, drop_na=.false., status=lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+
+        if (present(weights)) then
+            do i = 1, Nrhs
+                ptr_Xp(:,i) = ptr_Xp(:,i) * weights_sqrt
+            end do
+        end if
+    else
+        ptr_Xp => X
+        scale_x(:) = 1.0
+        shift_x(:) = 0.0
+    end if
+
     ! Perform principal component analysis
-    call pca (X, center=lconf%center, scale=lconf%scale, trans_x=lconf%trans_x, &
-        scores=scores, sval=sval, loadings=loadings, shift_x=shift_x, &
-        scale_x=scale_x, propvar=propvar, status=lstatus)
+    call pca (ptr_Xp, center=.false., scale=.false., trans_x=.false., &
+        scores=scores, sval=sval, loadings=loadings, propvar=propvar, status=lstatus)
     if (.not. (NF_STATUS_OK .in. lstatus)) goto 100
 
     ! Select number of principal components to use:
     ! 1. Select by min. variance, if applicable;
-    var_rhs = 0.0
-    do k = 1, Nrhs
-        var_rhs = var_rhs + propvar(k)
-        if ((var_rhs - lconf%var_rhs_min) >= 0.0_PREC) exit
-    end do
-    lncomp = min(k, Nrhs)
+    if (lconf%var_rhs_min >= 0.0_PREC) then
+        var_rhs = 0.0
+        do k = 1, Nrhs
+            var_rhs = var_rhs + propvar(k)
+            if ((var_rhs - lconf%var_rhs_min) >= 0.0_PREC) exit
+        end do
+        lncomp = min(k, Nrhs)
+    end if
 
-    ! 2. Select by NCOMP_MIN
-    lncomp = max(lconf%ncomp_min, lncomp)
-
-    ! 3. User-imposed fixed number of components
+    ! 2. User-imposed fixed number of components
     if (lconf%ncomp >= 0 .and. lconf%ncomp <= Nrhs) then
         lncomp = lconf%ncomp
     end if
+
+    ! 3. Apply bounds
+    if (lconf%ncomp_min > 0) then
+        lncomp = max(lconf%ncomp_min, lncomp)
+    end if
+
+    if (lconf%ncomp_max >= 0) then
+        lncomp = min(lconf%ncomp_max, lncomp)
+    end if
+
+    ! This should be satisfied, but still make sure it is.
+    lncomp = min(lncomp, Nrhs)
 
     ! Jump to this point of PCA is skipped because of no RHS variables.
 50  continue
@@ -1075,7 +1141,7 @@ subroutine pcr_pca_2d (conf, X, Y, coefs, ncomp, intercept, res, status)
     ! Run principal component regression
     call pcr (Y, scores(:,1:lncomp), sval(1:lncomp), loadings(:,1:lncomp), &
         lcoefs, shift_x, scale_x, lconf%add_intercept, lconf%trans_y,  &
-        lconf%trans_coefs, lconf%center, lintercept, lstatus)
+        lconf%trans_coefs, lconf%center, lintercept, weights_sqrt, lstatus)
 
     ! Restore user-provided TRANS_COEFS
     lconf%trans_coefs = trans_coefs
@@ -1129,19 +1195,22 @@ subroutine pcr_pca_2d (conf, X, Y, coefs, ncomp, intercept, res, status)
 
 100 continue
 
+    call assert_dealloc_ptr (X, ptr_Xp)
+
     if (present(status)) status = lstatus
 
 end subroutine
 
 
 
-subroutine pcr_pca_1d (conf, X, y, coefs, ncomp, intercept, res, status)
+subroutine pcr_pca_1d (conf, X, y, coefs, ncomp, intercept, weights, res, status)
     type (lm_config), intent(in), optional :: conf
     real (PREC), intent(in), dimension(:,:), contiguous :: X
     real (PREC), intent(in), dimension(:), contiguous, target :: y
     real (PREC), intent(out), dimension(:), contiguous, optional, target :: coefs
     integer, intent(inout), optional :: ncomp
     real (PREC), intent(out), optional :: intercept
+    real (PREC), intent(in), dimension(:), contiguous, optional :: weights
     type (lm_result), intent(inout), optional :: res
     type (status_t), intent(out), optional :: status
 
@@ -1170,7 +1239,7 @@ subroutine pcr_pca_1d (conf, X, y, coefs, ncomp, intercept, res, status)
         allocate (lintercept(1))
     end if
 
-    call pcr (lconf, X, ptr_y, ptr_coefs, ncomp, lintercept, res, lstatus)
+    call pcr (lconf, X, ptr_y, ptr_coefs, ncomp, lintercept, weights, res, lstatus)
 
     if (lstatus == NF_STATUS_OK) then
         if (present(res)) then
@@ -1191,6 +1260,351 @@ subroutine pcr_pca_1d (conf, X, y, coefs, ncomp, intercept, res, status)
     if (present(status)) status = lstatus
 
 end subroutine
+
+
+
+subroutine pcr_cv_2d (conf, X, Y, ncomp, rmse, weights, status)
+    !*  PCR_CV implements cross-validation for principal component regression,
+    !   selecting the number of principal components which minimize the
+    !   average mean squared error computed on test sub-samples.
+    type (lm_config), intent(in), optional :: conf
+        !*  Configuration object
+    real (PREC), intent(in), dimension(:,:), contiguous, target :: X
+        !*  Predictor variables (regressors)
+    real (PREC), intent(in), dimension(:,:), contiguous, target :: Y
+        !*  Response variables (outcomes)
+    integer, intent(out) :: ncomp
+        !   Contains the cross-validated number of PCs used on exit.
+    real (PREC), intent(in), dimension(:), contiguous, optional, target :: weights
+    real (PREC), intent(out), optional :: rmse
+        !*  Root MSE of the MSE-minimizing model
+    type (status_t), intent(out), optional :: status
+        !*  Exit code.
+
+    integer :: Nrhs, Nobs, Nlhs, Nconst_add, Nfolds, Ntest
+    integer, dimension(:), allocatable :: folds_ifrom, folds_size
+    real (PREC), dimension(:,:), allocatable :: mse_ncomp
+    real (PREC), dimension(:), allocatable :: mean_mse, se_mse, resid, weights_mse
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_X, ptr_Y
+    real (PREC), dimension(:), pointer, contiguous :: ptr_weights
+    integer, dimension(:), allocatable :: iorder
+    integer :: status_code, i, imin, ifrom, dim
+    real (PREC) :: min_mse, ubound, std_resid
+    type (status_t) :: lstatus
+    type (lm_config) :: lconf
+    character (*), parameter :: NAME = 'PCR_CV'
+
+    nullify (ptr_X, ptr_Y, ptr_weights)
+
+    ! --- Input processing ---
+
+    lconf = conf
+
+    call get_dims (X, Y, add_intercept=lconf%add_intercept, trans_x=lconf%trans_x, &
+        trans_y=lconf%trans_y, nobs=nobs, nrhs=Nrhs, nlhs=nlhs, &
+        nconst_add=Nconst_add, status=lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    if (present(weights)) then
+        call check_cond (size(weights) == Nobs, NAME, &
+            'WEIGHTS: Non-conformable array', lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+    end if
+
+    ! --- Randomly reorder X and Y ---
+
+    if (conf%cv_shuffle_obs) then
+        allocate (iorder(Nobs))
+        call random_order (iorder)
+
+        allocate (ptr_X(Nobs,Nrhs))
+        allocate (ptr_Y(Nobs,Nlhs))
+
+        dim = 1
+        if (lconf%trans_x) dim = 2
+        call copy_indexed (X, iorder, ptr_X, dim, lconf%trans_x, lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+
+        dim = 1
+        if (lconf%trans_y) dim = 2
+        call copy_indexed (Y, iorder, ptr_Y, dim, lconf%trans_y, lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+
+        if (present(weights)) then
+            allocate (ptr_weights(Nobs))
+            call copy_indexed (weights, iorder, ptr_weights)
+        end if
+
+        lconf%trans_x = .false.
+        lconf%trans_y = .false.
+    else
+        ptr_X => X
+        ptr_Y => Y
+        if (present(weights)) then
+            ptr_weights => weights
+        end if
+    end if
+
+    ! --- k-fold CV chunks ---
+
+    Nfolds = conf%cv_n
+    allocate (folds_ifrom(Nfolds), folds_size(Nfolds))
+
+    call split_uniform (Nobs, Nfolds, folds_ifrom, folds_size, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! --- Perform cross-validation ---
+
+    ! Hold MSEs for number of components from 0-Nrhs
+    allocate (mse_ncomp(0:Nrhs,Nfolds))
+
+    ! Workaround: OpenMP in gfortran 7.x cannot use user-defined
+    ! operators, keep track using integer instead.
+    status_code = NF_STATUS_OK
+
+    !$omp parallel default(none) &
+    !$omp shared(Nfolds,folds_ifrom,folds_size,lconf,ptr_X,ptr_Y,mse_ncomp,ptr_weights) &
+    !$omp private(i,ifrom,Ntest,lstatus) &
+    !$omp reduction(ior: status_code)
+
+    !$omp do schedule (auto)
+    do i = 1, Nfolds
+        ifrom = folds_ifrom(i)
+        Ntest = folds_size(i)
+        call pcr_cv_mse (lconf, ptr_X, ptr_Y, ifrom, Ntest, mse_ncomp(:,i), &
+            weights=ptr_weights, status=lstatus)
+        ! Convert to integer to which IOR reduction can be applied
+        status_code = lstatus
+    end do
+    !$omp end do
+    !$omp end parallel
+
+    ! Convert back from integer to STATUS_T
+    lstatus = status_code
+
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! Compute average MSEs across test samples. Since weights on test samples
+    ! in different folds might differ, we need to compute the corresponding
+    ! weights for each MSE
+    allocate (weights_mse(Nfolds))
+    if (present(weights)) then
+        do i = 1, Nfolds
+            ifrom = folds_ifrom(i)
+            Ntest = folds_size(i)
+            weights_mse(i) = sum(ptr_weights(ifrom:ifrom+Ntest-1))
+        end do
+        weights_mse(:) = weights_mse / sum(weights_mse)
+    else
+        weights_mse(:) = folds_size / real(Nobs, PREC)
+    end if
+
+    allocate (mean_mse(0:Nrhs), se_mse(0:Nrhs))
+    allocate (resid(Nfolds))
+
+    ! Compute weighted average MSE for each # of PCs
+    call BLAS_GEMV ('N', Nrhs+1, Nfolds, 1.0_PREC, mse_ncomp, Nrhs+1, &
+        weights_mse, 1, 0.0_PREC, mean_mse, 1)
+
+    do i = 0, Nrhs
+        resid(:) = mse_ncomp(i,:) - mean_mse(i)
+        resid(:) = resid * sqrt(weights_mse)
+        std_resid = sqrt(sum(resid**2.0_PREC))
+        se_mse(i) = std_resid / sqrt(real(Nfolds,PREC))
+    end do
+
+    min_mse = huge(0.0_PREC)
+    imin = 0
+
+    do i = 0, Nrhs
+        if (mean_mse(i) < min_mse) then
+            imin = i
+            min_mse = mean_mse(i)
+        end if
+    end do
+
+    ! Pick most parsimonious model within one standard deviation of
+    ! the minimum.
+    if (conf%cv_parsimonious) then
+        ubound = min_mse + se_mse(imin) * max(lconf%cv_se_mult, 0.0_PREC)
+        do i = imin, 1, -1
+            if (mean_mse(i) > ubound) then
+                ! Choose previous as the previous index which was within
+                ! min(MSE) + se(min(MSE))
+                imin = i+1
+                exit
+            end if
+        end do
+
+        imin = min(Nrhs, imin)
+    end if
+
+    ncomp = imin
+    if (present(rmse)) rmse = sqrt(min_mse)
+
+100 continue
+
+    call assert_dealloc_ptr (X, ptr_X)
+    call assert_dealloc_ptr (Y, ptr_Y)
+    call assert_dealloc_ptr (weights, ptr_weights)
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+
+subroutine pcr_cv_1d (conf, X, Y, ncomp, rmse, weights, status)
+    !*  PCR_CV implements cross-validation for principal component regression,
+    !   selecting the number of principal components which minimize the
+    !   average mean squared error computed on test sub-samples.
+    !
+    !   Routine implements a wrapper which accepts a single outcome variable.
+    type (lm_config), intent(in), optional :: conf
+    real (PREC), intent(in), dimension(:,:), contiguous :: X
+    real (PREC), intent(in), dimension(:), contiguous, target :: Y
+    integer, intent(out), optional :: ncomp
+        !*  Contains the cross-validated number of PCs used on exit.
+    real (PREC), intent(out), optional :: rmse
+    real (PREC), intent(in), dimension(:), contiguous, optional :: weights
+    type (status_t), intent(out), optional :: status
+
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_Y
+    type (lm_config) :: lconf
+
+    lconf = conf
+    lconf%trans_y = .false.
+
+    ptr_Y(1:size(Y),1:1) => Y
+
+    call pcr_cv (lconf, X, ptr_Y, ncomp, rmse, weights, status)
+
+end subroutine
+
+
+
+subroutine pcr_cv_mse (conf, X, Y, test_ifrom, test_n, mse_ncomp, weights, status)
+    type (lm_config), intent(in), optional :: conf
+    real (PREC), intent(in), dimension(:,:), contiguous :: X
+    real (PREC), intent(in), dimension(:,:), contiguous :: Y
+    integer, intent(in) :: test_ifrom
+    integer, intent(in) :: test_n
+    real (PREC), intent(out), dimension(:), contiguous :: mse_ncomp
+    real (PREC), intent(in), dimension(:), contiguous, optional :: weights
+    type (status_t), intent(out), optional :: status
+
+
+    integer :: Ntrain, Nobs, Nrhs, Nlhs, Nconst_add, Ncomp
+    integer :: ncomp_min, ncomp_max, i, j
+    real (PREC) :: ssr, mse
+    real (PREC), dimension(:,:), allocatable :: X_test, X_train, Y_test, Y_train
+    real (PREC), dimension(:), allocatable :: weights_train, weights_test
+    real (PREC), dimension(:,:), allocatable :: coefs
+    real (PREC), dimension(:), allocatable :: intercept
+    real (PREC), dimension(:,:), allocatable, target :: resid
+    real (PREC), dimension(:), pointer, contiguous :: ptr_resid
+    type (status_t) :: lstatus
+    type (lm_config) :: lconf
+
+    lstatus = NF_STATUS_OK
+
+    ! --- Input processing ---
+
+    lconf = conf
+
+    call get_dims (X, Y, add_intercept=lconf%add_intercept, trans_x=lconf%trans_x, &
+        trans_y=lconf%trans_y, nobs=nobs, nrhs=Nrhs, nlhs=nlhs, &
+        nconst_add=Nconst_add, status=lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! --- Split sample ---
+
+    Ntrain = Nobs - test_n
+
+    ! Create train and test subsamples in contiguous arrays.
+    ! This already applies X^T and Y^T as needed!
+    call extract_block_alloc (X, test_ifrom, test_n, conf%trans_x, x_test, x_train)
+    call extract_block_alloc (Y, test_ifrom, test_n, conf%trans_y, Y_test, Y_train)
+
+    if (present(weights)) then
+        call extract_block_alloc (weights, test_ifrom, test_n, &
+            x_block=weights_test, x_rest=weights_train)
+    end if
+
+    ! Remove any transpose flags
+    lconf%trans_x = .false.
+    lconf%trans_y = .false.
+    ! Enable centering and scaling since training samples themselves
+    ! need not be centered/scaled.
+    lconf%center = .true.
+    lconf%scale = .true.
+    ! Deactive any other #PC selection mechanism
+    lconf%ncomp_min = 0
+    lconf%ncomp_max = -1
+    lconf%var_rhs_min = -1.0
+
+    allocate (coefs(Nrhs,Nlhs))
+    allocate (intercept(Nlhs))
+    allocate (resid(test_n,Nlhs))
+
+    ptr_resid(1:size(resid)) => resid
+
+    ! PC range to process
+    ncomp_min = 0
+    if (size(mse_ncomp) <= Nrhs)  ncomp_min = 1
+    ncomp_max = min(Nrhs, size(mse_ncomp))
+
+    ! Normalize weights in training sample
+    if (present(weights)) then
+        weights_train(:) = weights_train / sum(weights_train)
+    end if
+
+    ! Compute square roots of normalized weights in test sample
+    if (present(weights)) then
+        weights_test(:) = weights_test / sum(weights_test)
+        weights_test(:) = sqrt(weights_test)
+    end if
+
+    do Ncomp = ncomp_min, ncomp_max
+        i = Ncomp - ncomp_min + 1
+        lconf%ncomp = Ncomp
+
+        ! Run PCR on training sample given fixed number of PCs
+        call pcr (lconf, X_train, Y_train, coefs, intercept=intercept, &
+            weights=weights_train, status=lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+
+        ! Compute predicted values on test sample
+        call predict (X_test, coefs, resid, intercept, status=lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+
+        ! Compute (negative) residuals in place
+        resid(:,:) = resid - Y_test
+
+        if (present(weights)) then
+            do j = 1, Nlhs
+                resid(:,j) = resid(:,j) * weights_test
+            end do
+        end if
+
+        ssr = BLAS_NRM2 (test_n * Nlhs, ptr_resid, 1)
+        mse = ssr ** 2.0_PREC / Nlhs
+
+        ! Without weights, apply normalization 1/N
+        if (.not. present(weights)) then
+            mse = mse / test_n
+        end if
+
+        mse_ncomp(i) = mse
+
+    end do
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
 
 
 
