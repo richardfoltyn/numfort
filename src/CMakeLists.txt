@@ -1,7 +1,7 @@
 # src/CMakeLists.txt
 # Top-level cmake configuration for numfort
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 
 project(numfort C Fortran)
 set(NUMFORT_LIBRARY_NAME ${CMAKE_PROJECT_NAME})
@@ -36,6 +36,7 @@ option(BUILD_TESTS "Build (unit) tests" OFF)
 option(BUILD_EXAMPLES "Build examples/demo code" OFF)
 option(OPT_REPORT "Generate compiler optimization reports" OFF)
 option(USE_OPENMP "Use some OpenMP features" ON)
+option(USE_LTO "Use link-time optimization" OFF)
 
 # If enabled, pass -assume std_mod_proc_name to ifort such that module
 # names will use _MP_ as module name / procedure name separator.
@@ -69,6 +70,19 @@ add_definitions(
 if(BUILD_TESTS)
     enable_testing()
 endif()
+
+################################################################################
+# LTO / IPO
+
+if (USE_LTO)
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT SUPPORTS_LTO)
+    if (NOT SUPPORTS_LTO)
+        set(USE_LTO OFF)
+        message(WARNING "LTO not supported")
+    endif()
+endif()
+
 
 ################################################################################
 # BLAS / LAPACK libraries
@@ -213,6 +227,9 @@ else(BUILD_SHARED_LIBS)
 endif(BUILD_SHARED_LIBS)
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+if (USE_LTO)
+    message(STATUS "Link-time optimization ENABLED")
+endif()
 message(STATUS "Library install directory: ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
 message(STATUS "MOD file install directory: ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}")
 
@@ -224,6 +241,9 @@ message(STATUS "MOD file install directory: ${CMAKE_INSTALL_PREFIX}/${CMAKE_INST
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     set(_FFLAGS "-frecursive")
+    if (USE_LTO)
+        set(_FFLAGS "${_FFLAGS} -fuse-linker-plugin")
+    endif()
     set(_FFLAGS_DEBUG "-fcheck=all -O0")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)

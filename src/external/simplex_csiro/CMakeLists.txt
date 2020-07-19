@@ -82,3 +82,7 @@ set_target_properties(${_name} PROPERTIES
 if (BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif ()
+
+if (USE_LTO)
+    set_target_properties(${_name} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()

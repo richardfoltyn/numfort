@@ -23,6 +23,7 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
         set(GNU_WARN "${GNU_WARN} -Wno-unused-dummy-argument")
     endif()
     set(_FFLAGS "${GNU_WARN} --std=f2008")
+    set(_FFLAGS_DEBUG "-fcheck=all -O0")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
         set(_FFLAGS "/warn:all /standard-semantics /stand:f08 /auto")
@@ -59,6 +60,7 @@ endif()
 set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS}")
 set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${_FFLAGS_DEBUG}")
 set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} ${_FFLAGS_RELEASE}")
+set(CMAKE_Fortran_FLAGS_RELWITHDEBINFO "${CMAKE_Fortran_FLAGS_RELWITHDEBINFO} ${_FFLAGS_RELWITHDEBINFO}")
 
 #set_property(DIRECTORY PROPERTY INTERPROCEDURAL_OPTIMIZATION 1)
 
@@ -99,6 +101,10 @@ foreach (_comp IN LISTS COMPONENTS)
     target_include_directories(${_comp} PRIVATE
         ${NUMFORT_INCLUDE_DIRS}
     )
+
+    if (USE_LTO)
+        set_target_properties(${_comp} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+    endif()
 
     # we need to make sure that -fPIC etc. is passed to compiler when building
     # object libraries that will be used to create a shared lib

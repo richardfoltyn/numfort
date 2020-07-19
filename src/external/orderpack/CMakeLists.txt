@@ -96,3 +96,6 @@ set_target_properties(${_name} PROPERTIES
 target_include_directories(${_name} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
+if (USE_LTO)
+    set_target_properties(${_name} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()

@@ -72,3 +72,6 @@ set_target_properties(${_name} PROPERTIES
     Fortran_MODULE_DIRECTORY ${MODULE_DIRECTORY}
 )
 
+if (USE_LTO)
+    set_target_properties(${_name} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
