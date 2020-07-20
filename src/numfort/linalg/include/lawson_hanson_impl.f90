@@ -312,6 +312,9 @@ subroutine hfti_2d (a, b, tau, krank, rnorm, w, ip, status, msg)
 
     lstatus = NF_STATUS_OK
 
+    ! Initialize to avoid uninitialized variable compiler warnings
+    krank = -1
+
     m = size(a, 1)
     n = size(a, 2)
     mb = size(b, 1)
@@ -573,6 +576,9 @@ subroutine nnls (a, b, x, rnorm, w, z, index, status, msg)
     lstatus = NF_STATUS_OK
     ! Original success exit code
     lstatus%code_orig = STATUS_OK
+
+    ! Initialize to avoid uninitialized variable compiler warnings
+    rnorm = huge(0.0_PREC)
 
     m = size(a, 1)
     n = size(a, 2)
