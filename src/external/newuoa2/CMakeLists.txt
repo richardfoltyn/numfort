@@ -1,7 +1,7 @@
 # src/external/newuoa2/CMakeLists.txt
 # CMake configuration for modified NEWUOA library
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 
 project(newuoa2 Fortran)
 set(PROJECT_NAME_PRETTY NEWUOA2)

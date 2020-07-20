@@ -1,7 +1,7 @@
 # src/external/fitpack/CMakeLists.txt
 # CMake configuration for FITPACK library
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 
 project(fitpack Fortran)
 set(PROJECT_NAME_PRETTY FITPACK)

@@ -1,7 +1,7 @@
 # minpack/CMakeLists.txt
 # CMake configuration for QUADPACK library
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 
 project(arpack Fortran)
 set(PROJECT_NAME_PRETTY ARPACK)

@@ -1,7 +1,7 @@
 # src/external/random/CMakeLists.txt
 # Build configuration for RANDOM library
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 
 project(random Fortran)
 set(PROJECT_NAME_PRETTY random)

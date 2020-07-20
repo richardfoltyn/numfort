@@ -1,7 +1,7 @@
 # src/external/simplex_csiro/CMakeLists.txt
 # CMake configuration for simplex (CSIRO) library
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 
 project(simplex_csiro Fortran)
 set(PROJECT_NAME_PRETTY "SIMPLEX (CSIRO implementation)")

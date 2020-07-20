@@ -1,7 +1,7 @@
 # src/external/CDFLIB90/CMakeLists.txt
 # Build configuration for CDFLIB90 library
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 
 project(cdflib90 Fortran)
 set(PROJECT_NAME_PRETTY CDFLIB90)

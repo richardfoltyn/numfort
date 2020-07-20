@@ -1,7 +1,7 @@
 # src/external/orderpack/CMakeLists.txt
 # Build configuration for ORDERPACK library
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 
 project(orderpack Fortran)
 set(PROJECT_NAME_PRETTY ORDERPACK)

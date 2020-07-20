@@ -1,7 +1,7 @@
 # src/external/slsqp/CMakeLists.txt
 # CMake configuration for SLSQP library
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 
 project(slsqp Fortran)
 set(PROJECT_NAME_PRETTY SLSQP)

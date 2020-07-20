@@ -1,7 +1,7 @@
 # src/external/sobol/CMakeLists.txt
 # CMake configuration for Sobol direction numbers library
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 
 project(sobol_direction_num Fortran)
 set(PROJECT_NAME_PRETTY "Sobol direction numbers")
