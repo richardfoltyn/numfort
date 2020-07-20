@@ -279,7 +279,8 @@ pure subroutine __APPEND(power_ppolyval_eval_impl_deg2_1d,__PREC) &
             ! Offset of coefficient block for interval j
             jj = (ilb-1) * (k+1)
 
-            yi = power_polyval (k, s, coefs(jj:jj+k))
+            yi = coefs(jj+2) * s + coefs(jj+1)
+            yi = yi * s + coefs(jj)
 
             y(i) = yi
         end do
@@ -307,7 +308,7 @@ pure subroutine __APPEND(power_ppolyval_eval_impl_deg3_1d,__PREC) &
     real (PREC), intent(in), optional :: right
 
     integer, parameter :: k = 3
-    integer (INTSIZE) :: i, nx, nknots, jj, ilb
+    integer (INTSIZE) :: i, j, nx, nknots, jj, ilb
     real (PREC) :: s, yi, wgt
 
     nx = size(y)
@@ -350,7 +351,10 @@ pure subroutine __APPEND(power_ppolyval_eval_impl_deg3_1d,__PREC) &
             ! Offset of coefficient block for interval j
             jj = (ilb-1) * (k+1)
 
-            yi = power_polyval (k, s, coefs(jj:jj+k))
+            yi = coefs(jj+3) * s + coefs(jj+2)
+            do j = 1, 0, -1
+                yi = yi * s + coefs(jj+j)
+            end do
 
             y(i) = yi
         end do
@@ -590,15 +594,10 @@ pure function __APPEND(power_polyval,__PREC) (k, s, coefs) result(res)
 
     integer :: j
 
-    select case (k)
-    case (0)
-        res = coefs(0)
-    case default
-        res = coefs(k) * s + coefs(k-1)
-        do j = k-2, 0, -1
-            res = res * s + coefs(j)
-        end do
-    end select
+    res = coefs(k)
+    do j = k-1, 0, -1
+        res = res * s + coefs(j)
+    end do
 
 end function
 
