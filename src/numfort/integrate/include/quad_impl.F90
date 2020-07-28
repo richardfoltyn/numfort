@@ -1,9 +1,7 @@
 
 
-subroutine __APPEND(quad_check_input,__PREC) (a, b, epsabs, epsrel, nmax, status)
+subroutine quad_check_input (a, b, epsabs, epsrel, nmax, status)
     !*  Input checker routine for QUAD.
-
-    integer, parameter :: PREC = __PREC
 
     real (PREC), intent(in) :: a, b
         !*  Integration bounds. Note that QUADPACK does not require a <= b.
@@ -23,13 +21,11 @@ subroutine __APPEND(quad_check_input,__PREC) (a, b, epsabs, epsrel, nmax, status
 end subroutine
 
 
-subroutine __APPEND(quad,__PREC) (fcn, a, b, res, epsabs, epsrel, nmax, work, &
+subroutine quad (fcn, a, b, res, epsabs, epsrel, nmax, work, &
         abserr, nfev, status)
     !*  Integrate function on interval [a,b] using QUADPACK routines.
 
-    integer, parameter :: PREC = __PREC
-
-    procedure (__APPEND(f_integrand,__PREC)) :: fcn
+    procedure (f_integrand) :: fcn
         !*  Function defining the integrand
     real (PREC), intent(in) :: a
         !*  Lower bound of integration
@@ -43,7 +39,7 @@ subroutine __APPEND(quad,__PREC) (fcn, a, b, res, epsabs, epsrel, nmax, work, &
         !*  Relative error tolerance
     integer, intent(in), optional :: nmax
         !*  Upper bound on the number of subintervals used in adaptive algorithm
-    type (__APPEND(workspace,__PREC)), intent(in out), optional :: work
+    type (workspace), intent(inout), optional :: work
         !*  Workspace object (optional). If not present, routine will automatically
         !   allocate required arrays.
     real (PREC), intent(out), optional :: abserr
@@ -53,7 +49,7 @@ subroutine __APPEND(quad,__PREC) (fcn, a, b, res, epsabs, epsrel, nmax, work, &
     type (status_t), intent(out), optional :: status
         !*  If present, contains exit status.
 
-    type (__APPEND(workspace,__PREC)), pointer :: ptr_work
+    type (workspace), pointer :: ptr_work
     real (PREC) :: lepsabs, lepsrel
     integer :: lnmax
 
@@ -67,6 +63,9 @@ subroutine __APPEND(quad,__PREC) (fcn, a, b, res, epsabs, epsrel, nmax, work, &
     real (PREC), dimension(:), pointer, contiguous :: ptr_alist, ptr_blist, &
         ptr_rlist, ptr_elist
     integer, dimension(:), pointer, contiguous :: ptr_iord
+
+    nullify (ptr_work)
+    nullify (ptr_alist, ptr_blist, ptr_rlist, ptr_elist, ptr_iord)
 
     res = 0.0_PREC
     labserr = 0.0_PREC
@@ -105,11 +104,42 @@ subroutine __APPEND(quad,__PREC) (fcn, a, b, res, epsabs, epsrel, nmax, work, &
 
 
 100 continue
+
     ! Clean up any "local" working arrays
     call assert_dealloc_ptr (work, ptr_work)
+
     ! Set optional return values
     if (present(status)) status = lstatus
     if (present(abserr)) abserr = labserr
     if (present(nfev)) nfev = neval
 
+end subroutine
+
+
+
+pure subroutine map_qagse_status (ier, status)
+    !*  MAP_QAGSE_STATUS maps the integer value returned by
+    !   QUADPACK's QAGSE routine to NUMFORT status codes.
+
+    integer, intent(in) :: ier
+    type (status_t), intent(inout) :: status
+
+    select case (ier)
+    case (0)
+        status = NF_STATUS_OK
+    case (1)
+        status = NF_STATUS_MAX_INTERVALS
+    case (2)
+        status = NF_STATUS_NOT_CONVERGED
+    case (3)
+        status = NF_STATUS_INTEGRAND_ERROR
+    case (4)
+        status = NF_STATUS_NOT_CONVERGED
+    case (5)
+        status = NF_STATUS_INTEGRAND_ERROR
+    case (6)
+        status = NF_STATUS_INVALID_ARG
+    end select
+
+    status%code_orig = ier
 end subroutine
