@@ -11,7 +11,6 @@ set(SOURCE_FILES
     enums.f90
     kinds.f90
     status.f90
-    workspace.F90
     input_checks.F90
     shape.F90
     strings.F90
@@ -19,6 +18,9 @@ set(SOURCE_FILES
     testing.f90
     testing_real32.F90
     testing_real64.F90
+    workspace.f90
+    workspace_real32.F90
+    workspace_real64.F90
 )
 
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})

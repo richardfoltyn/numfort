@@ -5,7 +5,7 @@ module numfort_optimize
     use numfort_common_enums
     use numfort_common_kinds
     use numfort_common_status
-    use numfort_common, only : workspace_real32, workspace_real64, workspace_finalize
+    use numfort_common, only : workspace_real32, workspace_real64
 
     use numfort_optimize_interfaces_common, only: args_data
     use numfort_optimize_interfaces_real32, only: dynamic_cast, cond_alloc, &

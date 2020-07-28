@@ -92,8 +92,6 @@ subroutine test_hybrj_dispatch (xx, fxx)
     do i = 1, n
 
         call root_hybrj (fcn1_jac, xx(:,i), fxx(:,i), work=work, res=res)
-
-        call workspace_finalize (work)
     end do
     !$omp end do
 

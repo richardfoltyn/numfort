@@ -1,9 +1,9 @@
 
-pure subroutine __APPEND(ws_reset,__PREC) (self)
+pure subroutine ws_reset (self)
     !*  WORKSPACE_CLEAR clear any internal state other than allocated
     !   working arrays.
 
-    type (__APPEND(workspace,__PREC)), intent(inout) :: self
+    type (workspace), intent(inout) :: self
 
     self%roffset = 0
     self%ioffset = 0
@@ -13,13 +13,9 @@ pure subroutine __APPEND(ws_reset,__PREC) (self)
 end subroutine
 
 
-pure subroutine __APPEND(ws_assert_alloc_int64,__PREC) &
-        (self, nrwrk, niwrk, ncwrk, nlwrk)
-
-    integer, parameter :: PREC = __PREC
+pure subroutine ws_assert_alloc_int64 (self, nrwrk, niwrk, ncwrk, nlwrk)
     integer, parameter :: INTSIZE = int64
-    ! Note: avoid polymorphic calls, might break OpenMP
-    type (__APPEND(workspace,__PREC)), intent(inout) :: self
+    type (workspace), intent(inout) :: self
     integer (INTSIZE), intent(in), optional :: nrwrk, niwrk, ncwrk, nlwrk
 
     real (PREC), dimension(:), allocatable :: rtmp
@@ -79,12 +75,9 @@ pure subroutine __APPEND(ws_assert_alloc_int64,__PREC) &
 end subroutine
 
 
-pure subroutine __APPEND(ws_assert_alloc_int32,__PREC) &
-        (self, nrwrk, niwrk, ncwrk, nlwrk)
-
+pure subroutine ws_assert_alloc_int32 (self, nrwrk, niwrk, ncwrk, nlwrk)
     integer, parameter :: INTSIZE = int32
-    ! Note: avoid polymorphic calls, might break OpenMP
-    type (__APPEND(workspace,__PREC)), intent(inout) :: self
+    type (workspace), intent(inout) :: self
     integer (INTSIZE), intent(in) :: nrwrk
     integer (INTSIZE), intent(in), optional :: niwrk, ncwrk, nlwrk
 
@@ -104,13 +97,13 @@ end subroutine
 
 
 
-pure subroutine __APPEND(ws_assert_alloc_ptr,__PREC) (ws, ptr_ws)
+pure subroutine ws_assert_alloc_ptr (ws, ptr_ws)
     !*  ASSERT_ALLOC_PTR ensures that ptr_ws points to allocated memory:
     !   If argument ws is present, ptr_ws points to ws and no additional
     !   memory is allocated. If ws is not present, then ptr_ws points to a newly
     !   allocated instance of ws.
-    type (__APPEND(workspace,__PREC)), intent(inout), target, optional :: ws
-    type (__APPEND(workspace,__PREC)), pointer, intent(inout) :: ptr_ws
+    type (workspace), intent(inout), target, optional :: ws
+    type (workspace), pointer, intent(inout) :: ptr_ws
 
     if (present(ws)) then
         ptr_ws => ws
@@ -120,42 +113,31 @@ pure subroutine __APPEND(ws_assert_alloc_ptr,__PREC) (ws, ptr_ws)
 
 end subroutine
 
-pure subroutine __APPEND(ws_assert_dealloc_ptr,__PREC) (ws, ptr_ws)
+
+
+pure subroutine ws_assert_dealloc_ptr (ws, ptr_ws)
     !*  ASSERT_DEALLOC_PTR ensures that memory that was dynamically allocated
     !   by ASSERT_ALLOC_PTR is released. The memory pointed to by ptr_ws
     !   needs to be released only if argument ws is not present, as only then
     !   a new array was allocated by ASSERT_ALLOC_PTR, which is referenced
     !   by ptr_ws.
-
-    type (__APPEND(workspace,__PREC)), intent(in), target, optional :: ws
-    type (__APPEND(workspace,__PREC)), pointer, intent(inout) :: ptr_ws
+    type (workspace), intent(in), target, optional :: ws
+    type (workspace), pointer, intent(inout) :: ptr_ws
 
     if (associated(ptr_ws)) then
         if (.not. present(ws)) then
-            call workspace_finalize (ptr_ws)
             deallocate (ptr_ws)
             nullify (ptr_ws)
         else if (.not. associated(ptr_ws, ws)) then
-            call workspace_finalize (ptr_ws)
             deallocate (ptr_ws)
             nullify (ptr_ws)
         end if
     end if
 end subroutine
 
-pure subroutine __APPEND(ws_finalize,__PREC) (self)
-    type (__APPEND(workspace,__PREC)), intent(inout) :: self
-
-    if (allocated(self%rwrk)) deallocate (self%rwrk)
-    if (allocated(self%cwrk)) deallocate (self%cwrk)
-    if (allocated(self%lwrk)) deallocate (self%lwrk)
-    if (allocated(self%iwrk)) deallocate (self%iwrk)
-
-end subroutine
 
 
-
-pure subroutine __APPEND(ws_get_rptr_1d_int32,__PREC) (self, n, ptr, status)
+pure subroutine ws_get_rptr_1d_int32 (self, n, ptr, status)
     !*  WORKSPACE_GET_PTR associates a given pointer to a 1d-array with
     !   a subset of the workspace array of desired length.
     !
@@ -163,10 +145,9 @@ pure subroutine __APPEND(ws_get_rptr_1d_int32,__PREC) (self, n, ptr, status)
     !   as it won't compile with ifort (CONTIGUOUS attribute on function
     !   return values seems to be ignored).
 
-    integer, parameter :: PREC = __PREC
     integer, parameter :: INTSIZE = int32
 
-    type (__APPEND(workspace,__PREC)), intent(inout), target :: self
+    type (workspace), intent(inout), target :: self
     integer (INTSIZE), intent(in) :: n
     real (PREC), intent(out), dimension(:), pointer, contiguous :: ptr
     type (status_t), intent(out), optional :: status
@@ -198,18 +179,16 @@ pure subroutine __APPEND(ws_get_rptr_1d_int32,__PREC) (self, n, ptr, status)
 end subroutine
 
 
-pure subroutine __APPEND(ws_get_rptr_2d_int32,__PREC) (self, shp, ptr, status)
+pure subroutine ws_get_rptr_2d_int32 (self, shp, ptr, status)
     !*  WORKSPACE_GET_PTR maps a pointer to a 2d-array of given shape to
     !   a subset of the 1-dimensional workspace array of appropriate length.
     !
     !   Note: Cannot be implemented as function returning 1d-pointer,
     !   as it won't compile with ifort (CONTIGUOUS attribute on function
     !   return values seems to be ignored).
-
-    integer, parameter :: PREC = __PREC
     integer, parameter :: INTSIZE = int32
 
-    type (__APPEND(workspace,__PREC)), intent(inout), target :: self
+    type (workspace), intent(inout), target :: self
     integer (INTSIZE), intent(in), dimension(:) :: shp
     real (PREC), intent(out), dimension(:,:), pointer, contiguous :: ptr
     type (status_t), intent(out), optional :: status
@@ -242,7 +221,7 @@ pure subroutine __APPEND(ws_get_rptr_2d_int32,__PREC) (self, shp, ptr, status)
 end subroutine
 
 
-pure subroutine __APPEND(ws_get_iptr_1d_int32,__PREC) (self, n, ptr, status)
+pure subroutine ws_get_iptr_1d_int32 (self, n, ptr, status)
     !*  WORKSPACE_GET_PTR associates a given pointer to a 1d-array with
     !   a subset of the workspace array of desired length.
     !
@@ -252,7 +231,7 @@ pure subroutine __APPEND(ws_get_iptr_1d_int32,__PREC) (self, n, ptr, status)
 
     integer, parameter :: INTSIZE = int32
 
-    type (__APPEND(workspace,__PREC)), intent(inout), target :: self
+    type (workspace), intent(inout), target :: self
     integer (INTSIZE), intent(in) :: n
     integer, intent(out), dimension(:), pointer, contiguous :: ptr
     type (status_t), intent(out), optional :: status
