@@ -69,6 +69,7 @@ subroutine quad (fcn, a, b, res, epsabs, epsrel, nmax, work, &
 
     res = 0.0_PREC
     labserr = 0.0_PREC
+    neval = 0
     lstatus = NF_STATUS_OK
 
     ! Use Scipy's tolerance levels by default
