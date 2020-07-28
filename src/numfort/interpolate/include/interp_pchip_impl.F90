@@ -369,6 +369,9 @@ pure subroutine __APPEND(interp_pchip_eval_scalar,__PREC) (xp, coef, x, y, &
     real (PREC), dimension(1) :: x1, y1
     type (status_t) :: lstatus
 
+    ! Avoid uninitialized variable warnings
+    y1 = 0.0
+
     x1(1) = x
     call interp_pchip_eval (xp, coef, x1, y1, order, ext, left, right, lstatus)
 
