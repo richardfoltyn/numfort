@@ -282,7 +282,13 @@ recursive subroutine root_broyden_impl (fcn, x, tol, xtol, &
     integer :: lda, m
     
     status = NF_STATUS_OK
+
     nullify (ptr_work, ptr_res)
+    nullify (fx, fxlast, dx, dfx)
+    nullify (vec1, vec2)
+    nullify (x_ls, fx_ls)
+    nullify (jac, jac_inv)
+    nullify (rwork_inv, iwork_inv)
 
     call assert_alloc_ptr (res, ptr_res)
     call result_reset (ptr_res)
@@ -339,22 +345,44 @@ recursive subroutine root_broyden_impl (fcn, x, tol, xtol, &
     call workspace_reset (ptr_work)
     call assert_alloc (ptr_work, nrwrk=nrwrk, niwrk=niwrk)
 
-    call workspace_get_ptr (ptr_work, n, vec1)
-    call workspace_get_ptr (ptr_work, n, vec2)
-    call workspace_get_ptr (ptr_work, n, fx)
-    call workspace_get_ptr (ptr_work, n, fxlast)
-    call workspace_get_ptr (ptr_work, n, dx)
-    call workspace_get_ptr (ptr_work, n, dfx)
-    call workspace_get_ptr (ptr_work, n, fx_ls)
-    call workspace_get_ptr (ptr_work, n, x_ls)
+    call workspace_get_ptr (ptr_work, n, vec1, status)
+    if (status /= NF_STATUS_OK) goto 100
+
+    call workspace_get_ptr (ptr_work, n, vec2, status)
+    if (status /= NF_STATUS_OK) goto 100
+
+    call workspace_get_ptr (ptr_work, n, fx, status)
+    if (status /= NF_STATUS_OK) goto 100
+
+    call workspace_get_ptr (ptr_work, n, fxlast, status)
+    if (status /= NF_STATUS_OK) goto 100
+
+    call workspace_get_ptr (ptr_work, n, dx, status)
+    if (status /= NF_STATUS_OK) goto 100
+
+    call workspace_get_ptr (ptr_work, n, dfx, status)
+    if (status /= NF_STATUS_OK) goto 100
+
+    call workspace_get_ptr (ptr_work, n, fx_ls, status)
+    if (status /= NF_STATUS_OK) goto 100
+
+    call workspace_get_ptr (ptr_work, n, x_ls, status)
+    if (status /= NF_STATUS_OK) goto 100
 
     shp2d = n
-    call workspace_get_ptr (ptr_work, shp2d, jac)
+    call workspace_get_ptr (ptr_work, shp2d, jac, status)
+    if (status /= NF_STATUS_OK) goto 100
 
     ! Working arrays for INV
-    call workspace_get_ptr (ptr_work, shp2d, jac_inv)
-    call workspace_get_ptr (ptr_work, n, rwork_inv)
-    call workspace_get_ptr (ptr_work, n, iwork_inv)
+    call workspace_get_ptr (ptr_work, shp2d, jac_inv, status)
+    if (status /= NF_STATUS_OK) goto 100
+
+    call workspace_get_ptr (ptr_work, n, rwork_inv, status)
+    if (status /= NF_STATUS_OK) goto 100
+
+    call workspace_get_ptr (ptr_work, n, iwork_inv, status)
+    if (status /= NF_STATUS_OK) goto 100
+
 
     if (liprint /= PRINT_NONE) then
         print '(tr1, a)', "ROOT_BROYDEN: routine start"
@@ -506,7 +534,8 @@ recursive subroutine root_broyden_impl (fcn, x, tol, xtol, &
 
         ! Compute difference to last objective (fx contains the best linesearch
         ! result)
-        dfx(:) = fx - fxlast
+        ! Use helper routine as otherwise compiler creates temp. arrays
+        call diff1d (fx, fxlast, dfx)
 
         ! 4. Update inverse of J_k
         ! Compute J^{-1}_{k-1} dfx_k
@@ -651,3 +680,13 @@ recursive subroutine dumb_line_search (fcn, x, nrm, iprint, &
 
 end subroutine
 
+
+
+subroutine diff1d (x1, x2, dx)
+    !*  Helper routine to avoid creating temporary arrays
+    real (PREC), intent(in), dimension(:), contiguous :: x1, x2
+    real (PREC), intent(out), dimension(:), contiguous :: dx
+
+    dx = x1 - x2
+
+end subroutine
