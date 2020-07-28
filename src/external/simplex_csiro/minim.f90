@@ -119,6 +119,7 @@ nap = COUNT(step /= zero)
 neval = 0
 loop = 0
 iflag = 0
+savemn = 0.0
 
 !     IF NAP = 0 EVALUATE FUNCTION AT THE STARTING POINT AND RETURN
 
@@ -720,6 +721,8 @@ REAL (PREC), INTENT(OUT)  :: rmax, r(:)
 REAL (PREC), PARAMETER :: eta = EPSILON(1.0_PREC), zero = 0._PREC
 INTEGER              :: i, icol, irow, j, k, l, m
 REAL (PREC)            :: rsq, w
+
+rsq = 0.0
 
 ifault = 1
 IF (n > 0) THEN
