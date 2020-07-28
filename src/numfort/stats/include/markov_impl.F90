@@ -431,7 +431,8 @@ subroutine ergodic_dist (tm, edist, inverse, maxiter, &
     call assert_alloc (ptr_work, nrwrk=nrwrk, niwrk=niwrk)
 
     shp2d = n
-    call workspace_get_ptr (ptr_work, shp2d, tm_T)
+    call workspace_get_ptr (ptr_work, shp2d, tm_T, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
 
     if (ltransposed) then
         tm_T(:,:) = tm
@@ -446,9 +447,14 @@ subroutine ergodic_dist (tm, edist, inverse, maxiter, &
 
         tm_T(n, :) = 1.0_PREC
 
-        call workspace_get_ptr (ptr_work, shp2d, tm_inv)
-        call workspace_get_ptr (ptr_work, nrwrk_inv, rwork_inv)
-        call workspace_get_ptr (ptr_work, niwrk_inv, iwork_inv)
+        call workspace_get_ptr (ptr_work, shp2d, tm_inv, lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+
+        call workspace_get_ptr (ptr_work, nrwrk_inv, rwork_inv, lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+
+        call workspace_get_ptr (ptr_work, niwrk_inv, iwork_inv, lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
 
         call inv (tm_T, tm_inv, rwork=rwork_inv, iwork=iwork_inv, status=lstatus)
         if (lstatus /= NF_STATUS_OK) goto 100
@@ -464,9 +470,14 @@ subroutine ergodic_dist (tm, edist, inverse, maxiter, &
         lda = n
         m = n
 
-        call workspace_get_ptr (ptr_work, n, mu1)
-        call workspace_get_ptr (ptr_work, n, mu2)
-        call workspace_get_ptr (ptr_work, n, diff_mu)
+        call workspace_get_ptr (ptr_work, n, mu1, lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+
+        call workspace_get_ptr (ptr_work, n, mu2, lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+
+        call workspace_get_ptr (ptr_work, n, diff_mu, lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
 
         ! compute ergodic distribution by iteration
         if (linitial) then
