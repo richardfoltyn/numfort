@@ -148,9 +148,9 @@ c***end prologue  dqagse
 c
       real (PREC) a,abseps,abserr,alist,area,area1,area12,area2,a1,
      *  a2,b,blist,b1,b2,correc,defabs,defab1,defab2,d1mach,
-     *  dres,elist,epmach,epsabs,epsrel,erlarg,erlast,errbnd,errmax,
-     *  error1,error2,erro12,errsum,ertest,oflow,resabs,reseps,result,
-     *  res3la,rlist,rlist2,small,uflow
+     *  dres,elist,epsabs,epsrel,erlarg,erlast,errbnd,errmax,
+     *  error1,error2,erro12,errsum,ertest,resabs,reseps,result,
+     *  res3la,rlist,rlist2,small
       integer id,ier,ierro,iord,iroff1,iroff2,iroff3,jupbnd,k,ksgn,
      *  ktmin,last,limit,maxerr,neval,nres,nrmax,numrl2
       logical extrap,noext
@@ -214,7 +214,16 @@ c           uflow is the smallest positive magnitude.
 c           oflow is the largest positive magnitude.
 c
 c***first executable statement  dqagse
-      epmach = d1mach(4)
+      real (PREC), parameter :: epmach = epsilon(0.0_PREC)
+      real (PREC), parameter :: uflow = tiny(0.0_PREC)
+      real (PREC), parameter :: oflow = huge(0.0_PREC)
+
+c     Initialize to avoid uninitialized variable warnings
+      small = 0.0
+      ertest = 0.0
+      erlarg = 0.0
+      correc = 0.0
+
 c
 c            test on validity of parameters
 c            ------------------------------
@@ -234,8 +243,6 @@ c
 c           first approximation to the integral
 c           -----------------------------------
 c
-      uflow = d1mach(1)
-      oflow = d1mach(2)
       ierro = 0
       call dqk21(f,a,b,result,abserr,defabs,resabs)
 c
