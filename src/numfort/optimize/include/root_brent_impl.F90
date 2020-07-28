@@ -65,6 +65,7 @@ subroutine root_brentq_impl (f, a, b, xtol, rtol, maxiter, &
     call f (xcur, fcur)
     nfev = 2
     iter = 0
+    fx0 = huge(0.0_PREC)
 
     if (fpre * fcur > 0.0_PREC) then
         status = NF_STATUS_INVALID_ARG
