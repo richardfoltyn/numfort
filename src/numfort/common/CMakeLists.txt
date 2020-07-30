@@ -12,6 +12,7 @@ set(SOURCE_FILES
     kinds.f90
     status.f90
     input_checks.F90
+    print_helpers.f90
     shape.F90
     strings.F90
     swap.F90
