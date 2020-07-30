@@ -2,8 +2,8 @@
 
 
 
-recursive subroutine slsqp (fobj, x, work, fcon, m, meq, lbounds, ubounds, &
-        tol, maxiter, exact_lsearch, res)
+recursive subroutine slsqp_jac (fobj, x, work, fcon, m, meq, lbounds, ubounds, &
+        tol, maxiter, maxfev, exact_lsearch, iprint, res)
     procedure (fvs_fcn_jac_opt) :: fobj
     real (PREC), intent(inout), dimension(:), contiguous :: x
     type (workspace), intent(inout) :: work
@@ -13,21 +13,24 @@ recursive subroutine slsqp (fobj, x, work, fcon, m, meq, lbounds, ubounds, &
     real (PREC), intent(in), dimension(:), contiguous, optional :: lbounds, ubounds
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
+    integer, intent(in), optional :: maxfev
     logical, intent(in), optional :: exact_lsearch
+    integer (NF_ENUM_KIND), intent(in), optional :: iprint
     type (optim_result), intent(out), optional :: res
 
     type (fwrapper_vs) :: fobj_wrapper
     type (fwrapper_vv) :: fcon_wrapper
     type (optim_result) :: lres
-    integer :: lm, lmeq, lmaxiter
+    integer :: lm, lmeq, lmaxiter, lmaxfev
     real (PREC) :: ltol
     logical :: lexact_lsearch
+    integer (NF_ENUM_KIND) :: liprint
 
     lres%status = NF_STATUS_OK
     lres%msg = ''
 
-    call check_input (fcon, m, meq, x, lbounds, ubounds, tol, maxiter, &
-        exact_lsearch, lres%status, lres%msg)
+    call check_input (present(fcon), m, meq, x, lbounds, ubounds, tol, maxiter, &
+        maxfev, exact_lsearch, iprint, status=lres%status, msg=lres%msg)
     if (lres%status /= NF_STATUS_OK) goto 100
 
     call wrap_procedure (fobj_wrapper, fcn_jac_opt=fobj)
@@ -35,24 +38,77 @@ recursive subroutine slsqp (fobj, x, work, fcon, m, meq, lbounds, ubounds, &
 
     ! === Default values ===
 
-    lmeq = 0
-    if (present(meq)) lmeq = meq
-
-    lm = lmeq
-    if (present(m)) lm = m
-
-    ltol = 1.0e-4_PREC
-    lexact_lsearch = .false.
-    lmaxiter = 100
-
-    if (present(tol)) ltol = tol
-    if (present(exact_lsearch)) lexact_lsearch = exact_lsearch
-    if (present(maxiter)) lmaxiter = maxiter
+    call set_optional_arg (meq, 0, lmeq)
+    call set_optional_arg (m, lmeq, lm)
+    call set_optional_arg (tol, 1.0e-4_PREC, ltol)
+    call set_optional_arg (exact_lsearch, .false., lexact_lsearch)
+    call set_optional_arg (maxiter, 100, lmaxiter)
+    call set_optional_arg (maxfev, huge(1), lmaxfev)
+    call set_optional_arg (iprint, NF_PRINT_NONE, liprint)
 
     ! === Call implementation routine ===
 
     call slsqp_impl (fobj_wrapper, x, work, fcon_wrapper, lm, lmeq, &
-        lbounds, ubounds, ltol, lmaxiter, lexact_lsearch, lres)
+        lbounds, ubounds, ltol, lmaxiter, lmaxfev, lexact_lsearch, liprint, lres)
+
+100 continue
+
+    if (present(res)) res = lres
+
+end subroutine
+
+
+
+recursive subroutine slsqp (fobj, x, ndiff, work, fcon, m, meq, lbounds, ubounds, &
+        tol, maxiter, maxfev, exact_lsearch, iprint, xstep, res)
+    procedure (fvs_fcn) :: fobj
+    real (PREC), intent(inout), dimension(:), contiguous :: x
+    logical, intent(in) :: ndiff
+    type (workspace), intent(inout) :: work
+    procedure (fvv_fcn), optional :: fcon
+    integer, intent(in), optional :: m
+    integer, intent(in), optional :: meq
+    real (PREC), intent(in), dimension(:), contiguous, optional :: lbounds, ubounds
+    real (PREC), intent(in), optional :: tol
+    integer, intent(in), optional :: maxiter
+    integer, intent(in), optional :: maxfev
+    logical, intent(in), optional :: exact_lsearch
+    integer (NF_ENUM_KIND), intent(in), optional :: iprint
+    real (PREC), intent(in), optional :: xstep
+    type (optim_result), intent(out), optional :: res
+
+    type (fwrapper_vs) :: fobj_wrapper
+    type (fwrapper_vv) :: fcon_wrapper
+    type (optim_result) :: lres
+    integer :: lm, lmeq, lmaxiter, lmaxfev
+    real (PREC) :: ltol
+    logical :: lexact_lsearch
+    integer (NF_ENUM_KIND) :: liprint
+
+    lres%status = NF_STATUS_OK
+    lres%msg = ''
+
+    call check_input (present(fcon), m, meq, x, lbounds, ubounds, tol, maxiter, &
+        maxfev, exact_lsearch, iprint, xstep, lres%status, lres%msg)
+    if (lres%status /= NF_STATUS_OK) goto 100
+
+    call wrap_procedure (fobj_wrapper, fcn=fobj, eps=xstep)
+    call wrap_procedure (fcon_wrapper, fcn=fcon, eps=xstep)
+
+    ! === Default values ===
+
+    call set_optional_arg (meq, 0, lmeq)
+    call set_optional_arg (m, lmeq, lm)
+    call set_optional_arg (tol, 1.0e-4_PREC, ltol)
+    call set_optional_arg (exact_lsearch, .false., lexact_lsearch)
+    call set_optional_arg (maxiter, 100, lmaxiter)
+    call set_optional_arg (maxfev, huge(1), lmaxfev)
+    call set_optional_arg (iprint, NF_PRINT_NONE, liprint)
+
+   ! === Call implementation routine ===
+
+    call slsqp_impl (fobj_wrapper, x, work, fcon_wrapper, lm, lmeq, &
+        lbounds, ubounds, ltol, lmaxiter, lmaxfev, lexact_lsearch, liprint, lres)
 
 100 continue
 
@@ -107,18 +163,23 @@ end subroutine
 
 
 
-subroutine check_input (fcon, m, meq, x, xl, xu, tol, maxiter, exact_lsearch, &
-        status, msg)
-    procedure (fvv_fcn_jac_opt), optional :: fcon
+subroutine check_input (has_fcon, m, meq, x, xl, xu, tol, maxiter, maxfev, &
+        exact_lsearch, iprint, xstep, status, msg)
+    logical, intent(in) :: has_fcon
     integer, intent(in), optional :: m, meq
     real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous, optional :: xl, xu
     real (PREC), intent(in), optional :: tol
     integer, intent(in), optional :: maxiter
+    integer, intent(in), optional :: maxfev
     logical, intent(in), optional :: exact_lsearch
+    integer (NF_ENUM_KIND), intent(in), optional :: iprint
+    real (PREC), intent(in), optional :: xstep
     type (status_t), intent(out) :: status
     character (*), intent(out), optional :: msg
 
+    integer, parameter :: IPRINT_VALID(*) = [NF_PRINT_NONE, NF_PRINT_MINIMAL, &
+        NF_PRINT_VERBOSE, NF_PRINT_ALL]
     integer :: n
 
     n = size(x)
@@ -137,7 +198,7 @@ subroutine check_input (fcon, m, meq, x, xl, xu, tol, maxiter, exact_lsearch, &
         if (status /= NF_STATUS_OK) goto 100
     end if
 
-    if (present(fcon)) then
+    if (has_fcon) then
         if (.not. present(m)) then
             if (present(msg)) msg = "SLSQP: Argument 'm' missing"
             status = NF_STATUS_INVALID_ARG
@@ -166,6 +227,15 @@ subroutine check_input (fcon, m, meq, x, xl, xu, tol, maxiter, exact_lsearch, &
     call check_positive (1, maxiter, 'maxiter', status, msg)
     if (status /= NF_STATUS_OK) goto 100
 
+    call check_positive (1, maxfev, 'maxfev', status, msg)
+    if (status /= NF_STATUS_OK) goto 100
+
+    call check_positive (1.0_PREC, xstep, 'xstep', status, msg)
+    if (status /= NF_STATUS_OK) goto 100
+
+    call check_enum (iprint, IPRINT_VALID, 'iprint', status, msg)
+    if (status /= NF_STATUS_OK) goto 100
+
 100 continue
 
 end subroutine
@@ -173,7 +243,7 @@ end subroutine
 
 
 recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, &
-        maxiter, exact_lsearch, res)
+        maxiter, maxfev, exact_lsearch, iprint, res)
     type (fwrapper_vs), intent(inout) :: fobj
     real (PREC), intent(inout), dimension(:), contiguous :: x
     type (workspace), intent(inout), target :: work
@@ -182,7 +252,9 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, &
     real (PREC), intent(in), dimension(:), contiguous, optional :: xl, xu
     real (PREC), intent(in) :: tol
     integer, intent(in) :: maxiter
+    integer, intent(in) :: maxfev
     logical, intent(in) :: exact_lsearch
+    integer (NF_ENUM_KIND), intent(in) :: iprint
     type (optim_result), intent(out) :: res
 
     type (status_t) :: status
@@ -192,7 +264,7 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, &
     real (PREC), dimension(:,:), pointer, contiguous :: a
     integer :: nrwork, niwork, n, nn1, la, lsq_nrwork
     integer :: i, iter, iline, nreset_BFGS
-    real (PREC) :: fx, gs, h1, h2, h3, h4, t0, xnorm, rlxtol
+    real (PREC) :: fx, gs, h1, h2, h3, h4, t0, xnorm, rlxtol, fx0
     logical :: bad_linear
 
     ! Problem dimensions
@@ -246,6 +318,8 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, &
     ! be triggered in linesearch the first time it is called.
     iline = MAX_INEXACT_LINESEARCH + 1
 
+    call print_section ('Starting main routine', iprint, NF_PRINT_ALL, prefix='SLSQP')
+
     ! Reset BFGS matrix
     call reset_BFGS ()
 
@@ -257,9 +331,19 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, &
         status=status, msg=res%msg)
     if (status /= NF_STATUS_OK) goto 100
 
+    call print_value ('Initial objective gradient: ', g(1:n), iprint, &
+        NF_PRINT_ALL, prefix='SLSQP', fmt=FMT_X)
+
+    call print_value ('Initial constr. Jacobian: ', a(:,1:n), iprint, &
+        NF_PRINT_ALL, prefix='SLSQP', fmt=FMT_X)
+
     ! --- Main iteration loop ---
 
     main: do iter = 1, maxiter
+
+        if (iprint >= NF_PRINT_VERBOSE) then
+            write (ERROR_UNIT, '("SLSQP: Iteration #", i0)') iter
+        end if
 
         ! Prepare bounds passed to underlying solver - do this for
         ! every iteration since the arrays U and V get reused below.
@@ -293,11 +377,15 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, &
 
         if (bad_linear) then
 
+            call print_msg ("SLSQP: Bad linearization. Solving augmented LS problem", &
+                iprint, NF_PRINT_VERBOSE)
+
             call augmented_lsq (meq, x, xl, xu, l, g, a, c, u, v, s, r, lsq_w, &
                 work%iwrk, status, res%msg)
 
             if (status  /= NF_STATUS_OK) then
                 res%msg = 'SLSQP: Failed to solve (augmented) LSQ problem'
+                call print_msg (trim(res%msg), iprint, NF_PRINT_MINIMAL)
                 goto 100
             end if
 
@@ -361,6 +449,8 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, &
                     res%msg = 'SLSQP: Positive directional derivative'
                     status = NF_STATUS_INVALID_STATE
                     status%code_orig = 8
+
+                    call print_msg (trim(res%msg), iprint, NF_PRINT_MINIMAL)
                 end if
 
                 ! Terminate algorithm in any case
@@ -376,6 +466,8 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, &
         ! --- Line search ---
 
         t0 = fx + sum_constr (m, meq, c, mu)
+        ! Store old value of objective function
+        fx0 = fx
 
         if (exact_lsearch) then
             ! TODO: implement this
@@ -383,11 +475,28 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, &
         else
             ! Inexact line search
             call lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, &
-                iline, x(1:n), fx, c, g(1:n), a(:,1:n), s(1:n), x0, status, res%msg)
+                iline, x(1:n), fx, c, g(1:n), a(:,1:n), s(1:n), x0, iprint, &
+                status, res%msg)
         end if
 
-        if (NF_STATUS_NOT_CONVERGED .in. status) then
-            ! Perform BFGS update:
+        if (status /= NF_STATUS_OK .and. fobj%nfev >= maxfev) then
+            ! Exceeded max. function evaluations
+            status = NF_STATUS_MAX_EVAL
+            res%msg = 'Max. number of function evaluations exceeded'
+            call print_msg (trim(res%msg), iprint, NF_PRINT_MINIMAL, prefix='SLSQP')
+
+            ! Check if old candidate point should be used
+            if (fx0 < fx) then
+                fx = fx0
+                x(:) = x0
+            end if
+            goto 100
+
+        else if (NF_STATUS_NOT_CONVERGED .in. status) then
+            ! Perform BFGS update, move to next iteration
+
+            call print_msg ('Performing BFGS update', iprint, NF_PRINT_ALL, prefix='SLSQP')
+
             ! Latest gradient/Jacobian were already computed by
             ! linesearch, just need to do the update.
             call update_BFGS (g(1:n), a(:,1:n), r(1:la), s(1:n), u(1:n), &
@@ -397,7 +506,9 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, &
                 if (nreset_BFGS <= MAX_RESET_BFGS) then
                     call reset_BFGS ()
                 else
-                    res%msg = 'SLSQP: Failed to perform BFGS update'
+                    res%msg = 'Failed to perform BFGS update'
+                    call print_msg (trim(res%msg), iprint, NF_PRINT_MINIMAL, &
+                        indent=2, prefix='SLSQP')
                     goto 100
                 end if
             end if
@@ -415,7 +526,8 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, &
         ! Max. iteration count exceeded
         status = NF_STATUS_MAX_ITER
         status%code_orig = 8
-        res%msg = 'SLSQP: Number of max. iterations exceeded'
+        res%msg = 'Number of max. iterations exceeded'
+        call print_msg (trim(res%msg), iprint, NF_PRINT_MINIMAL, prefix='SLSQP')
     end if
 
 
@@ -423,8 +535,11 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, &
 
     call result_update (res, x, fx, status=status, nit=iter, nfev=fobj%nfev)
     if (status == NF_STATUS_OK) then
-        res%msg = 'SLSQP: Optimization terminated successfully'
+        res%msg = 'Optimization terminated successfully'
+        call print_msg (trim(res%msg), iprint, NF_PRINT_ALL, prefix='SLSQP')
     end if
+
+    call print_section ('Exiting main routine', iprint, NF_PRINT_ALL, prefix='SLSQP')
 
     contains
 
@@ -689,7 +804,7 @@ end subroutine
 
 
 recursive subroutine lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, iline, &
-        x, fx, c, g, a, s, x0, status, msg)
+        x, fx, c, g, a, s, x0, iprint, status, msg)
     type (fwrapper_vs) :: fobj
     type (fwrapper_vv) :: fcon
     integer, intent(in) :: meq
@@ -704,11 +819,13 @@ recursive subroutine lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, iline, &
     real (PREC), intent(out), dimension(:,:), contiguous :: a
     real (PREC), intent(out), dimension(:), contiguous :: s
     real (PREC), intent(out), dimension(:), contiguous :: x0
+    integer (NF_ENUM_KIND), intent(in) :: iprint
     type (status_t), intent(out) :: status
     character (*), intent(out) :: msg
 
     integer :: n, m
-    real (PREC) :: alpha, t, xnorm, h1, fx0, dfx
+    real (PREC) :: alpha, t, xnorm, h1, fx0, dfx, alpha_total
+    integer, parameter :: INDENT = 2
 
     integer, parameter :: MAXITER = MAX_INEXACT_LINESEARCH + 1
         !*  Increment by +1. See comment at the beginning of the loop.
@@ -716,11 +833,15 @@ recursive subroutine lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, iline, &
 
     status = NF_STATUS_OK
 
+    call print_msg ('Starting inexact LINE SEARCH', iprint, NF_PRINT_ALL, prefix='SLSQP')
+
     m = size(c)
     n = size(x)
 
-    ! Store last number of line search attempts
     alpha = 1.0
+    ! Keep track of total shrinking factor applied over several line search
+    ! iterations.
+    alpha_total = 1.0
 
     ! Fuse calls to evaluate function values and gradients if last
     ! linesearch step took only one iteration
@@ -738,9 +859,18 @@ recursive subroutine lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, iline, &
     ! Set the constant MAXITER accordingly above!
     do iline = 1, MAXITER
 
+        call print_value ('Iteration #', iline, iprint, NF_PRINT_ALL, &
+            prefix='SLSQP', indent=INDENT)
+
         h3 = alpha * h3
         s = s * alpha
+        alpha_total = alpha_total * alpha
         x = x0 + s
+
+        call print_value ('Relative step size: ', alpha_total, iprint, &
+            NF_PRINT_ALL, prefix='SLSQP', indent=INDENT+2, fmt='es9.2e2')
+        call print_value ('Evaluating at X: ', x, iprint, NF_PRINT_ALL, &
+            prefix='SLSQP', indent=INDENT+2, fmt=FMT_X)
 
         ! Evaluate objective and constraint functions
         if (fuse_calls .or. iline == MAXITER) then
@@ -751,8 +881,15 @@ recursive subroutine lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, iline, &
             has_jac = .false.
         end if
 
+        call print_value ('Objective: ', fx, iprint, NF_PRINT_ALL, &
+            prefix='SLSQP', indent=INDENT+2, fmt=FMT_FX)
+        call print_value ('d(Objective): ', fx-fx0, iprint, NF_PRINT_ALL, &
+            prefix='SLSQP', indent=INDENT+4, fmt=FMT_DIFF)
+        call print_value ('Constraints: ', c, iprint, NF_PRINT_ALL, &
+            prefix='SLSQP', indent=INDENT+2, fmt=FMT_X)
+
         ! Error while evaluating objective or constraints
-        if (status /= NF_STATUS_OK) return
+        if (status /= NF_STATUS_OK) goto 100
 
         t = fx + sum_constr (m, meq, c, mu)
         h1 = t - t0
@@ -767,7 +904,10 @@ recursive subroutine lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, iline, &
                 status = NF_STATUS_OK
                 ! Set original SLSQP status code.
                 status%code_orig = 0
-                return
+                goto 100
+
+                call print_msg ('Convergence achieved', iprint, NF_PRINT_ALL, &
+                    prefix='SLSQP', indent=INDENT)
             else
                 ! Update Jacobian of objective and constraints such
                 ! that on non-converged termination Jacobian is guaranteed
@@ -775,19 +915,33 @@ recursive subroutine lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, iline, &
                 if (.not. has_jac) then
                     call eval_and_check (fobj, fcon, m, x, g=g, a=a, &
                         status=status, msg=msg)
-                    if (status /= NF_STATUS_OK) return
+                    if (status /= NF_STATUS_OK) goto 100
                 end if
+
+                call print_value ('Updated objective gradient: ', g(1:n), iprint, &
+                    NF_PRINT_ALL, prefix='SLSQP', indent=INDENT+2, fmt=FMT_X)
+
+                call print_value ('Updated constr. Jacobian: ', a(:,1:n), iprint, &
+                    NF_PRINT_ALL, prefix='SLSQP', indent=INDENT+2, fmt=FMT_X)
 
                 ! Signal to caller that line search has not found
                 ! a satisfactory minimum
                 status = NF_STATUS_OK + NF_STATUS_NOT_CONVERGED
-                return
+                goto 100
             end if
         else
             ! Rescale line search distance
             alpha = max(h3/(2.0_PREC * (h3 - h1)), 1.0e-1_PREC)
+            call print_value ('Backtracking #', iline, iprint, NF_PRINT_MINIMAL, &
+                prefix='SLSQP', indent=INDENT)
+            call print_value ('Rescaling step size by ', alpha, iprint, &
+                NF_PRINT_MINIMAL, prefix='SLSQP', indent=INDENT+2, fmt='es9.2e2')
         end if
     end do
+
+100 continue
+
+    call print_msg ('Exiting inexact LINE SEARCH', iprint, NF_PRINT_ALL, prefix='SLSQP')
 
 end subroutine
 
