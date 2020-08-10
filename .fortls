@@ -1,0 +1,17 @@
+{
+  "include_dirs": ["src/include", 
+  "src/arrays/include",
+  "src/common/include",
+  "src/integrate/include",
+  "src/interpolate/include",
+  "src/linalg/include",
+  "src/optimize/include",
+  "src/polynomial/include",
+  "src/stats/include"
+  ],
+  "ext_source_dirs": [
+    "/home/richard/repos/fortran-corelib/src/fcore"
+  ],
+  "lowercase_intrinsics": true,
+  "pp_defs": {"PREC": "real64"}
+}
