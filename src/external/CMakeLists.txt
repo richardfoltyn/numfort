@@ -5,7 +5,8 @@
 unset(_FFLAGS)
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
-    set(_FFLAGS "-Wall -Wno-uninitialized -Wno-conversion -Wno-unused -Wno-tabs -Wno-unused-dummy-argument")
+    set(GNU_WARN "-Wall -Wno-uninitialized -Wno-conversion -Wno-unused -Wno-tabs -Wno-unused-dummy-argument")
+    set(_FFLAGS "${GNU_WARN} -std=legacy")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     if (WIN32)
         set(_FFLAGS "/warn:all,nounused,nousage")

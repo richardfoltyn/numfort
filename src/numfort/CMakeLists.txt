@@ -22,6 +22,11 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
         # breaks compilation with gfortran 5.x, possibly with 6.x as well.
         set(GNU_WARN "${GNU_WARN} -Wno-unused-dummy-argument")
     endif()
+    if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 9)
+        # Skip warning about out-of-bounds array indices in do loops since
+        # compiler cannot detect conditional execution.
+        set(GNU_WARN "${GNU_WARN} -Wno-do-subscript")
+    endif()
     set(_FFLAGS "${GNU_WARN} --std=f2008")
     set(_FFLAGS "${_FFLAGS} -finline-functions -fipa-cp-clone -fgraphite-identity -floop-nest-optimize -ftree-loop-distribution -ftree-vectorize")
     set(_FFLAGS_DEBUG "-fcheck=all -O0")
