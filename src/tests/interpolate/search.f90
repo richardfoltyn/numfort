@@ -31,6 +31,7 @@ subroutine test_all ()
 
     call test_interp_find (tests)
     call test_interp_find_decr (tests)
+    call test_interp_find_incr (tests)
 
     call tests%print ()
 
@@ -106,6 +107,7 @@ subroutine test_bsearch (tests)
     deallocate (haystack)
 
 end subroutine
+
 
 
 subroutine test_bsearch_cached (tests)
@@ -463,7 +465,6 @@ end subroutine
 
 
 
-
 subroutine test_interp_find_decr (tests)
     !*  Unit tests for INTERP_FIND_DECR which performs searches on
     !   (weakly) decreasing input data.
@@ -488,7 +489,7 @@ subroutine test_interp_find_decr (tests)
     nk = 1
 
     allocate (x(nx), weight(nx), ilbound(nx), knots(nk))
-    call linspace (x, 1.0_PREC, 10.0_PREC)
+    call linspace (x, 10.0_PREC, 1.0_PREC)
 
     status = NF_STATUS_UNDEFINED
 
@@ -741,8 +742,290 @@ subroutine test_interp_find_decr (tests)
 
     deallocate (x, ilbound, ilbound_ok, weight, weight_ok, knots)
 
+end subroutine
 
+
+
+subroutine test_interp_find_incr (tests)
+    !*  Unit tests for INTERP_FIND_INCR which performs searches on
+    !   (weakly) increasing input data.
+    class (test_suite) :: tests
+
+    class (test_case), pointer :: tc
+
+    type (status_t) :: status
+    real (PREC), dimension(:), allocatable :: x, weight, knots, rwork, weight_ok
+    integer, dimension(:), allocatable :: ilbound, ilbound_ok
+    integer :: nx, nk
+    logical :: values_ok
+
+    tc => tests%add_test ('Unit tests for INTERP_FIND_INCR')
+
+    call set_seed (12345)
+
+    ! === Input checks ===
+
+    ! 1. Invalid number of knots
+    nx = 10
+    nk = 1
+
+    allocate (x(nx), weight(nx), ilbound(nx), knots(nk))
+    call linspace (x, 1.0_PREC, 10.0_PREC)
+
+    status = NF_STATUS_UNDEFINED
+
+    call interp_find_incr (x, knots, ilbound, weight, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, 'Invalid HAYSTACK argument')
+
+    deallocate (x, weight, ilbound, knots)
+
+    ! 2. Non-conformable X, ILBOUND
+    nx = 3
+    nk = 2
+    allocate (x(nx), ilbound(nx+1), weight(nx+1), knots(nk))
+    call linspace (x, 1.0_PREC, 10.0_PREC)
+
+    status = NF_STATUS_UNDEFINED
+    call interp_find_incr (x, knots, ilbound, weight, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, 'Non-conformable NEEDLE, ILBOUND')
+
+    deallocate (x, ilbound, weight, knots)
+
+    ! 2. Non-conformable ILBOUND, WEIGHT
+    nx = 5
+    nk = 11
+    allocate (x(nx), ilbound(nx), weight(nx-1), knots(nk))
+    call linspace (x, 1.0_PREC, 10.0_PREC)
+
+    status = NF_STATUS_UNDEFINED
+    call interp_find_incr (x, knots, ilbound, weight, status=status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, 'Non-conformable ILBOUND, WEIGHT')
+
+    deallocate (x, ilbound, weight, knots)
+
+    ! 3. Decreasing values in X
+    nx = 11
+    nk = 5
+    allocate (x(nx), ilbound(nx), weight(nx), knots(nk))
+
+    ! Test with interior violation
+    call linspace (x, 1.0_PREC, 10.0_PREC)
+    x(5) = 2.0
+    status = NF_STATUS_UNDEFINED
+    call interp_find_incr (x, knots, ilbound, weight, status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, 'Increasing value in X, #1')
+
+    ! Test with violation at the beginning
+    call linspace (x, 1.0_PREC, 10.0_PREC)
+    x(1) = x(2) + 1.0
+    status = NF_STATUS_UNDEFINED
+    call interp_find_incr (x, knots, ilbound, weight, status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, 'Increasing value in X, #2')
+
+    ! Test with violation at end
+    call linspace (x, 1.0_PREC, 10.0_PREC)
+    x(nx) = x(nx-1) - 0.1
+    status = NF_STATUS_UNDEFINED
+    call interp_find_incr (x, knots, ilbound, weight, status)
+    call tc%assert_true (status == NF_STATUS_INVALID_ARG, 'Increasing value in X, #3')
+
+    deallocate (x, ilbound, weight, knots)
+
+    ! === Evaluate with valid input data ===
+    nx = 17
+    nk = 11
+    allocate (x(nx), ilbound(nx), weight(nx), knots(nk))
+    allocate (ilbound_ok(nx), weight_ok(nx))
+    call linspace (knots, 1.0_PREC, 10.0_PREC)
+    allocate (rwork(nk))
+    call random_number (rwork)
+    ! Add some perturbation that does not alter ordering in KNOTS
+    knots(:) = knots + rwork * 0.5
+
+    ! === Evaluate with all interior points ===
+    call linspace (x, 1.0_PREC, 10.0_PREC)
+
+    status = NF_STATUS_UNDEFINED
+    call interp_find_incr (x, knots, ilbound, weight, status)
+    ! Compute with standard routine
+    call interp_find (x, knots, ilbound_ok, weight_ok)
+    values_ok = all(ilbound == ilbound_ok) .and. &
+        all_close (weight, weight_ok, rtol=0.0_PREC, atol=1.0e-14_PREC)
+    call tc%assert_true (status == NF_STATUS_OK .and. values_ok, &
+        'Evaluating with all-interior points')
+
+    ! === Evaluate with points outside of KNOTS ===
+    call linspace (x, -1.0_PREC, 11.0_PREC)
+
+    status = NF_STATUS_UNDEFINED
+    ilbound(:) = 0
+    weight(:) = 0.0
+    call interp_find_incr (x, knots, ilbound, weight, status)
+    call interp_find (x, knots, ilbound_ok, weight_ok)
+    values_ok = all(ilbound == ilbound_ok) .and. &
+        all_close (weight, weight_ok, atol=1.0e-14_PREC, rtol=0.0_PREC)
+    call tc%assert_true (status == NF_STATUS_OK .and. values_ok, &
+        'Evaluating with interior/exterior points')
+
+    deallocate (x, ilbound, ilbound_ok, weight, weight_ok, knots, rwork)
+
+    ! === Long KNOTS argument ===
+    ! Test with longs knots argument such that this triggers binary search
+    nk = 101
+    nx = 10
+
+    allocate (knots(nk), rwork(nk))
+    allocate (x(nx), ilbound(nx), ilbound_ok(nx), weight(nx), weight_ok(nx))
+
+    call linspace (knots, 0.0_PREC, 100.0_PREC)
+    call random_number (rwork)
+    knots(:) = knots + 0.5 * rwork
+    deallocate (rwork)
+
+    ! 1. All interior points
+    call linspace (x, 1.0_PREC, 99.0_PREC)
+    allocate (rwork(nx))
+    call random_number (rwork)
+    x(:) = x + rwork
+
+    status = NF_STATUS_UNDEFINED
+    call interp_find_incr (x, knots, ilbound, weight, status)
+    call interp_find (x, knots, ilbound_ok, weight_ok)
+    values_ok = all(ilbound == ilbound_ok) .and.  &
+        all_close (weight, weight_ok, atol=1.0e-14_PREC, rtol=0.0_PREC)
+    call tc%assert_true (status == NF_STATUS_OK .and. values_ok, &
+        'Long HAYSTACK input, all interior X')
+
+    ! 2. Exterior/interior X
+    call linspace (x, -10.0_PREC, 200.0_PREC)
+    call random_number (rwork)
+    x(:) = x + 5.0 * rwork
+
+    status = NF_STATUS_UNDEFINED
+    call interp_find_incr (x, knots, ilbound, weight, status)
+    call interp_find (x, knots, ilbound_ok, weight_ok)
+    values_ok = all(ilbound == ilbound_ok) .and.  &
+        all_close (weight, weight_ok, atol=1.0e-14_PREC, rtol=0.0_PREC)
+    call tc%assert_true (status == NF_STATUS_OK .and. values_ok, &
+        'Long HAYSTACK input, all exterior X')
+
+    deallocate (x, knots, rwork, ilbound, ilbound_ok, weight, weight_ok)
+
+    ! === Constant function ===
+
+    nk = 11
+    nx = 17
+    allocate (x(nx), ilbound(nx), ilbound_ok(nx), weight(nx), weight_ok(nx))
+    allocate (knots(nk))
+
+    call linspace (knots, -10.0_PREC, 10.0_PREC)
+    allocate (rwork(nk))
+    call random_number (rwork)
+    knots(:) = knots + rwork * 0.1
+    deallocate (rwork)
+
+    ! Interior within HAYSTACK
+    x(1:3) = knots(3)
+    x(4:) = knots(4) + 0.1
+    x(7:) = knots(7) + 0.1
+
+    status = NF_STATUS_UNDEFINED
+    call interp_find_incr (x, knots, ilbound, weight, status)
+    call interp_find (x, knots, ilbound_ok, weight_ok)
+    values_ok = all(ilbound == ilbound_ok) .and. &
+        all_close (weight, weight_ok, atol=1.0e-14_PREC, rtol=0.0_PREC)
+    call tc%assert_true (status == NF_STATUS_OK .and. values_ok, &
+        'Constant X at interior of HAYSTACK')
+
+    ! Left bound of HAYSTACK
+    x(1) = knots(1)
+    x(2:4) = knots(1) + 1.0
+    x(5:) = knots(1) + 2.0
+    status = NF_STATUS_UNDEFINED
+    ilbound(:) = 0
+    weight(:) = -1.0
+    call interp_find_incr (x, knots, ilbound, weight, status)
+    call interp_find (x, knots, ilbound_ok, weight_ok)
+    values_ok = all(ilbound == ilbound_ok) .and. &
+        all_close (weight, weight_ok, atol=1.0e-14_PREC, rtol=0.0_PREC)
+    call tc%assert_true (status == NF_STATUS_OK .and. values_ok, &
+        'Constant X, left of HAYSTACK(1)')
+
+    ! Right of HAYSTACK
+    x(1) = knots(nk) - 1.0
+    x(2:5) = knots(nk) - 0.5
+    x(6:) = knots(nk)
+    status = NF_STATUS_UNDEFINED
+    ilbound(:) = 0
+    weight(:) = -1.0
+    call interp_find_incr (x, knots, ilbound, weight, status)
+    call interp_find (x, knots, ilbound_ok, weight_ok)
+    values_ok = all(ilbound == ilbound_ok) .and. &
+        all_close (weight, weight_ok, atol=1.0e-14_PREC, rtol=0.0_PREC)
+    call tc%assert_true (status == NF_STATUS_OK .and. values_ok, &
+        'Constant X, right of HAYSTACK(-1)')
+
+    deallocate (x, ilbound, ilbound_ok, weight, weight_ok, knots)
+
+    ! === Constant function, large HAYSTACK ===
+
+    nk = 101
+    nx = 11
+    allocate (x(nx), ilbound(nx), ilbound_ok(nx), weight(nx), weight_ok(nx))
+    allocate (knots(nk))
+
+    call linspace (knots, -10.0_PREC, 10.0_PREC)
+    allocate (rwork(nk))
+    call random_number (rwork)
+    knots(:) = knots + rwork * 0.05
+    deallocate (rwork)
+
+    ! Interior within HAYSTACK
+    x(1:3) = knots(3)
+    x(4:) = knots(5) + 0.1
+    x(7:) = knots(6) + 0.1
+
+    status = NF_STATUS_UNDEFINED
+    call interp_find_incr (x, knots, ilbound, weight, status)
+    call interp_find (x, knots, ilbound_ok, weight_ok)
+    values_ok = all(ilbound == ilbound_ok) .and. &
+        all_close (weight, weight_ok, atol=1.0e-14_PREC, rtol=0.0_PREC)
+    call tc%assert_true (status == NF_STATUS_OK .and. values_ok, &
+        'Constant X at interior of HAYSTACK')
+
+    ! Left bound of HAYSTACK
+    x(1) = knots(1)
+    x(2:4) = knots(1) + 1.0
+    x(5:) = knots(1) + 2.0
+    status = NF_STATUS_UNDEFINED
+    ilbound(:) = 0
+    weight(:) = -1.0
+    call interp_find_incr (x, knots, ilbound, weight, status)
+    call interp_find (x, knots, ilbound_ok, weight_ok)
+    values_ok = all(ilbound == ilbound_ok) .and. &
+        all_close (weight, weight_ok, atol=1.0e-14_PREC, rtol=0.0_PREC)
+    call tc%assert_true (status == NF_STATUS_OK .and. values_ok, &
+        'Constant X, left of HAYSTACK(1)')
+
+    ! Right of HAYSTACK
+    x(1) = knots(nk) - 1.0
+    x(2:5) = knots(nk) - 0.5
+    x(6:) = knots(nk)
+    status = NF_STATUS_UNDEFINED
+    ilbound(:) = 0
+    weight(:) = -1.0
+    call interp_find_incr (x, knots, ilbound, weight, status)
+    call interp_find (x, knots, ilbound_ok, weight_ok)
+    values_ok = all(ilbound == ilbound_ok) .and. &
+        all_close (weight, weight_ok, atol=1.0e-14_PREC, rtol=0.0_PREC)
+    call tc%assert_true (status == NF_STATUS_OK .and. values_ok, &
+        'Constant X, right of HAYSTACK(-1)')
+
+    deallocate (x, ilbound, ilbound_ok, weight, weight_ok, knots)
 
 end subroutine
+
+
+
 
 end program
