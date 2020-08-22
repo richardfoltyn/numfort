@@ -32,6 +32,10 @@ interface interp_find_impl_default
     procedure interp_find_impl_default_1d, interp_find_cached_impl_default_1d
 end interface
 
+interface interp_find_incr
+    procedure interp_find_incr_ext
+end interface
+
 interface interp_find_incr_impl
    procedure interp_find_incr_ext_impl
 end interface

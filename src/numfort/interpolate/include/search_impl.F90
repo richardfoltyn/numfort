@@ -846,37 +846,94 @@ pure subroutine interp_find_incr_ext_impl (x, knots, ilbound, weight)
     real (PREC), intent(out), dimension(:), contiguous :: weight
 
     integer ::nx, i, ilb, iub
-    real (PREC) :: xi, wi, xub, dx
-
+    real (PREC) :: xi, wi, xub, dx, wlast
 
     nx = size(x)
 
     ! Manually compute first element
-    call bsearch (x(1), knots, ilb)
-    ilbound(1) = ilb
+    xi = x(1)
+    call bsearch (xi, knots, ilb)
+    xub = knots(ilb+1)
+    dx = xub - knots(ilb)
+    wi = (xub - xi) / dx
 
-    if (nx == 1) goto 10
+    ilbound(1) = ilb
+    weight(1) = wi
+
+    if (nx == 1) return
 
     ! Manually compute last element
     iub = ilb
-    call bsearch_cached_impl (x(nx), knots, iub)
+    xi = x(nx)
+    call bsearch_cached_impl (xi, knots, iub)
+    xub = knots(iub+1)
+    dx = xub - knots(iub)
+    wlast = (xub - xi) / dx
+
+    ! Heuristically choose between binary and linear search:
+    ! Do linear search if index range spans 32 or fewer elements
+    ! and thus (iub - ilb + 1) = 32.
+    if ((iub - ilb) <= 31) then
+        do i = 2, nx - 1
+            xi = x(i)
+            ilb = lsearch_bounded (xi, knots, ilb, iub+1)
+            xub = knots(ilb+1)
+            dx = xub - knots(ilb)
+            wi = (xub - xi) / dx
+
+            ilbound(i) = ilb
+            weight(i) = wi
+        end do
+    else
+        do i = 2, nx-1
+            xi = x(i)
+            ilb = bsearch_bounded (xi, knots, ilb, iub+1)
+            xub = knots(ilb + 1)
+            dx = xub - knots(ilb)
+            wi = (xub - xi) / dx
+
+            ilbound(i) = ilb
+            weight(i) = wi
+        end do
+    end if
+
+    ! Write back index, weight for last element here instead of doing
+    ! it immediately as elements 1 and NX could be far apart.
     ilbound(nx) = iub
+    weight(nx) = wlast
 
-    do i = 2, nx-1
-        ilb = bsearch_bounded (x(i), knots, ilb, iub)
-        ilbound(i) = ilb
+end subroutine
+
+
+
+pure subroutine interp_find_incr_ext (x, knots, ilbound, weight, status)
+    real (PREC), intent(in), dimension(:), contiguous :: x
+    real (PREC), intent(in), dimension(:), contiguous :: knots
+    integer, intent(out), dimension(:), contiguous :: ilbound
+    real (PREC), intent(out), dimension(:), contiguous :: weight
+    type (status_t), intent(out), optional :: status
+
+    type (status_t) :: lstatus
+    integer :: i
+
+    status = NF_STATUS_OK
+
+    call interp_find_check_input (x, knots, ilbound, weight, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! Check that X is indeeded (weakly) increasing
+    do i = 2, size(x)
+        if (x(i) < x(i-1)) then
+            lstatus = NF_STATUS_INVALID_ARG
+            goto 100
+        end if
     end do
 
-10  continue
+    call interp_find_incr_ext_impl (x, knots, ilbound, weight)
 
-    do i = 1, nx
-        ilb = ilbound(i)
-        xi = x(i)
-        xub = knots(ilb+1)
-        dx = xub - knots(ilb)
-        wi = (xub - xi) / dx
-        weight(i) = wi
-    end do
+100 continue
+
+    if (present(status)) status = lstatus
 
 end subroutine
 
@@ -915,9 +972,9 @@ pure subroutine interp_find_decr_ext_impl (x, knots, ilbound, weight)
     ilast = ilb
 
     ! Heuristically choose between binary and linear search
-    ! Do linear search if there are 16 elements between 1,...,NX;
-    ! and thus (iub - ilb + 1) = 16.
-    if ((iub - ilb) <= 15) then
+    ! Do linear search if there are 32 elements between 1,...,NX;
+    ! and thus (iub - ilb + 1) = 32.
+    if ((iub - ilb) <= 31) then
         do i = 2, nx - 1
             xi = x(i)
             iub = lsearch_bounded (xi, knots, ilb, iub+1)

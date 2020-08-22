@@ -20,6 +20,7 @@ module numfort_interpolate_search_real32
 
     public :: interp_find_decr
     public :: interp_find_decr_impl
+    public :: interp_find_incr
     public :: interp_find_incr_impl
 
     integer, parameter :: PREC = real32
