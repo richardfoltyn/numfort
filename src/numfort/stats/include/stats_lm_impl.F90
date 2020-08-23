@@ -1322,17 +1322,17 @@ subroutine pcr_cv_2d (conf, X, Y, ncomp, rmse, weights, status)
 
         dim = 1
         if (lconf%trans_x) dim = 2
-        call copy_indexed (X, iorder, ptr_X, dim, lconf%trans_x, lstatus)
+        call pack_indexed (X, iorder, ptr_X, dim, lconf%trans_x, lstatus)
         if (lstatus /= NF_STATUS_OK) goto 100
 
         dim = 1
         if (lconf%trans_y) dim = 2
-        call copy_indexed (Y, iorder, ptr_Y, dim, lconf%trans_y, lstatus)
+        call pack_indexed (Y, iorder, ptr_Y, dim, lconf%trans_y, lstatus)
         if (lstatus /= NF_STATUS_OK) goto 100
 
         if (present(weights)) then
             allocate (ptr_weights(Nobs))
-            call copy_indexed (weights, iorder, ptr_weights)
+            call pack_indexed (weights, iorder, ptr_weights)
         end if
 
         lconf%trans_x = .false.
