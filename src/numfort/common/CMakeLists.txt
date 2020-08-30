@@ -19,6 +19,7 @@ set(SOURCE_FILES
     testing.f90
     testing_real32.F90
     testing_real64.F90
+    transpose.f90
     workspace.f90
     workspace_real32.F90
     workspace_real64.F90
