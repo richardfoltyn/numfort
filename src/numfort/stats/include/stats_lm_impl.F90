@@ -1302,7 +1302,7 @@ subroutine pcr_pca_masked_2d (conf, X, Y, mask, coefs, ncomp, intercept, &
     integer :: Nrhs, Nconst_add, nobs, ncoefs, Nlhs, Nconst_coefs
     integer :: lncomp, ncomp_i, Nobs_total, Nobs_i
     integer :: shp(2)
-    real (PREC) :: Nobs_avg, var_rhs_avg
+    real (PREC) :: Nobs_avg, var_rhs, var_rhs_avg
     integer :: i
     character (*), parameter :: NAME = 'PCR_PCA_MASKED'
 
@@ -1398,29 +1398,38 @@ subroutine pcr_pca_masked_2d (conf, X, Y, mask, coefs, ncomp, intercept, &
     do i = 1, Nlhs
         Nobs_i = count (ptr_mask(:,i))
 
-        lconf_i = lconf
-        lconf_i%ncomp = min(lconf%ncomp, max(0, Nobs_i - Nconst_coefs))
+        if (Nobs_i >= Ncoefs) then
+            lconf_i = lconf
+            lconf_i%ncomp = min(lconf%ncomp, max(0, Nobs_i - Nconst_coefs))
 
-        call copy (ptr_Xp, Xpack(:,1:Nobs_i), ptr_mask(:,i), dim=2, status=lstatus)
-        if (lstatus /= NF_STATUS_OK) goto 100
+            call copy (ptr_Xp, Xpack(:,1:Nobs_i), ptr_mask(:,i), dim=2, status=lstatus)
+            if (lstatus /= NF_STATUS_OK) goto 100
 
-        Ypack(1:Nobs_i) = pack (ptr_Yp(:,i), ptr_mask(:,i))
-        if (present(weights)) then
-            Wpack(1:Nobs_i) = pack (weights, ptr_mask(:,i))
-            ! Re-normalize weights
-            Wpack(1:Nobs_i) = Wpack(1:Nobs_i) / sum(Wpack(1:Nobs_i))
-        end if
+            Ypack(1:Nobs_i) = pack (ptr_Yp(:,i), ptr_mask(:,i))
+            if (present(weights)) then
+                Wpack(1:Nobs_i) = pack (weights, ptr_mask(:,i))
+                ! Re-normalize weights
+                Wpack(1:Nobs_i) = Wpack(1:Nobs_i) / sum(Wpack(1:Nobs_i))
+            end if
 
-        if (present(weights)) then
-            call pcr (lconf, Xpack(:,1:Nobs_i), Ypack(1:Nobs_i), lcoefs, &
-                ncomp_i, lintercept, Wpack(1:Nobs_i), res=lres, status=lstatus)
+            if (present(weights)) then
+                call pcr (lconf, Xpack(:,1:Nobs_i), Ypack(1:Nobs_i), lcoefs, &
+                    ncomp_i, lintercept, Wpack(1:Nobs_i), res=lres, status=lstatus)
+            else
+                call pcr (lconf, Xpack(:,1:Nobs_i), Ypack(1:Nobs_i), lcoefs, &
+                    ncomp_i, lintercept, res=lres, status=lstatus)
+            end if
+
+            var_rhs = lres%var_rhs
         else
-            call pcr (lconf, Xpack(:,1:Nobs_i), Ypack(1:Nobs_i), lcoefs, &
-                ncomp_i, lintercept, res=lres, status=lstatus)
+            lcoefs(:) = 0.0
+            lintercept = 0.0
+            var_rhs = 0.0
+            ncomp_i = 0
         end if
 
         lncomp = max(lncomp, ncomp_i)
-        var_rhs_avg = var_rhs_avg + (Nobs_i / real(Nobs_total, PREC)) * lres%var_rhs
+        var_rhs_avg = var_rhs_avg + (Nobs_i / real(Nobs_total, PREC)) * var_rhs
 
         if (present(intercept)) then
             intercept(i) = lintercept
@@ -1434,9 +1443,6 @@ subroutine pcr_pca_masked_2d (conf, X, Y, mask, coefs, ncomp, intercept, &
             end if
         end if
 
-        if (present(res)) then
-
-        end if
     end do
 
     if (present(ncomp)) ncomp = lncomp
@@ -1816,6 +1822,12 @@ subroutine pcr_cv_mse (conf, X, Y, test_ifrom, test_n, mse_ncomp, weights_total,
 
         ! Compute (negative) residuals in place
         resid(:,:) = resid - Y_test
+        if (present(mask)) then
+            ! Wipe out any non-finite stuff in masked observations
+            where (.not. mask_test)
+                resid = 0.0
+            end where
+        end if
         resid(:,:) = resid * weights_test_mask
 
         ssr = BLAS_NRM2 (test_n * Nlhs, ptr_resid, 1)
