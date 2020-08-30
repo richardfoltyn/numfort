@@ -8,6 +8,7 @@ set(SOURCE_FILES
     arrays_index.F90
     arrays_create.F90
     arrays_copy.f90
+    arrays_copy_logical.F90
     arrays_copy_real32.F90
     arrays_copy_real64.F90
     arrays_manipulate.f90
