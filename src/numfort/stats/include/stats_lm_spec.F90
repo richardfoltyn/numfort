@@ -88,6 +88,10 @@ interface pcr
     procedure pcr_pca_1d, pcr_pca_2d
 end interface
 
+interface pcr
+    procedure pcr_pca_masked_2d
+end interface
+
 interface pcr_cv
     procedure pcr_cv_1d, pcr_cv_2d
 end interface
