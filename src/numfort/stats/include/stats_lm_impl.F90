@@ -993,6 +993,8 @@ subroutine pcr_1d (y, scores, sval, loadings, coefs, shift_x, scale_x, &
         end if
     end if
 
+    if (present(status)) status = lstatus
+
 end subroutine
 
 
@@ -1485,7 +1487,7 @@ subroutine pcr_cv_2d (conf, X, Y, ncomp, weights, mask, rmse, status)
     type (status_t), intent(out), optional :: status
         !*  Exit code.
 
-    integer :: Nrhs, Nobs, Nlhs, Nconst_add, Nfolds, Ntest
+    integer :: Nrhs, Nobs, Nlhs, Nconst_add, Nfolds
     integer, dimension(:), allocatable :: folds_ifrom, folds_size
     real (PREC), dimension(:,:), allocatable :: mse_ncomp
     real (PREC), dimension(:), allocatable :: mean_mse, se_mse, resid, mse_weights
@@ -1493,7 +1495,7 @@ subroutine pcr_cv_2d (conf, X, Y, ncomp, weights, mask, rmse, status)
     real (PREC), dimension(:), pointer, contiguous :: ptr_weights
     logical, dimension(:,:), pointer, contiguous :: ptr_mask
     integer, dimension(:), allocatable :: iorder
-    integer :: status_code, i, imin, ifrom, dim
+    integer :: i, imin, dim
     real (PREC) :: min_mse, ubound, std_resid
     type (status_t) :: lstatus
     type (lm_config) :: lconf
@@ -1571,34 +1573,29 @@ subroutine pcr_cv_2d (conf, X, Y, ncomp, weights, mask, rmse, status)
 
     ! --- Perform cross-validation ---
 
+    ! We have the following parallelization scenarios:
+    !   1.  No masked obs: PCA is computed once per fold, so we parallelize
+    !       over folds.
+    !   2.  Masked obs: PCA needs to be done for each LHS variance, so if
+    !       2a. NLHS > NFOLDS: parallelization should be over LHS
+    !       2b. NFOLDS > NLHS: parallelization should be over folds
+
     ! Hold MSEs for number of components from 0-Nrhs
     allocate (mse_ncomp(0:Nrhs,Nfolds))
     allocate (mse_weights(Nfolds))
 
-    ! Workaround: OpenMP in gfortran 7.x cannot use user-defined
-    ! operators, keep track using integer instead.
-    status_code = NF_STATUS_OK
-
-    !$omp parallel default(none) &
-    !$omp shared(Nfolds,folds_ifrom,folds_size,lconf,ptr_X,ptr_Y,mse_ncomp) &
-    !$omp shared(ptr_weights,ptr_mask,mse_weights) &
-    !$omp private(i,ifrom,Ntest,lstatus) &
-    !$omp reduction(ior: status_code)
-
-    !$omp do schedule (auto)
-    do i = 1, Nfolds
-        ifrom = folds_ifrom(i)
-        Ntest = folds_size(i)
-        call pcr_cv_mse (lconf, ptr_X, ptr_Y, ifrom, Ntest, mse_ncomp(:,i), &
-            mse_weights(i), weights=ptr_weights, mask=ptr_mask, status=lstatus)
-        ! Convert to integer to which IOR reduction can be applied
-        status_code = lstatus
-    end do
-    !$omp end do
-    !$omp end parallel
-
-    ! Convert back from integer to STATUS_T
-    lstatus = status_code
+    if (.not. present(mask)) then
+        call pcr_cv_dispatch_folds_omp (lconf, ptr_X, ptr_Y, folds_ifrom, &
+            folds_size, mse_ncomp, mse_weights, lstatus, ptr_weights)
+    else if (Nlhs > Nfolds) then
+        ! Case 2a: parallelize over LHS
+        call pcr_cv_dispatch_folds (lconf, ptr_X, ptr_Y, folds_ifrom, &
+            folds_size, mse_ncomp, mse_weights, lstatus, ptr_weights, ptr_mask)
+    else
+        ! Case 2b, parallelize over folds
+        call pcr_cv_dispatch_folds_omp (lconf, ptr_X, ptr_Y, folds_ifrom, &
+            folds_size, mse_ncomp, mse_weights, lstatus, ptr_weights, ptr_mask)
+    end if
 
     if (lstatus /= NF_STATUS_OK) goto 100
 
@@ -1634,11 +1631,10 @@ subroutine pcr_cv_2d (conf, X, Y, ncomp, weights, mask, rmse, status)
     if (lconf%cv_parsimonious) then
         ubound = min_mse + se_mse(imin) * max(lconf%cv_se_mult, 0.0_PREC)
         do i = imin, 1, -1
-            if (mean_mse(i) > ubound) then
+            if (mean_mse(i) < ubound) then
                 ! Choose previous as the previous index which was within
                 ! min(MSE) + se(min(MSE))
-                imin = i+1
-                exit
+                imin = i
             end if
         end do
 
@@ -1690,17 +1686,112 @@ end subroutine
 
 
 
-subroutine pcr_cv_mse (conf, X, Y, test_ifrom, test_n, mse_ncomp, weights_total, &
-        weights, mask, status)
+subroutine pcr_cv_dispatch_folds_omp (conf, X, Y, folds_ifrom, folds_size, &
+        mse_ncomp, mse_weights, status, weights, mask)
+    type (lm_config), intent(in) :: conf
+    real (PREC), intent(in), dimension(:,:), contiguous :: X, Y
+    integer, intent(in), dimension(:), contiguous :: folds_ifrom, folds_size
+    real (PREC), intent(out), dimension(:,:), contiguous :: mse_ncomp
+    real (PREC), intent(out), dimension(:), contiguous :: mse_weights
+    type (status_t), intent(out) :: status
+    real (PREC), intent(in), dimension(:), contiguous, optional, target :: weights
+    logical, intent(in), dimension(:,:), contiguous, optional :: mask
+
+    integer :: status_code, i, ifrom, Ntest, Nfolds
+    logical :: has_mask
+    type (status_t) :: lstatus
+    real (PREC), dimension(:), contiguous, pointer :: ptr_weights
+
+    nullify (ptr_weights)
+    if (present(weights)) ptr_weights => weights
+
+    has_mask = present(mask)
+    Nfolds = size(folds_ifrom)
+
+    ! Workaround: OpenMP in gfortran 7.x cannot use user-defined
+    ! operators, keep track using integer instead.
+    status_code = NF_STATUS_OK
+
+    !$omp parallel default(none) &
+    !$omp shared(Nfolds,folds_ifrom,folds_size,conf,X,Y,mse_ncomp) &
+    !$omp shared(ptr_weights,mask,has_mask,mse_weights) &
+    !$omp private(i,ifrom,Ntest,lstatus) &
+    !$omp reduction(ior: status_code)
+
+    ! Initalize again to avoid gfortran warnings
+    status_code = NF_STATUS_OK
+
+    !$omp do schedule (auto)
+    do i = 1, Nfolds
+        ifrom = folds_ifrom(i)
+        Ntest = folds_size(i)
+        if (has_mask) then
+            call pcr_cv_mse_mask (conf, X, Y, mask, ifrom, Ntest, mse_ncomp(:,i), &
+                mse_weights(i), weights=ptr_weights, status=lstatus)
+        else
+            call pcr_cv_mse (conf, X, Y, ifrom, Ntest, mse_ncomp(:,i), &
+                mse_weights(i), weights=ptr_weights, status=lstatus)
+        end if
+
+        ! Convert to integer to which IOR reduction can be applied
+        status_code = lstatus
+    end do
+    !$omp end do
+    !$omp end parallel
+
+    ! Convert back from integer to STATUS_T
+    status = status_code
+
+end subroutine
+
+
+
+subroutine pcr_cv_dispatch_folds (conf, X, Y, folds_ifrom, folds_size, &
+        mse_ncomp, mse_weights, status, weights, mask)
+    type (lm_config), intent(in) :: conf
+    real (PREC), intent(in), dimension(:,:), contiguous :: X, Y
+    integer, intent(in), dimension(:), contiguous :: folds_ifrom, folds_size
+    real (PREC), intent(out), dimension(:,:), contiguous :: mse_ncomp
+    real (PREC), intent(out), dimension(:), contiguous :: mse_weights
+    type (status_t), intent(out) :: status
+    real (PREC), intent(in), dimension(:), contiguous, optional :: weights
+    logical, intent(in), dimension(:,:), contiguous, optional :: mask
+
+    integer :: i, ifrom, Ntest, Nfolds
+    logical :: has_mask
+    type (status_t) :: lstatus
+
+    has_mask = present(mask)
+    Nfolds = size(folds_ifrom)
+
+    do i = 1, Nfolds
+        ifrom = folds_ifrom(i)
+        Ntest = folds_size(i)
+        if (has_mask) then
+            call pcr_cv_mse_mask (conf, X, Y, mask, ifrom, Ntest, mse_ncomp(:,i), &
+                mse_weights(i), weights=weights, status=lstatus)
+        else
+            call pcr_cv_mse (conf, X, Y, ifrom, Ntest, mse_ncomp(:,i), &
+                mse_weights(i), weights=weights, status=lstatus)
+        end if
+
+        ! Convert to integer to which IOR reduction can be applied
+        status = status + lstatus
+    end do
+
+end subroutine
+
+
+subroutine pcr_cv_mse (conf, X, Y, test_ifrom, Ntest, mse_ncomp, weights_total, &
+        weights, status)
     type (lm_config), intent(in), optional :: conf
     real (PREC), intent(in), dimension(:,:), contiguous :: X
     real (PREC), intent(in), dimension(:,:), contiguous :: Y
     integer, intent(in) :: test_ifrom
-    integer, intent(in) :: test_n
+    integer, intent(in) :: Ntest
     real (PREC), intent(out), dimension(:), contiguous :: mse_ncomp
     real (PREC), intent(out) :: weights_total
     real (PREC), intent(in), dimension(:), contiguous, optional :: weights
-    logical, intent(in), dimension(:,:), contiguous, optional :: mask
     type (status_t), intent(out), optional :: status
 
 
@@ -1708,112 +1799,103 @@ subroutine pcr_cv_mse (conf, X, Y, test_ifrom, test_n, mse_ncomp, weights_total,
     integer :: ncomp_min, ncomp_max, i, j
     real (PREC) :: ssr, mse
     real (PREC), dimension(:,:), allocatable :: X_test, X_train, Y_test, Y_train
+    real (PREC), dimension(:,:), allocatable :: Xp
     real (PREC), dimension(:), allocatable :: weights_train, weights_test
-    real (PREC), dimension(:,:), allocatable :: weights_test_mask
-    logical, dimension(:,:), allocatable :: mask_train, mask_test
+    real (PREC), dimension(:), allocatable :: shift_x, scale_x, sval
+    real (PREC), dimension(:,:), allocatable :: scores, loadings
     real (PREC), dimension(:,:), allocatable :: coefs
     real (PREC), dimension(:), allocatable :: intercept
     real (PREC), dimension(:,:), allocatable, target :: resid
     real (PREC), dimension(:), pointer, contiguous :: ptr_resid
     type (status_t) :: lstatus
-    type (lm_config) :: lconf
 
     lstatus = NF_STATUS_OK
 
     ! --- Input processing ---
 
-    lconf = conf
-
-    call get_dims (X, Y, add_intercept=lconf%add_intercept, trans_x=lconf%trans_x, &
-        trans_y=lconf%trans_y, nobs=nobs, nrhs=Nrhs, nlhs=nlhs, &
+    call get_dims (X, Y, add_intercept=conf%add_intercept, trans_x=conf%trans_x, &
+        trans_y=conf%trans_y, nobs=nobs, nrhs=Nrhs, nlhs=nlhs, &
         nconst_add=Nconst_add, status=lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
     ! --- Split sample ---
 
-    Ntrain = Nobs - test_n
+    Ntrain = Nobs - Ntest
 
     ! Create train and test subsamples in contiguous arrays.
     ! This already applies X^T and Y^T as needed!
-    call extract_block_alloc (X, test_ifrom, test_n, conf%trans_x, x_test, x_train)
-    call extract_block_alloc (Y, test_ifrom, test_n, conf%trans_y, Y_test, Y_train)
+    call extract_block_alloc (X, test_ifrom, Ntest, conf%trans_x, x_test, x_train)
+    call extract_block_alloc (Y, test_ifrom, Ntest, conf%trans_y, Y_test, Y_train)
 
     if (present(weights)) then
-        call extract_block_alloc (weights, test_ifrom, test_n, &
+        call extract_block_alloc (weights, test_ifrom, Ntest, &
             x_block=weights_test, x_rest=weights_train)
+    else
+        allocate (weights_test(Ntest), source=1.0_PREC)
     end if
 
-    if (present(mask)) then
-        call extract_block_alloc (mask, test_ifrom, test_n, conf%trans_y, &
-            mask_test, mask_train)
-    end if
-
-    ! Remove any transpose flags
-    lconf%trans_x = .false.
-    lconf%trans_y = .false.
-    ! Enable centering and scaling since training samples themselves
-    ! need not be centered/scaled.
-    lconf%center = .true.
-    lconf%scale = .true.
-    ! Deactive any other #PC selection mechanism
-    lconf%ncomp_min = 0
-    lconf%ncomp_max = -1
-    lconf%var_rhs_min = -1.0
-
-    allocate (coefs(Nrhs,Nlhs))
-    allocate (intercept(Nlhs))
-    allocate (resid(test_n,Nlhs))
-
-    ptr_resid(1:size(resid)) => resid
-
-    ! PC range to process
+   ! PC range to process
     ncomp_min = 0
     if (size(mse_ncomp) <= Nrhs)  ncomp_min = 1
     ncomp_max = min(Nrhs, size(mse_ncomp))
 
+    ! --- Pre-compute effective weights ---
+
     ! Normalize weights in training sample
     if (present(weights)) then
         weights_train(:) = weights_train / sum(weights_train)
+        weights_train(:) = sqrt(weights_train)
     end if
 
-    ! --- Pre-compute effective weights in test sample ---
-
-    allocate (weights_test_mask(test_n,Nlhs))
-    weights_total = 0.0
-
-    do j = 1, Nlhs
-        if (present(weights)) then
-            weights_test_mask(:,j) = weights_test
-        else
-            weights_test_mask(:,j) = 1.0
-        end if
-    end do
-
-    if (present(mask)) then
-        ! Assign zero weights to excluded obs.
-        where (.not. mask_test)
-            weights_test_mask = 0.0
-        end where
-    end if
-
-    weights_total = sum(weights_test_mask)
+    ! Weights in test sample
+    weights_total = sum(weights_test)
+    weights_test(:) = weights_test / weights_total
     ! Compute square root once since that's what will be neded below
-    weights_test_mask(:,:) = sqrt(weights_test_mask)
+    weights_test(:) = sqrt(weights_test)
+
+    ! --- Process regressors ---
+
+    allocate (Xp(Ntrain,Nrhs))
+    allocate (shift_x(Nrhs), scale_x(Nrhs))
+    call transform_regressors (X_train, Xp, trans=.false., &
+        center=.true., scale=.true., shift_x=shift_x, &
+        scale_x=scale_x, drop_na=.false., status=lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    if (present(weights)) then
+        do i = 1, Nrhs
+            ! Sqrt already applied to weights for training sample!
+            Xp(:,i) = Xp(:,i) * weights_train
+        end do
+    end if
+
+    ! --- PCA on training sample ---
+
+    allocate (scores(Ntrain, ncomp_max))
+    allocate (loadings(Nrhs, ncomp_max))
+    allocate (sval(ncomp_max))
+
+    ! Perform principal component analysis
+    call pca (Xp, center=.false., scale=.false., trans_x=.false., &
+        scores=scores, sval=sval, loadings=loadings, status=lstatus)
+    if (.not. (NF_STATUS_OK .in. lstatus)) goto 100
+
+    ! --- Run PCR for each number of PCs ---
+
+    allocate (coefs(Nrhs,Nlhs))
+    allocate (intercept(Nlhs))
+    allocate (resid(Ntest,Nlhs))
+
+    ptr_resid(1:size(resid)) => resid
 
     do Ncomp = ncomp_min, ncomp_max
         i = Ncomp - ncomp_min + 1
-        lconf%ncomp = Ncomp
 
         ! Run PCR on training sample given fixed number of PCs
-        if (present(mask)) then
-            ! Run PCR/PCA with masked data
-            call pcr (lconf, X_train, Y_train, mask_train, coefs, &
-                intercept=intercept, weights=weights_train, status=lstatus)
-        else
-            ! Run PCR/PCA without apply mask to data
-            call pcr (lconf, X_train, Y_train, coefs, intercept=intercept, &
-                weights=weights_train, status=lstatus)
-        end if
+        call pcr (Y_train, scores(:,1:Ncomp), sval(1:Ncomp), loadings(:,1:Ncomp), &
+            coefs, shift_x=shift_x, scale_x=scale_x, &
+            add_intercept=conf%add_intercept, intercept=intercept, &
+            weights_sqrt=weights_train, status=lstatus)
         if (lstatus /= NF_STATUS_OK) goto 100
 
         ! Compute predicted values on test sample
@@ -1822,19 +1904,290 @@ subroutine pcr_cv_mse (conf, X, Y, test_ifrom, test_n, mse_ncomp, weights_total,
 
         ! Compute (negative) residuals in place
         resid(:,:) = resid - Y_test
-        if (present(mask)) then
-            ! Wipe out any non-finite stuff in masked observations
-            where (.not. mask_test)
-                resid = 0.0
-            end where
-        end if
-        resid(:,:) = resid * weights_test_mask
+        do j = 1, Nlhs
+            resid(:,j) = resid(:,j) * weights_test
+        end do
 
-        ssr = BLAS_NRM2 (test_n * Nlhs, ptr_resid, 1)
+        ssr = BLAS_NRM2 (Ntest * Nlhs, ptr_resid, 1)
         mse = ssr ** 2.0_PREC / weights_total
 
         mse_ncomp(i) = mse
     end do
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+
+subroutine pcr_cv_mse_mask (conf, X, Y, mask, test_ifrom, Ntest, mse_ncomp, &
+        weights_total, weights, status)
+    type (lm_config), intent(in), optional :: conf
+    real (PREC), intent(in), dimension(:,:), contiguous :: X
+    real (PREC), intent(in), dimension(:,:), contiguous :: Y
+    logical, intent(in), dimension(:,:), contiguous :: mask
+    integer, intent(in) :: test_ifrom
+    integer, intent(in) :: Ntest
+    real (PREC), intent(out), dimension(:), contiguous :: mse_ncomp
+    real (PREC), intent(out) :: weights_total
+    real (PREC), intent(in), dimension(:), contiguous, optional :: weights
+    type (status_t), intent(out), optional :: status
+
+
+    integer :: Ntrain, Nobs, Nrhs, Nlhs, Nconst_add, Ncomp, Ntest_lhs, Ntrain_lhs
+    integer :: ncomp_min, ncomp_max, ncomp_max_lhs, i, j
+    real (PREC) :: ssr, mse_lhs, intercept, weights_lhs, s
+    real (PREC), dimension(:,:), allocatable :: X_test, X_train, Y_test, Y_train
+    real (PREC), dimension(:,:), allocatable :: X_train_T, X_test_T, X_lhs_T
+    real (PREC), dimension(:), allocatable :: W_test_lhs, W_train_lhs
+    real (PREC), dimension(:), allocatable :: Y_train_pack, Y_test_pack
+    real (PREC), dimension(:), allocatable :: weights_train, weights_test
+    logical, dimension(:,:), allocatable :: mask_train, mask_test
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_X_test_lhs_T
+    real (PREC), dimension(:), pointer, contiguous :: ptr_Y_train_lhs, ptr_W_train_lhs
+    real (PREC), dimension(:), pointer, contiguous :: ptr_Y_test_lhs
+    real (PREC), dimension(:), allocatable :: coefs
+    real (PREC), dimension(:), allocatable :: resid
+    real (PREC), dimension(:,:), allocatable :: scores, loadings
+    real (PREC), dimension(:), allocatable :: sval, scale_x, shift_x
+    integer :: shp(2)
+    integer (NF_ENUM_KIND) :: status_code
+    type (status_t) :: lstatus
+    type (lm_config) :: lconf
+    logical :: has_weights
+
+    target :: Y_train_pack, Y_test_pack, W_train_lhs, Y_train, Y_test
+    target :: weights_train, X_lhs_T, X_test_T
+
+    lstatus = NF_STATUS_OK
+
+    ! --- Input processing ---
+
+    lconf = conf
+
+    has_weights = present(weights)
+
+    call get_dims (X, Y, add_intercept=lconf%add_intercept, trans_x=lconf%trans_x, &
+        trans_y=lconf%trans_y, nobs=nobs, nrhs=Nrhs, nlhs=nlhs, &
+        nconst_add=Nconst_add, status=lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! PC range to process
+    ncomp_min = 0
+    if (size(mse_ncomp) <= Nrhs)  ncomp_min = 1
+    ncomp_max = min(Nrhs, size(mse_ncomp))
+
+    ! --- Split sample ---
+
+    Ntrain = Nobs - Ntest
+
+    ! Create train and test subsamples in contiguous arrays.
+    ! This already applies X^T and Y^T as needed!
+    call extract_block_alloc (X, test_ifrom, Ntest, conf%trans_x, x_test, x_train)
+    call extract_block_alloc (Y, test_ifrom, Ntest, conf%trans_y, Y_test, Y_train)
+
+    call extract_block_alloc (mask, test_ifrom, Ntest, conf%trans_y, &
+        mask_test, mask_train)
+
+    if (present(weights)) then
+        call extract_block_alloc (weights, test_ifrom, Ntest, &
+            x_block=weights_test, x_rest=weights_train)
+    else
+        ! Default uniform weights. Use this to determine relative sample sizes
+        ! even for unweighted PCR.
+        allocate (weights_test(Ntest), source=1.0_PREC)
+    end if
+
+    allocate (X_train_T(Nrhs,Ntrain))
+    allocate (X_test_T(Nrhs,Ntest))
+
+    X_train_T(:,:) = transpose (X_train)
+    X_test_T(:,:) = transpose (X_test)
+
+    ! Initialize here to avoid gfortran warnings
+    status_code = NF_STATUS_OK
+
+    mse_ncomp = 0.0
+
+    !$omp parallel default(none) &
+    !$omp shared(conf,X_train_T,X_test_T,mask_train,mask_test,weights_train) &
+    !$omp shared (weights_test,Y_test,Y_train,has_weights,Nrhs,Ntest,Ntrain) &
+    !$omp shared (Nlhs,ncomp_min,ncomp_max) &
+    !$omp private (coefs,resid,X_lhs_T,Y_train_pack,Y_test_pack,W_train_lhs) &
+    !$omp private (W_test_lhs,ptr_X_test_lhs_T,ptr_Y_train_lhs,ptr_Y_test_lhs) &
+    !$omp private (ptr_W_train_lhs,shift_x,scale_x,scores,loadings,sval) &
+    !$omp private (i,j,Ntrain_lhs,Ntest_lhs,ncomp_max_lhs,lstatus,s,shp) &
+    !$omp private (intercept,weights_lhs,Ncomp,ssr,mse_lhs) &
+    !$omp reduction(ior: status_code) &
+    !$omp reduction(+: weights_total, mse_ncomp)
+    allocate (coefs(Nrhs))
+    allocate (resid(Ntest))
+
+    allocate (X_lhs_T(Nrhs,max(Ntrain,Ntest)))
+    allocate (Y_train_pack(Ntrain), Y_test_pack(Ntest))
+    allocate (W_train_lhs(Ntrain), W_test_lhs(Ntest))
+
+    nullify (ptr_X_test_lhs_T)
+    nullify (ptr_Y_train_lhs, ptr_Y_test_lhs)
+    nullify (ptr_W_train_lhs)
+
+    allocate (shift_x(Nrhs), scale_x(Nrhs))
+    allocate (sval(ncomp_max))
+
+    ! Initialize here to avoid gfortran warnings
+    status_code = NF_STATUS_OK
+
+    !$omp do
+    loop_lhs: do j = 1, Nlhs
+
+        ! Skip remaining tasks if we previously encountered an error
+        if (status_code /= NF_STATUS_OK) cycle
+
+        Ntrain_lhs = count (mask_train(:,j))
+        Ntest_lhs = count (mask_test(:,j))
+
+        if (Ntrain_lhs < Nrhs .or. Ntest_lhs == 0) cycle
+
+        ncomp_max_lhs = min(ncomp_max, Ntrain_lhs)
+
+        ! --- Contiguous training data ---
+
+        if (Ntrain_lhs /= Ntrain) then
+            call copy (X_train_T, X_lhs_T(:,1:Ntrain_lhs), mask_train(:,j), &
+                dim=2, status=lstatus)
+            if (.not. (NF_STATUS_OK .in. lstatus)) then
+                status_code = lstatus
+                cycle loop_lhs
+            end if
+
+            call copy (Y_train(:,j), Y_train_pack(1:Ntrain_lhs), mask_train(:,j))
+            ptr_Y_train_lhs => Y_train_pack(1:Ntrain_lhs)
+
+            if (has_weights) then
+                call copy (weights_train, W_train_lhs(1:Ntrain_lhs), mask_train(:,j))
+            end if
+        else
+            ! Copy so we can compute weighted X_train_lhs_T in place
+            X_lhs_T(:,1:Ntrain) = X_train_T
+            ptr_Y_train_lhs => Y_train(:,j)
+            if (has_weights) then
+                W_train_lhs(1:Ntrain) = weights_train
+            end if
+        end if
+
+        if (has_weights) then
+            s = sum(W_train_lhs(1:Ntrain_lhs))
+            W_train_lhs(1:Ntrain_lhs) = W_train_lhs(1:Ntrain_lhs) / s
+            W_train_lhs(1:Ntrain_lhs) = sqrt(W_train_lhs(1:Ntrain_lhs))
+            ptr_W_train_lhs => W_train_lhs(1:Ntrain_lhs)
+
+            ! Computed weighted X
+            do i = 1, Ntrain_lhs
+                X_lhs_T(:,i) = X_lhs_T(:,i) * ptr_W_train_lhs(i)
+            end do
+        end if
+
+        ! --- Run PCA ---
+
+        shp(1) = Ntrain_lhs
+        shp(2) = ncomp_max_lhs
+        call cond_alloc (scores, shp(1:2))
+
+        shp(1) = Nrhs
+        shp(2) = ncomp_max_lhs
+        call cond_alloc (loadings, shp(1:2))
+
+        ! Perform principal component analysis
+        call pca (X_lhs_T(:,1:Ntrain_lhs), center=.true., scale=.true., &
+            trans_x=.true., scores=scores, sval=sval(1:ncomp_max_lhs), &
+            loadings=loadings, shift_x=shift_x, scale_x=scale_x, status=lstatus)
+        if (.not. (NF_STATUS_OK .in. lstatus)) then
+            status_code = lstatus
+            cycle loop_lhs
+        end if
+
+        ! --- Prepare test sample ---
+
+        if (Ntest_lhs /= Ntest) then
+            call copy (X_test_T, X_lhs_T(:,1:Ntest_lhs), mask_test(:,j), &
+                dim=2, status=lstatus)
+            if (.not. (NF_STATUS_OK .in. lstatus)) then
+                status_code = lstatus
+                cycle loop_lhs
+            end if
+            ptr_X_test_lhs_T => X_lhs_T(:,1:Ntest_lhs)
+
+            call copy (Y_test(:,j), Y_test_pack(1:Ntest_lhs), mask_test(:,j))
+            ptr_Y_test_lhs => Y_test_pack(1:Ntest_lhs)
+            if (has_weights) then
+                W_test_lhs(1:Ntest_lhs) = pack (weights_test, mask_test(:,j))
+            end if
+        else
+            ptr_X_test_lhs_T => X_test_T
+            ptr_Y_test_lhs => Y_test(:,j)
+            if (has_weights) then
+                W_test_lhs(:) = weights_test
+            end if
+        end if
+
+        ! Store sqrt. of test weights for later use
+        weights_lhs = sum(W_test_lhs(1:Ntest_lhs))
+        weights_total = weights_total + weights_lhs
+        ! Do NOT normalie test weights, total MSE will be divided by sum
+        ! of total weights.
+        W_test_lhs(1:Ntest_lhs) = sqrt(W_test_lhs(1:Ntest_lhs))
+
+        ! --- Run PCR for each number of PCs ---
+
+        do Ncomp = ncomp_min, ncomp_max_lhs
+            i = Ncomp - ncomp_min + 1
+
+            ! Run PCR on training sample given fixed number of PCs
+            call pcr (ptr_Y_train_lhs, scores(:,1:Ncomp), sval(1:Ncomp), &
+                loadings(:,1:Ncomp), coefs, shift_x=shift_x, scale_x=scale_x, &
+                add_intercept=conf%add_intercept, intercept=intercept, &
+                weights_sqrt=ptr_W_train_lhs, status=lstatus)
+            if (lstatus /= NF_STATUS_OK) then
+                status_code = lstatus
+                cycle loop_lhs
+            end if
+
+            ! Compute predicted values on test sample
+            call predict (ptr_X_test_lhs_T, coefs, resid(1:Ntest_lhs), &
+                intercept, trans_x=.true., status=lstatus)
+            if (lstatus /= NF_STATUS_OK) then
+                status_code = lstatus
+                cycle loop_lhs
+            end if
+
+            ! Compute residuals in place
+            resid(1:Ntest_lhs) = resid(1:Ntest_lhs) - ptr_Y_test_lhs
+            resid(1:Ntest_lhs) = resid(1:Ntest_lhs) * W_test_lhs(1:Ntest_lhs)
+
+            ssr = BLAS_NRM2 (Ntest_lhs, resid(1:Ntest_lhs), 1)
+            mse_lhs = ssr ** 2.0_PREC
+
+            mse_ncomp(i) = mse_ncomp(i) + mse_lhs
+        end do
+    end do loop_lhs
+    !$omp end do
+
+    deallocate (coefs,resid)
+    deallocate (X_lhs_T,Y_train_pack,Y_test_pack,W_train_lhs,W_test_lhs)
+    deallocate (shift_x,scale_x,sval)
+
+    if (allocated(scores)) deallocate (scores)
+    if (allocated(loadings)) deallocate (loadings)
+
+    !$omp end parallel
+
+    do i = 1, size(mse_ncomp)
+        mse_ncomp(i) = mse_ncomp(i) / weights_total
+    end do
+
+    lstatus = status_code
 
 100 continue
 
@@ -2493,6 +2846,8 @@ subroutine predict_1d (X, coefs, y_pred, intercept, irhs, trans_x, trans_y, &
 
     call set_optional_arg (trans_x, .false., ltrans_x)
 
+    nullify (ptr_coefs, ptr_y)
+
     if (ltrans_x) then
         ! The optimal path to take is to compute
         !   Y^T = B^T * X^T
@@ -2518,6 +2873,6 @@ subroutine predict_1d (X, coefs, y_pred, intercept, irhs, trans_x, trans_y, &
     end if
 
     call predict (X, ptr_coefs, ptr_y, intercept=lintercept, irhs=irhs, &
-        trans_x=trans_x, trans_y=ltrans_y, trans_coefs=ltrans_coefs, status=status)
+        trans_x=ltrans_x, trans_y=ltrans_y, trans_coefs=ltrans_coefs, status=status)
 
 end subroutine
