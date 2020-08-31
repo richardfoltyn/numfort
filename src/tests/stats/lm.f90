@@ -48,6 +48,8 @@ subroutine test_all ()
     call test_pcr_ols_equiv_1d (tests)
     call test_pcr_ols_equiv_2d (tests)
 
+    call test_pcr_masked (tests)
+
     call tests%print ()
 
 end subroutine
@@ -2089,5 +2091,370 @@ subroutine test_pcr_equiv_2d (tests)
     end do
 
 end subroutine
+
+
+
+subroutine test_pcr_masked (tests)
+    class (test_suite) :: tests
+
+    integer :: Nrhs, Nobs, Nlhs
+    real (PREC), dimension(:,:), allocatable :: X, Y
+    real (PREC), dimension(:,:), allocatable :: coefs_true
+    real (PREC), dimension(:), allocatable :: intercept_true, weights, runif
+    logical, dimension(:,:), allocatable :: mask
+    integer :: i, ifrom, ito
+    class (test_case), pointer :: tc
+    type (str) :: msg
+    type (status_t) :: status, status_mask
+
+    tc => tests%add_test ("Tests for masked PCR")
+
+    Nobs = 50
+    Nlhs = 10
+    Nrhs = 20
+
+    call set_seed (1234)
+
+    call random_sample (nrhs=Nrhs, nobs=Nobs, nlhs=Nlhs, X=X, Y=Y, &
+        coefs=coefs_true, intercept=intercept_true, add_intercept=.true., &
+        var_error=0.1_PREC, status=status)
+
+    allocate (mask(Nobs,Nlhs), source=.true.)
+    allocate (weights(Nobs))
+    allocate (runif(Nobs))
+
+    call random_number (weights)
+    weights(:) = weights / sum(weights)
+
+    ! --- Full mask ---
+
+    ! Unweighted regressions
+    call test_pcr_masked_runner (tc, X, Y, mask, msg_prefix='Full mask, unweighed')
+    ! Weighted regression
+    call test_pcr_masked_runner (tc, X, Y, mask, weights, 'Full mask, weighted')
+
+    ! --- Unbalanced obs. count ---
+
+    do i = 1, Nlhs, Nlhs / 3
+        call random_number (runif)
+        where (runif >= real(i,PREC)/Nlhs)
+            mask(:,i) = .true.
+        else where
+            mask(:,i) = .false.
+        end where
+    end do
+
+    ! Unweighted regressions
+    call test_pcr_masked_runner (tc, X, Y, mask, msg_prefix='Unbalanced mask, unweighed')
+    ! Weighted regression
+    call test_pcr_masked_runner (tc, X, Y, mask, weights, 'Unbalanced mask, weighted')
+
+    ! --- Zero obs. for some LHS ---
+
+    do i = 1, Nlhs, 2
+        mask(:,i) = .false.
+    end do
+
+    ! Unweighted regressions
+    call test_pcr_masked_runner (tc, X, Y, mask, msg_prefix='LHS with 0 obs, unweighed')
+    ! Weighted regression
+    call test_pcr_masked_runner (tc, X, Y, mask, weights, 'LHS with 0 obs, weighted')
+
+end subroutine
+
+
+
+subroutine test_pcr_masked_runner (tc, X, Y, mask, weights, msg_prefix)
+    class (test_case) :: tc
+    real (PREC), intent(in), dimension(:,:), contiguous :: X, Y
+    logical, intent(in), dimension(:,:), contiguous :: mask
+    real (PREC), intent(in), dimension(:), contiguous, optional :: weights
+    character (*), intent(in) :: msg_prefix
+
+    integer :: Nrhs, Nobs, Nlhs
+    real (PREC), dimension(:,:), allocatable :: X_T, Y_T
+    real (PREC), dimension(:,:), allocatable :: coefs, coefs_mask, coefs_mask_T
+    real (PREC), dimension(:), allocatable :: intercept, intercept_mask
+    logical, dimension(:,:), allocatable :: mask_T
+    integer :: ncomp_mask, ncomp, n, i
+
+    logical :: values_ok
+    type (str) :: msg
+    type (status_t) :: status, status_mask
+    type (lm_config) :: conf, conf_mask
+
+    Nobs = size(X, 1)
+    Nlhs = size(Y, 2)
+    Nrhs = size(X, 2)
+
+    allocate (coefs(Nrhs,Nlhs), coefs_mask(Nrhs,Nlhs), coefs_mask_T(Nlhs,Nrhs))
+    allocate (intercept(Nlhs), intercept_mask(Nlhs))
+    allocate (X_T(Nrhs,Nobs),Y_T(Nlhs,Nobs))
+    allocate (mask_T(Nlhs,Nobs))
+
+    X_T(:,:) = transpose(X)
+    Y_T(:,:) = transpose(Y)
+    mask_T(:,:) = transpose(mask)
+
+    ! --- Fixed number of components ---
+
+    do n = 0, Nrhs, Nrhs / 3
+        conf%ncomp = n
+
+        call pcr (conf, X, Y, coefs, ncomp, intercept, weights=weights, &
+            status=status)
+
+        status = NF_STATUS_UNDEFINED
+        coefs_mask(:,:) = huge(0.0_PREC)
+        call pcr (conf, X, Y, mask, coefs_mask, ncomp_mask, intercept_mask, &
+            weights=weights, status=status_mask)
+
+        values_ok = all_close_mask (coefs_mask, coefs, mask)
+
+        msg = trim(msg_prefix) // ': NCOMP=' // str(n)
+        call tc%assert_true (status_mask == NF_STATUS_OK .and. values_ok, msg)
+
+        ! Compare with quick-and-dirty masked implementation
+        coefs(:,:) = huge(0.0_PREC)
+        intercept(:) = huge(0.0_PREC)
+        call pcr_masked (conf, X, Y, mask, weights, coefs, intercept)
+
+        values_ok = all_close (coefs_mask, coefs, atol=1.0e-10_PREC) .and. &
+            all_close (intercept_mask, intercept, atol=1.0e-10_PREC)
+
+        msg = trim(msg_prefix) // ': All coefs; NCOMP=' // str(n)
+        call tc%assert_true (status_mask == NF_STATUS_OK .and. values_ok, msg)
+    end do
+
+    ! --- Min. variance ---
+
+    conf%ncomp = -1
+    do i = 1, 3
+        conf%var_rhs_min = 0.333d0 * i
+
+        call pcr (conf, X, Y, coefs, ncomp, intercept, weights=weights, &
+            status=status)
+        status = NF_STATUS_UNDEFINED
+        coefs_mask(:,:) = huge(0.0_PREC)
+        call pcr (conf, X, Y, mask, coefs_mask, ncomp_mask, intercept_mask, &
+            weights=weights, status=status_mask)
+
+        values_ok = all_close_mask (coefs_mask, coefs, mask) .and. &
+            (ncomp == ncomp_mask)
+
+        msg = trim(msg_prefix) // ': Min RHS Var=' // str(conf%var_rhs_min, 'f6.3')
+        call tc%assert_true (status_mask == NF_STATUS_OK .and. values_ok, msg)
+
+        ! Compare with quick-and-dirty masked implementation
+        coefs(:,:) = huge(0.0_PREC)
+        intercept(:) = huge(0.0_PREC)
+        call pcr_masked (conf, X, Y, mask, weights, coefs, intercept)
+
+        values_ok = all_close (coefs_mask, coefs, atol=1.0e-10_PREC) .and. &
+            all_close (intercept_mask, intercept, atol=1.0e-10_PREC)
+
+        msg = trim(msg_prefix) // ': All coefs; NCOMP=' // str(n)
+        call tc%assert_true (status_mask == NF_STATUS_OK .and. values_ok, msg)
+    end do
+
+    ! --- Transposed X ---
+
+    conf%ncomp = Nrhs / 2
+    conf_mask = conf
+    conf_mask%trans_x = .true.
+
+    call pcr (conf, X, Y, coefs, ncomp, intercept, weights=weights, &
+        status=status)
+    status = NF_STATUS_UNDEFINED
+    coefs_mask(:,:) = huge(0.0_PREC)
+    call pcr (conf_mask, X_T, Y, mask, coefs_mask, ncomp_mask, intercept_mask, &
+        weights=weights, status=status_mask)
+
+    values_ok = all_close_mask (coefs_mask, coefs, mask) .and. &
+        (ncomp == ncomp_mask)
+
+    msg = trim(msg_prefix) // ': TRANS_X=T'
+    call tc%assert_true (status_mask == NF_STATUS_OK .and. values_ok, msg)
+
+    ! Compare with quick-and-dirty masked implementation
+    coefs(:,:) = huge(0.0_PREC)
+    intercept(:) = huge(0.0_PREC)
+    call pcr_masked (conf, X, Y, mask, weights, coefs, intercept)
+
+    values_ok = all_close (coefs_mask, coefs, atol=1.0e-10_PREC) .and. &
+        all_close (intercept_mask, intercept, atol=1.0e-10_PREC)
+
+    msg = trim(msg_prefix) // ': All coefs; TRANS_X=T'
+    call tc%assert_true (status_mask == NF_STATUS_OK .and. values_ok, msg)
+
+    ! --- Transposed Y ---
+
+    conf%ncomp = Nrhs / 2
+    conf_mask = conf
+    conf_mask%trans_y = .true.
+
+    call pcr (conf, X, Y, coefs, ncomp, intercept, weights=weights, &
+        status=status)
+    status = NF_STATUS_UNDEFINED
+    coefs_mask(:,:) = huge(0.0_PREC)
+    call pcr (conf_mask, X, Y_T, mask_T, coefs_mask, ncomp_mask, intercept_mask, &
+        weights=weights, status=status_mask)
+
+    values_ok = all_close_mask (coefs_mask, coefs, mask) .and. &
+        (ncomp == ncomp_mask)
+
+    msg = trim(msg_prefix) // ': TRANS_Y=T'
+    call tc%assert_true (status_mask == NF_STATUS_OK .and. values_ok, msg)
+
+    ! Compare with quick-and-dirty masked implementation
+    coefs(:,:) = huge(0.0_PREC)
+    intercept(:) = huge(0.0_PREC)
+    call pcr_masked (conf, X, Y, mask, weights, coefs, intercept)
+
+    values_ok = all_close (coefs_mask, coefs, atol=1.0e-10_PREC) .and. &
+        all_close (intercept_mask, intercept, atol=1.0e-10_PREC)
+
+    msg = trim(msg_prefix) // ': All coefs; TRANS_Y=T'
+    call tc%assert_true (status_mask == NF_STATUS_OK .and. values_ok, msg)
+
+
+    ! --- Transposed X, Y ---
+
+    conf%ncomp = Nrhs / 2
+    conf_mask = conf
+    conf_mask%trans_x = .true.
+    conf_mask%trans_y = .true.
+
+    call pcr (conf, X, Y, coefs, ncomp, intercept, weights=weights, &
+        status=status)
+    status = NF_STATUS_UNDEFINED
+    coefs_mask(:,:) = huge(0.0_PREC)
+    call pcr (conf_mask, X_T, Y_T, mask_T, coefs_mask, ncomp_mask, intercept_mask, &
+        weights=weights, status=status_mask)
+
+    values_ok = all_close_mask (coefs_mask, coefs, mask) .and. &
+        (ncomp == ncomp_mask)
+
+    msg = trim(msg_prefix) // ': TRANS_X=T, TRANS_Y=T'
+    call tc%assert_true (status_mask == NF_STATUS_OK .and. values_ok, msg)
+
+    ! Compare with quick-and-dirty masked implementation
+    coefs(:,:) = huge(0.0_PREC)
+    intercept(:) = huge(0.0_PREC)
+    call pcr_masked (conf, X, Y, mask, weights, coefs, intercept)
+
+    values_ok = all_close (coefs_mask, coefs, atol=1.0e-10_PREC) .and. &
+        all_close (intercept_mask, intercept, atol=1.0e-10_PREC)
+
+    msg = trim(msg_prefix) // ': All coefs; TRANS_X=T, TRANS_Y=T'
+    call tc%assert_true (status_mask == NF_STATUS_OK .and. values_ok, msg)
+
+    ! --- Transposed COEFS ---
+
+    conf%ncomp = Nrhs / 2
+    conf_mask = conf
+    conf_mask%trans_coefs = .true.
+
+    call pcr (conf, X, Y, coefs, ncomp, intercept, weights=weights, &
+        status=status)
+    status = NF_STATUS_UNDEFINED
+    coefs_mask_T(:,:) = huge(0.0_PREC)
+    call pcr (conf_mask, X, Y, mask, coefs_mask_T, ncomp_mask, intercept_mask, &
+        weights=weights, status=status_mask)
+
+    coefs_mask(:,:) = transpose(coefs_mask_T)
+
+    values_ok = all_close_mask (coefs_mask, coefs, mask) .and. &
+        (ncomp == ncomp_mask)
+
+    msg = trim(msg_prefix) // ': TRANS_COEFS=T'
+    call tc%assert_true (status_mask == NF_STATUS_OK .and. values_ok, msg)
+
+
+end subroutine
+
+
+
+subroutine pcr_masked (conf, X, Y, mask, weights, coefs, intercept)
+    !*  PCR_MASKED is a quick-and-dirty implementation for masked PCR
+    !   which performs PCR separately for each LHS, restricting observations
+    !   to those not excluded for the corresponding LHS variable.
+    type (lm_config), intent(in) :: conf
+    real (PREC), intent(in), dimension(:,:), contiguous :: X, Y
+    logical, intent(in), dimension(:,:), contiguous :: mask
+    real (PREC), intent(in), dimension(:), contiguous, optional :: weights
+    real (PREC), intent(out), dimension(:,:), contiguous :: coefs
+    real (PREC), intent(out), dimension(:), contiguous :: intercept
+
+
+    real (PREC), dimension(:,:), allocatable :: Xpack
+    real (PREC), dimension(:), allocatable :: Ypack
+    real (PREC), dimension(:), allocatable, target :: Wpack
+    real (PREC), dimension(:), pointer, contiguous :: ptr_w
+    integer :: j, Nrhs, Nlhs, Nobs, k, ncomp
+    type (status_t) :: status
+
+    Nobs = size(X, 1)
+    Nrhs = size(X, 2)
+    Nlhs = size(Y, 2)
+
+    allocate (Xpack(Nobs,Nrhs), Ypack(Nobs))
+    allocate (Wpack(Nobs))
+
+    nullify (ptr_w)
+
+    do j = 1, Nlhs
+        k = count (mask(:,j))
+
+        if (k >= Nrhs) then
+            call copy (X, Xpack, mask(:,j), dim=1)
+            call copy (Y(:,j), Ypack, mask(:,j))
+            if (present(weights)) then
+                call copy (weights, Wpack, mask(:,j))
+                ptr_w => Wpack(1:k)
+            end if
+
+            call pcr (conf, Xpack(1:k,:), Ypack(1:k), coefs(:,j), ncomp, &
+                intercept(j), weights=ptr_w, status=status)
+        else
+            coefs(:,j) = 0.0
+            intercept(j) = 0.0
+        end if
+    end do
+
+end subroutine
+
+
+function all_close_mask (actual, desired, mask, trans) result(res)
+    real (PREC), intent(in), dimension(:,:), contiguous :: actual, desired
+    logical, intent(in), dimension(:,:), contiguous :: mask
+    logical, intent(in), optional :: trans
+    logical :: res
+
+    real (PREC), parameter :: ATOL = 1.0e-10_PREC, RTOL = 1.0e-8_PREC
+    logical :: ltrans
+    integer :: i
+
+    ltrans = .false.
+    if (present(trans)) ltrans = trans
+
+    res = .true.
+
+    if (ltrans) then
+        do i = 1, size(mask, 1)
+            if (all(mask(i,:))) then
+                res = res .and. all_close (actual(:,i), desired(:,i), &
+                    atol=atol, rtol=rtol)
+            end if
+        end do
+    else
+        do i = 1, size(mask, 2)
+            if (all(mask(:,i))) then
+                res = res .and. all_close (actual(:,i), desired(:,i), &
+                    atol=atol, rtol=rtol)
+            end if
+        end do
+    end if
+end function
 
 end
