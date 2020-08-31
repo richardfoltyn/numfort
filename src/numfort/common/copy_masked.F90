@@ -15,11 +15,67 @@ module numfort_common_copy_masked
     public :: copy
 
     interface copy
+        procedure copy_masked_1d_real32, copy_masked_1d_real64
+    end interface
+
+    interface copy
         procedure copy_masked_2d_real32, copy_masked_2d_real64
     end interface
 
     contains
 
+
+pure subroutine copy_masked_1d_real32 (src, dst, mask, status)
+    !*  COPY_MASKED_1D is a wrapper around the intrinsic PACK routine
+    !   which does not create temporary arrays when some of the objects
+    !   involved have a POINTER or TARGET attribute.
+    integer, parameter :: PREC = real32
+
+    real (PREC), intent(in), dimension(:), contiguous :: src
+    real (PREC), intent(out), dimension(:), contiguous :: dst
+    logical, intent(in), dimension(:), contiguous :: mask
+    type (status_t), intent(out), optional :: status
+
+    type (status_t) :: lstatus
+
+    lstatus = NF_STATUS_OK
+
+    if (size(src) /= size(mask)) then
+        lstatus = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+
+    dst = pack (src, mask)
+
+100 continue
+    if (present(status)) status = lstatus
+end subroutine
+
+pure subroutine copy_masked_1d_real64 (src, dst, mask, status)
+    !*  COPY_MASKED_1D is a wrapper around the intrinsic PACK routine
+    !   which does not create temporary arrays when some of the objects
+    !   involved have a POINTER or TARGET attribute.
+    integer, parameter :: PREC = real64
+
+    real (PREC), intent(in), dimension(:), contiguous :: src
+    real (PREC), intent(out), dimension(:), contiguous :: dst
+    logical, intent(in), dimension(:), contiguous :: mask
+    type (status_t), intent(out), optional :: status
+
+    type (status_t) :: lstatus
+
+    lstatus = NF_STATUS_OK
+
+    if (size(src) /= size(mask)) then
+        lstatus = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+
+    dst = pack (src, mask)
+
+100 continue
+    if (present(status)) status = lstatus
+end subroutine
 
 
 pure subroutine copy_masked_2d_real32 (src, dst, mask, dim, status)
