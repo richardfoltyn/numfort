@@ -57,7 +57,7 @@ end subroutine
 
 
 pure subroutine get_dims_2d (X, Y, coefs, intercept, add_intercept, trans_x, &
-        trans_y, trans_coefs, mask, nobs, nrhs, nlhs, ncoefs, nconst_add, &
+        trans_y, trans_coefs, weights, mask, nobs, nrhs, nlhs, ncoefs, nconst_add, &
         nconst_coefs, status)
     !*  GET_DIMS returns the dimensions corresponding to various arrays
     !   used in linear models.
@@ -69,6 +69,7 @@ pure subroutine get_dims_2d (X, Y, coefs, intercept, add_intercept, trans_x, &
     logical, intent(in), optional :: trans_x
     logical, intent(in), optional :: trans_y
     logical, intent(in), optional :: trans_coefs
+    real (PREC), intent(in), dimension(:), optional :: weights
     logical, intent(in), dimension(:,:), optional :: mask
     integer, intent(out), optional :: nobs, nrhs, nlhs
     integer, intent(out), optional :: ncoefs
@@ -173,6 +174,12 @@ pure subroutine get_dims_2d (X, Y, coefs, intercept, add_intercept, trans_x, &
         if (lstatus /= NF_STATUS_OK) goto 100
     end if
 
+    if (present(weights)) then
+        call check_cond (size(weights) == lnobs, NAME, &
+            'WEIGHTS: Non-conformable arrays', lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+    end if
+
     if (present(mask)) then
         call check_cond (size(mask,1) == size(Y,1) .and. size(mask,2) == size(Y,2), &
             NAME, 'MASK: Non-conformable array', lstatus)
@@ -194,7 +201,7 @@ end subroutine
 
 
 
-subroutine ols_2d (conf, X, Y, coefs, intercept, rank, res, status)
+subroutine ols_2d (conf, X, Y, coefs, intercept, weights, rank, res, status)
     !*  OLS_2D computes the ordinary least-squares problem for given independent
     !   data X and (potentially multiple) dependent variables Y.
     !
@@ -236,7 +243,8 @@ subroutine ols_2d (conf, X, Y, coefs, intercept, rank, res, status)
     real (PREC), intent(out), dimension(:,:), contiguous, optional :: coefs
         !*  Array of estimated coefficients. Argument is optional in case
         !   coefficients should only be stored in RES argument.
-    real (PREC), intent(out), dimension(:), optional :: intercept
+    real (PREC), intent(out), dimension(:), contiguous, optional :: intercept
+    real (PREC), intent(in), dimension(:), contiguous, optional :: weights
     integer, intent(out), optional :: rank
         !*  Contains effective rank of regressor matrix
     type (lm_result), intent(inout), optional :: res
@@ -248,6 +256,7 @@ subroutine ols_2d (conf, X, Y, coefs, intercept, rank, res, status)
     integer :: nobs, Nrhs, Ncoefs, nconst_add, nlhs, i
     type (status_t) :: lstatus
     type (lm_config) :: lconf
+    real (PREC), dimension(:), allocatable :: weights_sqrt
     character (*), parameter :: NAME = 'OLS'
 
     ! GELSD arguments
@@ -267,8 +276,8 @@ subroutine ols_2d (conf, X, Y, coefs, intercept, rank, res, status)
     if (lstatus /= NF_STATUS_OK) goto 100
 
     call get_dims (X, Y, coefs, intercept, lconf%add_intercept, lconf%trans_x, &
-        lconf%trans_y, trans_coefs=lconf%trans_coefs, nobs=nobs, nrhs=Nrhs, &
-        nlhs=Nlhs, ncoefs=Ncoefs, nconst_add=Nconst_add, status=lstatus)
+        lconf%trans_y, trans_coefs=lconf%trans_coefs, weights=weights, nobs=nobs, &
+        nrhs=Nrhs, nlhs=Nlhs, ncoefs=Ncoefs, nconst_add=Nconst_add, status=lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
     call check_cond (Nobs >= (Nrhs + Nconst_add), NAME, 'Too few observations', lstatus)
@@ -299,6 +308,22 @@ subroutine ols_2d (conf, X, Y, coefs, intercept, rank, res, status)
     else
         ! Just create a copy since Y would otherwise be overwritten in place
         allocate (Yp(nobs,nlhs), source=Y)
+    end if
+
+    ! --- Apply weights ---
+
+    if (present(weights)) then
+        allocate (weights_sqrt(Nobs), source=weights)
+        weights_sqrt(:) = weights_sqrt / sum(weights_sqrt)
+        weights_sqrt(:) = sqrt(weights_sqrt)
+
+        do i = 1, Nrhs + Nconst_add
+            Xp(:,i) = Xp(:,i) * weights_sqrt
+        end do
+
+        do i = 1, Nlhs
+            Yp(:,i) = Yp(:,i) * weights_sqrt
+        end do
     end if
 
     ! --- GELSD ---
@@ -408,7 +433,7 @@ end subroutine
 
 
 
-subroutine ols_1d (conf, X, y, coefs, intercept, rank, res, status)
+subroutine ols_1d (conf, X, y, coefs, intercept, weights, rank, res, status)
     !*  OLS_1D provides a convenient wrapper for OLS_2D for one-dimensional
     !   input data (ie for regressions with a single dependent variable).
     !
@@ -418,6 +443,7 @@ subroutine ols_1d (conf, X, y, coefs, intercept, rank, res, status)
     real (PREC), intent(in), dimension(:), contiguous, target :: y
     real (PREC), intent(out), dimension(:), contiguous, optional, target :: coefs
     real (PREC), intent(out), optional :: intercept
+    real (PREC), intent(in), dimension(:), contiguous, optional :: weights
     integer, intent(out), optional :: rank
     type (lm_result), intent(inout), optional :: res
     type (status_t), intent(out), optional :: status
@@ -447,7 +473,7 @@ subroutine ols_1d (conf, X, y, coefs, intercept, rank, res, status)
         allocate (lintercept(1))
     end if
 
-    call ols (conf, X, ptr_y, ptr_coefs, lintercept, rank, res, lstatus)
+    call ols (conf, X, ptr_y, ptr_coefs, lintercept, weights, rank, res, lstatus)
 
     if (lstatus == NF_STATUS_OK) then
         if (present(res)) then
@@ -1035,8 +1061,8 @@ subroutine pcr_pca_2d (conf, X, Y, coefs, ncomp, intercept, weights, res, status
     ! --- Input checks ---
 
     call get_dims (X, Y, coefs, intercept, lconf%add_intercept, lconf%trans_x, &
-        lconf%trans_y, lconf%trans_coefs, nobs=nobs, nrhs=Nrhs, nlhs=nlhs, &
-        ncoefs=ncoefs, nconst_add=Nconst_add, nconst_coefs=Nconst_coefs, &
+        lconf%trans_y, lconf%trans_coefs, weights=weights, nobs=nobs, nrhs=Nrhs, &
+        nlhs=nlhs, ncoefs=ncoefs, nconst_add=Nconst_add, nconst_coefs=Nconst_coefs, &
         status=lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
@@ -1317,9 +1343,9 @@ subroutine pcr_pca_masked_2d (conf, X, Y, mask, coefs, ncomp, intercept, &
     ! --- Input checks ---
 
     call get_dims (X, Y, coefs, intercept, lconf%add_intercept, lconf%trans_x, &
-        lconf%trans_y, lconf%trans_coefs, mask, nobs=nobs, nrhs=Nrhs, nlhs=nlhs, &
-        ncoefs=ncoefs, nconst_add=Nconst_add, nconst_coefs=Nconst_coefs, &
-        status=lstatus)
+        lconf%trans_y, lconf%trans_coefs, weights=weights, mask=mask, &
+        nobs=nobs, nrhs=Nrhs, nlhs=nlhs, ncoefs=ncoefs, nconst_add=Nconst_add, &
+        nconst_coefs=Nconst_coefs, status=lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
     call check_cond (Nobs >= (Nrhs + Nconst_add), NAME, 'Too few observations', lstatus)
@@ -1341,12 +1367,6 @@ subroutine pcr_pca_masked_2d (conf, X, Y, mask, coefs, ncomp, intercept, &
     if (lconf%ncomp /= DEFAULT_PCR_NCOMP) then
         call check_cond (lconf%ncomp >= 0 .and. lconf%ncomp <= Nrhs, NAME, &
             'CONF: Invalid value for NCOMP', lstatus)
-        if (lstatus /= NF_STATUS_OK) goto 100
-    end if
-
-    if (present(weights)) then
-        call check_cond (size(weights) == Nobs, NAME, &
-            'WEIGHTS: Non-conformable array', lstatus)
         if (lstatus /= NF_STATUS_OK) goto 100
     end if
 
@@ -1489,14 +1509,14 @@ subroutine pcr_cv_2d (conf, X, Y, ncomp, weights, mask, rmse, status)
 
     integer :: Nrhs, Nobs, Nlhs, Nconst_add, Nfolds
     integer, dimension(:), allocatable :: folds_ifrom, folds_size
-    real (PREC), dimension(:,:), allocatable :: mse_ncomp
-    real (PREC), dimension(:), allocatable :: mean_mse, se_mse, resid, mse_weights
+    real (PREC), dimension(:,:), allocatable :: mse_ncomp, mse_weights
+    real (PREC), dimension(:), allocatable :: mean_mse, se_mse, resid
     real (PREC), dimension(:,:), pointer, contiguous :: ptr_X, ptr_Y
     real (PREC), dimension(:), pointer, contiguous :: ptr_weights
     logical, dimension(:,:), pointer, contiguous :: ptr_mask
     integer, dimension(:), allocatable :: iorder
     integer :: i, imin, dim
-    real (PREC) :: min_mse, ubound, std_resid
+    real (PREC) :: min_mse, ubound, std_resid, sum_w
     type (status_t) :: lstatus
     type (lm_config) :: lconf
     character (*), parameter :: NAME = 'PCR_CV'
@@ -1582,7 +1602,7 @@ subroutine pcr_cv_2d (conf, X, Y, ncomp, weights, mask, rmse, status)
 
     ! Hold MSEs for number of components from 0-Nrhs
     allocate (mse_ncomp(0:Nrhs,Nfolds))
-    allocate (mse_weights(Nfolds))
+    allocate (mse_weights(0:Nrhs,Nfolds))
 
     if (.not. present(mask)) then
         call pcr_cv_dispatch_folds_omp (lconf, ptr_X, ptr_Y, folds_ifrom, &
@@ -1602,16 +1622,28 @@ subroutine pcr_cv_2d (conf, X, Y, ncomp, weights, mask, rmse, status)
     allocate (mean_mse(0:Nrhs), se_mse(0:Nrhs))
     allocate (resid(Nfolds))
 
-    ! Normalize weights to 1.0
-    mse_weights(:) = mse_weights / sum(mse_weights)
-
-    ! Compute weighted average MSE for each # of PCs
-    call BLAS_GEMV ('N', Nrhs+1, Nfolds, 1.0_PREC, mse_ncomp, Nrhs+1, &
-        mse_weights, 1, 0.0_PREC, mean_mse, 1)
+    ! Compute weighted average MSE for each # of PCs:
+    ! Each fold h returns, for each number of PCs k,
+    !   MSE(k,h) = sum_{j} sum_{i in I_{jh}} (w_ij * resid_ijk^2)
+    ! where j in 1,...,NLHS and i in 1,...,Nobs(j,h) is the observation index
+    ! for LHS variable j and fold h.
+    ! w_ij is the weight attached to the i-th residual of the j-th LHS variable.
+    !
+    ! For each fold h and each PC k, the sum of weights across all LHS and
+    ! observations is returned in MSE_WEIGHTS(k,h)
+    !
+    ! Thus the average MSE across *all* folds is for #PC = k is given by
+    !   sum_h MSE(k,h) / sum_h MSE_WEIGHTS(k,h)
+    ! Note that the sum of weights should actually be identical for all k,
+    ! since we have that Nobs >= Nrhs >= #PC.
+    mean_mse(:) = sum(mse_ncomp, dim=2) / sum(mse_weights, dim=2)
 
     do i = 0, Nrhs
-        resid(:) = mse_ncomp(i,:) - mean_mse(i)
-        resid(:) = resid * sqrt(mse_weights)
+        sum_w = sum(mse_weights(i,:))
+        ! "Residual" MSE for each fold around mean MSE for #PC = k
+        resid(:) = mse_ncomp(i,:)/mse_weights(i,:) - mean_mse(i)
+        ! Weight by relative fold size
+        resid(:) = resid * sqrt(mse_weights(i,:)/sum_w)
         std_resid = sqrt(sum(resid**2.0_PREC))
         se_mse(i) = std_resid / sqrt(real(Nfolds,PREC))
     end do
@@ -1692,7 +1724,7 @@ subroutine pcr_cv_dispatch_folds_omp (conf, X, Y, folds_ifrom, folds_size, &
     real (PREC), intent(in), dimension(:,:), contiguous :: X, Y
     integer, intent(in), dimension(:), contiguous :: folds_ifrom, folds_size
     real (PREC), intent(out), dimension(:,:), contiguous :: mse_ncomp
-    real (PREC), intent(out), dimension(:), contiguous :: mse_weights
+    real (PREC), intent(out), dimension(:,:), contiguous :: mse_weights
     type (status_t), intent(out) :: status
     real (PREC), intent(in), dimension(:), contiguous, optional, target :: weights
     logical, intent(in), dimension(:,:), contiguous, optional :: mask
@@ -1727,10 +1759,10 @@ subroutine pcr_cv_dispatch_folds_omp (conf, X, Y, folds_ifrom, folds_size, &
         Ntest = folds_size(i)
         if (has_mask) then
             call pcr_cv_mse_mask (conf, X, Y, mask, ifrom, Ntest, mse_ncomp(:,i), &
-                mse_weights(i), weights=ptr_weights, status=lstatus)
+                mse_weights(:,i), weights=ptr_weights, status=lstatus)
         else
             call pcr_cv_mse (conf, X, Y, ifrom, Ntest, mse_ncomp(:,i), &
-                mse_weights(i), weights=ptr_weights, status=lstatus)
+                mse_weights(:,i), weights=ptr_weights, status=lstatus)
         end if
 
         ! Convert to integer to which IOR reduction can be applied
@@ -1752,7 +1784,7 @@ subroutine pcr_cv_dispatch_folds (conf, X, Y, folds_ifrom, folds_size, &
     real (PREC), intent(in), dimension(:,:), contiguous :: X, Y
     integer, intent(in), dimension(:), contiguous :: folds_ifrom, folds_size
     real (PREC), intent(out), dimension(:,:), contiguous :: mse_ncomp
-    real (PREC), intent(out), dimension(:), contiguous :: mse_weights
+    real (PREC), intent(out), dimension(:,:), contiguous :: mse_weights
     type (status_t), intent(out) :: status
     real (PREC), intent(in), dimension(:), contiguous, optional :: weights
     logical, intent(in), dimension(:,:), contiguous, optional :: mask
@@ -1769,10 +1801,10 @@ subroutine pcr_cv_dispatch_folds (conf, X, Y, folds_ifrom, folds_size, &
         Ntest = folds_size(i)
         if (has_mask) then
             call pcr_cv_mse_mask (conf, X, Y, mask, ifrom, Ntest, mse_ncomp(:,i), &
-                mse_weights(i), weights=weights, status=lstatus)
+                mse_weights(:,i), weights=weights, status=lstatus)
         else
             call pcr_cv_mse (conf, X, Y, ifrom, Ntest, mse_ncomp(:,i), &
-                mse_weights(i), weights=weights, status=lstatus)
+                mse_weights(:,i), weights=weights, status=lstatus)
         end if
 
         ! Convert to integer to which IOR reduction can be applied
@@ -1782,7 +1814,7 @@ subroutine pcr_cv_dispatch_folds (conf, X, Y, folds_ifrom, folds_size, &
 end subroutine
 
 
-subroutine pcr_cv_mse (conf, X, Y, test_ifrom, Ntest, mse_ncomp, weights_total, &
+subroutine pcr_cv_mse (conf, X, Y, test_ifrom, Ntest, mse_ncomp, mse_weights, &
         weights, status)
     type (lm_config), intent(in), optional :: conf
     real (PREC), intent(in), dimension(:,:), contiguous :: X
@@ -1790,14 +1822,14 @@ subroutine pcr_cv_mse (conf, X, Y, test_ifrom, Ntest, mse_ncomp, weights_total, 
     integer, intent(in) :: test_ifrom
     integer, intent(in) :: Ntest
     real (PREC), intent(out), dimension(:), contiguous :: mse_ncomp
-    real (PREC), intent(out) :: weights_total
+    real (PREC), intent(out), dimension(:) :: mse_weights
     real (PREC), intent(in), dimension(:), contiguous, optional :: weights
     type (status_t), intent(out), optional :: status
 
 
     integer :: Ntrain, Nobs, Nrhs, Nlhs, Nconst_add, Ncomp
     integer :: ncomp_min, ncomp_max, i, j
-    real (PREC) :: ssr, mse
+    real (PREC) :: ssr, mse, sum_W_test
     real (PREC), dimension(:,:), allocatable :: X_test, X_train, Y_test, Y_train
     real (PREC), dimension(:,:), allocatable :: Xp
     real (PREC), dimension(:), allocatable :: weights_train, weights_test
@@ -1847,10 +1879,12 @@ subroutine pcr_cv_mse (conf, X, Y, test_ifrom, Ntest, mse_ncomp, weights_total, 
         weights_train(:) = sqrt(weights_train)
     end if
 
-    ! Weights in test sample
-    weights_total = sum(weights_test)
-    weights_test(:) = weights_test / weights_total
-    ! Compute square root once since that's what will be neded below
+    ! Sum of weights in test sample (for single LHS variable, single PC)
+    sum_W_test = sum(weights_test)
+
+    ! Compute square root once since that's what will be neded below.
+    ! Do NOT normalize weights, this will be done in caller routine, taking
+    ! into account potentially different test sample sizes.
     weights_test(:) = sqrt(weights_test)
 
     ! --- Process regressors ---
@@ -1909,9 +1943,10 @@ subroutine pcr_cv_mse (conf, X, Y, test_ifrom, Ntest, mse_ncomp, weights_total, 
         end do
 
         ssr = BLAS_NRM2 (Ntest * Nlhs, ptr_resid, 1)
-        mse = ssr ** 2.0_PREC / weights_total
+        mse = ssr ** 2.0_PREC
 
         mse_ncomp(i) = mse
+        mse_weights(i) = sum_W_test * Nlhs
     end do
 
 100 continue
@@ -1923,7 +1958,7 @@ end subroutine
 
 
 subroutine pcr_cv_mse_mask (conf, X, Y, mask, test_ifrom, Ntest, mse_ncomp, &
-        weights_total, weights, status)
+        mse_weights, weights, status)
     type (lm_config), intent(in), optional :: conf
     real (PREC), intent(in), dimension(:,:), contiguous :: X
     real (PREC), intent(in), dimension(:,:), contiguous :: Y
@@ -1931,7 +1966,7 @@ subroutine pcr_cv_mse_mask (conf, X, Y, mask, test_ifrom, Ntest, mse_ncomp, &
     integer, intent(in) :: test_ifrom
     integer, intent(in) :: Ntest
     real (PREC), intent(out), dimension(:), contiguous :: mse_ncomp
-    real (PREC), intent(out) :: weights_total
+    real (PREC), intent(out), dimension(:), contiguous :: mse_weights
     real (PREC), intent(in), dimension(:), contiguous, optional :: weights
     type (status_t), intent(out), optional :: status
 
@@ -2010,6 +2045,7 @@ subroutine pcr_cv_mse_mask (conf, X, Y, mask, test_ifrom, Ntest, mse_ncomp, &
     status_code = NF_STATUS_OK
 
     mse_ncomp = 0.0
+    mse_weights = 0.0
 
     !$omp parallel default(none) &
     !$omp shared(conf,X_train_T,X_test_T,mask_train,mask_test,weights_train) &
@@ -2021,7 +2057,7 @@ subroutine pcr_cv_mse_mask (conf, X, Y, mask, test_ifrom, Ntest, mse_ncomp, &
     !$omp private (i,j,Ntrain_lhs,Ntest_lhs,ncomp_max_lhs,lstatus,s,shp) &
     !$omp private (intercept,weights_lhs,Ncomp,ssr,mse_lhs) &
     !$omp reduction(ior: status_code) &
-    !$omp reduction(+: weights_total, mse_ncomp)
+    !$omp reduction(+: mse_weights, mse_ncomp)
     allocate (coefs(Nrhs))
     allocate (resid(Ntest))
 
@@ -2123,18 +2159,27 @@ subroutine pcr_cv_mse_mask (conf, X, Y, mask, test_ifrom, Ntest, mse_ncomp, &
             ptr_Y_test_lhs => Y_test_pack(1:Ntest_lhs)
             if (has_weights) then
                 W_test_lhs(1:Ntest_lhs) = pack (weights_test, mask_test(:,j))
+            else
+                ! Use uniform weights to "automatically" keep track of
+                ! potentially different test sample sizes.
+                ! Do NOT normalize weights here.
+                W_test_lhs(1:Ntest_lhs) = 1.0_PREC
             end if
         else
             ptr_X_test_lhs_T => X_test_T
             ptr_Y_test_lhs => Y_test(:,j)
             if (has_weights) then
                 W_test_lhs(:) = weights_test
+            else
+                ! Use uniform weights to "automatically" keep track of
+                ! potentially different test sample sizes
+                ! Do NOT normalize weights here.
+                W_test_lhs(:) = 1.0_PREC
             end if
         end if
 
         ! Store sqrt. of test weights for later use
         weights_lhs = sum(W_test_lhs(1:Ntest_lhs))
-        weights_total = weights_total + weights_lhs
         ! Do NOT normalie test weights, total MSE will be divided by sum
         ! of total weights.
         W_test_lhs(1:Ntest_lhs) = sqrt(W_test_lhs(1:Ntest_lhs))
@@ -2170,6 +2215,7 @@ subroutine pcr_cv_mse_mask (conf, X, Y, mask, test_ifrom, Ntest, mse_ncomp, &
             mse_lhs = ssr ** 2.0_PREC
 
             mse_ncomp(i) = mse_ncomp(i) + mse_lhs
+            mse_weights(i) = mse_weights(i) + weights_lhs
         end do
     end do loop_lhs
     !$omp end do
@@ -2182,10 +2228,6 @@ subroutine pcr_cv_mse_mask (conf, X, Y, mask, test_ifrom, Ntest, mse_ncomp, &
     if (allocated(loadings)) deallocate (loadings)
 
     !$omp end parallel
-
-    do i = 1, size(mse_ncomp)
-        mse_ncomp(i) = mse_ncomp(i) / weights_total
-    end do
 
     lstatus = status_code
 
