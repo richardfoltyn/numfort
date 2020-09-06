@@ -3,6 +3,7 @@
 module numfort_stats_lm_real32
 
     use, intrinsic :: iso_fortran_env
+    use, intrinsic :: ieee_arithmetic
 
     use numfort_arrays_copy
     use numfort_arrays_setops, only: split_uniform
@@ -30,6 +31,7 @@ module numfort_stats_lm_real32
     public :: ols
     public :: pca
     public :: pcr
+    public :: pcr_by_lhs
     public :: pcr_cv
     public :: predict
 

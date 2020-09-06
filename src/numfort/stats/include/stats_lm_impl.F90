@@ -1082,7 +1082,7 @@ subroutine pcr_pca_2d (conf, X, Y, coefs, ncomp, intercept, weights, res, status
         'CONF: Invalid value for NCOMP', lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
-    if (lconf%ncomp /= DEFAULT_PCR_NCOMP) then
+    if (lconf%ncomp /= PCR_NCOMP_UNDEFINED) then
         call check_cond (lconf%ncomp >= 0 .and. lconf%ncomp <= Nrhs, NAME, &
             'CONF: Invalid value for NCOMP', lstatus)
         if (lstatus /= NF_STATUS_OK) goto 100
@@ -1364,7 +1364,7 @@ subroutine pcr_pca_masked_2d (conf, X, Y, mask, coefs, ncomp, intercept, &
         'CONF: Invalid value for NCOMP', lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
-    if (lconf%ncomp /= DEFAULT_PCR_NCOMP) then
+    if (lconf%ncomp /= PCR_NCOMP_UNDEFINED) then
         call check_cond (lconf%ncomp >= 0 .and. lconf%ncomp <= Nrhs, NAME, &
             'CONF: Invalid value for NCOMP', lstatus)
         if (lstatus /= NF_STATUS_OK) goto 100
@@ -1486,7 +1486,398 @@ end subroutine
 
 
 
-subroutine pcr_cv_2d (conf, X, Y, ncomp, weights, mask, rmse, status)
+subroutine pcr_pca_by_lhs (conf, X, Y, mask, weights, ncomp, coefs, intercept, &
+        res, status)
+    type (lm_config), intent(in), optional :: conf
+    real (PREC), intent(in), dimension(:,:), contiguous, target :: X
+    real (PREC), intent(in), dimension(:,:), contiguous, target :: Y
+    logical, intent(in), dimension(:,:), contiguous, optional, target :: mask
+        !*  Array identifying observations to be included in estimation. Only
+        !   observations where MASK is .TRUE. will be included. Observations
+        !   are permitted to vary across LHS variables.
+    real (PREC), intent(in), dimension(:), contiguous, optional :: weights
+    integer, intent(in), dimension(:), contiguous, optional :: ncomp
+        !*  If present, contains the number of princial components to be used
+        !   for each LHS variable.
+    real (PREC), intent(out), dimension(:,:), contiguous, optional, target :: coefs
+    real (PREC), intent(out), dimension(:), optional, contiguous, target :: intercept
+    type (lm_result), intent(inout), optional, target :: res
+    type (status_t), intent(out), optional :: status
+
+    type (status_t) :: lstatus
+    type (lm_config) :: lconf
+    real (PREC), dimension(:,:), allocatable :: lcoefs
+    real (PREC), dimension(:), allocatable :: lintercept
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_Xp, ptr_Yp
+    real (PREC), dimension(:,:), allocatable :: X_lhs_T, Xw_all
+    real (PREC), dimension(:), allocatable :: Y_lhs, W_lhs
+    real (PREC), dimension(:), allocatable :: W_all
+    real (PREC), dimension(:,:), allocatable :: scores, loadings
+    real (PREC), dimension(:), allocatable :: sval, shift_x, scale_x
+    real (PREC), dimension(:,:), allocatable :: scores_all, loadings_all
+    real (PREC), dimension(:), allocatable :: sval_all, shift_x_all, scale_x_all
+    logical, dimension(:,:), pointer, contiguous :: ptr_mask
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_scores, ptr_loadings
+    real (PREC), dimension(:), pointer, contiguous :: ptr_sval, ptr_shift_x, ptr_scale_x
+    real (PREC), dimension(:), pointer, contiguous :: ptr_W_lhs, ptr_Y_lhs
+    integer :: Nrhs, Nconst_add, nobs, ncoefs, Nlhs, Nconst_coefs
+    integer :: Nobs_lhs
+    integer :: shp(2)
+    real (PREC) :: Nobs_avg, Ncomp_avg, var_rhs_avg, var_rhs
+    real (PREC) :: weights_lhs, weights_total
+    logical :: has_all_obs, has_weights
+    logical, dimension(:), allocatable :: lwork
+    integer :: i, j, k
+    integer (NF_ENUM_KIND) :: status_code
+    character (*), parameter :: NAME = 'PCR_PCA_MASKED'
+
+    target :: scores_all, loadings_all, sval_all, shift_x_all, scale_x_all
+    target :: scores, loadings, sval, shift_x, scale_x
+    target :: Y_lhs, W_lhs, W_all, Xw_all
+
+    lstatus = NF_STATUS_OK
+
+    nullify (ptr_Xp, ptr_Yp, ptr_mask)
+
+    if (present(conf)) lconf = conf
+
+    has_weights = present(weights)
+
+    ! --- Input checks ---
+
+    call get_dims (X, Y, coefs, intercept, lconf%add_intercept, lconf%trans_x, &
+        lconf%trans_y, lconf%trans_coefs, weights=weights, mask=mask, &
+        nobs=nobs, nrhs=Nrhs, nlhs=nlhs, ncoefs=ncoefs, nconst_add=Nconst_add, &
+        nconst_coefs=Nconst_coefs, status=lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    call check_cond (Nobs >= (Nrhs + Nconst_add), NAME, 'Too few observations', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    call check_cond (lconf%var_rhs_min <= 1.0_PREC, NAME, &
+        'CONF: Invalid value for VAR_RHS_MIN', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    call check_cond (lconf%ncomp_min >= 0 .and. lconf%ncomp_min <= Nrhs, &
+        NAME, 'CONF: Invalid value for NCOMP_MIN', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    if (present(ncomp)) then
+
+        call check_cond (size(ncomp) == Nlhs, NAME, 'NCOMP: Non-conformable array', lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+
+        call check_cond (all((ncomp >= 0 .and. ncomp <= Nrhs) &
+            .or. ncomp == PCR_NCOMP_UNDEFINED), NAME, &
+            'NCOMP: Invalid value encountered', lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+    else
+        if (lconf%ncomp /= PCR_NCOMP_UNDEFINED) then
+            call check_cond (lconf%ncomp >= 0 .and. lconf%ncomp <= Nrhs, NAME, &
+                'CONF: Invalid value for NCOMP', lstatus)
+            if (lstatus /= NF_STATUS_OK) goto 100
+        end if
+    end if
+
+    ! --- Precompute PCA if all obs. are to be used ---
+
+    has_all_obs = .not. present(mask)
+    if (present(mask)) then
+        allocate (lwork(Nlhs))
+        if (lconf%trans_y) then
+            lwork(:) = all(mask, dim=2)
+        else
+            lwork(:) = all(mask, dim=1)
+        end if
+        has_all_obs = any (lwork)
+        deallocate (lwork)
+    end if
+
+    if (has_all_obs) then
+        allocate (scores_all(Nobs,Nrhs))
+        allocate (loadings_all(Nrhs,Nrhs))
+        allocate (sval_all(Nrhs))
+        allocate (shift_x_all(Nrhs), scale_x_all(Nrhs))
+
+        ! Apply weights to X, if applicatble
+        if (has_weights) then
+            allocate (Xw_all, source=X)
+
+            weights_total = sum(weights)
+            allocate (W_all, source=weights)
+            W_all(:) = W_all / weights_total
+            W_all(:) = sqrt(W_all)
+
+            ! Re-weighted RHS data
+            if (lconf%trans_x) then
+                do i = 1, Nobs
+                    Xw_all(:,i) = Xw_all(:,i) * W_all(i)
+                end do
+            else
+                do i = 1, Nrhs
+                    Xw_all(:,i) = Xw_all(:,i) * W_all
+                end do
+            end if
+
+            ptr_Xp => Xw_all
+        else
+            ptr_Xp => X
+        end if
+
+        call pca (ptr_Xp, center=.true., scale=.true., &
+            trans_x=lconf%trans_x, scores=scores_all, sval=sval_all, &
+            loadings=loadings_all, shift_x=shift_x_all, scale_x=scale_x_all, &
+            status=lstatus)
+
+        if (allocated(Xw_all)) deallocate (Xw_all)
+        nullify (ptr_Xp)
+
+        if (.not. (NF_STATUS_OK .in. lstatus)) then
+            status_code = lstatus
+            goto 100
+        end if
+    end if
+
+    ! --- Transpose data into required shape ---
+
+    if (.not. lconf%trans_x) then
+        allocate (ptr_Xp(Nrhs,Nobs))
+        call transpose_no_copy (X, ptr_Xp)
+    else
+        ptr_Xp => X
+    end if
+
+    if (lconf%trans_y) then
+        allocate (ptr_Yp(Nobs,Nlhs), ptr_mask(Nobs,Nlhs))
+        call transpose_no_copy (Y, ptr_Yp)
+        if (present(mask)) then
+            call transpose_no_copy (mask, ptr_mask)
+        end if
+    else
+        ptr_Yp => Y
+        if (present(mask)) then
+            ptr_mask => mask
+        end if
+    end if
+
+    ! --- Process each LHS variable ---
+
+    Nobs_avg = 0.0
+    Ncomp_avg = 0.0
+    var_rhs_avg = 0.0
+    weights_total = 0.0
+
+    allocate (lcoefs(Nrhs,Nlhs), lintercept(Nlhs))
+
+    allocate (X_lhs_T(Nrhs,Nobs))
+    allocate (Y_lhs(Nobs))
+
+    if (present(weights)) then
+        allocate (W_lhs(Nobs))
+    end if
+
+    allocate (loadings(Nrhs,Nrhs))
+    allocate (shift_x(Nrhs), scale_x(Nrhs))
+    allocate (sval(Nrhs))
+
+    nullify (ptr_Y_lhs, ptr_W_lhs)
+    nullify (ptr_scores, ptr_loadings, ptr_sval, ptr_shift_x, ptr_scale_x)
+
+    ! Initialize here to avoid gfortran warnings
+    status_code = NF_STATUS_OK
+
+    loop_lhs: do j = 1, Nlhs
+
+        ! Skip remaining tasks if we previously encountered an error
+        if (status_code /= NF_STATUS_OK) cycle
+
+        if (present(mask)) then
+            Nobs_lhs = count (ptr_mask(:,j))
+        else
+            Nobs_lhs = Nobs
+        end if
+
+        if (Nobs_lhs <= Ncoefs) then
+            lcoefs(:,j) = 0.0
+            lintercept(j) = 0.0
+            cycle loop_lhs
+        end if
+
+        ! --- Create contiguous input data ---
+
+        if (Nobs_lhs /= Nobs) then
+
+            ! Create contiguous subset of RHS variables
+            call copy (ptr_Xp, X_lhs_T(:,1:Nobs_lhs), ptr_mask(:,j), dim=2, status=lstatus)
+            if (.not. (NF_STATUS_OK .in. lstatus)) then
+                status_code = lstatus
+                cycle loop_lhs
+            end if
+
+            ! Create contiguous array of LHS obs.
+            call copy (ptr_Yp(:,j), Y_lhs(1:Nobs_lhs), ptr_mask(:,j))
+            ptr_Y_lhs => Y_lhs(1:Nobs_lhs)
+
+            ! Create contiguous weights and apply them to RHS variables
+            weights_lhs = Nobs_lhs
+            if (has_weights) then
+                call copy (weights, W_lhs(1:Nobs_lhs), ptr_mask(:,j))
+
+                weights_lhs = sum(W_lhs(1:Nobs_lhs))
+                W_lhs(1:Nobs_lhs) = W_lhs(1:Nobs_lhs) / weights_lhs
+                W_lhs(1:Nobs_lhs) = sqrt(W_lhs(1:Nobs_lhs))
+
+                ptr_W_lhs => W_lhs(1:Nobs_lhs)
+
+                ! Computed weighted RHS variables
+                do i = 1, Nobs_lhs
+                    X_lhs_T(:,i) = X_lhs_T(:,i) * W_lhs(i)
+                end do
+            end if
+
+            ! --- Run PCA ---
+
+            shp(1) = Nobs_lhs
+            shp(2) = Nrhs
+            call cond_alloc (scores, shp(1:2))
+
+            ! Perform PCA on subset of observations
+            call pca (X_lhs_T(:,1:Nobs_lhs), center=.true., scale=.true., &
+                trans_x=.true., scores=scores, sval=sval, &
+                loadings=loadings, shift_x=shift_x, scale_x=scale_x, status=lstatus)
+            if (.not. (NF_STATUS_OK .in. lstatus)) then
+                status_code = lstatus
+                cycle loop_lhs
+            end if
+
+            ptr_scores => scores
+            ptr_loadings => loadings
+            ptr_sval => sval
+            ptr_shift_x => shift_x
+            ptr_scale_x => scale_x
+        else
+            ! Use precomputed PCA data derived from all RHS observations
+            ptr_Y_lhs => ptr_Yp(:,j)
+            ptr_W_lhs => W_all
+
+            ptr_scores => scores_all
+            ptr_loadings => loadings_all
+            ptr_sval => sval_all
+            ptr_shift_x => shift_x_all
+            ptr_scale_x => scale_x_all
+
+            weights_lhs = Nobs_lhs
+            if (present(weights)) then
+                weights_lhs = sum(weights)
+            end if
+        end if
+
+        ! --- Select number of PCs ---
+
+        k = 0
+
+        ! 1. Select by min variance, if applicable
+        if (lconf%var_rhs_min >= 0.0_PREC) then
+            var_rhs = 0.0
+            do k = 1, Nrhs
+                var_rhs = var_rhs + ptr_sval(k)**2.0_PREC / sum(ptr_sval**2.0_PREC)
+                if ((var_rhs - lconf%var_rhs_min) >= 0.0_PREC) exit
+            end do
+            k = min(k, Nrhs)
+        end if
+
+        ! 2. User-imposed overall number of components
+        if (lconf%ncomp >= 0 .and. lconf%ncomp <= Nrhs) then
+            k = lconf%ncomp
+        end if
+
+        ! 3. Run PCR on using given PCA data
+        if (present(ncomp)) then
+            if (ncomp(j) /= PCR_NCOMP_UNDEFINED) k = ncomp(j)
+        end if
+
+        ! 4. User-imposed lower bound
+        if (lconf%ncomp_min > 0) then
+            k = max(lconf%ncomp_min, k)
+        end if
+
+        ! 5. User-imposed upper bound
+        if (lconf%ncomp_max >= 0) then
+            k = min(lconf%ncomp_max, k)
+        end if
+
+        ! --- Run PC regression ---
+
+        call pcr (ptr_Y_lhs, ptr_scores(:,1:k), ptr_sval(1:k), &
+            ptr_loadings(:,1:k), lcoefs(:,j), shift_x=ptr_shift_x, &
+            scale_x=ptr_scale_x, add_intercept=conf%add_intercept, &
+            intercept=lintercept(j), weights_sqrt=ptr_W_lhs, status=lstatus)
+        if (lstatus /= NF_STATUS_OK) then
+            status_code = lstatus
+            cycle loop_lhs
+        end if
+
+        ! Fraction of RHS variance captured by components used
+        var_rhs = sum(ptr_sval(1:k)**2.0_PREC) / sum(ptr_sval**2.0_PREC)
+
+        weights_total = weights_total + weights_lhs
+        Nobs_avg = Nobs_avg + Nobs_lhs * weights_lhs
+        Ncomp_avg = Ncomp_avg + k * weights_lhs
+        var_rhs_avg = var_rhs_avg + var_rhs * weights_lhs
+
+    end do loop_lhs
+
+    if (present(intercept)) then
+        intercept(1:Nlhs) = lintercept(1:Nlhs)
+    end if
+
+    if (present(coefs)) then
+        do j = 1, Nlhs
+            if (lconf%trans_coefs) then
+                coefs(j,1+Nconst_coefs:Ncoefs) = lcoefs(1:Nrhs,j)
+                if (Nconst_coefs == 1) then
+                    coefs(j,1) = lintercept(j)
+                end if
+            else
+                coefs(1+Nconst_coefs:Ncoefs,j) = lcoefs(1:Nrhs,j)
+                if (Nconst_coefs == 1) then
+                    coefs(1,j) = lintercept(j)
+                end if
+            end if
+        end do
+    end if
+
+    if (present(res)) then
+        shp(1) = Nrhs
+        shp(2) = Nlhs
+        call cond_alloc (res%coefs_multi, shp)
+        call cond_alloc (res%intercept_multi, Nlhs)
+
+        var_rhs_avg = var_rhs_avg / weights_total
+        Ncomp_avg = Ncomp_avg / weights_total
+        Nobs_avg = Nobs_avg / weights_total
+
+        call copy_alloc (lcoefs, res%coefs_multi)
+        call copy_alloc (lintercept, res%intercept_multi)
+
+        call lm_result_update (res, lconf, model=NF_STATS_LM_PCR, &
+            nobs=int(Nobs_avg), nrhs=Nrhs, ncomp=int(Ncomp_avg), &
+            var_rhs=var_rhs_avg)
+    end if
+
+100 continue
+
+    call assert_dealloc_ptr (X, ptr_Xp)
+    call assert_dealloc_ptr (Y, ptr_Yp)
+    call assert_dealloc_ptr (mask, ptr_mask)
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+
+subroutine pcr_cv_pooled_2d (conf, X, Y, ncomp, weights, mask, rmse, status)
     !*  PCR_CV implements cross-validation for principal component regression,
     !   selecting the number of principal components which minimize the
     !   average mean squared error computed on test sub-samples.
@@ -1509,8 +1900,9 @@ subroutine pcr_cv_2d (conf, X, Y, ncomp, weights, mask, rmse, status)
 
     integer :: Nrhs, Nobs, Nlhs, Nconst_add, Nfolds
     integer, dimension(:), allocatable :: folds_ifrom, folds_size
-    real (PREC), dimension(:,:), allocatable :: mse_ncomp, mse_weights
+    real (PREC), dimension(:,:,:), allocatable :: mse_ncomp_lhs, mse_weights_lhs
     real (PREC), dimension(:), allocatable :: mean_mse, se_mse, resid
+    real (PREC), dimension(:,:), allocatable :: mse_ncomp, mse_weights
     real (PREC), dimension(:,:), pointer, contiguous :: ptr_X, ptr_Y
     real (PREC), dimension(:), pointer, contiguous :: ptr_weights
     logical, dimension(:,:), pointer, contiguous :: ptr_mask
@@ -1600,27 +1992,31 @@ subroutine pcr_cv_2d (conf, X, Y, ncomp, weights, mask, rmse, status)
     !       2a. NLHS > NFOLDS: parallelization should be over LHS
     !       2b. NFOLDS > NLHS: parallelization should be over folds
 
-    ! Hold MSEs for number of components from 0-Nrhs
-    allocate (mse_ncomp(0:Nrhs,Nfolds))
-    allocate (mse_weights(0:Nrhs,Nfolds))
+    ! Hold MSEs for number of components from 0-Nrhs, for each LHS and each fold
+    allocate (mse_ncomp_lhs(0:Nrhs,Nlhs,Nfolds))
+    allocate (mse_weights_lhs(0:Nrhs,Nlhs,Nfolds))
 
     if (.not. present(mask)) then
         call pcr_cv_dispatch_folds_omp (lconf, ptr_X, ptr_Y, folds_ifrom, &
-            folds_size, mse_ncomp, mse_weights, lstatus, ptr_weights)
+            folds_size, mse_ncomp_lhs, mse_weights_lhs, lstatus, ptr_weights)
     else if (Nlhs > Nfolds) then
         ! Case 2a: parallelize over LHS
         call pcr_cv_dispatch_folds (lconf, ptr_X, ptr_Y, folds_ifrom, &
-            folds_size, mse_ncomp, mse_weights, lstatus, ptr_weights, ptr_mask)
+            folds_size, mse_ncomp_lhs, mse_weights_lhs, lstatus, ptr_weights, ptr_mask)
     else
         ! Case 2b, parallelize over folds
         call pcr_cv_dispatch_folds_omp (lconf, ptr_X, ptr_Y, folds_ifrom, &
-            folds_size, mse_ncomp, mse_weights, lstatus, ptr_weights, ptr_mask)
+            folds_size, mse_ncomp_lhs, mse_weights_lhs, lstatus, ptr_weights, ptr_mask)
     end if
 
     if (lstatus /= NF_STATUS_OK) goto 100
 
-    allocate (mean_mse(0:Nrhs), se_mse(0:Nrhs))
-    allocate (resid(Nfolds))
+    ! Sum across LHS to create MSE and sum of weights for each #PC/fold
+    allocate (mse_ncomp(0:Nrhs,Nfolds), mse_weights(0:Nrhs,Nfolds))
+    do i = 1, Nfolds
+        mse_ncomp(:,i) = sum(mse_ncomp_lhs(:,:,i), dim=2)
+        mse_weights(:,i) = sum(mse_weights_lhs(:,:,i), dim=2)
+    end do
 
     ! Compute weighted average MSE for each # of PCs:
     ! Each fold h returns, for each number of PCs k,
@@ -1636,6 +2032,10 @@ subroutine pcr_cv_2d (conf, X, Y, ncomp, weights, mask, rmse, status)
     !   sum_h MSE(k,h) / sum_h MSE_WEIGHTS(k,h)
     ! Note that the sum of weights should actually be identical for all k,
     ! since we have that Nobs >= Nrhs >= #PC.
+
+    allocate (mean_mse(0:Nrhs), se_mse(0:Nrhs))
+    allocate (resid(Nfolds))
+
     mean_mse(:) = sum(mse_ncomp, dim=2) / sum(mse_weights, dim=2)
 
     do i = 0, Nrhs
@@ -1689,6 +2089,236 @@ end subroutine
 
 
 
+subroutine pcr_cv_separate_2d (conf, X, Y, ncomp, weights, mask, rmse, status)
+    !*  PCR_CV implements cross-validation for principal component regression,
+    !   selecting the number of principal components which minimize the
+    !   average mean squared error computed on test sub-samples.
+    type (lm_config), intent(in), optional :: conf
+        !*  Configuration object
+    real (PREC), intent(in), dimension(:,:), contiguous, target :: X
+        !*  Predictor variables (regressors)
+    real (PREC), intent(in), dimension(:,:), contiguous, target :: Y
+        !*  Response variables (outcomes)
+    integer, intent(out), dimension(:), contiguous :: ncomp
+        !   Contains the cross-validated number of PCs for each LHS variable.
+    logical, intent(in), dimension(:,:), contiguous, optional, target :: mask
+        !*  If present, only include observations where MASK is .TRUE. when
+        !   estimating projection coefficients and evaluating goodness of fit.
+    real (PREC), intent(in), dimension(:), contiguous, optional, target :: weights
+    real (PREC), intent(out), dimension(:), contiguous, optional :: rmse
+        !*  Root MSE of the MSE-minimizing model
+    type (status_t), intent(out), optional :: status
+        !*  Exit code.
+
+    integer :: Nrhs, Nobs, Nlhs, Nconst_add, Nfolds
+    integer, dimension(:), allocatable :: folds_ifrom, folds_size
+    real (PREC), dimension(:,:,:), allocatable :: mse_ncomp_lhs, mse_weights_lhs
+    real (PREC), dimension(:), allocatable :: mean_mse, se_mse, resid
+    real (PREC), dimension(:,:), allocatable :: mse_ncomp, mse_weights
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_X, ptr_Y
+    real (PREC), dimension(:), pointer, contiguous :: ptr_weights
+    logical, dimension(:,:), pointer, contiguous :: ptr_mask
+    integer, dimension(:), allocatable :: iorder
+    integer :: i, j, imin, dim
+    real (PREC) :: min_mse, ubound, std_resid, sum_w
+    type (status_t) :: lstatus
+    type (lm_config) :: lconf
+    character (*), parameter :: NAME = 'PCR_CV'
+
+    nullify (ptr_X, ptr_Y, ptr_weights, ptr_mask)
+
+    ! --- Input processing ---
+
+    lconf = conf
+
+    call get_dims (X, Y, mask=mask, add_intercept=lconf%add_intercept, &
+        trans_x=lconf%trans_x, trans_y=lconf%trans_y, nobs=nobs, nrhs=Nrhs, &
+        nlhs=nlhs, nconst_add=Nconst_add, status=lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    call check_cond (size(ncomp) == Nlhs, NAME, 'NCOMP: Non-conformable array', lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    if (present(weights)) then
+        call check_cond (size(weights) == Nobs, NAME, &
+            'WEIGHTS: Non-conformable array', lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+    end if
+
+    ! --- Randomly reorder X and Y ---
+
+    if (lconf%cv_shuffle_obs) then
+        allocate (iorder(Nobs))
+        call random_order (iorder)
+
+        allocate (ptr_X(Nobs,Nrhs))
+        allocate (ptr_Y(Nobs,Nlhs))
+
+        dim = 1
+        if (lconf%trans_x) dim = 2
+        call pack_indexed (X, iorder, ptr_X, dim, lconf%trans_x, lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+
+        dim = 1
+        if (lconf%trans_y) dim = 2
+        call pack_indexed (Y, iorder, ptr_Y, dim, lconf%trans_y, lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
+
+        if (present(weights)) then
+            allocate (ptr_weights(Nobs))
+            call pack_indexed (weights, iorder, ptr_weights)
+        end if
+
+        if (present(mask)) then
+            dim = 1
+            if (lconf%trans_y) dim = 2
+            allocate (ptr_mask(Nobs,Nlhs))
+            call pack_indexed (mask, iorder, ptr_mask, dim, lconf%trans_y, lstatus)
+            if (lstatus /= NF_STATUS_OK) goto 100
+        end if
+
+        lconf%trans_x = .false.
+        lconf%trans_y = .false.
+    else
+        ptr_X => X
+        ptr_Y => Y
+        if (present(weights)) then
+            ptr_weights => weights
+        end if
+        if (present(mask)) then
+            ptr_mask => mask
+        end if
+    end if
+
+    ! --- k-fold CV chunks ---
+
+    Nfolds = lconf%cv_n
+    allocate (folds_ifrom(Nfolds), folds_size(Nfolds))
+
+    call split_uniform (Nobs, Nfolds, folds_ifrom, folds_size, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! --- Perform cross-validation ---
+
+    ! We have the following parallelization scenarios:
+    !   1.  No masked obs: PCA is computed once per fold, so we parallelize
+    !       over folds.
+    !   2.  Masked obs: PCA needs to be done for each LHS variance, so if
+    !       2a. NLHS > NFOLDS: parallelization should be over LHS
+    !       2b. NFOLDS > NLHS: parallelization should be over folds
+
+    ! Hold MSEs for number of components from 0-Nrhs, for each LHS and each fold
+    allocate (mse_ncomp_lhs(0:Nrhs,Nlhs,Nfolds))
+    allocate (mse_weights_lhs(0:Nrhs,Nlhs,Nfolds))
+
+    if (.not. present(mask)) then
+        call pcr_cv_dispatch_folds_omp (lconf, ptr_X, ptr_Y, folds_ifrom, &
+            folds_size, mse_ncomp_lhs, mse_weights_lhs, lstatus, ptr_weights)
+    else if (Nlhs > Nfolds) then
+        ! Case 2a: parallelize over LHS
+        call pcr_cv_dispatch_folds (lconf, ptr_X, ptr_Y, folds_ifrom, &
+            folds_size, mse_ncomp_lhs, mse_weights_lhs, lstatus, ptr_weights, ptr_mask)
+    else
+        ! Case 2b, parallelize over folds
+        call pcr_cv_dispatch_folds_omp (lconf, ptr_X, ptr_Y, folds_ifrom, &
+            folds_size, mse_ncomp_lhs, mse_weights_lhs, lstatus, ptr_weights, ptr_mask)
+    end if
+
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! Compute weighted average MSE for each # of PCs:
+    ! Each fold h returns, for each number of PCs k,
+    !   MSE(k,h) = sum_{j} sum_{i in I_{jh}} (w_ij * resid_ijk^2)
+    ! where j in 1,...,NLHS and i in 1,...,Nobs(j,h) is the observation index
+    ! for LHS variable j and fold h.
+    ! w_ij is the weight attached to the i-th residual of the j-th LHS variable.
+    !
+    ! For each fold h and each PC k, the sum of weights across all LHS and
+    ! observations is returned in MSE_WEIGHTS(k,h)
+    !
+    ! Thus the average MSE across *all* folds is for #PC = k is given by
+    !   sum_h MSE(k,h) / sum_h MSE_WEIGHTS(k,h)
+    ! Note that the sum of weights should actually be identical for all k,
+    ! since we have that Nobs >= Nrhs >= #PC.
+
+    ! Sum across LHS to create MSE and sum of weights for each #PC/fold
+    allocate (mse_ncomp(0:Nrhs,Nfolds), mse_weights(0:Nrhs,Nfolds))
+
+    allocate (mean_mse(0:Nrhs), se_mse(0:Nrhs))
+    allocate (resid(Nfolds))
+
+    do j = 1, Nlhs
+        mse_ncomp(:,:) = mse_ncomp_lhs(:,j,:)
+        mse_weights(:,:) = mse_weights_lhs(:,j,:)
+
+        do i = 0, Nrhs
+            sum_w = sum(mse_weights(i,:))
+
+            if (sum_w == 0.0_PREC) then
+                mean_mse(i) = ieee_value (0.0_PREC, IEEE_POSITIVE_INF)
+                se_mse(i) = 0.0_PREC
+                cycle
+            end if
+
+            mean_mse(i) = sum(mse_ncomp(i,:)) / sum_w
+
+            ! "Residual" MSE for each fold around mean MSE for #PC = k
+            resid(:) = mse_ncomp(i,:)/mse_weights(i,:) - mean_mse(i)
+            ! Weight by relative fold size
+            resid(:) = resid * sqrt(mse_weights(i,:)/sum_w)
+            std_resid = sqrt(sum(resid**2.0_PREC))
+            se_mse(i) = std_resid / sqrt(real(Nfolds,PREC))
+        end do
+
+        if (.not. any(ieee_is_finite(mean_mse))) then
+            ! Quick exit if there we don't have a single valid MSE
+            ncomp(j) = PCR_NCOMP_UNDEFINED
+            if (present(rmse)) rmse(j) = huge(0.0_PREC)
+            cycle
+        end if
+
+        min_mse = huge(0.0_PREC)
+        imin = 0
+
+        do i = 0, Nrhs
+            if (mean_mse(i) < min_mse) then
+                imin = i
+                min_mse = mean_mse(i)
+            end if
+        end do
+
+        ! Pick most parsimonious model within one standard deviation of
+        ! the minimum.
+        if (lconf%cv_parsimonious) then
+            ubound = min_mse + se_mse(imin) * max(lconf%cv_se_mult, 0.0_PREC)
+            do i = imin, 1, -1
+                if (mean_mse(i) < ubound) then
+                    ! Choose previous as the previous index which was within
+                    ! min(MSE) + se(min(MSE))
+                    imin = i
+                end if
+            end do
+
+            imin = min(Nrhs, imin)
+        end if
+
+        ncomp(j) = imin
+        if (present(rmse)) rmse(j) = sqrt(min_mse)
+    end do
+
+100 continue
+
+    call assert_dealloc_ptr (X, ptr_X)
+    call assert_dealloc_ptr (Y, ptr_Y)
+    call assert_dealloc_ptr (weights, ptr_weights)
+    call assert_dealloc_ptr (mask, ptr_mask)
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+
 subroutine pcr_cv_1d (conf, X, Y, ncomp, rmse, weights, status)
     !*  PCR_CV implements cross-validation for principal component regression,
     !   selecting the number of principal components which minimize the
@@ -1723,8 +2353,8 @@ subroutine pcr_cv_dispatch_folds_omp (conf, X, Y, folds_ifrom, folds_size, &
     type (lm_config), intent(in) :: conf
     real (PREC), intent(in), dimension(:,:), contiguous :: X, Y
     integer, intent(in), dimension(:), contiguous :: folds_ifrom, folds_size
-    real (PREC), intent(out), dimension(:,:), contiguous :: mse_ncomp
-    real (PREC), intent(out), dimension(:,:), contiguous :: mse_weights
+    real (PREC), intent(out), dimension(:,:,:), contiguous :: mse_ncomp
+    real (PREC), intent(out), dimension(:,:,:), contiguous :: mse_weights
     type (status_t), intent(out) :: status
     real (PREC), intent(in), dimension(:), contiguous, optional, target :: weights
     logical, intent(in), dimension(:,:), contiguous, optional :: mask
@@ -1758,11 +2388,11 @@ subroutine pcr_cv_dispatch_folds_omp (conf, X, Y, folds_ifrom, folds_size, &
         ifrom = folds_ifrom(i)
         Ntest = folds_size(i)
         if (has_mask) then
-            call pcr_cv_mse_mask (conf, X, Y, mask, ifrom, Ntest, mse_ncomp(:,i), &
-                mse_weights(:,i), weights=ptr_weights, status=lstatus)
+            call pcr_cv_mse_mask (conf, X, Y, mask, ifrom, Ntest, mse_ncomp(:,:,i), &
+                mse_weights(:,:,i), weights=ptr_weights, status=lstatus)
         else
-            call pcr_cv_mse (conf, X, Y, ifrom, Ntest, mse_ncomp(:,i), &
-                mse_weights(:,i), weights=ptr_weights, status=lstatus)
+            call pcr_cv_mse (conf, X, Y, ifrom, Ntest, mse_ncomp(:,:,i), &
+                mse_weights(:,:,i), weights=ptr_weights, status=lstatus)
         end if
 
         ! Convert to integer to which IOR reduction can be applied
@@ -1783,8 +2413,8 @@ subroutine pcr_cv_dispatch_folds (conf, X, Y, folds_ifrom, folds_size, &
     type (lm_config), intent(in) :: conf
     real (PREC), intent(in), dimension(:,:), contiguous :: X, Y
     integer, intent(in), dimension(:), contiguous :: folds_ifrom, folds_size
-    real (PREC), intent(out), dimension(:,:), contiguous :: mse_ncomp
-    real (PREC), intent(out), dimension(:,:), contiguous :: mse_weights
+    real (PREC), intent(out), dimension(:,:,:), contiguous :: mse_ncomp
+    real (PREC), intent(out), dimension(:,:,:), contiguous :: mse_weights
     type (status_t), intent(out) :: status
     real (PREC), intent(in), dimension(:), contiguous, optional :: weights
     logical, intent(in), dimension(:,:), contiguous, optional :: mask
@@ -1800,11 +2430,11 @@ subroutine pcr_cv_dispatch_folds (conf, X, Y, folds_ifrom, folds_size, &
         ifrom = folds_ifrom(i)
         Ntest = folds_size(i)
         if (has_mask) then
-            call pcr_cv_mse_mask (conf, X, Y, mask, ifrom, Ntest, mse_ncomp(:,i), &
-                mse_weights(:,i), weights=weights, status=lstatus)
+            call pcr_cv_mse_mask (conf, X, Y, mask, ifrom, Ntest, mse_ncomp(:,:,i), &
+                mse_weights(:,:,i), weights=weights, status=lstatus)
         else
-            call pcr_cv_mse (conf, X, Y, ifrom, Ntest, mse_ncomp(:,i), &
-                mse_weights(:,i), weights=weights, status=lstatus)
+            call pcr_cv_mse (conf, X, Y, ifrom, Ntest, mse_ncomp(:,:,i), &
+                mse_weights(:,:,i), weights=weights, status=lstatus)
         end if
 
         ! Convert to integer to which IOR reduction can be applied
@@ -1814,6 +2444,7 @@ subroutine pcr_cv_dispatch_folds (conf, X, Y, folds_ifrom, folds_size, &
 end subroutine
 
 
+
 subroutine pcr_cv_mse (conf, X, Y, test_ifrom, Ntest, mse_ncomp, mse_weights, &
         weights, status)
     type (lm_config), intent(in), optional :: conf
@@ -1821,8 +2452,8 @@ subroutine pcr_cv_mse (conf, X, Y, test_ifrom, Ntest, mse_ncomp, mse_weights, &
     real (PREC), intent(in), dimension(:,:), contiguous :: Y
     integer, intent(in) :: test_ifrom
     integer, intent(in) :: Ntest
-    real (PREC), intent(out), dimension(:), contiguous :: mse_ncomp
-    real (PREC), intent(out), dimension(:) :: mse_weights
+    real (PREC), intent(out), dimension(:,:), contiguous :: mse_ncomp
+    real (PREC), intent(out), dimension(:,:), contiguous :: mse_weights
     real (PREC), intent(in), dimension(:), contiguous, optional :: weights
     type (status_t), intent(out), optional :: status
 
@@ -1837,8 +2468,7 @@ subroutine pcr_cv_mse (conf, X, Y, test_ifrom, Ntest, mse_ncomp, mse_weights, &
     real (PREC), dimension(:,:), allocatable :: scores, loadings
     real (PREC), dimension(:,:), allocatable :: coefs
     real (PREC), dimension(:), allocatable :: intercept
-    real (PREC), dimension(:,:), allocatable, target :: resid
-    real (PREC), dimension(:), pointer, contiguous :: ptr_resid
+    real (PREC), dimension(:,:), allocatable :: resid
     type (status_t) :: lstatus
 
     lstatus = NF_STATUS_OK
@@ -1920,8 +2550,6 @@ subroutine pcr_cv_mse (conf, X, Y, test_ifrom, Ntest, mse_ncomp, mse_weights, &
     allocate (intercept(Nlhs))
     allocate (resid(Ntest,Nlhs))
 
-    ptr_resid(1:size(resid)) => resid
-
     do Ncomp = ncomp_min, ncomp_max
         i = Ncomp - ncomp_min + 1
 
@@ -1940,13 +2568,13 @@ subroutine pcr_cv_mse (conf, X, Y, test_ifrom, Ntest, mse_ncomp, mse_weights, &
         resid(:,:) = resid - Y_test
         do j = 1, Nlhs
             resid(:,j) = resid(:,j) * weights_test
+
+            ssr = BLAS_NRM2 (Ntest, resid(:,j), 1)
+            mse = ssr ** 2.0_PREC
+
+            mse_ncomp(i,j) = mse
+            mse_weights(i,j) = sum_W_test
         end do
-
-        ssr = BLAS_NRM2 (Ntest * Nlhs, ptr_resid, 1)
-        mse = ssr ** 2.0_PREC
-
-        mse_ncomp(i) = mse
-        mse_weights(i) = sum_W_test * Nlhs
     end do
 
 100 continue
@@ -1965,8 +2593,8 @@ subroutine pcr_cv_mse_mask (conf, X, Y, mask, test_ifrom, Ntest, mse_ncomp, &
     logical, intent(in), dimension(:,:), contiguous :: mask
     integer, intent(in) :: test_ifrom
     integer, intent(in) :: Ntest
-    real (PREC), intent(out), dimension(:), contiguous :: mse_ncomp
-    real (PREC), intent(out), dimension(:), contiguous :: mse_weights
+    real (PREC), intent(out), dimension(:,:), contiguous :: mse_ncomp
+    real (PREC), intent(out), dimension(:,:), contiguous :: mse_weights
     real (PREC), intent(in), dimension(:), contiguous, optional :: weights
     type (status_t), intent(out), optional :: status
 
@@ -1983,10 +2611,17 @@ subroutine pcr_cv_mse_mask (conf, X, Y, mask, test_ifrom, Ntest, mse_ncomp, &
     real (PREC), dimension(:,:), pointer, contiguous :: ptr_X_test_lhs_T
     real (PREC), dimension(:), pointer, contiguous :: ptr_Y_train_lhs, ptr_W_train_lhs
     real (PREC), dimension(:), pointer, contiguous :: ptr_Y_test_lhs
+    real (PREC), dimension(:), allocatable :: W_train_all
     real (PREC), dimension(:), allocatable :: coefs
     real (PREC), dimension(:), allocatable :: resid
     real (PREC), dimension(:,:), allocatable :: scores, loadings
     real (PREC), dimension(:), allocatable :: sval, scale_x, shift_x
+    real (PREC), dimension(:,:), allocatable :: scores_all, loadings_all
+    real (PREC), dimension(:), allocatable :: sval_all, scale_x_all, shift_x_all
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_scores, ptr_loadings
+    real (PREC), dimension(:), pointer, contiguous :: ptr_sval, ptr_shift_x, ptr_scale_x
+    logical, dimension(:), allocatable :: lwork
+    logical :: has_all_obs
     integer :: shp(2)
     integer (NF_ENUM_KIND) :: status_code
     type (status_t) :: lstatus
@@ -1995,6 +2630,9 @@ subroutine pcr_cv_mse_mask (conf, X, Y, mask, test_ifrom, Ntest, mse_ncomp, &
 
     target :: Y_train_pack, Y_test_pack, W_train_lhs, Y_train, Y_test
     target :: weights_train, X_lhs_T, X_test_T
+    target :: scores, loadings, sval, shift_x, scale_x
+    target :: scores_all, loadings_all, sval_all, shift_x_all, scale_x_all
+    target :: W_train_all
 
     lstatus = NF_STATUS_OK
 
@@ -2041,6 +2679,44 @@ subroutine pcr_cv_mse_mask (conf, X, Y, mask, test_ifrom, Ntest, mse_ncomp, &
     X_train_T(:,:) = transpose (X_train)
     X_test_T(:,:) = transpose (X_test)
 
+    ! Detect if there is any LHS variable which includes all obs
+    allocate (lwork(Nlhs))
+    lwork(:) = all(mask_train, dim=1)
+    has_all_obs = any (lwork)
+    deallocate (lwork)
+
+    if (has_all_obs) then
+        allocate (scores_all(Ntrain,Ncomp_max))
+        allocate (loadings_all(Nrhs,Ncomp_max))
+        allocate (sval_all(Ncomp_max))
+        allocate (shift_x_all(Nrhs), scale_x_all(Nrhs))
+
+        ! Apply weights to training sample, use X_LHS_T as temporary storage
+        ! for non-transposed, weighted X_train
+        allocate (X_lhs_T, source=X_train)
+        if (has_weights) then
+            s = sum(weights_train)
+            allocate (W_train_all, source=weights_train)
+            W_train_all(:) = W_train_all / s
+            W_train_all(:) = sqrt(W_train_all)
+            do i = 1, Nrhs
+                X_lhs_T(:,i) = X_lhs_T(:,i) * W_train_all
+            end do
+        end if
+
+        call pca (X_lhs_T, center=.true., scale=.true., &
+            trans_x=.false., scores=scores_all, sval=sval_all, &
+            loadings=loadings_all, shift_x=shift_x_all, scale_x=scale_x_all, &
+            status=lstatus)
+
+        deallocate (X_lhs_T)
+
+        if (.not. (NF_STATUS_OK .in. lstatus)) then
+            status_code = lstatus
+            goto 100
+        end if
+    end if
+
     ! Initialize here to avoid gfortran warnings
     status_code = NF_STATUS_OK
 
@@ -2051,13 +2727,15 @@ subroutine pcr_cv_mse_mask (conf, X, Y, mask, test_ifrom, Ntest, mse_ncomp, &
     !$omp shared(conf,X_train_T,X_test_T,mask_train,mask_test,weights_train) &
     !$omp shared (weights_test,Y_test,Y_train,has_weights,Nrhs,Ntest,Ntrain) &
     !$omp shared (Nlhs,ncomp_min,ncomp_max) &
+    !$omp shared (scores_all,loadings_all,sval_all,shift_x_all,scale_x_all) &
+    !$omp shared (W_train_all,mse_weights,mse_ncomp) &
     !$omp private (coefs,resid,X_lhs_T,Y_train_pack,Y_test_pack,W_train_lhs) &
     !$omp private (W_test_lhs,ptr_X_test_lhs_T,ptr_Y_train_lhs,ptr_Y_test_lhs) &
     !$omp private (ptr_W_train_lhs,shift_x,scale_x,scores,loadings,sval) &
     !$omp private (i,j,Ntrain_lhs,Ntest_lhs,ncomp_max_lhs,lstatus,s,shp) &
     !$omp private (intercept,weights_lhs,Ncomp,ssr,mse_lhs) &
-    !$omp reduction(ior: status_code) &
-    !$omp reduction(+: mse_weights, mse_ncomp)
+    !$omp private (ptr_scores,ptr_loadings,ptr_sval,ptr_shift_x,ptr_scale_x) &
+    !$omp reduction(ior: status_code)
     allocate (coefs(Nrhs))
     allocate (resid(Ntest))
 
@@ -2071,6 +2749,8 @@ subroutine pcr_cv_mse_mask (conf, X, Y, mask, test_ifrom, Ntest, mse_ncomp, &
 
     allocate (shift_x(Nrhs), scale_x(Nrhs))
     allocate (sval(ncomp_max))
+
+    nullify (ptr_scores, ptr_loadings, ptr_sval, ptr_shift_x, ptr_scale_x)
 
     ! Initialize here to avoid gfortran warnings
     status_code = NF_STATUS_OK
@@ -2091,6 +2771,7 @@ subroutine pcr_cv_mse_mask (conf, X, Y, mask, test_ifrom, Ntest, mse_ncomp, &
         ! --- Contiguous training data ---
 
         if (Ntrain_lhs /= Ntrain) then
+
             call copy (X_train_T, X_lhs_T(:,1:Ntrain_lhs), mask_train(:,j), &
                 dim=2, status=lstatus)
             if (.not. (NF_STATUS_OK .in. lstatus)) then
@@ -2103,45 +2784,53 @@ subroutine pcr_cv_mse_mask (conf, X, Y, mask, test_ifrom, Ntest, mse_ncomp, &
 
             if (has_weights) then
                 call copy (weights_train, W_train_lhs(1:Ntrain_lhs), mask_train(:,j))
+
+                s = sum(W_train_lhs(1:Ntrain_lhs))
+                W_train_lhs(1:Ntrain_lhs) = W_train_lhs(1:Ntrain_lhs) / s
+                W_train_lhs(1:Ntrain_lhs) = sqrt(W_train_lhs(1:Ntrain_lhs))
+
+                ptr_W_train_lhs => W_train_lhs(1:Ntrain_lhs)
+
+                ! Computed weighted X
+                do i = 1, Ntrain_lhs
+                    X_lhs_T(:,i) = X_lhs_T(:,i) * W_train_lhs(i)
+                end do
             end if
+
+            ! --- Run PCA ---
+
+            shp(1) = Ntrain_lhs
+            shp(2) = ncomp_max_lhs
+            call cond_alloc (scores, shp(1:2))
+
+            shp(1) = Nrhs
+            shp(2) = ncomp_max_lhs
+            call cond_alloc (loadings, shp(1:2))
+
+            ! Perform principal component analysis
+            call pca (X_lhs_T(:,1:Ntrain_lhs), center=.true., scale=.true., &
+                trans_x=.true., scores=scores, sval=sval(1:ncomp_max_lhs), &
+                loadings=loadings, shift_x=shift_x, scale_x=scale_x, status=lstatus)
+            if (.not. (NF_STATUS_OK .in. lstatus)) then
+                status_code = lstatus
+                cycle loop_lhs
+            end if
+
+            ptr_scores => scores
+            ptr_loadings => loadings
+            ptr_sval => sval(1:ncomp_max_lhs)
+            ptr_shift_x => shift_x
+            ptr_scale_x => scale_x
         else
-            ! Copy so we can compute weighted X_train_lhs_T in place
-            X_lhs_T(:,1:Ntrain) = X_train_T
+            ! Use precomputed PCA data derived from all RHS observations
             ptr_Y_train_lhs => Y_train(:,j)
-            if (has_weights) then
-                W_train_lhs(1:Ntrain) = weights_train
-            end if
-        end if
+            ptr_W_train_lhs => W_train_all
 
-        if (has_weights) then
-            s = sum(W_train_lhs(1:Ntrain_lhs))
-            W_train_lhs(1:Ntrain_lhs) = W_train_lhs(1:Ntrain_lhs) / s
-            W_train_lhs(1:Ntrain_lhs) = sqrt(W_train_lhs(1:Ntrain_lhs))
-            ptr_W_train_lhs => W_train_lhs(1:Ntrain_lhs)
-
-            ! Computed weighted X
-            do i = 1, Ntrain_lhs
-                X_lhs_T(:,i) = X_lhs_T(:,i) * ptr_W_train_lhs(i)
-            end do
-        end if
-
-        ! --- Run PCA ---
-
-        shp(1) = Ntrain_lhs
-        shp(2) = ncomp_max_lhs
-        call cond_alloc (scores, shp(1:2))
-
-        shp(1) = Nrhs
-        shp(2) = ncomp_max_lhs
-        call cond_alloc (loadings, shp(1:2))
-
-        ! Perform principal component analysis
-        call pca (X_lhs_T(:,1:Ntrain_lhs), center=.true., scale=.true., &
-            trans_x=.true., scores=scores, sval=sval(1:ncomp_max_lhs), &
-            loadings=loadings, shift_x=shift_x, scale_x=scale_x, status=lstatus)
-        if (.not. (NF_STATUS_OK .in. lstatus)) then
-            status_code = lstatus
-            cycle loop_lhs
+            ptr_scores => scores_all
+            ptr_loadings => loadings_all
+            ptr_sval => sval_all
+            ptr_shift_x => shift_x_all
+            ptr_scale_x => scale_x_all
         end if
 
         ! --- Prepare test sample ---
@@ -2190,10 +2879,10 @@ subroutine pcr_cv_mse_mask (conf, X, Y, mask, test_ifrom, Ntest, mse_ncomp, &
             i = Ncomp - ncomp_min + 1
 
             ! Run PCR on training sample given fixed number of PCs
-            call pcr (ptr_Y_train_lhs, scores(:,1:Ncomp), sval(1:Ncomp), &
-                loadings(:,1:Ncomp), coefs, shift_x=shift_x, scale_x=scale_x, &
-                add_intercept=conf%add_intercept, intercept=intercept, &
-                weights_sqrt=ptr_W_train_lhs, status=lstatus)
+            call pcr (ptr_Y_train_lhs, ptr_scores(:,1:Ncomp), ptr_sval(1:Ncomp), &
+                ptr_loadings(:,1:Ncomp), coefs, shift_x=ptr_shift_x, &
+                scale_x=ptr_scale_x, add_intercept=conf%add_intercept, &
+                intercept=intercept, weights_sqrt=ptr_W_train_lhs, status=lstatus)
             if (lstatus /= NF_STATUS_OK) then
                 status_code = lstatus
                 cycle loop_lhs
@@ -2214,8 +2903,8 @@ subroutine pcr_cv_mse_mask (conf, X, Y, mask, test_ifrom, Ntest, mse_ncomp, &
             ssr = BLAS_NRM2 (Ntest_lhs, resid(1:Ntest_lhs), 1)
             mse_lhs = ssr ** 2.0_PREC
 
-            mse_ncomp(i) = mse_ncomp(i) + mse_lhs
-            mse_weights(i) = mse_weights(i) + weights_lhs
+            mse_ncomp(i,j) = mse_lhs
+            mse_weights(i,j) = weights_lhs
         end do
     end do loop_lhs
     !$omp end do

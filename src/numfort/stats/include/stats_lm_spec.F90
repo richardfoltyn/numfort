@@ -1,6 +1,6 @@
 
 
-integer, parameter :: DEFAULT_PCR_NCOMP = -1
+integer, parameter :: PCR_NCOMP_UNDEFINED = -1
 
 type :: lm_config
     logical :: trans_x = .false.
@@ -21,7 +21,7 @@ type :: lm_config
     integer :: ncomp_min = 0
         !*  Min. number of princal components to use for PCR
     integer :: ncomp_max = -1
-    integer :: ncomp = DEFAULT_PCR_NCOMP
+    integer :: ncomp = PCR_NCOMP_UNDEFINED
         !*  Number of principal components to use for PCR. Overrides any
         !   other setting.
     real (PREC) :: rcond = 100.0_PREC * epsilon(0.0_PREC)
@@ -92,8 +92,12 @@ interface pcr
     procedure pcr_pca_masked_2d
 end interface
 
+interface pcr_by_lhs
+    procedure pcr_pca_by_lhs
+end interface
+
 interface pcr_cv
-    procedure pcr_cv_1d, pcr_cv_2d
+    procedure pcr_cv_1d, pcr_cv_separate_2d, pcr_cv_pooled_2d
 end interface
 
 interface post_estim
