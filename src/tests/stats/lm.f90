@@ -42,6 +42,8 @@ subroutine test_all ()
     call test_predict_equiv_1d (tests)
     call test_predict_equiv_2d (tests)
 
+    call test_WLS (tests)
+
     call test_pcr_equiv_1d (tests)
     call test_pcr_equiv_2d (tests)
 
@@ -49,6 +51,7 @@ subroutine test_all ()
     call test_pcr_ols_equiv_2d (tests)
 
     call test_pcr_masked (tests)
+    call test_pcr_cv_masked (tests)
 
     call tests%print ()
 
@@ -590,6 +593,135 @@ subroutine test_OLS_1d (tests)
         "Overdetermined system, ADD_INTERCEPT=.TRUE., TRANS_X=.TRUE.")
 
     deallocate (x, y, beta, beta_ok)
+
+end subroutine
+
+
+
+subroutine test_WLS (tests)
+    !*  Unit tests for weightes LS.
+    class (test_suite) :: tests
+
+    integer :: Nrhs, Nobs, Nlhs, Nadd
+    real (PREC), dimension(:,:), allocatable :: X, Y, Xex, Yex
+    real (PREC), dimension(:,:), allocatable :: coefs_true, coefs, coefs_w
+    real (PREC), dimension(:), allocatable :: intercept_true, intercept, intercept_w
+    real (PREC), dimension(:), allocatable :: weights
+    type (lm_config) :: conf
+    integer :: i, j
+    logical :: values_ok
+    class (test_case), pointer :: tc
+    type (str) :: msg
+    type (status_t) :: status
+    real (PREC), parameter :: ATOL = 1.0e-10_PREC, RTOL = 1.0e-10_PREC
+
+    tc => tests%add_test ("Tests for weighted LS")
+
+    call set_seed (1234)
+
+    Nobs = 77
+    Nlhs = 7
+    Nrhs = 20
+
+    call random_sample (nrhs=Nrhs, nobs=Nobs, nlhs=Nlhs, X=X, Y=Y, &
+        coefs=coefs_true, intercept=intercept_true, add_intercept=.true., &
+        var_error=0.1_PREC, status=status)
+
+    allocate (weights(Nobs), source=1.0_PREC)
+
+    ! --- No weights given vs. uniform weights ---
+
+    allocate (coefs(Nrhs,Nlhs), coefs_w(Nrhs,Nlhs))
+    allocate (intercept(Nlhs), intercept_w(Nlhs))
+
+    ! Intercept-only model
+    conf%add_intercept = .true.
+
+    status = NF_STATUS_UNDEFINED
+    coefs(:,:) = huge(0.0_PREC)
+    intercept(:) = huge(0.0_PREC)
+    call ols (conf, X(:,1:0), Y, coefs(1:0,:), intercept, status=status)
+
+    status = NF_STATUS_UNDEFINED
+    coefs_w(:,:) = huge(0.0_PREC)
+    intercept_w(:) = huge(0.0_PREC)
+    call ols (conf, X(:,1:0), Y, coefs_w(1:0,:), intercept_w, weights=weights, &
+        status=status)
+
+    values_ok = all_close (intercept_w, intercept, atol=atol, rtol=rtol)
+
+    call tc%assert_true (values_ok .and. status == NF_STATUS_OK, &
+        'Intercept only, uniform weights vs. no weights')
+
+    ! Full model
+    status = NF_STATUS_UNDEFINED
+    coefs(:,:) = huge(0.0_PREC)
+    intercept(:) = huge(0.0_PREC)
+    call ols (conf, X, Y, coefs, intercept, status=status)
+
+    status = NF_STATUS_UNDEFINED
+    coefs_w(:,:) = huge(0.0_PREC)
+    intercept_w(:) = huge(0.0_PREC)
+    call ols (conf, X, Y, coefs_w, intercept_w, weights=weights, &
+        status=status)
+
+    values_ok = all_close (intercept_w, intercept, atol=atol, rtol=rtol)
+
+    call tc%assert_true (values_ok .and. status == NF_STATUS_OK, &
+        'Full model, uniform weights vs. no weights')
+
+    ! --- Expanded vs. weighted sample ---
+
+    Nadd = 10
+    allocate (Xex(Nobs+Nadd,Nrhs), Yex(Nobs+Nadd,Nlhs))
+
+    weights(:) = 1.0
+
+    ! Expand sample by duplicating observations, increase weight
+    Xex(1:Nobs,:) = X
+    Yex(1:Nobs,:) = Y
+    do i = 1, Nadd
+        j = modulo (i * 5, Nobs-1) + 1
+        weights(j) = weights(j) + 1.0
+        Xex(Nobs+i,:) = X(j,:)
+        Yex(Nobs+i,:) = Y(j,:)
+    end do
+
+    ! Intercept-only model
+    conf%add_intercept = .true.
+
+    status = NF_STATUS_UNDEFINED
+    coefs(:,:) = huge(0.0_PREC)
+    intercept(:) = huge(0.0_PREC)
+    call ols (conf, Xex(:,1:0), Yex, coefs(1:0,:), intercept, status=status)
+
+    status = NF_STATUS_UNDEFINED
+    coefs_w(:,:) = huge(0.0_PREC)
+    intercept_w(:) = huge(0.0_PREC)
+    call ols (conf, X(:,1:0), Y, coefs_w(1:0,:), intercept_w, weights=weights, &
+        status=status)
+
+    values_ok = all_close (intercept_w, intercept, atol=atol, rtol=rtol)
+
+    call tc%assert_true (values_ok .and. status == NF_STATUS_OK, &
+        'Intercept only, weighted vs. expanded sample')
+
+    ! Full model
+    status = NF_STATUS_UNDEFINED
+    coefs(:,:) = huge(0.0_PREC)
+    intercept(:) = huge(0.0_PREC)
+    call ols (conf, Xex, Yex, coefs, intercept, status=status)
+
+    status = NF_STATUS_UNDEFINED
+    coefs_w(:,:) = huge(0.0_PREC)
+    intercept_w(:) = huge(0.0_PREC)
+    call ols (conf, X, Y, coefs_w, intercept_w, weights=weights, &
+        status=status)
+
+    values_ok = all_close (intercept_w, intercept, atol=atol, rtol=rtol)
+
+    call tc%assert_true (values_ok .and. status == NF_STATUS_OK, &
+        'Full model, weighted vs. expanded sample')
 
 end subroutine
 
@@ -1516,6 +1648,7 @@ subroutine test_pcr_ols_equiv_1d (tests)
     real (PREC), dimension(:,:), allocatable :: X
     real (PREC), dimension(:), allocatable :: y
     real (PREC), dimension(:), allocatable :: coefs_true, coefs_ols, coefs_pcr
+    real (PREC), dimension(:), allocatable :: weights
     real (PREC) ::  intercept_true, intercept_ols, intercept_pcr
     integer :: Nrhs, Nconst, Nobs
     type (status_t) :: status
@@ -1524,16 +1657,22 @@ subroutine test_pcr_ols_equiv_1d (tests)
     real (PREC), parameter :: atol = 1.0e-12_PREC, rtol = 1.0e-4_PREC
     integer :: i
 
-    tc => tests%add_test ('PREDICT[1d]: equivalent problems')
+    tc => tests%add_test ('PCR-OLS[1d]: equivalent problems')
 
     call set_seed (678)
 
     ! --- Test constant-only model ---
 
-    call random_sample (nrhs=0, nobs=10, X=X, y=y, coefs=coefs_true, &
+    Nobs = 10
+
+    call random_sample (nrhs=0, nobs=Nobs, X=X, y=y, coefs=coefs_true, &
         intercept=intercept_true, add_intercept=.true., &
         var_error=1.0_PREC, status=status)
 
+    allocate (weights(Nobs))
+    call random_number (weights)
+
+    ! Unweighted
     call ols (X=X, Y=Y, res=res_ols, status=status)
     call pcr (X=X, Y=Y, res=res_pcr, status=status)
 
@@ -1541,7 +1680,15 @@ subroutine test_pcr_ols_equiv_1d (tests)
     call tc%assert_true (status == NF_STATUS_OK .and. values_ok, &
         'Constant only, RES present')
 
-    deallocate (X, Y)
+    ! Weighted
+    call ols (X=X, Y=Y, weights=weights, res=res_ols, status=status)
+    call pcr (X=X, Y=Y, weights=weights, res=res_pcr, status=status)
+
+    values_ok = all_close (res_pcr%intercept, res_ols%intercept, atol=atol, rtol=rtol)
+    call tc%assert_true (status == NF_STATUS_OK .and. values_ok, &
+        'Constant only, weighted, RES present')
+
+    deallocate (X, Y, weights)
 
     ! --- Test for various number of RHS vars ---
 
@@ -1672,7 +1819,7 @@ subroutine test_pcr_ols_equiv_2d (tests)
     real (PREC), parameter :: atol = 1.0e-12_PREC, rtol = 1.0e-4_PREC
     integer :: i
 
-    tc => tests%add_test ('PREDICT[1d]: equivalent problems')
+    tc => tests%add_test ('PCR-OLS[1d]: equivalent problems')
 
     call set_seed (678)
 
@@ -2456,5 +2603,208 @@ function all_close_mask (actual, desired, mask, trans) result(res)
         end do
     end if
 end function
+
+
+
+subroutine test_pcr_cv_masked (tests)
+    class (test_suite) :: tests
+
+    integer :: Nrhs, Nobs, Nlhs
+    real (PREC), dimension(:,:), allocatable :: X, Y
+    real (PREC), dimension(:,:), allocatable :: coefs_true
+    real (PREC), dimension(:), allocatable :: intercept_true, weights, runif
+    logical, dimension(:,:), allocatable :: mask
+    integer :: ncomp, ncomp_mask
+    real (PREC) :: rmse, rmse_mask
+    real (PREC), dimension(:), allocatable :: rmse_lhs, rmse_lhs_mask
+    integer, dimension(:), allocatable :: ncomp_lhs, ncomp_lhs_mask
+    logical :: values_ok
+    class (test_case), pointer :: tc
+    type (str) :: msg
+    type (status_t) :: status, status_mask
+    type (lm_config) :: conf
+
+    tc => tests%add_test ("Tests for masked PCR cross-validation")
+
+    Nobs = 50
+    Nlhs = 10
+    Nrhs = 20
+
+    call set_seed (1234)
+
+    call random_sample (nrhs=Nrhs, nobs=Nobs, nlhs=Nlhs, X=X, Y=Y, &
+        coefs=coefs_true, intercept=intercept_true, add_intercept=.true., &
+        var_error=0.1_PREC, status=status)
+
+    allocate (mask(Nobs,Nlhs), source=.true.)
+    allocate (weights(Nobs))
+    allocate (runif(Nobs))
+
+    call random_number (weights)
+    weights(:) = weights / sum(weights)
+
+    ! --- Full mask, NFOLDS > NLHS ---
+
+    ! Set number of folds above number of LHS
+    conf%cv_n = Nlhs + 1
+
+    ! Variant w/o mask, unweighted
+    ncomp = -1
+    status = NF_STATUS_UNDEFINED
+    call pcr_cv (conf, X, Y, ncomp, rmse=rmse, status=status)
+
+    ! Variant with mask
+    ncomp_mask = -1
+    status_mask = NF_STATUS_UNDEFINED
+    call pcr_cv (conf, X, Y, ncomp_mask, mask=mask, rmse=rmse_mask, status=status_mask)
+
+    values_ok = (ncomp == ncomp_mask) .and. abs(rmse - rmse_mask) < 1.0e-8_PREC
+
+    call tc%assert_true (values_ok .and. status_mask == NF_STATUS_OK, &
+        "Full mask, unweighted, NFOLDS > NLHS")
+
+    ! Variant w/o mask, weighted
+    ncomp = -1
+    status = NF_STATUS_UNDEFINED
+    call pcr_cv (conf, X, Y, ncomp, weights=weights, rmse=rmse, status=status)
+
+    ! Variant with mask
+    ncomp_mask = -1
+    status_mask = NF_STATUS_UNDEFINED
+    call pcr_cv (conf, X, Y, ncomp_mask, weights=weights, mask=mask, &
+        rmse=rmse_mask, status=status_mask)
+
+    values_ok = (ncomp == ncomp_mask) .and. abs(rmse - rmse_mask) < 1.0e-8_PREC
+
+    call tc%assert_true (values_ok .and. status_mask == NF_STATUS_OK, &
+        "Full mask, weighted, NFOLDS > NLHS")
+
+    ! --- Full mask, NLHS > NFOLDS ---
+
+    ! Set number of folds above number of LHS
+    conf%cv_n = Nlhs / 2
+
+    ! Variant w/o mask, unweighted
+    ncomp = -1
+    status = NF_STATUS_UNDEFINED
+    call pcr_cv (conf, X, Y, ncomp, rmse=rmse, status=status)
+
+    ! Variant with mask
+    ncomp_mask = -1
+    status_mask = NF_STATUS_UNDEFINED
+    call pcr_cv (conf, X, Y, ncomp_mask, mask=mask, rmse=rmse_mask, status=status_mask)
+
+    values_ok = (ncomp == ncomp_mask) .and. abs(rmse - rmse_mask) < 1.0e-8_PREC
+
+    call tc%assert_true (values_ok .and. status_mask == NF_STATUS_OK, &
+        "Full mask, unweighted, NLHS > NFOLDS")
+
+    ! Variant w/o mask, weighted
+    ncomp = -1
+    status = NF_STATUS_UNDEFINED
+    call pcr_cv (conf, X, Y, ncomp, weights=weights, rmse=rmse, status=status)
+
+    ! Variant with mask
+    ncomp_mask = -1
+    status_mask = NF_STATUS_UNDEFINED
+    call pcr_cv (conf, X, Y, ncomp_mask, weights=weights, mask=mask, &
+        rmse=rmse_mask, status=status_mask)
+
+    values_ok = (ncomp == ncomp_mask) .and. abs(rmse - rmse_mask) < 1.0e-8_PREC
+
+    call tc%assert_true (values_ok .and. status_mask == NF_STATUS_OK, &
+        "Full mask, weighted, NLHS > NFOLDS")
+
+    ! === CVs with separate result for each LHS ===
+
+    allocate (rmse_lhs(Nlhs), rmse_lhs_mask(Nlhs))
+    allocate (ncomp_lhs(Nlhs), ncomp_lhs_mask(Nlhs))
+
+    ! --- Full mask, NFOLDS > NLHS, separate by LHS ---
+
+    ! Set number of folds above number of LHS
+    conf%cv_n = Nlhs + 1
+
+    ! Variant w/o mask, unweighted
+    ncomp_lhs(:) = -1
+    rmse_lhs(:) = huge(0.0_PREC)
+    status = NF_STATUS_UNDEFINED
+    call pcr_cv (conf, X, Y, ncomp_lhs, rmse=rmse_lhs, status=status)
+
+    ! Variant with mask
+    ncomp_lhs_mask(:) = -1
+    rmse_lhs_mask(:) = huge(0.0_PREC)
+    status_mask = NF_STATUS_UNDEFINED
+    call pcr_cv (conf, X, Y, ncomp_lhs_mask, mask=mask, rmse=rmse_lhs_mask, status=status_mask)
+
+    values_ok = all(ncomp_lhs == ncomp_lhs_mask) .and. &
+        all_close (rmse_lhs_mask, rmse_lhs, atol=1.0e-10_PREC)
+
+    call tc%assert_true (values_ok .and. status_mask == NF_STATUS_OK, &
+        "By LHS: Full mask, unweighted, NFOLDS > NLHS")
+
+    ! Variant w/o mask, weighted
+    ncomp_lhs(:) = -1
+    rmse_lhs(:) = huge(0.0_PREC)
+    status = NF_STATUS_UNDEFINED
+    call pcr_cv (conf, X, Y, ncomp_lhs, weights=weights, rmse=rmse_lhs, status=status)
+
+    ! Variant with mask
+    ncomp_lhs_mask(:) = -1
+    rmse_lhs_mask(:) = huge(0.0_PREC)
+    status_mask = NF_STATUS_UNDEFINED
+    call pcr_cv (conf, X, Y, ncomp_lhs_mask, weights=weights, mask=mask, &
+        rmse=rmse_lhs_mask, status=status_mask)
+
+    values_ok = all(ncomp_lhs == ncomp_lhs_mask) .and. &
+        all_close (rmse_lhs_mask, rmse_lhs, atol=1.0e-10_PREC)
+
+    call tc%assert_true (values_ok .and. status_mask == NF_STATUS_OK, &
+        "By LHS: Full mask, weighted, NFOLDS > NLHS")
+
+    ! --- Full mask, NLHS > NFOLDS ---
+
+    ! Set number of folds above number of LHS
+    conf%cv_n = Nlhs / 2
+
+    ! Variant w/o mask, unweighted
+    ncomp_lhs(:) = -1
+    rmse_lhs(:) = huge(0.0_PREC)
+    status = NF_STATUS_UNDEFINED
+    call pcr_cv (conf, X, Y, ncomp_lhs, rmse=rmse_lhs, status=status)
+
+    ! Variant with mask
+    ncomp_lhs_mask(:) = -1
+    rmse_lhs_mask(:) = huge(0.0_PREC)
+    status_mask = NF_STATUS_UNDEFINED
+    call pcr_cv (conf, X, Y, ncomp_lhs_mask, mask=mask, rmse=rmse_lhs_mask, status=status_mask)
+
+    values_ok = all(ncomp_lhs == ncomp_lhs_mask) .and. &
+        all_close (rmse_lhs_mask, rmse_lhs, atol=1.0e-10_PREC)
+
+    call tc%assert_true (values_ok .and. status_mask == NF_STATUS_OK, &
+        "By LHS: Full mask, unweighted, NLHS > NFOLDS")
+
+    ! Variant w/o mask, weighted
+    ncomp_lhs(:) = -1
+    rmse_lhs(:) = huge(0.0_PREC)
+    status = NF_STATUS_UNDEFINED
+    call pcr_cv (conf, X, Y, ncomp_lhs, weights=weights, rmse=rmse_lhs, status=status)
+
+    ! Variant with mask
+    ncomp_lhs_mask(:) = -1
+    rmse_lhs_mask(:) = huge(0.0_PREC)
+    status_mask = NF_STATUS_UNDEFINED
+    call pcr_cv (conf, X, Y, ncomp_lhs_mask, weights=weights, mask=mask, &
+        rmse=rmse_lhs_mask, status=status_mask)
+
+    values_ok = all(ncomp_lhs == ncomp_lhs_mask) .and. &
+        all_close (rmse_lhs_mask, rmse_lhs, atol=1.0e-10_PREC)
+
+    call tc%assert_true (values_ok .and. status_mask == NF_STATUS_OK, &
+        "By LHS, Full mask, weighted, NLHS > NFOLDS")
+end subroutine
+
+
 
 end
