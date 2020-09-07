@@ -1705,6 +1705,8 @@ subroutine pcr_pca_by_lhs (conf, X, Y, mask, weights, ncomp, coefs, intercept, &
 
         ! --- Create contiguous input data ---
 
+        weights_lhs = Nobs_lhs
+
         if (Nobs_lhs /= Nobs) then
 
             ! Create contiguous subset of RHS variables
@@ -1719,7 +1721,6 @@ subroutine pcr_pca_by_lhs (conf, X, Y, mask, weights, ncomp, coefs, intercept, &
             ptr_Y_lhs => Y_lhs(1:Nobs_lhs)
 
             ! Create contiguous weights and apply them to RHS variables
-            weights_lhs = Nobs_lhs
             if (has_weights) then
                 call copy (weights, W_lhs(1:Nobs_lhs), ptr_mask(:,j))
 
@@ -1766,7 +1767,6 @@ subroutine pcr_pca_by_lhs (conf, X, Y, mask, weights, ncomp, coefs, intercept, &
             ptr_shift_x => shift_x_all
             ptr_scale_x => scale_x_all
 
-            weights_lhs = Nobs_lhs
             if (present(weights)) then
                 weights_lhs = sum(weights)
             end if
@@ -2489,11 +2489,15 @@ subroutine pcr_cv_mse (conf, X, Y, test_ifrom, Ntest, mse_ncomp, mse_weights, &
     call extract_block_alloc (X, test_ifrom, Ntest, conf%trans_x, x_test, x_train)
     call extract_block_alloc (Y, test_ifrom, Ntest, conf%trans_y, Y_test, Y_train)
 
+    allocate (weights_test(Ntest), source=1.0_PREC)
+    sum_W_test = Ntest
+
     if (present(weights)) then
         call extract_block_alloc (weights, test_ifrom, Ntest, &
             x_block=weights_test, x_rest=weights_train)
-    else
-        allocate (weights_test(Ntest), source=1.0_PREC)
+
+        ! Sum of weights in test sample (for single LHS variable, single PC)
+        sum_W_test = sum(weights_test)
     end if
 
    ! PC range to process
@@ -2508,9 +2512,6 @@ subroutine pcr_cv_mse (conf, X, Y, test_ifrom, Ntest, mse_ncomp, mse_weights, &
         weights_train(:) = weights_train / sum(weights_train)
         weights_train(:) = sqrt(weights_train)
     end if
-
-    ! Sum of weights in test sample (for single LHS variable, single PC)
-    sum_W_test = sum(weights_test)
 
     ! Compute square root once since that's what will be neded below.
     ! Do NOT normalize weights, this will be done in caller routine, taking
