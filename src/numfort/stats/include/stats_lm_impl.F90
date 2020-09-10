@@ -1487,7 +1487,7 @@ end subroutine
 
 
 subroutine pcr_pca_by_lhs (conf, X, Y, mask, weights, ncomp, coefs, intercept, &
-        res, status)
+        ncomp_used, res, status)
     type (lm_config), intent(in), optional :: conf
     real (PREC), intent(in), dimension(:,:), contiguous, target :: X
     real (PREC), intent(in), dimension(:,:), contiguous, target :: Y
@@ -1501,6 +1501,7 @@ subroutine pcr_pca_by_lhs (conf, X, Y, mask, weights, ncomp, coefs, intercept, &
         !   for each LHS variable.
     real (PREC), intent(out), dimension(:,:), contiguous, optional, target :: coefs
     real (PREC), intent(out), dimension(:), optional, contiguous, target :: intercept
+    integer, intent(out), dimension(:), optional, contiguous :: ncomp_used
     type (lm_result), intent(inout), optional, target :: res
     type (status_t), intent(out), optional :: status
 
@@ -1563,7 +1564,6 @@ subroutine pcr_pca_by_lhs (conf, X, Y, mask, weights, ncomp, coefs, intercept, &
     if (lstatus /= NF_STATUS_OK) goto 100
 
     if (present(ncomp)) then
-
         call check_cond (size(ncomp) == Nlhs, NAME, 'NCOMP: Non-conformable array', lstatus)
         if (lstatus /= NF_STATUS_OK) goto 100
 
@@ -1577,6 +1577,12 @@ subroutine pcr_pca_by_lhs (conf, X, Y, mask, weights, ncomp, coefs, intercept, &
                 'CONF: Invalid value for NCOMP', lstatus)
             if (lstatus /= NF_STATUS_OK) goto 100
         end if
+    end if
+
+    if (present(ncomp_used)) then
+        call check_cond (size(ncomp_used) == Nlhs, NAME, &
+            'NCOMP_USED: Non-conformable array', lstatus)
+        if (lstatus /= NF_STATUS_OK) goto 100
     end if
 
     ! --- Precompute PCA if all obs. are to be used ---
@@ -1824,6 +1830,10 @@ subroutine pcr_pca_by_lhs (conf, X, Y, mask, weights, ncomp, coefs, intercept, &
         Nobs_avg = Nobs_avg + Nobs_lhs * weights_lhs
         Ncomp_avg = Ncomp_avg + k * weights_lhs
         var_rhs_avg = var_rhs_avg + var_rhs * weights_lhs
+
+        if (present(ncomp_used)) then
+            ncomp_used(j) = k
+        end if
 
     end do loop_lhs
 
