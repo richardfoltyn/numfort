@@ -1673,6 +1673,12 @@ subroutine pcr_pca_by_lhs (conf, X, Y, mask, weights, ncomp, coefs, intercept, &
     var_rhs_avg = 0.0
     weights_total = 0.0
 
+    if (present(ncomp_used)) then
+        ! Default value for LHS variables that will be skipped due to low
+        ! obs. count
+        ncomp_used = PCR_NCOMP_UNDEFINED
+    end if
+
     allocate (lcoefs(Nrhs,Nlhs), lintercept(Nlhs))
 
     allocate (X_lhs_T(Nrhs,Nobs))
