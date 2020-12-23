@@ -1375,6 +1375,10 @@ subroutine pcr_pca_masked_2d (conf, X, Y, mask, coefs, ncomp, intercept, &
     if (.not. lconf%trans_x) then
         allocate (ptr_Xp(Nrhs,Nobs))
         call transpose_no_copy (X, ptr_Xp)
+    else if (Nrhs == 0) then
+        ! Work around problem that ASSOCIATED() returns false for
+        ! zero-sized arrays
+        allocate (ptr_Xp(0,Nobs))
     else
         ptr_Xp => X
     end if
@@ -1649,6 +1653,10 @@ subroutine pcr_pca_by_lhs (conf, X, Y, mask, weights, ncomp, coefs, intercept, &
     if (.not. lconf%trans_x) then
         allocate (ptr_Xp(Nrhs,Nobs))
         call transpose_no_copy (X, ptr_Xp)
+    else if (Nrhs == 0) then
+        ! Work around problem that ASSOCIATED() returns false for
+        ! zero-sized arrays
+        allocate (ptr_Xp(0,Nobs))
     else
         ptr_Xp => X
     end if
