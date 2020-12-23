@@ -95,11 +95,7 @@ pure subroutine transform_regr (X, xout, add_intercept, trans, &
 
     ! --- Filter variables ---
 
-    if (present(ikeep)) then
-        ptr_ikeep => ikeep
-    else
-        allocate (ptr_ikeep(k))
-    end if
+    call assert_alloc_ptr (ikeep, k, ptr_ikeep)
 
     call filter_vars (X, ptr_ikeep, lnkeep, trans, ldrop_const, ltol_const, &
         ldrop_na, std_x_all, idrop, ndrop, lstatus)
@@ -295,11 +291,7 @@ pure subroutine transform_regr_in_place (X, center, scale, drop_const, &
 
     ! --- Filter variables ---
 
-    if (present(ikeep)) then
-        ptr_ikeep => ikeep
-    else
-        allocate (ptr_ikeep(k))
-    end if
+    call assert_alloc_ptr (ikeep, k, ptr_ikeep)
 
     call filter_vars (X, ptr_ikeep, lnkeep, trans, ldrop_const, ltol_const, &
         ldrop_na, std_x_all, idrop, ndrop, lstatus)
