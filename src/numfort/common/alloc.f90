@@ -11,7 +11,8 @@ module numfort_common_alloc
     public :: assert_alloc_ptr, assert_dealloc_ptr
 
     interface assert_alloc_ptr
-        procedure assert_alloc_ptr_1d_real32, assert_alloc_ptr_1d_real64
+        procedure assert_alloc_ptr_1d_real32, assert_alloc_ptr_1d_real64, &
+            assert_alloc_ptr_1d_int32, assert_alloc_ptr_1d_int64
     end interface
 
     interface assert_dealloc_ptr
@@ -33,17 +34,27 @@ contains
 pure subroutine assert_alloc_ptr_1d_real32 (x, n, ptr_x)
     !*  ASSERT_ALLOC_PTR ensures that ptr_x points to allocated memory:
     !   If argument x is present, ptr_x points to x and no additional
-    !   memory is allocated. If x is not present, then ptr_x points to a newly
-    !   allocated block of memory of size n.
-
+    !   memory is allocated. If x is not present or of size zero, then ptr_x
+    !   points to a newly allocated block of memory of size n.
     integer, parameter :: PREC = real32
 
     real (PREC), intent(inout), dimension(:), target, optional :: x
+        !*  Target array
     integer, intent(in) :: n
+        !*  Minimal array size
     real (PREC), intent(out), dimension(:), pointer :: ptr_x
 
+    nullify (ptr_x)
+
     if (present(x)) then
-        if (size(x) >= n) then
+        if (size(x) == 0) then
+            ! Need to handle size-zero arrays separately, as
+            ! associated (ptr_x, x) will return .FALSE. if ptr_x => x
+            ! but x is of size zero.
+            ! Then assert_dealloc_ptr will attempt to free memory that was
+            ! never allocated!
+            allocate (ptr_x(0))
+        else if (size(x) >= n) then
             ptr_x => x
         else
             allocate (ptr_x(n))
@@ -52,6 +63,8 @@ pure subroutine assert_alloc_ptr_1d_real32 (x, n, ptr_x)
         allocate (ptr_x(n))
     end if
 end subroutine
+
+
 
 pure subroutine assert_alloc_ptr_1d_real64 (x, n, ptr_x)
     integer, parameter :: PREC = real64
@@ -60,8 +73,17 @@ pure subroutine assert_alloc_ptr_1d_real64 (x, n, ptr_x)
     integer, intent(in) :: n
     real (PREC), intent(out), dimension(:), pointer :: ptr_x
 
+    nullify (ptr_x)
+
     if (present(x)) then
-        if (size(x) >= n) then
+        if (size(x) == 0) then
+            ! Need to handle size-zero arrays separately, as
+            ! associated (ptr_x, x) will return .FALSE. if ptr_x => x
+            ! but x is of size zero.
+            ! Then assert_dealloc_ptr will attempt to free memory that was
+            ! never allocated!
+            allocate (ptr_x(0))
+        else if (size(x) >= n) then
             ptr_x => x
         else
             allocate (ptr_x(n))
@@ -70,6 +92,65 @@ pure subroutine assert_alloc_ptr_1d_real64 (x, n, ptr_x)
         allocate (ptr_x(n))
     end if
 end subroutine
+
+
+
+pure subroutine assert_alloc_ptr_1d_int32 (x, n, ptr_x)
+    integer, parameter :: INTSIZE = int32
+
+    integer (INTSIZE), intent(inout), dimension(:), target, optional :: x
+    integer, intent(in) :: n
+    integer (INTSIZE), intent(out), dimension(:), pointer :: ptr_x
+
+    nullify (ptr_x)
+
+    if (present(x)) then
+        if (size(x) == 0) then
+            ! Need to handle size-zero arrays separately, as
+            ! associated (ptr_x, x) will return .FALSE. if ptr_x => x
+            ! but x is of size zero.
+            ! Then assert_dealloc_ptr will attempt to free memory that was
+            ! never allocated!
+            allocate (ptr_x(0))
+        else if (size(x) >= n) then
+            ptr_x => x
+        else
+            allocate (ptr_x(n))
+        end if
+    else
+        allocate (ptr_x(n))
+    end if
+end subroutine
+
+
+
+pure subroutine assert_alloc_ptr_1d_int64 (x, n, ptr_x)
+    integer, parameter :: INTSIZE = int64
+
+    integer (INTSIZE), intent(inout), dimension(:), target, optional :: x
+    integer, intent(in) :: n
+    integer (INTSIZE), intent(out), dimension(:), pointer :: ptr_x
+
+    nullify (ptr_x)
+
+    if (present(x)) then
+        if (size(x) == 0) then
+            ! Need to handle size-zero arrays separately, as
+            ! associated (ptr_x, x) will return .FALSE. if ptr_x => x
+            ! but x is of size zero.
+            ! Then assert_dealloc_ptr will attempt to free memory that was
+            ! never allocated!
+            allocate (ptr_x(0))
+        else if (size(x) >= n) then
+            ptr_x => x
+        else
+            allocate (ptr_x(n))
+        end if
+    else
+        allocate (ptr_x(n))
+    end if
+end subroutine
+
 
 ! ------------------------------------------------------------------------------
 ! ASSERT_DEALLOC_PTR routines
