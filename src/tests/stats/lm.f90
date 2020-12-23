@@ -51,6 +51,7 @@ subroutine test_all ()
     call test_pcr_ols_equiv_2d (tests)
 
     call test_pcr_masked (tests)
+    call test_pcr_masked_const (tests)
     call test_pcr_cv_masked (tests)
 
     call tests%print ()
@@ -2241,6 +2242,43 @@ end subroutine
 
 
 
+subroutine test_pcr_masked_const (tests)
+    !*  TEST_PCR_MASKED_CONST performs unit tests for degenerate intercept-only
+    !   PC regressions.
+    class (test_suite) :: tests
+
+    class (test_case), pointer :: tc
+    type (status_t) :: status
+    integer :: Nrhs, Nobs, Nlhs
+
+    real (PREC), dimension(:,:), allocatable :: X, Y
+    real (PREC), dimension(:,:), allocatable :: coefs_true
+    real (PREC), dimension(:), allocatable :: intercept_true
+    logical, dimension(:,:), allocatable :: mask
+
+    tc => tests%add_test ("Tests for intercept-only masked PCR")
+
+    Nobs = 50
+    Nlhs = 10
+    Nrhs = 0
+
+    call set_seed (1234)
+
+    call random_sample (nrhs=Nrhs, nobs=Nobs, nlhs=Nlhs, X=X, Y=Y, &
+        coefs=coefs_true, intercept=intercept_true, add_intercept=.true., &
+        var_error=0.2_PREC, status=status)
+
+    allocate (mask(Nobs,Nlhs), source=.true.)
+
+    ! --- Full mask ---
+
+    call test_pcr_masked_runner (tc, X, Y, mask, msg_prefix='Full mask')
+
+
+end subroutine
+
+
+
 subroutine test_pcr_masked (tests)
     class (test_suite) :: tests
 
@@ -2323,7 +2361,7 @@ subroutine test_pcr_masked_runner (tc, X, Y, mask, weights, msg_prefix)
     real (PREC), dimension(:,:), allocatable :: coefs, coefs_mask, coefs_mask_T
     real (PREC), dimension(:), allocatable :: intercept, intercept_mask
     logical, dimension(:,:), allocatable :: mask_T
-    integer :: ncomp_mask, ncomp, n, i
+    integer :: ncomp_mask, ncomp, n, i, step
 
     logical :: values_ok
     type (str) :: msg
@@ -2345,7 +2383,10 @@ subroutine test_pcr_masked_runner (tc, X, Y, mask, weights, msg_prefix)
 
     ! --- Fixed number of components ---
 
-    do n = 0, Nrhs, Nrhs / 3
+    ! Correctly handle step-size for Nrhs = 0
+    step = max(1, Nrhs / 3)
+
+    do n = 0, Nrhs, step
         conf%ncomp = n
 
         call pcr (conf, X, Y, coefs, ncomp, intercept, weights=weights, &
