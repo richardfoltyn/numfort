@@ -7,7 +7,6 @@
     type (status_t), intent(out), optional :: status
     character (*), intent(out), optional :: msg
 
-    real (PREC), dimension(:), allocatable :: buf
     integer :: iostat, n, uid, i, nlines, ncol
     integer (NF_ENUM_KIND) :: itransform
     character (100) :: lmsg

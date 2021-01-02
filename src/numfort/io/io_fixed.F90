@@ -32,11 +32,11 @@ module numfort_io_fixed
     end interface
 
     interface read_fixed
-        procedure read_fixed_2d_real32, read_fixed_2d_real64
+        procedure read_fixed_2d_int32, read_fixed_2d_real32, read_fixed_2d_real64
     end interface
 
     interface write_fixed
-        procedure write_fixed_2d_real32, write_fixed_2d_real64
+        procedure write_fixed_2d_int32, write_fixed_2d_real32, write_fixed_2d_real64
     end interface
 
     interface read_fixed
@@ -48,7 +48,8 @@ module numfort_io_fixed
     end interface
 
     interface read_fixed_alloc
-        procedure read_fixed_alloc_2d_real32, read_fixed_alloc_2d_real64
+        procedure read_fixed_alloc_2d_int32, read_fixed_alloc_2d_real32, &
+            read_fixed_alloc_2d_real64
     end interface
 
     contains
@@ -151,6 +152,7 @@ end subroutine
 subroutine read_fixed_2d_real32 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real32
     real (PREC), intent(inout), dimension(:,:), contiguous :: dat
+    real (PREC), dimension(:), allocatable :: buf
 #include "read_fixed_2d_impl.F90"
 end subroutine
 
@@ -158,6 +160,14 @@ end subroutine
 subroutine read_fixed_2d_real64 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real64
     real (PREC), intent(inout), dimension(:,:), contiguous :: dat
+    real (PREC), dimension(:), allocatable :: buf
+#include "read_fixed_2d_impl.F90"
+end subroutine
+
+subroutine read_fixed_2d_int32 (path, fmt, dat, transform, status, msg)
+    integer, parameter :: INTSIZE = int32
+    integer (INTSIZE), intent(inout), dimension(:,:), contiguous :: dat
+    integer (INTSIZE), dimension(:), allocatable :: buf
 #include "read_fixed_2d_impl.F90"
 end subroutine
 
@@ -166,6 +176,7 @@ subroutine read_fixed_alloc_2d_real32 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real32
     real (PREC), intent(inout), dimension(:,:), allocatable :: dat
     type (data_chunk_real32), pointer :: ptr_first, ptr_curr, ptr_next
+    real (PREC), parameter :: dummy = 1.0_PREC
 #include "read_fixed_alloc_2d_impl.F90"
 end subroutine
 
@@ -173,23 +184,40 @@ subroutine read_fixed_alloc_2d_real64 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real64
     real (PREC), intent(inout), dimension(:,:), allocatable :: dat
     type (data_chunk_real64), pointer :: ptr_first, ptr_curr, ptr_next
+    real (PREC), parameter :: dummy = 1.0_PREC
 #include "read_fixed_alloc_2d_impl.F90"
 end subroutine
+
+subroutine read_fixed_alloc_2d_int32 (path, fmt, dat, transform, status, msg)
+    integer, parameter :: INTSIZE = int32
+    integer (INTSIZE), intent(inout), dimension(:,:), allocatable :: dat
+    type (data_chunk_int32), pointer :: ptr_first, ptr_curr, ptr_next
+    integer (INTSIZE), parameter :: dummy = 1_INTSIZE
+#include "read_fixed_alloc_2d_impl.F90"
+end subroutine
+
 
 
 subroutine write_fixed_2d_real32 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real32
     real (PREC), intent(in), dimension(:,:), contiguous :: dat
+    real (PREC), dimension(:), allocatable :: buf
 #include "write_fixed_2d_impl.F90"
 end subroutine
-
 
 subroutine write_fixed_2d_real64 (path, fmt, dat, transform, status, msg)
     integer, parameter :: PREC = real64
     real (PREC), intent(in), dimension(:,:), contiguous :: dat
+    real (PREC), dimension(:), allocatable :: buf
 #include "write_fixed_2d_impl.F90"
 end subroutine
 
+subroutine write_fixed_2d_int32 (path, fmt, dat, transform, status, msg)
+    integer, parameter :: INTSIZE = int32
+    integer (int32), intent(in), dimension(:,:), contiguous :: dat
+    integer (INTSIZE), dimension(:), allocatable :: buf
+#include "write_fixed_2d_impl.F90"
+end subroutine
 
 !-------------------------------------------------------------------------------
 ! Routines for 3d-arrays

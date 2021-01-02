@@ -42,7 +42,7 @@
     end if
 
     ! ----- Determine field width implied by format string -----
-    fwidth = format_get_field_width (fmt, 0.0_PREC)
+    fwidth = format_get_field_width (fmt, dummy)
     if (fwidth < 0) then
         lstatus = NF_STATUS_INVALID_ARG
         lmsg = 'Invalid format specifier'

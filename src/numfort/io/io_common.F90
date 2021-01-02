@@ -10,6 +10,7 @@ module numfort_io_common
     private
 
 
+    public :: data_chunk_int32
     public :: data_chunk_real32
     public :: data_chunk_real64
     public :: get_temp_directory
@@ -20,6 +21,10 @@ module numfort_io_common
     integer (NF_ENUM_KIND), public, parameter :: NF_IO_TRANSFORM_TRANSPOSE = 2
     integer (NF_ENUM_KIND), public, parameter :: NF_IO_TRANSFORM_FORMAT = 4
 
+    type :: data_chunk_int32
+        type (data_chunk_int32), pointer :: ptr_next => NULL ()
+        integer (int32), dimension(:,:), allocatable :: dat
+    end type
 
     type :: data_chunk_real32
         type (data_chunk_real32), pointer :: ptr_next => NULL ()
@@ -33,7 +38,8 @@ module numfort_io_common
 
 
     interface format_get_field_width
-        procedure format_get_field_width_real32, format_get_field_width_real64
+        procedure format_get_field_width_int32, &
+            format_get_field_width_real32, format_get_field_width_real64
     end interface
 
     contains
@@ -84,6 +90,34 @@ function format_get_field_width_real64 (fmt, dummy) result(res)
     character (100) :: iomsg
 
     write (buf, fmt, iostat=iostat, iomsg=iomsg) 1.0_PREC/9.0_PREC
+
+    if (iostat /= 0) then
+        res = -1
+        return
+    end if
+
+    res = len_trim (buf)
+
+end function
+
+
+
+function format_get_field_width_int32 (fmt, dummy) result(res)
+    !*  FORMAT_GET_FIELD_WIDTH attempts to determine the field implied
+    !   by a format specification.
+    integer, parameter :: INTSIZE = int32
+    character (*), intent(in) :: fmt
+    integer (INTSIZE), intent(in), value :: dummy
+        !*  Dummy argument required to correctly determine the specific
+        !   routine for a generic interface.
+    integer :: res
+
+    integer, parameter :: BUF_LEN = 1024
+    character (BUF_LEN) :: buf
+    integer :: iostat
+    character (100) :: iomsg
+
+    write (buf, fmt, iostat=iostat, iomsg=iomsg) huge(dummy)
 
     if (iostat /= 0) then
         res = -1
