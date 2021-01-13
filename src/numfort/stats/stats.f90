@@ -20,6 +20,8 @@ module numfort_stats
 
     use numfort_stats_lm
 
+    use numfort_stats_np
+
     use numfort_stats_qrng
 
     use numfort_stats_markov

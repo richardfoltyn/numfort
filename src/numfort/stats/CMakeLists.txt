@@ -31,6 +31,9 @@ set(SOURCE_FILES
     stats_lm_common.f90
     stats_lm_real32.F90
     stats_lm_real64.F90
+    stats_np.f90
+    stats_np_real32.F90
+    stats_np_real64.F90
     stats_qrng.F90
 )
 
