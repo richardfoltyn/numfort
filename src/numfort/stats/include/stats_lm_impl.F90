@@ -2315,15 +2315,12 @@ subroutine pcr_cv_separate_2d (conf, X, Y, ncomp, weights, mask, rmse, status)
         ! the minimum.
         if (lconf%cv_parsimonious) then
             ubound = min_mse + se_mse(imin) * max(lconf%cv_se_mult, 0.0_PREC)
-            do i = imin, 1, -1
+            do i = 0, imin - 1
                 if (mean_mse(i) < ubound) then
-                    ! Choose previous as the previous index which was within
-                    ! min(MSE) + se(min(MSE))
                     imin = i
+                    exit
                 end if
             end do
-
-            imin = min(Nrhs, imin)
         end if
 
         ncomp(j) = imin
