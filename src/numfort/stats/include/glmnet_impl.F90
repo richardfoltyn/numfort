@@ -1363,16 +1363,13 @@ subroutine enet_cv (conf, X, y, alpha, l1_ratio, alphas, rmse, status)
     ! the minimum.
     if (conf%cv_parsimonious) then
         ubound = min_mse + se_mse(imin)
-        do i = imin, 1, -1
-            if (mean_mse(i) > ubound) then
-                ! Choose previous as the previous index which was within
-                ! min(MSE) + se(min(MSE))
-                imin = i+1
+        do i = 1, imin - 1
+            if (mean_mse(i) <= ubound) then
+                imin = i
                 exit
             end if
         end do
 
-        imin = min(Nalphas, imin)
     end if
 
     alpha = lalphas(imin)
@@ -1557,16 +1554,12 @@ subroutine enet_cv_multi (conf, X, Y, alpha, l1_ratio, alphas, rmse, status)
     ! the minimum.
     if (conf%cv_parsimonious) then
         ubound = min_mse + se_mse(imin)
-        do i = imin, 1, -1
-            if (mean_mse(i) > ubound) then
-                ! Choose previous as the previous index which was within
-                ! min(MSE) + se(min(MSE))
-                imin = i+1
+        do i = 1, imin - 1
+            if (mean_mse(i) <= ubound) then
+                imin = i
                 exit
             end if
         end do
-
-        imin = min(Nalphas, imin)
     end if
 
     alpha = lalphas(imin)
