@@ -22,7 +22,7 @@ module numfort_common_copy_alloc
 
     interface copy_alloc
         procedure copy_alloc_3d_real32, copy_alloc_3d_real64, &
-            copy_alloc_3d_int32, copy_alloc_3d_int64
+            copy_alloc_3d_int32, copy_alloc_3d_int64, copy_alloc_3d_logical
     end interface
 
     interface copy_alloc
@@ -299,6 +299,29 @@ pure subroutine copy_alloc_3d_int64 (src, dst)
 #include "copy_alloc_3d_impl.f90"
 
 end subroutine
+
+pure subroutine copy_alloc_3d_logical (src, dst)
+    !*  COPY_ALLOC implements a routine similar to MOVE_ALLOC, but leaves
+    !   the SRC argument unchanged. If the source and destination arrays have
+    !   the same shape, the source data is copied directly into the destination
+    !   array, instead of re-allocating the destination array.
+    !
+    !   Unlike MOVE_ALLOC, COPY_ALLOC does not (and cannot) modify any pointers
+    !   to SRC.
+    !
+    !   If SRC is either missing (or not allocated, which is interpreted as
+    !   not being present in Fortran 2008), DST becomes unallocated
+    !   on exit.
+
+    integer, parameter :: ND = 3
+
+    logical, intent(in), dimension(:,:,:), optional :: src
+    logical, intent(out), dimension(:,:,:), allocatable :: dst
+#include "copy_alloc_3d_impl.f90"
+
+end subroutine
+
+
 !-------------------------------------------------------------------------------
 ! Routines for 4d array
 
