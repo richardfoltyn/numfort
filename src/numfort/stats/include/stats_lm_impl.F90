@@ -2140,7 +2140,7 @@ subroutine pcr_cv_separate_2d (conf, X, Y, ncomp, weights, mask, rmse, status)
     logical, dimension(:,:), pointer, contiguous :: ptr_mask
     integer, dimension(:), allocatable :: iorder
     integer :: i, j, imin, dim
-    real (PREC) :: min_mse, ubound, std_resid, sum_w
+    real (PREC) :: min_mse, ubound, std_resid, sum_w, Neff
     type (status_t) :: lstatus
     type (lm_config) :: lconf
     character (*), parameter :: NAME = 'PCR_CV'
@@ -2283,11 +2283,19 @@ subroutine pcr_cv_separate_2d (conf, X, Y, ncomp, weights, mask, rmse, status)
             mean_mse(i) = sum(mse_ncomp(i,:)) / sum_w
 
             ! "Residual" MSE for each fold around mean MSE for #PC = k
-            resid(:) = mse_ncomp(i,:)/mse_weights(i,:) - mean_mse(i)
+            where (mse_weights(i,:) > 0)
+                resid = mse_ncomp(i,:)/mse_weights(i,:) - mean_mse(i)
+            else where
+                resid = 0.0
+            end where
             ! Weight by relative fold size
             resid(:) = resid * sqrt(mse_weights(i,:)/sum_w)
             std_resid = sqrt(sum(resid**2.0_PREC))
-            se_mse(i) = std_resid / sqrt(real(Nfolds,PREC))
+
+            ! Effective number of folds
+            Neff = sum(mse_weights(i,:))**2.0 / sum(mse_weights(i,:)**2.0)
+
+            se_mse(i) = std_resid / sqrt(real(Neff,PREC))
         end do
 
         if (.not. any(ieee_is_finite(mean_mse))) then
@@ -2666,9 +2674,8 @@ subroutine pcr_cv_mse_mask (conf, X, Y, mask, test_ifrom, Ntest, mse_ncomp, &
     if (lstatus /= NF_STATUS_OK) goto 100
 
     ! PC range to process
-    ncomp_min = 0
-    if (size(mse_ncomp) <= Nrhs)  ncomp_min = 1
-    ncomp_max = min(Nrhs, size(mse_ncomp))
+    ncomp_max = min(Nrhs, size(mse_ncomp, 1))
+    ncomp_min = max(0, ncomp_max - size(mse_ncomp, 1) + 1)
 
     ! --- Split sample ---
 
@@ -2915,13 +2922,21 @@ subroutine pcr_cv_mse_mask (conf, X, Y, mask, test_ifrom, Ntest, mse_ncomp, &
             end if
 
             ! Compute residuals in place
+            !   resid = (yhat - y)
             resid(1:Ntest_lhs) = resid(1:Ntest_lhs) - ptr_Y_test_lhs
+            ! Weighted residuals
+            ! TODO: Should be weighted by square root of weights?
             resid(1:Ntest_lhs) = resid(1:Ntest_lhs) * W_test_lhs(1:Ntest_lhs)
 
+            ! Compute Euclidean norm
+            !   |resid|_2 = sqrt(sum(wresid**2.0))
             ssr = BLAS_NRM2 (Ntest_lhs, resid(1:Ntest_lhs), 1)
+            ! Undo square root applied by NRM2, so now MSE_LHS stores
+            !   MSE_LHS = sum(wresid**2.0) = sum(weights) * MSE
             mse_lhs = ssr ** 2.0_PREC
 
             mse_ncomp(i,j) = mse_lhs
+            ! Store sum of weights for given LHS test sample
             mse_weights(i,j) = weights_lhs
         end do
     end do loop_lhs
