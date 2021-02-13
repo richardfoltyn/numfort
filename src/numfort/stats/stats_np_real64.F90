@@ -15,7 +15,7 @@ module numfort_stats_np_real64
     public :: gaussian_kde
 
     interface gaussian_kde
-        procedure gaussian_kde
+        procedure gaussian_kde, gaussian_kde_1d
     end interface
 
     integer, parameter :: PREC = real64

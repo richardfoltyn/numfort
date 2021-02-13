@@ -36,7 +36,7 @@ end subroutine
 
 
 
-subroutine gaussian_kde_impl (x, fhat, bw)
+subroutine gaussian_kde_impl (x, fhat, bw, skip_self)
     !*  Multivariate kernel densitity estimator with Gaussian kernel.
     !
     !   Implementation routine
@@ -44,7 +44,11 @@ subroutine gaussian_kde_impl (x, fhat, bw)
         !*  Array of points. Each row is assumed to contain one observation.
     real (PREC), intent(out), dimension(:), contiguous :: fhat
     real (PREC), intent(in), optional :: bw
+    logical, intent(in), optional :: skip_self
+        !*  If true, do not include a point itself when computing the
+        !   density estimate at that point.
 
+    logical :: lskip_self
     real (PREC) :: fhat_i, x_ij, dist_scale, fhat_scale
     real (PREC), dimension(:), allocatable :: dist_i
 
@@ -52,6 +56,9 @@ subroutine gaussian_kde_impl (x, fhat, bw)
     integer :: n, d, i, j, k
     ! local bandwidth
     real (PREC) :: lbw
+
+    lskip_self = .false.
+    if (present(skip_self)) lskip_self = skip_self
 
     n = size(x, 1)
     d = size(x, 2)
@@ -70,6 +77,8 @@ subroutine gaussian_kde_impl (x, fhat, bw)
 
     allocate (dist_i(n))
 
+    ! Change expression to read
+
     !$omp do schedule(static)
     do i = 1, n
         dist_i(:) = 0.0
@@ -84,9 +93,25 @@ subroutine gaussian_kde_impl (x, fhat, bw)
 
         ! Compute density estimate at point x_i
         fhat_i = 0.0
-        do k = 1, n
-            fhat_i = fhat_i + exp( - dist_i(k) * dist_scale)
-        end do
+
+        if (dist_scale >= 1) then
+            do k = 1, n
+                if (i == k) cycle
+                fhat_i = fhat_i + exp(-dist_i(k))**dist_scale
+            end do
+        else
+            do k = 1, n
+                ! Do not include point itself since that will always set
+                ! fhat to 1.0
+                if (i == k) cycle
+                fhat_i = fhat_i + exp( - dist_i(k) * dist_scale)
+            end do
+        end if
+
+        ! Add 1.0 = exp(0.0) for distance to itself
+        if (.not. lskip_self) then
+            fhat_i = fhat_i + 1.0
+        end if
 
         fhat(i) = fhat_i * fhat_scale
     end do
@@ -98,3 +123,27 @@ subroutine gaussian_kde_impl (x, fhat, bw)
 
 end subroutine
 
+
+
+subroutine gaussian_kde_1d (x, fhat, bw, skip_self)
+    !*  Multivariate kernel densitity estimator with Gaussian kernel.
+    real (PREC), intent(in), dimension(:), contiguous, target :: x
+        !*  Array of points. By default, each row is assumed to contain one
+        !   observation.
+    real (PREC), intent(out), dimension(:), contiguous :: fhat
+        !*  Kernel density estimate for each point in X.
+    real (PREC), intent(in), optional :: bw
+        !*  Optional bandwidth parameter. If not present, Scott's bandwidth
+        !   rule is used.
+    logical, intent(in), optional :: skip_self
+        !*  If true, do not include a point itself when computing the
+        !   density estimate at that point.
+
+    real (PREC), dimension(:,:), pointer, contiguous :: ptr_x
+
+    ptr_x(1:size(x),1:1) => x
+
+    call gaussian_kde_impl (ptr_x, fhat, bw, skip_self)
+
+
+end subroutine
