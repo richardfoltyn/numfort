@@ -72,7 +72,7 @@ subroutine gaussian_kde_impl (x, fhat, bw, skip_self)
     fhat_scale =  1.0_PREC / (n * (2 * PI) ** (d/2.0_PREC) * lbw ** d)
 
     !$omp parallel default(none) &
-    !$omp shared(x,fhat,fhat_scale,dist_scale,n,d) &
+    !$omp shared(x,fhat,fhat_scale,dist_scale,n,d,lskip_self) &
     !$omp private(i,j,k,fhat_i,dist_i,x_ij)
 
     allocate (dist_i(n))
