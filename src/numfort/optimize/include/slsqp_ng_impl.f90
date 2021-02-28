@@ -904,10 +904,20 @@ recursive subroutine lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, iline, &
                 status = NF_STATUS_OK
                 ! Set original SLSQP status code.
                 status%code_orig = 0
-                goto 100
 
-                call print_msg ('Convergence achieved', iprint, NF_PRINT_ALL, &
-                    prefix='SLSQP', indent=INDENT)
+                ! Check if old candidate point should be used
+                if (fx0 < fx) then
+                    fx = fx0
+                    x = x0
+
+                    call print_msg ('No improvement found', iprint, NF_PRINT_ALL, &
+                        prefix='SLSQP', indent=INDENT)
+                else
+                    call print_msg ('Convergence achieved', iprint, NF_PRINT_ALL, &
+                        prefix='SLSQP', indent=INDENT)
+                end if
+                
+                goto 100
             else
                 ! Update Jacobian of objective and constraints such
                 ! that on non-converged termination Jacobian is guaranteed
