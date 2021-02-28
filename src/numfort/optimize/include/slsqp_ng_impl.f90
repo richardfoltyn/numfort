@@ -3,7 +3,7 @@
 
 
 recursive subroutine slsqp_jac (fobj, x, work, fcon, m, meq, lbounds, ubounds, &
-        tol, maxiter, maxfev, exact_lsearch, iprint, res)
+        tol, xtol, maxiter, maxfev, exact_lsearch, iprint, res)
     procedure (fvs_fcn_jac_opt) :: fobj
     real (PREC), intent(inout), dimension(:), contiguous :: x
     type (workspace), intent(inout) :: work
@@ -12,6 +12,7 @@ recursive subroutine slsqp_jac (fobj, x, work, fcon, m, meq, lbounds, ubounds, &
     integer, intent(in), optional :: meq
     real (PREC), intent(in), dimension(:), contiguous, optional :: lbounds, ubounds
     real (PREC), intent(in), optional :: tol
+    real (PREC), intent(in), optional :: xtol
     integer, intent(in), optional :: maxiter
     integer, intent(in), optional :: maxfev
     logical, intent(in), optional :: exact_lsearch
@@ -22,15 +23,15 @@ recursive subroutine slsqp_jac (fobj, x, work, fcon, m, meq, lbounds, ubounds, &
     type (fwrapper_vv) :: fcon_wrapper
     type (optim_result) :: lres
     integer :: lm, lmeq, lmaxiter, lmaxfev
-    real (PREC) :: ltol
+    real (PREC) :: ltol, lxtol
     logical :: lexact_lsearch
     integer (NF_ENUM_KIND) :: liprint
 
     lres%status = NF_STATUS_OK
     lres%msg = ''
 
-    call check_input (present(fcon), m, meq, x, lbounds, ubounds, tol, maxiter, &
-        maxfev, exact_lsearch, iprint, status=lres%status, msg=lres%msg)
+    call check_input (present(fcon), m, meq, x, lbounds, ubounds, tol, xtol, &
+        maxiter, maxfev, exact_lsearch, iprint, status=lres%status, msg=lres%msg)
     if (lres%status /= NF_STATUS_OK) goto 100
 
     call wrap_procedure (fobj_wrapper, fcn_jac_opt=fobj)
@@ -41,6 +42,7 @@ recursive subroutine slsqp_jac (fobj, x, work, fcon, m, meq, lbounds, ubounds, &
     call set_optional_arg (meq, 0, lmeq)
     call set_optional_arg (m, lmeq, lm)
     call set_optional_arg (tol, 1.0e-4_PREC, ltol)
+    call set_optional_arg (xtol, 1.0e-6_PREC, lxtol)
     call set_optional_arg (exact_lsearch, .false., lexact_lsearch)
     call set_optional_arg (maxiter, 100, lmaxiter)
     call set_optional_arg (maxfev, huge(1), lmaxfev)
@@ -49,7 +51,8 @@ recursive subroutine slsqp_jac (fobj, x, work, fcon, m, meq, lbounds, ubounds, &
     ! === Call implementation routine ===
 
     call slsqp_impl (fobj_wrapper, x, work, fcon_wrapper, lm, lmeq, &
-        lbounds, ubounds, ltol, lmaxiter, lmaxfev, lexact_lsearch, liprint, lres)
+        lbounds, ubounds, ltol, lxtol, lmaxiter, lmaxfev, lexact_lsearch, &
+        liprint, lres)
 
 100 continue
 
@@ -60,7 +63,7 @@ end subroutine
 
 
 recursive subroutine slsqp (fobj, x, ndiff, work, fcon, m, meq, lbounds, ubounds, &
-        tol, maxiter, maxfev, exact_lsearch, iprint, xstep, res)
+        tol, xtol, maxiter, maxfev, exact_lsearch, iprint, xstep, res)
     procedure (fvs_fcn) :: fobj
     real (PREC), intent(inout), dimension(:), contiguous :: x
     logical, intent(in) :: ndiff
@@ -70,6 +73,7 @@ recursive subroutine slsqp (fobj, x, ndiff, work, fcon, m, meq, lbounds, ubounds
     integer, intent(in), optional :: meq
     real (PREC), intent(in), dimension(:), contiguous, optional :: lbounds, ubounds
     real (PREC), intent(in), optional :: tol
+    real (PREC), intent(in), optional :: xtol
     integer, intent(in), optional :: maxiter
     integer, intent(in), optional :: maxfev
     logical, intent(in), optional :: exact_lsearch
@@ -81,15 +85,15 @@ recursive subroutine slsqp (fobj, x, ndiff, work, fcon, m, meq, lbounds, ubounds
     type (fwrapper_vv) :: fcon_wrapper
     type (optim_result) :: lres
     integer :: lm, lmeq, lmaxiter, lmaxfev
-    real (PREC) :: ltol
+    real (PREC) :: ltol, lxtol
     logical :: lexact_lsearch
     integer (NF_ENUM_KIND) :: liprint
 
     lres%status = NF_STATUS_OK
     lres%msg = ''
 
-    call check_input (present(fcon), m, meq, x, lbounds, ubounds, tol, maxiter, &
-        maxfev, exact_lsearch, iprint, xstep, lres%status, lres%msg)
+    call check_input (present(fcon), m, meq, x, lbounds, ubounds, tol, xtol, &
+        maxiter, maxfev, exact_lsearch, iprint, xstep, lres%status, lres%msg)
     if (lres%status /= NF_STATUS_OK) goto 100
 
     call wrap_procedure (fobj_wrapper, fcn=fobj, eps=xstep)
@@ -100,6 +104,7 @@ recursive subroutine slsqp (fobj, x, ndiff, work, fcon, m, meq, lbounds, ubounds
     call set_optional_arg (meq, 0, lmeq)
     call set_optional_arg (m, lmeq, lm)
     call set_optional_arg (tol, 1.0e-4_PREC, ltol)
+    call set_optional_arg (xtol, 1.0e-6_PREC, lxtol)
     call set_optional_arg (exact_lsearch, .false., lexact_lsearch)
     call set_optional_arg (maxiter, 100, lmaxiter)
     call set_optional_arg (maxfev, huge(1), lmaxfev)
@@ -108,7 +113,8 @@ recursive subroutine slsqp (fobj, x, ndiff, work, fcon, m, meq, lbounds, ubounds
    ! === Call implementation routine ===
 
     call slsqp_impl (fobj_wrapper, x, work, fcon_wrapper, lm, lmeq, &
-        lbounds, ubounds, ltol, lmaxiter, lmaxfev, lexact_lsearch, liprint, lres)
+        lbounds, ubounds, ltol, lxtol, lmaxiter, lmaxfev, lexact_lsearch, &
+        liprint, lres)
 
 100 continue
 
@@ -163,13 +169,14 @@ end subroutine
 
 
 
-subroutine check_input (has_fcon, m, meq, x, xl, xu, tol, maxiter, maxfev, &
+subroutine check_input (has_fcon, m, meq, x, xl, xu, tol, xtol, maxiter, maxfev, &
         exact_lsearch, iprint, xstep, status, msg)
     logical, intent(in) :: has_fcon
     integer, intent(in), optional :: m, meq
     real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(in), dimension(:), contiguous, optional :: xl, xu
     real (PREC), intent(in), optional :: tol
+    real (PREC), intent(in), optional :: xtol
     integer, intent(in), optional :: maxiter
     integer, intent(in), optional :: maxfev
     logical, intent(in), optional :: exact_lsearch
@@ -224,6 +231,9 @@ subroutine check_input (has_fcon, m, meq, x, xl, xu, tol, maxiter, maxfev, &
     call check_positive (1.0_PREC, tol, 'tol', status, msg)
     if (status /= NF_STATUS_OK) goto 100
 
+    call check_positive (1.0_PREC, xtol, 'xtol', status, msg)
+    if (status /= NF_STATUS_OK) goto 100
+
     call check_positive (1, maxiter, 'maxiter', status, msg)
     if (status /= NF_STATUS_OK) goto 100
 
@@ -242,7 +252,7 @@ end subroutine
 
 
 
-recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, &
+recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, xtol, &
         maxiter, maxfev, exact_lsearch, iprint, res)
     type (fwrapper_vs), intent(inout) :: fobj
     real (PREC), intent(inout), dimension(:), contiguous :: x
@@ -251,6 +261,7 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, &
     integer, intent(in) :: m, meq
     real (PREC), intent(in), dimension(:), contiguous, optional :: xl, xu
     real (PREC), intent(in) :: tol
+    real (PREC), intent(in) :: xtol
     integer, intent(in) :: maxiter
     integer, intent(in) :: maxfev
     logical, intent(in) :: exact_lsearch
@@ -442,7 +453,7 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, &
                 ! point these are identical since they differ only during
                 ! the line search step!
                 rlxtol = 10.0_PREC * tol
-                if (xnorm < rlxtol .and. h3 < rlxtol .and. .not. bad_linear) then
+                if (xnorm < (xtol * 10.0) .and. h3 < rlxtol .and. .not. bad_linear) then
                     status = NF_STATUS_OK
                     status%code_orig = 0
                 else
@@ -474,7 +485,7 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, &
             continue
         else
             ! Inexact line search
-            call lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, &
+            call lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, xtol, &
                 iline, x(1:n), fx, c, g(1:n), a(:,1:n), s(1:n), x0, iprint, &
                 status, res%msg)
         end if
@@ -803,8 +814,8 @@ end subroutine
 
 
 
-recursive subroutine lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, iline, &
-        x, fx, c, g, a, s, x0, iprint, status, msg)
+recursive subroutine lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, xtol, &
+        iline, x, fx, c, g, a, s, x0, iprint, status, msg)
     type (fwrapper_vs) :: fobj
     type (fwrapper_vv) :: fcon
     integer, intent(in) :: meq
@@ -812,6 +823,7 @@ recursive subroutine lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, iline, &
     real (PREC), intent(in) :: t0
     real (PREC), value :: h3
     real (PREC), intent(in) :: tol
+    real (PREC), intent(in) :: xtol
     integer, intent(inout) :: iline
     real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(inout) :: fx
@@ -899,7 +911,7 @@ recursive subroutine lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, iline, &
             h3 = sum_constr (m, meq, c)
             xnorm = NRM2 (n, s, 1)
             dfx = fx - fx0
-            if ((abs(dfx) < tol .or. xnorm < tol) .and. h3 < tol) then
+            if ((abs(dfx) < tol .or. xnorm < xtol) .and. h3 < tol) then
                 ! Line search found a satisfactory minimum.
                 status = NF_STATUS_OK
                 ! Set original SLSQP status code.
@@ -916,7 +928,7 @@ recursive subroutine lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, iline, &
                     call print_msg ('Convergence achieved', iprint, NF_PRINT_ALL, &
                         prefix='SLSQP', indent=INDENT)
                 end if
-                
+
                 goto 100
             else
                 ! Update Jacobian of objective and constraints such
