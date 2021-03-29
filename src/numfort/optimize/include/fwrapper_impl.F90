@@ -246,7 +246,7 @@ end subroutine
 
 
 
-pure function fss_is_associated (self) result(res)
+function fss_is_associated (self) result(res)
     !*  IS_ASSOCIATED returns TRUE if the wrapper object is associated 
     !   with any user-provided routine.
     type (fwrapper_ss), intent(in) :: self
@@ -509,7 +509,7 @@ end subroutine
 
 
 
-pure function fvs_is_associated (self) result(res)
+function fvs_is_associated (self) result(res)
     !*  IS_ASSOCIATED returns TRUE if the wrapper object is associated 
     !   with any user-provided routine.
     type (fwrapper_vs), intent(in) :: self
@@ -773,7 +773,7 @@ end subroutine
 
 
 
-pure function fvv_is_associated (self) result(res)
+function fvv_is_associated (self) result(res)
     !*  IS_ASSOCIATED returns TRUE if the wrapper object is associated 
     !   with any user-provided routine.
     type (fwrapper_vv), intent(in) :: self
