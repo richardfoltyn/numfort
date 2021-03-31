@@ -3,7 +3,7 @@
 
 
 recursive subroutine slsqp_jac (fobj, x, work, fcon, m, meq, lbounds, ubounds, &
-        tol, xtol, maxiter, maxfev, exact_lsearch, iprint, res)
+        tol, xtol, maxiter, maxfev, exact_lsearch, maximize, autoscale, iprint, res)
     procedure (fvs_fcn_jac_opt) :: fobj
     real (PREC), intent(inout), dimension(:), contiguous :: x
     type (workspace), intent(inout) :: work
@@ -16,6 +16,12 @@ recursive subroutine slsqp_jac (fobj, x, work, fcon, m, meq, lbounds, ubounds, &
     integer, intent(in), optional :: maxiter
     integer, intent(in), optional :: maxfev
     logical, intent(in), optional :: exact_lsearch
+    logical, intent(in), optional :: maximize
+        !*  If present and .TRUE., perform maximization instead of minimization.
+    logical, intent(in), optional :: autoscale
+        !*  If present and .TRUE., automatically rescale problem so that
+        !   the objective and the elements of its gradient are all one
+        !   in absolute value.
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
     type (optim_result), intent(out), optional :: res
 
@@ -24,7 +30,7 @@ recursive subroutine slsqp_jac (fobj, x, work, fcon, m, meq, lbounds, ubounds, &
     type (optim_result) :: lres
     integer :: lm, lmeq, lmaxiter, lmaxfev
     real (PREC) :: ltol, lxtol
-    logical :: lexact_lsearch
+    logical :: lexact_lsearch, lautoscale, lmaximize
     integer (NF_ENUM_KIND) :: liprint
 
     lres%status = NF_STATUS_OK
@@ -44,6 +50,8 @@ recursive subroutine slsqp_jac (fobj, x, work, fcon, m, meq, lbounds, ubounds, &
     call set_optional_arg (tol, 1.0e-4_PREC, ltol)
     call set_optional_arg (xtol, 1.0e-6_PREC, lxtol)
     call set_optional_arg (exact_lsearch, .false., lexact_lsearch)
+    call set_optional_arg (maximize, .false., lmaximize)
+    call set_optional_arg (autoscale, .false., lautoscale)
     call set_optional_arg (maxiter, 100, lmaxiter)
     call set_optional_arg (maxfev, huge(1), lmaxfev)
     call set_optional_arg (iprint, NF_PRINT_NONE, liprint)
@@ -52,7 +60,7 @@ recursive subroutine slsqp_jac (fobj, x, work, fcon, m, meq, lbounds, ubounds, &
 
     call slsqp_impl (fobj_wrapper, x, work, fcon_wrapper, lm, lmeq, &
         lbounds, ubounds, ltol, lxtol, lmaxiter, lmaxfev, lexact_lsearch, &
-        liprint, lres)
+        lmaximize, lautoscale, liprint, lres)
 
 100 continue
 
@@ -63,7 +71,7 @@ end subroutine
 
 
 recursive subroutine slsqp (fobj, x, ndiff, work, fcon, m, meq, lbounds, ubounds, &
-        tol, xtol, maxiter, maxfev, exact_lsearch, iprint, xstep, res)
+        tol, xtol, maxiter, maxfev, exact_lsearch, maximize, autoscale, iprint, xstep, res)
     procedure (fvs_fcn) :: fobj
     real (PREC), intent(inout), dimension(:), contiguous :: x
     logical, intent(in) :: ndiff
@@ -77,7 +85,13 @@ recursive subroutine slsqp (fobj, x, ndiff, work, fcon, m, meq, lbounds, ubounds
     integer, intent(in), optional :: maxiter
     integer, intent(in), optional :: maxfev
     logical, intent(in), optional :: exact_lsearch
-    integer (NF_ENUM_KIND), intent(in), optional :: iprint
+    logical, intent(in), optional :: maximize
+        !*  If present and .TRUE., perform maximization instead of minimization.
+    logical, intent(in), optional :: autoscale
+        !*  If present and .TRUE., automatically rescale problem so that
+        !   the objective and the elements of its gradient are all one
+        !   in absolute value.
+        integer (NF_ENUM_KIND), intent(in), optional :: iprint
     real (PREC), intent(in), optional :: xstep
     type (optim_result), intent(out), optional :: res
 
@@ -86,7 +100,7 @@ recursive subroutine slsqp (fobj, x, ndiff, work, fcon, m, meq, lbounds, ubounds
     type (optim_result) :: lres
     integer :: lm, lmeq, lmaxiter, lmaxfev
     real (PREC) :: ltol, lxtol
-    logical :: lexact_lsearch
+    logical :: lexact_lsearch, lautoscale, lmaximize
     integer (NF_ENUM_KIND) :: liprint
 
     lres%status = NF_STATUS_OK
@@ -106,6 +120,8 @@ recursive subroutine slsqp (fobj, x, ndiff, work, fcon, m, meq, lbounds, ubounds
     call set_optional_arg (tol, 1.0e-4_PREC, ltol)
     call set_optional_arg (xtol, 1.0e-6_PREC, lxtol)
     call set_optional_arg (exact_lsearch, .false., lexact_lsearch)
+    call set_optional_arg (maximize, .false., lmaximize)
+    call set_optional_arg (autoscale, .false., lautoscale)
     call set_optional_arg (maxiter, 100, lmaxiter)
     call set_optional_arg (maxfev, huge(1), lmaxfev)
     call set_optional_arg (iprint, NF_PRINT_NONE, liprint)
@@ -114,7 +130,7 @@ recursive subroutine slsqp (fobj, x, ndiff, work, fcon, m, meq, lbounds, ubounds
 
     call slsqp_impl (fobj_wrapper, x, work, fcon_wrapper, lm, lmeq, &
         lbounds, ubounds, ltol, lxtol, lmaxiter, lmaxfev, lexact_lsearch, &
-        liprint, lres)
+        maximize, lautoscale, liprint, lres)
 
 100 continue
 
@@ -124,13 +140,16 @@ end subroutine
 
 
 
-subroutine slsqp_query (m, meq, n, w, iwork, sub_nw, sub_niwork)
+subroutine slsqp_query (m, meq, n, autoscale, w, iwork, sub_nw, sub_niwork)
     !*  SLSQP_QUERY  returns the minimum workspace requirements for the
     !   SLSQP implementation routine.
     integer, intent(in) :: m, meq
         !*  Total number of constraints M, and number of equality constraints MEQ
     integer, intent(in) :: n
         !*  Dimension of solution vector.
+    logical, intent(in), optional :: autoscale
+        !*  If true, apply autoscaling to problem. This includes rescaling
+        !   the problem to perform maximization.
     integer, intent(out) :: w
         !*  Minimum size for the real working array
     integer, intent(out) :: iwork
@@ -161,6 +180,13 @@ subroutine slsqp_query (m, meq, n, w, iwork, sub_nw, sub_niwork)
     nw = nw + m                 ! C
     nw = nw + (n+1)             ! G
     nw = nw + la*(n+1)          ! A
+
+    if (autoscale) then
+        ! local copies of lower and upper bounds
+        nw = nw + 2 * n
+        ! Add X_SCALE and X_ORIG arrays
+        nw = nw + 2 * n
+    end if
 
     w = nw
     iwork = niwork
@@ -253,29 +279,33 @@ end subroutine
 
 
 recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, xtol, &
-        maxiter, maxfev, exact_lsearch, iprint, res)
+        maxiter, maxfev, exact_lsearch, maximize, autoscale, iprint, res)
     type (fwrapper_vs), intent(inout) :: fobj
     real (PREC), intent(inout), dimension(:), contiguous :: x
     type (workspace), intent(inout), target :: work
     type (fwrapper_vv), intent(inout) :: fcon
     integer, intent(in) :: m, meq
-    real (PREC), intent(in), dimension(:), contiguous, optional :: xl, xu
+    real (PREC), intent(in), dimension(:), contiguous, optional, target :: xl, xu
     real (PREC), intent(in) :: tol
     real (PREC), intent(in) :: xtol
     integer, intent(in) :: maxiter
     integer, intent(in) :: maxfev
     logical, intent(in) :: exact_lsearch
+    logical, intent(in) :: maximize
+    logical, value :: autoscale
     integer (NF_ENUM_KIND), intent(in) :: iprint
     type (optim_result), intent(out) :: res
 
     type (status_t) :: status
 
     real (PREC), dimension(:), pointer, contiguous :: mu, c, r, l, x0, s, u, v, g
+    real (PREC), dimension(:), pointer, contiguous :: x_scale, x_orig, xsl, xsu
     real (PREC), dimension(:), pointer, contiguous :: lsq_w
     real (PREC), dimension(:,:), pointer, contiguous :: a
     integer :: nrwork, niwork, n, nn1, la, lsq_nrwork
     integer :: i, iter, iline, nreset_BFGS
     real (PREC) :: fx, gs, h1, h2, h3, h4, t0, xnorm, rlxtol, fx0
+    real (PREC) :: fx_scale
     logical :: bad_linear
 
     ! Problem dimensions
@@ -284,9 +314,13 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, xtol,
     ! Size of data block in L corresponding to BFGS matrix;
     nn1 = (n+1) * n / 2
 
+    ! Initialize values used to perform automatic rescaling
+    fx_scale = 1.0
+    nullify (x_orig, x_scale, xsl, xsu)
+
     ! === Workspace arrays ===
 
-    call slsqp_query (m, meq, n, nrwork, niwork, lsq_nrwork)
+    call slsqp_query (m, meq, n, autoscale .or. maximize, nrwork, niwork, lsq_nrwork)
 
     ! Make sure WORKSPACE attributes are allocated to min. required size
     call assert_alloc (work, nrwrk=nrwork, niwrk=niwork)
@@ -315,6 +349,31 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, xtol,
     i = i + n + 1
     a(1:la,1:n+1) => work%rwrk(i:i+la*(n+1)-1)
     i = i + la * (n + 1)
+    if (autoscale .or. maximize) then
+        x_orig(1:n) => work%rwrk(i:i+n-1)
+        i = i + n
+        x_scale(1:n) => work%rwrk(i:i+n-1)
+        i = i + n
+    end if
+
+    if (present(xl)) then
+        if (autoscale) then
+            xsl(1:n) => work%rwrk(i:i+n-1)
+            i = i + n
+        else
+            xsl(1:n) => xl
+        end if
+    end if
+
+    if (present(xu)) then
+        if (autoscale) then
+            xsu => work%rwrk(i:i+n-1)
+            i = i + n
+        else
+            xsu => xu
+        end if
+    end if
+
     lsq_w => work%rwrk(i:i+lsq_nrwork-1)
 
     ! === SLSQP implementation ===
@@ -337,10 +396,57 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, xtol,
     ! Clip initial guess X to satisfy any boundary constraints
     call clip (xl, xu, x)
 
-    ! Compute initial function values and their Jacobians
+    ! Compute initial function values and their Jacobians (using unscaled inputs)
     call eval_and_check (fobj, fcon, m, x, fx, c, g(1:n), a(:,1:n), &
-        status=status, msg=res%msg)
+        autoscale=.false., status=status, msg=res%msg)
     if (status /= NF_STATUS_OK) goto 100
+
+    ! --- Apply automatic rescaling ---
+
+    if (autoscale) then
+        ! Apply the following scaling to objective and input vector:
+        !   fs(xs) = f(H(xs))/abs(f(x0))
+        ! where
+        !   xs = H(x) = x * df(x0)/dx / abs(f(x0))
+        ! and the initial scaled guess is given by
+        !   xs0 = x0 * df(x0)/dx / abs(f(x0))
+        ! and at x0 we have
+        !   dfs(xs0)/dxs = df(x0)/dx dx/dH(x) / abs(f(x0))
+        !                = df(x0)/dx / df(x0)/dx * abs(f(x0)) / abs(f(x0))
+        !                = 1
+        fx_scale = 1.0_PREC / max(1.0e-12_PREC, abs(fx))
+        if (maximize) then
+            ! In addition to autoscaling also change to maximization problem
+            fx_scale = -fx_scale
+        end if
+
+        do i = 1, n
+            x_scale(i) = max(1.0e-12_PREC, abs(g(i))) * abs(fx_scale)
+        end do
+
+        call apply_scaling (autoscale, fx_scale, x_scale, fx, x, g(1:n), a(:,1:n))
+
+        if (present(xl)) then
+            forall (i=1:n) xsl(i) = xl(i)
+            call apply_scaling (autoscale, fx_scale, x_scale, x=xsl)
+        end if
+
+        if (present(xu)) then
+            forall (i=1:n) xsu(i) = xu(i)
+            call apply_scaling (autoscale, fx_scale, x_scale, x=xsu)
+        end if
+    else if (maximize) then
+        ! No autoscaling enable, only maximization requested.
+
+        ! Flip sign of objective
+        fx_scale = -1.0_PREC
+        ! No scaling applied to solution vector
+        x_scale(1:n) = 1.0_PREC
+
+        ! Handle remaining adjustsments using general autoscaling code paths
+        autoscale = .true.
+        call apply_scaling (autoscale, fx_scale, x_scale, fx, x, g(1:n), a(:,1:n))
+    end if
 
     call print_value ('Initial objective gradient: ', g(1:n), iprint, &
         NF_PRINT_ALL, prefix='SLSQP', fmt=FMT_X)
@@ -358,8 +464,8 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, xtol,
 
         ! Prepare bounds passed to underlying solver - do this for
         ! every iteration since the arrays U and V get reused below.
-        call set_lsq_bounds (x, xl, u, ieee_value(0.0_PREC, IEEE_NEGATIVE_INF))
-        call set_lsq_bounds (x, xu, v, ieee_value(0.0_PREC, IEEE_POSITIVE_INF))
+        call set_lsq_bounds (x, xsl, u, ieee_value(0.0_PREC, IEEE_NEGATIVE_INF))
+        call set_lsq_bounds (x, xsu, v, ieee_value(0.0_PREC, IEEE_POSITIVE_INF))
 
         h4 = 1.0
 
@@ -391,7 +497,7 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, xtol,
             call print_msg ("SLSQP: Bad linearization. Solving augmented LS problem", &
                 iprint, NF_PRINT_VERBOSE)
 
-            call augmented_lsq (meq, x, xl, xu, l, g, a, c, u, v, s, r, lsq_w, &
+            call augmented_lsq (meq, x, xsl, xsu, l, g, a, c, u, v, s, r, lsq_w, &
                 work%iwrk, status, res%msg)
 
             if (status  /= NF_STATUS_OK) then
@@ -486,8 +592,8 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, xtol,
         else
             ! Inexact line search
             call lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, xtol, &
-                iline, x(1:n), fx, c, g(1:n), a(:,1:n), s(1:n), x0, iprint, &
-                status, res%msg)
+                iline, x(1:n), fx, c, g(1:n), a(:,1:n), s(1:n), x0, &
+                autoscale, x_orig, fx_scale, x_scale, iprint, status, res%msg)
         end if
 
         if (status /= NF_STATUS_OK .and. fobj%nfev >= maxfev) then
@@ -543,6 +649,9 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, xtol,
 
 
 100 continue
+
+    ! Undo internal scaling
+    call undo_scaling (autoscale, fx_scale, x_scale, fx, x)
 
     call result_update (res, x, fx, status=status, nit=iter, nfev=fobj%nfev)
     if (status == NF_STATUS_OK) then
@@ -618,6 +727,93 @@ subroutine set_lsq_bounds (x, src, dst, default)
                 dst(i) = src(i) - x(i)
             end if
         end do
+    end if
+end subroutine
+
+
+
+subroutine apply_scaling (autoscale, fx_scale, x_scale, fx, x, g, a)
+    !*  APPLY_SCALING rescale the problem (objective, solution vector,
+    !   gradient, Jocobian of constraints) given the scaling data.
+    logical, intent(in) :: autoscale
+        !*  If true, apply scaling
+    real (PREC), intent(in) :: fx_scale
+        !*  Scaling factor for objective function such that
+        !   fx_scaled = fx * fx_scale
+    real (PREC), intent(in), dimension(:), contiguous, optional :: x_scale
+        !*  Scaling factors for each dimension of the solution vector
+        !   such that x_scaled(i) = x * x_scale(i) for each i.
+    real (PREC), intent(inout), optional :: fx
+        !*  If present, contains the unscaled objective function on entry
+        !   and the scaled objective function on exit.
+    real (PREC), intent(inout), dimension(:), contiguous, optional :: x
+        !*  If present, contains the unscaled solution vector on entry
+        !   and the scaled solution vector on exit.
+    real (PREC), intent(inout), dimension(:), contiguous, optional :: g
+        !*  If present, contains the unscaled gradient of the objective
+        !   on entry and the scaled version on exit.
+    real (PREC), intent(inout), dimension(:,:), contiguous, optional :: a
+        !*  If present, contains the unscaled Jacobian of constraints
+        !   on entry and the scaled version on exit.
+
+    integer :: i
+
+    if (autoscale) then
+        if (present(fx)) then
+            fx = fx * fx_scale
+        end if
+
+        if (present(x) .and. present(x_scale)) then
+            x = x * x_scale
+        end if
+
+        if (present(g) .and. present(x_scale)) then
+            g = g / x_scale * fx_scale
+        end if
+
+        if (present(a) .and. present(x_scale)) then
+            do i = 1, size(x_scale)
+                a(:,i) = a(:,i) / x_scale(i)
+            end do
+        end if
+    end if
+end subroutine
+
+
+
+subroutine undo_scaling (autoscale, fx_scale, x_scale, fx, x, g)
+    !*  UNDO_SCALING converts data of the scaled problem back into the
+    !   the unscaled version.
+    logical, intent(in) :: autoscale
+        !*  If true, undo scaling.
+    real (PREC), intent(in) :: fx_scale
+        !*  Scaling factor for objective function such that
+        !   fx_scaled = fx * fx_scale
+    real (PREC), intent(in), dimension(:), contiguous, optional :: x_scale
+        !*  Scaling factors for each dimension of the solution vector
+        !   such that x_scaled(i) = x * x_scale(i) for each i.
+    real (PREC), intent(inout), optional :: fx
+        !*  If present, contains the scaled objective on entry and the
+        !   unscaled version of exit.
+    real (PREC), intent(inout), dimension(:), contiguous, optional :: x
+        !*  If present, contains the scaled solution vector on entry and
+        !   the unscaled version on exit.
+    real (PREC), intent(inout), dimension(:), contiguous, optional :: g
+        !*  If present, contains the scaled gradient on entry and the unscaled
+        !   version on exit.
+
+    if (autoscale) then
+        if (present(fx)) then
+            fx = fx / fx_scale
+        end if
+
+        if (present(x) .and. present(x_scale)) then
+            x = x / x_scale
+        end if
+
+        if (present(g) .and. present(x_scale)) then
+            g = g * x_scale / fx_scale
+        end if
     end if
 end subroutine
 
@@ -730,7 +926,8 @@ end function
 
 
 
-recursive subroutine eval_and_check (fobj, fcon, m, x, fx, c, g, a, status, msg)
+recursive subroutine eval_and_check (fobj, fcon, m, x, fx, c, g, a, &
+        autoscale, x_orig, fx_scale, x_scale, status, msg)
     !*  Evaluate objective function values and/or their derivatives,
     !   and, check results for NaNs
     type (fwrapper_vs) :: fobj
@@ -738,7 +935,7 @@ recursive subroutine eval_and_check (fobj, fcon, m, x, fx, c, g, a, status, msg)
     integer, intent(in) :: m
         !*  Number of equality and inequality constraints, excluding
         !   any boundary constraints.
-    real (PREC), intent(in), dimension(:), contiguous :: x
+    real (PREC), intent(in), dimension(:), contiguous, target :: x
         !*  Point at which to evaluate objective and constraints
     real (PREC), intent(out), optional :: fx
         !*  Objective function value
@@ -748,20 +945,38 @@ recursive subroutine eval_and_check (fobj, fcon, m, x, fx, c, g, a, status, msg)
         !*  Gradient of objective function
     real (PREC), intent(out), dimension(:,:), contiguous, optional :: a
         !*  Jacobian of constraints function
+    logical, intent(in) :: autoscale
+        !*  If true, apply autoscaling transformation to inputs and outputs
+    real (PREC), intent(inout), dimension(:), contiguous, optional, target :: x_orig
+        !*  Temporary array to store the unscaled candidate solution
+    real (PREC), intent(in), optional :: fx_scale
+        !*  Scaling factor for objective function
+    real (PREC), intent(in), dimension(:), contiguous, optional :: x_scale
+        !*  Scaling factors for each dimension of the solution vector
     type (status_t), intent(out) :: status
     character (*), intent(out) :: msg
 
     logical :: do_fcn, do_jac
+    real (PREC), dimension(:), pointer, contiguous :: ptr_x
 
     do_fcn = present(fx) .and. present(c)
     do_jac = present(g) .and. present(a)
 
     status = NF_STATUS_OK
 
+    if (autoscale .and. present(x_orig)) then
+        x_orig = x
+        call undo_scaling (autoscale, fx_scale, x_scale, x=x_orig)
+        ptr_x => x_orig
+    else
+        ptr_x => x
+    end if
+
     if (do_fcn .and. do_jac) then
         ! --- Evaluate both function values and Jacobians ---
         ! Objective
-        call dispatch_fcn_jac (fobj, x, fx, g)
+        call dispatch_fcn_jac (fobj, ptr_x, fx, g)
+
         if (.not. isfinite (fx) .or. .not. all(isfinite(g))) then
             msg = MSG_OBJECTIVE_NONFINITE
             status = NF_STATUS_INVALID_STATE
@@ -769,7 +984,7 @@ recursive subroutine eval_and_check (fobj, fcon, m, x, fx, c, g, a, status, msg)
 
         ! Constraints
         if (m > 0) then
-            call dispatch_fcn_jac (fcon, x, c, a)
+            call dispatch_fcn_jac (fcon, ptr_x, c, a)
             if (.not. all(isfinite(c)) .or. .not. all(isfinite(a))) then
                 msg = MSG_CONSTRAINTS_NONFINITE
                 status = NF_STATUS_INVALID_STATE
@@ -778,7 +993,7 @@ recursive subroutine eval_and_check (fobj, fcon, m, x, fx, c, g, a, status, msg)
     else if (do_fcn) then
         ! --- Function values only ---
         ! Objective
-        call dispatch (fobj, x, fx)
+        call dispatch (fobj, ptr_x, fx)
         if (.not. isfinite(fx)) then
             msg = MSG_OBJECTIVE_NONFINITE
             status = NF_STATUS_INVALID_STATE
@@ -786,7 +1001,7 @@ recursive subroutine eval_and_check (fobj, fcon, m, x, fx, c, g, a, status, msg)
 
         ! Constraints
         if (m > 0) then
-            call dispatch (fcon, x, c)
+            call dispatch (fcon, ptr_x, c)
             if (.not. all(isfinite(c))) then
                 msg = MSG_CONSTRAINTS_NONFINITE
                 status = NF_STATUS_INVALID_STATE
@@ -795,7 +1010,7 @@ recursive subroutine eval_and_check (fobj, fcon, m, x, fx, c, g, a, status, msg)
     else
         ! --- Jacobians only ---
         ! Objective
-        call dispatch_jac (fobj, x, g)
+        call dispatch_jac (fobj, ptr_x, g)
         if (.not. all(isfinite(g))) then
             msg = MSG_OBJECTIVE_NONFINITE
             status = NF_STATUS_INVALID_STATE
@@ -803,19 +1018,25 @@ recursive subroutine eval_and_check (fobj, fcon, m, x, fx, c, g, a, status, msg)
 
         ! Constraints
         if (m > 0) then
-            call dispatch_jac (fcon, x, a)
+            call dispatch_jac (fcon, ptr_x, a)
             if (.not. all(isfinite(a))) then
                 msg = MSG_CONSTRAINTS_NONFINITE
                 status = NF_STATUS_INVALID_STATE
             end if
         end if
     end if
+
+    if (status /= NF_STATUS_INVALID_STATE) then
+        call apply_scaling (autoscale, fx_scale, x_scale, fx, g=g, a=a)
+    end if
+
 end subroutine
 
 
 
 recursive subroutine lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, xtol, &
-        iline, x, fx, c, g, a, s, x0, iprint, status, msg)
+        iline, x, fx, c, g, a, s, x0, autoscale, x_orig, fx_scale, x_scale, &
+        iprint, status, msg)
     type (fwrapper_vs) :: fobj
     type (fwrapper_vv) :: fcon
     integer, intent(in) :: meq
@@ -831,6 +1052,10 @@ recursive subroutine lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, xtol, &
     real (PREC), intent(out), dimension(:,:), contiguous :: a
     real (PREC), intent(out), dimension(:), contiguous :: s
     real (PREC), intent(out), dimension(:), contiguous :: x0
+    logical, intent(in) :: autoscale
+    real (PREC), intent(inout), dimension(:), contiguous, optional :: x_orig
+    real (PREC), intent(in) :: fx_scale
+    real (PREC), intent(in), dimension(:), contiguous, optional :: x_scale
     integer (NF_ENUM_KIND), intent(in) :: iprint
     type (status_t), intent(out) :: status
     character (*), intent(out) :: msg
@@ -886,10 +1111,13 @@ recursive subroutine lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, xtol, &
 
         ! Evaluate objective and constraint functions
         if (fuse_calls .or. iline == MAXITER) then
-            call eval_and_check (fobj, fcon, m, x, fx, c, g, a, status, msg)
+            call eval_and_check (fobj, fcon, m, x, fx, c, g, a, autoscale, &
+                x_orig, fx_scale, x_scale, status, msg)
             has_jac = .true.
         else
-            call eval_and_check (fobj, fcon, m, x, fx, c, status=status, msg=msg)
+            call eval_and_check (fobj, fcon, m, x, fx, c, autoscale=autoscale, &
+                x_orig=x_orig, fx_scale=fx_scale, x_scale=x_scale, &
+                status=status, msg=msg)
             has_jac = .false.
         end if
 
@@ -936,7 +1164,8 @@ recursive subroutine lsearch_inexact (fobj, fcon, meq, mu, t0, h3, tol, xtol, &
                 ! to be updated
                 if (.not. has_jac) then
                     call eval_and_check (fobj, fcon, m, x, g=g, a=a, &
-                        status=status, msg=msg)
+                        autoscale=autoscale, x_orig=x_orig, fx_scale=fx_scale, &
+                        x_scale=x_scale, status=status, msg=msg)
                     if (status /= NF_STATUS_OK) goto 100
                 end if
 
