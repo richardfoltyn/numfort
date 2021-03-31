@@ -73,10 +73,22 @@ subroutine test_rosenbrock_scipy (tests)
         res=res, tol=tol)
 
     dfx = res%fx(1) - fx1_scipy
-    values_ok = all_close (x, x1_scipy, atol=10.0*tol, rtol=0.0_PREC)
-    values_ok = values_ok .and. abs(dfx) < 10.0*tol
+    values_ok = all_close (x, x1_scipy, atol=1.0e-5_PREC, rtol=0.0_PREC)
+    values_ok = values_ok .and. abs(dfx) < 10 * tol
     call tc%assert_true (values_ok .and. res%success, &
         "Problem 1: Rosenbrock with ineq. and box constraints")
+
+    ! Problem #2 with auto-scaling
+    x = x0
+    meq = 0
+    call minimize_slsqp_ng (fobj, x, work, fconstr1, m, meq, lbounds, ubounds, &
+        res=res, tol=1.0e-10_PREC, autoscale=.true.)
+
+    dfx = res%fx(1) - fx1_scipy
+    values_ok = all_close (x, x1_scipy, atol=1.0e-5_PREC, rtol=0.0_PREC)
+    values_ok = values_ok .and. abs(dfx) < 10 * tol
+    call tc%assert_true (values_ok .and. res%success, &
+        "Problem 1: Rosenbrock with ineq. and box constraints (autoscaling)")
 
     ! Problem #2: Rosenbrock with equality constr.
     x0 = 0.1d0
@@ -91,6 +103,21 @@ subroutine test_rosenbrock_scipy (tests)
     values_ok = values_ok .and. abs(dfx) < 10.0*tol
     call tc%assert_true (values_ok .and. res%success, &
         "Problem 2: Rosenbrock with eq. and box constraints")
+
+    ! Problem #2 with autoscaling
+    x0 = 0.1d0
+    x = x0
+    meq = 1
+
+    call minimize_slsqp_ng (fobj, x, work, fconstr2, m, meq, lbounds, ubounds, &
+        autoscale=.true., res=res, tol=1.0e-10_PREC)
+
+    dfx = res%fx(1) - fx2_scipy
+    values_ok = all_close (x, x2_scipy, atol=1.0e-5_PREC, rtol=0.0_PREC)
+    values_ok = values_ok .and. abs(dfx) < 1.0e-5_PREC
+    call tc%assert_true (values_ok .and. res%success, &
+        "Problem 2: Rosenbrock with eq. and box constraints (autoscaling)")
+
 
 end subroutine
 
@@ -107,6 +134,7 @@ subroutine test_quadratic_scipy (tests)
     real (PREC) :: dx, dfx
     real (PREC) :: POS_INF, NEG_INF
     integer :: m, meq
+    logical :: values_ok
 
     ! Scipy results for problem #3
     real (PREC), parameter :: x1_scipy(11) = [ &
@@ -140,6 +168,21 @@ subroutine test_quadratic_scipy (tests)
     call tc%assert_true (dx < tol .and. dfx < tol, &
         "Problem 3: Quadratic obj. with ineq. constraints")
 
+    ! Problem 3 with autoscaling
+    x = x0
+    m = 2
+    call minimize_slsqp_ng (fobj3, x, work, fconstr3, m, res=res, &
+        tol=1.0e-10_PREC, autoscale=.true.)
+
+    dx = maxval(abs(x-x1_scipy))
+    dfx = abs(res%fx(1)-fx1_scipy)
+
+    values_ok = (dx < 1.0e-5_PREC)
+    values_ok = values_ok .and. (dfx < 1.0e-5_PREC)
+
+    call tc%assert_true (values_ok, &
+        "Problem 3: Quadratic obj. with ineq. constraints (autoscaling)")
+
     ! Problem 4: Same as problem 3, but impose additional box constraints
     ! on some of the dimensions of x.
     x = x0
@@ -166,6 +209,23 @@ subroutine test_quadratic_scipy (tests)
 
     call tc%assert_true (dx < tol .and. dfx < tol, &
         "Problem 4: Quadratic obj. with ineq. and partial box constraints")
+
+    ! Run with autoscaling
+    x = x0
+    x(7) = 7.0d0
+    x(11) = -7.0d0
+    call minimize_slsqp_ng (fobj3, x, work, fconstr3, m, meq, lbounds, ubounds, &
+        res=res, tol=1.0e-10_PREC, autoscale=.true.)
+
+    dx = maxval(abs(x-x2_scipy))
+    dfx = abs(res%fx(1)-fx2_scipy)
+
+    values_ok = (dx < 1.0e-5_PREC)
+    values_ok = values_ok .and. (dfx < 1.0e-5_PREC)
+
+    call tc%assert_true (values_ok, &
+        "Problem 4: Quadratic obj. with ineq. and partial box constraints (autoscaling)")
+
 end subroutine
 
 
