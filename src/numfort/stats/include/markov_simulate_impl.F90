@@ -49,8 +49,8 @@ end subroutine
 
 
 
-subroutine simulate (tm, s0, seq, transposed, status)
-    real (PREC), intent(in), dimension(:,:), contiguous, target :: tm
+subroutine simulate (transm, s0, seq, transposed, status)
+    real (PREC), intent(in), dimension(:,:), contiguous, target :: transm
         !*  Markov process transition matrix with each element (i,j)
         !   representing the transition probability Prob[x'=j | x=i].
     integer (INTSIZE), intent(in) :: s0
@@ -73,12 +73,12 @@ subroutine simulate (tm, s0, seq, transposed, status)
 
     lstatus = NF_STATUS_OK
 
-    n = size(tm, 1)
+    n = size(transm, 1)
     nobs = size(seq)
     ltransposed = .false.
     if (present(transposed)) ltransposed = transposed
 
-    call simulate_check_input (tm, s0, transposed=transposed, status=lstatus)
+    call simulate_check_input (transm, s0, transposed=transposed, status=lstatus)
     if (lstatus /= NF_STATUS_OK) goto 100
 
     if (nobs == 0) goto 100
@@ -95,9 +95,9 @@ subroutine simulate (tm, s0, seq, transposed, status)
     ! Create transposed matrix if applicable as that one can be traversed
     ! faster in the loop below
     if (ltransposed) then
-        allocate (cdf(nstates,nstates), source=tm)
+        allocate (cdf(nstates,nstates), source=transm)
     else
-        allocate (cdf(nstates,nstates), source=transpose(tm))
+        allocate (cdf(nstates,nstates), source=transpose(transm))
     end if
 
     ! draw sequence of random numbers
@@ -334,8 +334,8 @@ end subroutine
 
 
 
-subroutine oversample_tm (tm, prob_low, prob_scale)
-    real (PREC), intent(inout), dimension(:,:), contiguous :: tm
+subroutine oversample_tm (transm, prob_low, prob_scale)
+    real (PREC), intent(inout), dimension(:,:), contiguous :: transm
         !*  Transposed input transition matrix. Contains oversampled
         !   transposed transition matrix on exit.
     real (PREC), intent(in) :: prob_low
@@ -344,18 +344,17 @@ subroutine oversample_tm (tm, prob_low, prob_scale)
     logical, dimension(:), allocatable :: mask1d
     integer, dimension(:), allocatable :: ios, iall, iother
     real (PREC), dimension(:), allocatable :: ergodic_dist, pmf
-    real (PREC), dimension(:,:), allocatable :: tm_s
+    real (PREC), dimension(:,:), allocatable :: transm_s
     integer :: n, nos, nother
     integer :: i, k
     real (PREC) :: sum_low
 
-    n = size(tm, 1)
+    n = size(transm, 1)
 
     allocate (ergodic_dist(n))
-    allocate (tm_s(n,n), source=0.0_PREC)
 
     ! Compute rel. transition frequencies in steady state
-    call markov_ergodic_dist (tm, ergodic_dist, transposed=.true., inverse=.true.)
+    call markov_ergodic_dist (transm, ergodic_dist, transposed=.true., inverse=.true.)
 
     ! Adjustment for oversampling: create new "sampling" transition matrix
     ! TM_S which takes into account oversampling of small probabilities.
@@ -364,9 +363,9 @@ subroutine oversample_tm (tm, prob_low, prob_scale)
     mask1d(:) = (ergodic_dist <= prob_low)
 
     ! If no element in the ergodic distribution is below the threshold value
-    ! don't do anything. Then TM_S and FREQ_POP remain at their initial
-    ! values assigned above.
+    ! don't do anything.
     if (any(mask1d)) then
+        allocate (transm_s(n,n), source=0.0_PREC)
         allocate (ios(n), iother(n), pmf(n))
         ! Indices of states that need to be oversampled
         nos = count(mask1d)
@@ -376,27 +375,27 @@ subroutine oversample_tm (tm, prob_low, prob_scale)
 
         do k = 1, nother
             i = iother(k)
-            sum_low = sum(tm(:,i), mask=mask1d)
+            sum_low = sum(transm(:,i), mask=mask1d)
             ! Rescale low-prob. transitions upward, adjust higher-prob.
             ! transitions ownward accordingly.
             where (mask1d)
-                pmf = tm(:,i) * (1.0 + prob_scale)
+                pmf = transm(:,i) * (1.0 + prob_scale)
             else where
-                pmf = tm(:,i) * (1.0 - sum_low * (1.0_PREC+prob_scale)) / (1.0 - sum_low)
+                pmf = transm(:,i) * (1.0 - sum_low * (1.0_PREC+prob_scale)) / (1.0 - sum_low)
             end where
 
-            tm_s(:,i) = pmf
+            transm_s(:,i) = pmf
         end do
 
         ! Copy transitions "row" for states with low ergodic prob. as is
         do k = 1, nos
             i = ios(k)
-            tm_s(:,i) = tm(:,i)
+            transm_s(:,i) = transm(:,i)
         end do
-    end if
 
-    ! Write back oversampled transition matrix
-    tm(:,:) = tm_s(:,:)
+        ! Write back oversampled transition matrix
+        transm(:,:) = transm_s(:,:)
+    end if
 
 end subroutine
 
