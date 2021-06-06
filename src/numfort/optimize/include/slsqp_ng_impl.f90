@@ -130,7 +130,7 @@ recursive subroutine slsqp (fobj, x, ndiff, work, fcon, m, meq, lbounds, ubounds
 
     call slsqp_impl (fobj_wrapper, x, work, fcon_wrapper, lm, lmeq, &
         lbounds, ubounds, ltol, lxtol, lmaxiter, lmaxfev, lexact_lsearch, &
-        maximize, lautoscale, liprint, lres)
+        lmaximize, lautoscale, liprint, lres)
 
 100 continue
 
