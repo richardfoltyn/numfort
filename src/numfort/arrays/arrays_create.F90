@@ -2,31 +2,19 @@ module numfort_arrays_create
 
     use, intrinsic :: iso_fortran_env
 
-    use numfort_common, only: has_shape
+    use numfort_common
+    use numfort_common_input_checks
     use numfort_core
     implicit none
     private
 
-    public :: arange, linspace, powerspace
-    public :: logspace
+    public :: arange
     public :: diag, identity
     public :: vander
     public :: kron
 
     interface arange
         procedure arange_int32, arange_int64, arange_real32, arange_real64
-    end interface
-
-    interface linspace
-        procedure linspace_real32, linspace_real64
-    end interface
-
-    interface powerspace
-        procedure powerspace_real32, powerspace_real64
-    end interface
-
-    interface logspace
-        procedure logspace_real32, logspace_real64
     end interface
 
     interface diag
@@ -53,18 +41,6 @@ module numfort_arrays_create
 contains
 
 ! ******************************************************************************
-! LINSPACE procedures
-pure subroutine linspace_real64(x, xfrom, xto, step, res_n, res_step)
-    integer, parameter :: PREC = real64
-#include "linspace_impl.f90"
-end subroutine
-
-pure subroutine linspace_real32(x, xfrom, xto, step, res_n, res_step)
-    integer, parameter :: PREC = real32
-#include "linspace_impl.f90"
-end subroutine
-
-! ******************************************************************************
 ! ARANGE procedures
 
 pure subroutine arange_int32 (x, ifrom, step)
@@ -86,107 +62,6 @@ pure subroutine arange_real64 (x, ifrom, step)
     integer, parameter :: PREC = real64
 #include "arange_real_impl.f90"
 end subroutine
-
-
-! ------------------------------------------------------------------------------
-! POWERSPACE routines
-
-pure subroutine powerspace_real32 (x, xmin, xmax, pow)
-    !*  POWERSPACE returns a sequence of points obtained by taking the power
-    !   of a sequence of uniformly spaced points on [0,1] and applying
-    !   an affine transformation to match the given start and end point.
-    !
-    !   More specifically, each element in X is computed as
-    !       x(i) = xmin + (xmax-xmin) * u(i) ** pow
-    !   where u(i) is the corresponding element on a uniformly-spaced
-    !   sequence on [0,1].
-    integer, parameter :: PREC = real32
-#include "powerspace_impl.f90"
-end subroutine
-
-pure subroutine powerspace_real64 (x, xmin, xmax, pow)
-    !*  POWERSPACE returns a sequence of points obtained by taking the power
-    !   of a sequence of uniformly spaced points on [0,1] and applying
-    !   an affine transformation to match the given start and end point.
-    !
-    !   More specifically, each element in X is computed as
-    !       x(i) = xmin + (xmax-xmin) * u(i) ** pow
-    !   where u(i) is the corresponding element on a uniformly-spaced
-    !   sequence on [0,1].
-    integer, parameter :: PREC = real64
-#include "powerspace_impl.f90"
-end subroutine
-
-
-! ------------------------------------------------------------------------------
-! LOGSPACE routines
-
-
-pure subroutine logspace_real32 (x, logx_min, logx_max, base)
-    !*  LOGSPACE returns numbers evenly spaced on a log scale.
-    !
-    !   To be compatible with Numpy, the start and end points need to be
-    !   provided in logs.
-    integer, parameter :: PREC = real32
-    real (PREC), intent(out), dimension(:) :: x
-        !*  Array containing samples equally spaced on a log scale
-    real (PREC), intent(in) :: logx_min
-        !*  Starting value of the sequence in logs, ie. sequence starts
-        !   at base ** logx_min.
-    real (PREC), intent(in) :: logx_max
-        !*  Terminal value of the sequence in logs, ie. sequence ends at
-        !   base ** logx_max.
-    real (PREC), intent(in), optional :: base
-        !*  The base of the log space (default: 10)
-
-    real (PREC) :: lbase
-    integer :: i
-
-    lbase = 10.0
-    if (present(base)) lbase = base
-
-    call linspace (x, logx_min, logx_max)
-
-    do i = 1, size(x)
-        x(i) = lbase ** x(i)
-    end do
-
-
-end subroutine
-
-
-
-pure subroutine logspace_real64 (x, logx_min, logx_max, base)
-    !*  LOGSPACE returns numbers evenly spaced on a log scale.
-    !
-    !   To be compatible with Numpy, the start and end points need to be
-    !   provided in logs.
-    integer, parameter :: PREC = real64
-    real (PREC), intent(out), dimension(:) :: x
-    !*  Array containing samples equally spaced on a log scale
-    real (PREC), intent(in) :: logx_min
-    !*  Starting value of the sequence in logs, ie. sequence starts
-    !   at base ** logx_min.
-    real (PREC), intent(in) :: logx_max
-    !*  Terminal value of the sequence in logs, ie. sequence ends at
-    !   base ** logx_max.
-    real (PREC), intent(in), optional :: base
-    !*  The base of the log space (default: 10)
-
-    real (PREC) :: lbase
-    integer :: i
-
-    lbase = 10.0
-    if (present(base)) lbase = base
-
-    call linspace (x, logx_min, logx_max)
-
-    do i = 1, size(x)
-        x(i) = lbase ** x(i)
-    end do
-
-end subroutine
-
 
 
 ! ******************************************************************************
