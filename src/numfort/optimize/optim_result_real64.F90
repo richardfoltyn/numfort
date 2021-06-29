@@ -25,14 +25,14 @@ module numfort_optimize_result_real64
 
     type, public :: optim_result
         integer :: nfev = UNINITIALIZED_COUNTER
-        !*  Number of function evaluations performed
+            !*  Number of function evaluations performed
         integer :: nit = UNINITIALIZED_COUNTER
-        !*  Number of iterations performed
+            !*  Number of iterations performed
         type (status_t) :: status
-        !*  Detailed exit status
+            !*  Detailed exit status
         logical :: success = .false.
-        !*  Exit status flag
-        character (100) :: msg
+            !*  Exit status flag
+        character (100) :: msg = ""
         real (PREC), dimension(:), allocatable :: x
         real (PREC), dimension(:), allocatable :: fx
     end type

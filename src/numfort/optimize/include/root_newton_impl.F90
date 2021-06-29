@@ -413,6 +413,7 @@ recursive subroutine newton_bisect (fcn, x, ndiff, a, b, xtol, tol, maxiter, &
         if (present(res)) then
             call result_reset (res)
             res%status = NF_STATUS_INVALID_ARG
+            res%msg = "Argument NDIFF = .TRUE. required"
             return
         end if
     end if
