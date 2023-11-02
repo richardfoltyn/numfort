@@ -14,11 +14,14 @@ models in Fortran easier.
         git clone https://bitbucket.org/richardfoltyn/numfort.git --recursive
         
 1.  NUMFORT contains a git submodule with CMake scripts required to build the 
-    library. This can be updated to the latest version at any point in
-    time by executing
-        
-        git submodule update --remote
-        
+    library. It needs to be initalized using
+    ```bash
+    git submodule init
+    ```
+    Submodules can be updated to the latest version by executing
+    ```bash
+    git submodule update --remote
+    ```        
     Note that a simple `git pull` will not update the submodule.
         
 ## Build instructions ##
@@ -31,19 +34,38 @@ any client application using NUMFORT.
 
 To compile the library, create a build directory and run
 
-    cd /path/to/build/directory
-    cmake -DCMAKE_INSTALL_PREFIX=/path/to/install/ <NUMFORT_REPOSITORY>/src
-    make install
-    
-where `<NUMFORT_REPOSITORY>` points to the root directory of the cloned
-git repository.
+```bash
+# GCC compiler version
+GCC_VERSION=12
+
+# Define source directory
+SRC_DIR=$HOME/repos/numfort/src
+
+# Build directory
+BUILD_DIR=$HOME/build/gnu/${GCC_VERSION}/numfort
+
+# Installation prefix
+INSTALL_PREFIX="$HOME/.local"
+
+mkdir -p "${BUILD_DIR}"
+cd "${BUILD_DIR}"
+
+FC=gfortran-${GCC_VERSION} CC=gcc-${GCC_VERSION} \
+cmake -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" "${SRC_DIR}"
+```
+
+```bash
+make -j 16
+make install
+```
 
 You may want to specify an alternative Fortran compiler or compile flags (`FFLAGS`).
 For example, to build using Intel's Fortran compiler `ifort`and optimize the
 code for the host machine architecture, you could run
-
-    FC=ifort FFLAGS="-xHost" cmake -DCMAKE_INSTALL_PREFIX=/path/to/install/ <NUMFORT_REPOSITORY>/src
-
+```bash
+FC=ifort FFLAGS="-xHost" \
+cmake -DCMAKE_INSTALL_PREFIX=/path/to/install/ <NUMFORT_REPOSITORY>/src
+```
 NUMFORT was tested with the following compilers:
 
 -   Intel ifort 2018 and 2019
