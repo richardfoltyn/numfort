@@ -646,3 +646,157 @@ subroutine moments (states, tm, mean, acorr, sigma, sigma_e, &
     if (allocated(x)) deallocate(x)
 
 end subroutine
+
+
+
+subroutine pmf_to_histogram (nobs, pmf, hist, status)
+    !*  PMF_TO_HISTOGRAM converts the PMF over a set of discrete states into an
+    !   "optimal" histograms for the given sample size so that sum(hist) = nobs.
+    integer, intent(in) :: nobs
+        !*  Number of observations
+    real (PREC), intent(in), dimension(:) :: pmf
+        !*  PMF over states
+    integer, intent(out), dimension(:) :: hist
+        !*  Histogram of observations for each state such that sum(hist) = nobs.
+    type (status_t), intent(out), optional :: status
+        !*  Optional status code
+
+    type (status_t) :: lstatus
+    logical, dimension(:), allocatable :: mask
+    integer :: i
+
+    lstatus = NF_STATUS_OK
+
+    ! --- Input argument checking ---
+
+    if (.not. all(pmf >= 0.0_PREC) .or. abs(sum(pmf) - 1.0_PREC) > 1.0e-10_PREC) then
+        lstatus = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+
+    if (nobs <= 0) then
+        lstatus = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+
+    ! --- Create histogram ---
+
+    hist(:) = int(nobs * pmf)
+
+    allocate (mask(size(pmf)))
+    mask(:) = (pmf > 0.0_PREC)
+
+    do while (sum(hist) > nobs)
+        i = maxloc (hist / nobs - pmf, dim=1, mask=mask)
+        hist(i) = hist(i) - 1
+    end do
+
+    do while (sum(hist) < nobs)
+        i = minloc (hist / nobs - pmf, dim=1, mask=mask)
+        hist(i) = hist(i) + 1
+    end do
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine
+
+
+
+subroutine trans_histogram (nobs, transm, trans_hist, status)
+    !*  TRANS_HISTOGRAM returns the optiomal transition "histogram" for a given
+    !   sample size so that sum(trans_hist,1) = sum(trans_hist,2), i.e., after
+    !   each round of transitions the PMF over states remains unchanged.
+    integer, intent(in) :: nobs
+        !*  Number of observations
+    real (PREC), intent(in), dimension(:,:), contiguous :: transm
+        !*  Transition matrix of Markov process
+    integer, intent(out), dimension(:,:), contiguous :: trans_hist
+        !*  Transition "histogram" for given sample size
+    type (status_t), intent(out), optional :: status
+        !*  Optional status code
+
+    type (status_t) :: lstatus
+    real (PREC), dimension(:), allocatable :: edist
+    integer, dimension(:), allocatable :: edist_hist, hist_to
+    integer :: nstates, i, ihi, ilo, ibest
+    real (PREC) :: eps, eps_min
+
+    lstatus = NF_STATUS_OK
+
+    ! --- Input argument checking ---
+
+    if (.not. all(transm >= 0.0_PREC) .or. &
+            all(abs(sum(transm, dim=2) - 1.0_PREC) > 1.0e-10_PREC)) then
+        lstatus = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+
+    if (nobs <= 0) then
+        lstatus = NF_STATUS_INVALID_ARG
+        goto 100
+    end if
+
+    nstates = size (transm, 1)
+    allocate (edist(nstates))
+
+    ! Ergodic distribution implied by transition matrix
+    call ergodic_dist (transm, edist, inverse=.TRUE., status=lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! Histogram for ergodic distribution
+    allocate (edist_hist(nstates))
+    call pmf_to_histogram (nobs, edist, edist_hist, lstatus)
+    if (lstatus /= NF_STATUS_OK) goto 100
+
+    ! Create approximate histogram for each transition matrix row
+    do i = 1, nstates
+        call pmf_to_histogram (edist_hist(i), transm(i, :), trans_hist(i, :), lstatus)
+    end do
+
+    allocate (hist_to(nstates))
+
+    hist_to(:) = sum (trans_hist, dim=1)
+
+    do while (any (hist_to /= edist_hist))
+        ! Column index where sum is too high
+        ihi = minloc (edist_hist - hist_to, dim=1)
+        ! Column index where sum is too low
+        ilo = maxloc (edist_hist - hist_to, dim=1)
+
+        eps_min = ieee_value (1.0_PREC, IEEE_POSITIVE_INF)
+        ibest = -1
+
+        ! Find adminissible row to flip one element between columns
+        do i = 1, nstates
+            ! Do not add to elements which are zero in original matrix
+            if (transm(i,ilo) == 0.0_PREC) cycle
+            ! Do not subtract from elements that are already zero (can this happen?)
+            if (trans_hist(i, ihi) == 0) cycle
+            ! Compute deviation from original transition matrix
+            eps = abs((trans_hist(i,ihi) - 1) / edist_hist(i) - transm(i,ihi)) &
+                + abs((trans_hist(i,ilo) + 1) / edist_hist(i) - transm(i,ilo))
+
+            if (eps < eps_min) then
+                ibest = i
+                eps_min = eps
+            end if
+        end do
+
+        if (ibest == -1) then
+            lstatus = NF_STATUS_INVALID_STATE
+            goto 100
+        end if
+
+        trans_hist(ibest,ihi) = trans_hist(ibest,ihi) - 1
+        trans_hist(ibest,ilo) = trans_hist(ibest,ilo) + 1
+
+        hist_to(:) = sum (trans_hist, dim=1)
+    end do
+
+100 continue
+
+    if (present(status)) status = lstatus
+
+end subroutine

@@ -3,6 +3,7 @@
 module numfort_stats_markov_real64
 
     use, intrinsic :: iso_fortran_env
+    use, intrinsic :: ieee_arithmetic
 
     use numfort_arrays, only: arange, linspace, setdiff
     use numfort_common
@@ -25,6 +26,8 @@ module numfort_stats_markov_real64
     public :: markov_moments
     public :: is_trans_matrix
     public :: truncate_trans_matrix
+    public :: pmf_to_histogram
+    public :: trans_histogram
 
     integer, parameter :: PREC = real64
 
@@ -50,6 +53,14 @@ module numfort_stats_markov_real64
 
     interface truncate_trans_matrix
         procedure truncate_trans_matrix
+    end interface
+
+    interface pmf_to_histogram
+        procedure pmf_to_histogram
+    end interface
+
+    interface trans_histogram
+        procedure trans_histogram
     end interface
 
     contains

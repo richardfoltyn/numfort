@@ -30,6 +30,8 @@ subroutine test_all ()
     call test_rouwenhorst_iid (tests)
     call test_rouwenhorst_python (tests)
 
+    call test_histogram (tests)
+
     call test_simulate (tests)
     call test_simulate_advanced (tests)
 
@@ -252,6 +254,43 @@ subroutine test_rouwenhorst_python (tests)
 
 end subroutine
 
+
+
+subroutine test_histogram (tests)
+    class (test_suite) :: tests
+
+    class (test_case), pointer :: tc
+
+    type (status_t) :: status
+
+    real (PREC), dimension(:,:), allocatable :: transm
+    real (PREC), dimension(:), allocatable :: states
+    integer, dimension(:,:), allocatable :: trans_hist
+    real (PREC) :: rho, sigma
+    integer :: nobs, nstates
+
+    tc => tests%add_test ('Transition matrix -> histogram')
+
+    rho = 0.9
+    sigma = 0.2
+    nobs = 10000
+    nstates = 7
+
+    allocate (transm(nstates, nstates))
+    allocate (states(nstates))
+
+    ! Create Rouwenhorst approximation
+    call rouwenhorst (rho, sigma, states, transm, status=status)
+
+    ! Create discretized histogram
+    allocate (trans_hist(nstates,nstates))
+
+    call trans_histogram (nobs, transm, trans_hist, status=status)
+    call tc%assert_true (status == NF_STATUS_OK .and. &
+            all (sum(trans_hist, dim=1) == sum(trans_hist, dim=2)) .and. &
+            sum(trans_hist) == nobs)
+
+end subroutine
 
 
 subroutine test_simulate (tests)
