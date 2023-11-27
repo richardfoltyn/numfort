@@ -26,6 +26,8 @@ module numfort_stats
 
     use numfort_stats_markov
 
+    use numfort_stats_random
+
     implicit none
 
 end module
