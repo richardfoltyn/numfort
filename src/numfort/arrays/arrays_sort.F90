@@ -30,8 +30,8 @@ subroutine argsort_real32_int32 (arr, rnk, algorithm, status)
     integer, parameter :: INTSIZE = int32
     real (PREC), intent(in), dimension(:) :: arr
         !*  Array to sort
-
-    include "include/argsort_impl.f90"
+    
+#include "include/argsort_impl.F90"
 end subroutine
 
 subroutine argsort_real32_int64 (arr, rnk, algorithm, status)
@@ -42,7 +42,7 @@ subroutine argsort_real32_int64 (arr, rnk, algorithm, status)
     real (PREC), intent(in), dimension(:) :: arr
         !*  Array to sort
 
-    include "include/argsort_impl.f90"
+#include "include/argsort_impl.F90"
 end subroutine
 
 
@@ -54,7 +54,7 @@ subroutine argsort_real64_int32 (arr, rnk, algorithm, status)
     real (PREC), intent(in), dimension(:) :: arr
         !*  Array to sort
 
-    include "include/argsort_impl.f90"
+#include "include/argsort_impl.F90"
 end subroutine
 
 subroutine argsort_real64_int64 (arr, rnk, algorithm, status)
@@ -65,7 +65,7 @@ subroutine argsort_real64_int64 (arr, rnk, algorithm, status)
     real (PREC), intent(in), dimension(:) :: arr
         !*  Array to sort
 
-    include "include/argsort_impl.f90"
+#include "include/argsort_impl.F90"
 end subroutine
 
 
@@ -76,7 +76,7 @@ subroutine argsort_int32 (arr, rnk, algorithm, status)
     integer (INTSIZE), intent(in), dimension(:) :: arr
         !*  Array to sort
 
-    include "include/argsort_impl.f90"
+#include "include/argsort_impl.F90"
 end subroutine
 
 
@@ -87,7 +87,7 @@ subroutine argsort_int64 (arr, rnk, algorithm, status)
     integer (INTSIZE), intent(in), dimension(:) :: arr
         !*  Array to sort
 
-    include "include/argsort_impl.f90"
+#include "include/argsort_impl.F90"
 end subroutine
 
 

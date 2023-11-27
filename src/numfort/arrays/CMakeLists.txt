@@ -4,7 +4,7 @@ set(COMPONENT_NAME arrays)
 
 set(SOURCE_FILES
     arrays.f90
-    arrays_sort.f90
+    arrays_sort.F90
     arrays_index.F90
     arrays_create.F90
     arrays_grid.F90
