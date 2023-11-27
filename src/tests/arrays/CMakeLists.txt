@@ -8,6 +8,7 @@ set(${COMPONENT_NAME}_FILES
     insert.f90
     kron.f90
     setops.f90
+    sort.F90
     vander.f90
     PARENT_SCOPE
 )
