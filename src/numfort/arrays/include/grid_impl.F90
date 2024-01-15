@@ -37,8 +37,9 @@ pure subroutine linspace (x, xfrom, xto, step, res_n, res_step)
             x(i) =  xfrom + (i-1) * lstep
         end do
 
-        ! avoid rounding errors at end point
-        x(nx) = xto
+        ! avoid rounding errors at end point. Only do this if NX > 1, otherwise
+        ! the behavior of returning only the terminal point would be unexpected.
+        if (nx > 1) x(nx) = xto
         ! Actual number of elements used is identical to array size
         n = nx
     else
@@ -87,16 +88,22 @@ pure subroutine powerspace (x, xmin, xmax, pow)
     real (PREC) :: slope
 
     n = size(x)
+
+    ! Silently ignore 0-size arrays
+    if (n == 0) return
+
     call linspace (x, 0.0_PREC, 1.0_PREC)
 
+    ! Explicitly set boundary values to eliminate any rounding issues
+    x(1) = xmin
+
     slope = xmax - xmin
-    do i = 1, n
+    do i = 2, n
         x(i) = xmin + slope * x(i) ** pow
     end do
 
     ! Explicitly set boundary values to eliminate any rounding issues
-    x(1) = xmin
-    x(n) = xmax
+    if (n > 1) x(n) = xmax
 
 end subroutine
 
