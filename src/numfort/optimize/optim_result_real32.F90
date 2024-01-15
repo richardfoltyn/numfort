@@ -5,6 +5,7 @@ module numfort_optimize_result_real32
     !   object for all optimization routines.
 
     use, intrinsic :: iso_fortran_env, only: real32
+    use, intrinsic :: ieee_arithmetic
 
     use numfort_common_status
     use numfort_common_copy_alloc, only: copy_alloc
@@ -35,6 +36,7 @@ module numfort_optimize_result_real32
         character (100) :: msg = ""
         real (PREC), dimension(:), allocatable :: x
         real (PREC), dimension(:), allocatable :: fx
+        real (PREC), dimension(:,:), allocatable :: jac_inv
     end type
 
     interface result_update

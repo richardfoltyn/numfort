@@ -13,7 +13,7 @@ pure subroutine update_ss (res, x, fx, status, nit, nfev, msg)
     x1(1) = x
     fx1(1) = fx
 
-    call result_update (res, x1, fx1, status, nit, nfev, msg)
+    call result_update (res, x1, fx1, status=status, nit=nit, nfev=nfev, msg=msg)
 end subroutine
 
 
@@ -31,15 +31,16 @@ pure subroutine update_vs (res, x, fx, status, nit, nfev, msg)
 
     fx1(1) = fx
 
-    call result_update (res, x, fx1, status, nit, nfev, msg)
+    call result_update (res, x, fx1, status=status, nit=nit, nfev=nfev, msg=msg)
 end subroutine
 
 
 
-pure subroutine update (res, x, fx, status, nit, nfev, msg)
+pure subroutine update (res, x, fx, jac_inv, status, nit, nfev, msg)
     type (optim_result), intent(inout) :: res
     real (PREC), intent(in), dimension(:), optional :: x
     real (PREC), intent(in), dimension(:), optional :: fx
+    real (PREC), intent(in), dimension(:,:), optional :: jac_inv
     type (status_t), intent(in), optional :: status
     integer, intent(in), optional :: nit
     integer, intent(in), optional :: nfev
@@ -47,6 +48,7 @@ pure subroutine update (res, x, fx, status, nit, nfev, msg)
 
     if (present(x)) call copy_alloc (x, res%x)
     if (present(fx)) call copy_alloc (fx, res%fx)
+    if (present(jac_inv)) call copy_alloc (jac_inv, res%jac_inv)
 
     if (present(status)) then
         res%status = status
@@ -71,6 +73,7 @@ pure subroutine reset (res)
     res%msg = ""
     if (allocated(res%x)) res%x = 0.0_PREC
     if (allocated(res%fx)) res%fx = 0.0_PREC
+    if (allocated(res%jac_inv)) res%jac_inv(:,:) = ieee_value (0.0, IEEE_SIGNALING_NAN)
     res%status = NF_STATUS_UNDEFINED
     res%success = .false.
 end subroutine

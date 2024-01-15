@@ -38,7 +38,7 @@ end subroutine
 
 
 recursive subroutine root_broyden (fcn, x, ndiff, tol, xtol, &
-        maxiter, maxfev, rstep, xstep, dstep, iprint, work, res)
+        maxiter, maxfev, rstep, xstep, dstep, iprint, work, jac_inv_init, res)
     procedure (fvv_fcn) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
     logical, intent(in) :: ndiff
@@ -55,6 +55,7 @@ recursive subroutine root_broyden (fcn, x, ndiff, tol, xtol, &
         !*  If present, debug info will be printed according to the value
         !   of IPRINT.
     type (workspace), intent(inout), optional :: work
+    real (PREC), intent(in), dimension(:,:), contiguous, optional :: jac_inv_init
     type (optim_result), intent(inout), optional :: res
 
     type (fwrapper_vv) :: fwrapper
@@ -70,14 +71,14 @@ recursive subroutine root_broyden (fcn, x, ndiff, tol, xtol, &
     call wrap_procedure (fwrapper, fcn=fcn, eps=dstep)
 
     call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, maxfev, &
-        rstep, xstep, iprint, work, res)
+        rstep, xstep, iprint, work, jac_inv_init, res)
 
 end subroutine
 
 
 
 recursive subroutine root_broyden_jac (fcn, fjac, x, tol, &
-        xtol, maxiter, maxfev, rstep, xstep, iprint, work, res)
+        xtol, maxiter, maxfev, rstep, xstep, iprint, work, jac_inv_init, res)
     procedure (fvv_fcn) :: fcn
     procedure (fvv_jac) :: fjac
     real (PREC), intent(inout), dimension(:), contiguous :: x
@@ -93,6 +94,7 @@ recursive subroutine root_broyden_jac (fcn, fjac, x, tol, &
     !*  If present, debug info will be printed according to the value
     !   of IPRINT.
     type (workspace), intent(inout), optional :: work
+    real (PREC), intent(in), dimension(:,:), contiguous, optional :: jac_inv_init
     type (optim_result), intent(inout), optional :: res
 
     type (fwrapper_vv) :: fwrapper
@@ -100,14 +102,14 @@ recursive subroutine root_broyden_jac (fcn, fjac, x, tol, &
     call wrap_procedure (fwrapper, fcn=fcn, jac=fjac)
 
     call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, maxfev, &
-        rstep, xstep, iprint, work, res)
+        rstep, xstep, iprint, work, jac_inv_init, res)
 
 end subroutine
 
 
 
 recursive subroutine root_broyden_fcn_jac_opt (fcn, x, tol, &
-        xtol, maxiter, maxfev, rstep, xstep, iprint, work, res)
+        xtol, maxiter, maxfev, rstep, xstep, iprint, work, jac_inv_init, res)
     procedure (fvv_fcn_jac_opt) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
     real (PREC), intent(in), optional :: tol
@@ -122,6 +124,7 @@ recursive subroutine root_broyden_fcn_jac_opt (fcn, x, tol, &
     !*  If present, debug info will be printed according to the value
     !   of IPRINT.
     type (workspace), intent(inout), optional :: work
+    real (PREC), intent(in), dimension(:,:), contiguous, optional :: jac_inv_init
     type (optim_result), intent(inout), optional :: res
 
     type (fwrapper_vv) :: fwrapper
@@ -129,14 +132,14 @@ recursive subroutine root_broyden_fcn_jac_opt (fcn, x, tol, &
     call wrap_procedure (fwrapper, fcn_jac_opt=fcn)
 
     call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, maxfev, &
-        rstep, xstep, iprint, work, res)
+        rstep, xstep, iprint, work, jac_inv_init, res)
 
 end subroutine
 
 
 
 recursive subroutine root_broyden_args (fcn, x, args, ndiff, &
-        tol, xtol, maxiter, maxfev, rstep, xstep, dstep, iprint, work, res)
+        tol, xtol, maxiter, maxfev, rstep, xstep, dstep, iprint, work, jac_inv_init, res)
     procedure (fvv_fcn_args) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
     class (args_data), intent(inout) :: args
@@ -154,6 +157,7 @@ recursive subroutine root_broyden_args (fcn, x, args, ndiff, &
     !*  If present, debug info will be printed according to the value
     !   of IPRINT.
     type (workspace), intent(inout), optional :: work
+    real (PREC), intent(in), dimension(:,:), contiguous, optional :: jac_inv_init
     type (optim_result), intent(inout), optional :: res
 
     type (fwrapper_vv) :: fwrapper
@@ -169,14 +173,14 @@ recursive subroutine root_broyden_args (fcn, x, args, ndiff, &
     call wrap_procedure (fwrapper, fcn_args=fcn, args=args, eps=dstep)
 
     call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, maxfev, &
-        rstep, xstep, iprint, work, res)
+        rstep, xstep, iprint, work, jac_inv_init, res)
 
 end subroutine
 
 
 
 recursive subroutine root_broyden_jac_args (fcn, fjac, x, &
-        args, tol, xtol, maxiter, maxfev, rstep, xstep, iprint, work, res)
+        args, tol, xtol, maxiter, maxfev, rstep, xstep, iprint, jac_inv_init, work, res)
     procedure (fvv_fcn_args) :: fcn
     procedure (fvv_jac_args) :: fjac
     real (PREC), intent(inout), dimension(:), contiguous :: x
@@ -193,6 +197,7 @@ recursive subroutine root_broyden_jac_args (fcn, fjac, x, &
     !*  If present, debug info will be printed according to the value
     !   of IPRINT.
     type (workspace), intent(inout), optional :: work
+    real (PREC), intent(in), dimension(:,:), contiguous, optional :: jac_inv_init
     type (optim_result), intent(inout), optional :: res
 
     type (fwrapper_vv) :: fwrapper
@@ -200,14 +205,14 @@ recursive subroutine root_broyden_jac_args (fcn, fjac, x, &
     call wrap_procedure (fwrapper, fcn_args=fcn, jac_args=fjac, args=args)
 
     call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, maxfev, &
-        rstep, xstep, iprint, work, res)
+        rstep, xstep, iprint, work, jac_inv_init, res)
 
 end subroutine
 
 
 
 recursive subroutine root_broyden_fcn_jac_opt_args (fcn, x, &
-        args, tol, xtol, maxiter, maxfev, rstep, xstep, iprint, work, res)
+        args, tol, xtol, maxiter, maxfev, rstep, xstep, iprint, work, jac_inv_init, res)
     procedure (fvv_fcn_jac_opt_args) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
     class (args_data), intent(inout) :: args
@@ -223,6 +228,7 @@ recursive subroutine root_broyden_fcn_jac_opt_args (fcn, x, &
     !*  If present, debug info will be printed according to the value
     !   of IPRINT.
     type (workspace), intent(inout), optional :: work
+    real (PREC), intent(in), dimension(:,:), contiguous, optional :: jac_inv_init
     type (optim_result), intent(inout), optional :: res
 
     type (fwrapper_vv) :: fwrapper
@@ -230,14 +236,14 @@ recursive subroutine root_broyden_fcn_jac_opt_args (fcn, x, &
     call wrap_procedure (fwrapper, fcn_jac_opt_args=fcn, args=args)
 
     call root_broyden_impl (fwrapper, x, tol, xtol, maxiter, maxfev, &
-        rstep, xstep, iprint, work, res)
+        rstep, xstep, iprint, work, jac_inv_init, res)
 
 end subroutine
 
 
 
 recursive subroutine root_broyden_impl (fcn, x, tol, xtol, &
-        maxiter, maxfev, rstep, xstep, iprint, work, res)
+        maxiter, maxfev, rstep, xstep, iprint, work, jac_inv_init, res)
 
     type (fwrapper_vv), intent(inout) :: fcn
     real (PREC), intent(inout), dimension(:), contiguous :: x
@@ -254,6 +260,7 @@ recursive subroutine root_broyden_impl (fcn, x, tol, xtol, &
         !*  Max. absolute step size in search direction (default: unbounded)
     integer (NF_ENUM_KIND), intent(in), optional :: iprint
     type (workspace), intent(inout), optional, target :: work
+    real (PREC), intent(in), dimension(:,:), contiguous, optional :: jac_inv_init
     type (optim_result), intent(inout), optional, target :: res
 
     real (PREC) :: ltol, lxtol
@@ -270,6 +277,7 @@ recursive subroutine root_broyden_impl (fcn, x, tol, xtol, &
     real (PREC), dimension(:,:), pointer, contiguous :: jac, jac_inv
     real (PREC), dimension(:), pointer, contiguous :: rwork_inv
     integer, dimension(:), pointer, contiguous :: iwork_inv
+    logical :: has_jac_inv
 
     type (workspace), pointer :: ptr_work
     type (optim_result), pointer :: ptr_res
@@ -412,28 +420,41 @@ recursive subroutine root_broyden_impl (fcn, x, tol, xtol, &
         goto 100
     end if
 
-    ! Compute Jacobian at initial point. Reuse f(X) evaluated above in
-    ! case of numerical differentiation.
-    call dispatch_jac (fcn, x, jac, fxlast)
+    has_jac_inv = present (jac_inv_init)
+    if (has_jac_inv) has_jac_inv = all (ieee_is_finite (jac_inv_init))
 
-    if (.not. all(ieee_is_finite(jac))) then
-        ptr_res%msg = 'Invalid value in initial Jacobian encountered'
-        status = NF_STATUS_INVALID_STATE
-        goto 100
-    end if
+    if (has_jac_inv) then
+        jac_inv(:,:) = jac_inv_init
+        if (iand(liprint, PRINT_JAC) == PRINT_JAC) then
+            print '(tr1, a)', "ROOT_BROYDEN: Using caller-provided initial inverse Jacobian"
+            do i = 1, n
+                print 200, "", jac_inv(i,:)
+            end do
+        end if
+    else
+        ! Compute Jacobian at initial point. Reuse f(X) evaluated above in
+        ! case of numerical differentiation.
+        call dispatch_jac (fcn, x, jac, fxlast)
 
-    if (iand(liprint, PRINT_JAC) == PRINT_JAC) then
-        print '(tr1, a)', "ROOT_BROYDEN: initial Jacobian"
-        do i = 1, n
-            print 200, "", jac(i,:)
-        end do
-    end if
+        if (.not. all(ieee_is_finite(jac))) then
+            ptr_res%msg = 'Invalid value in initial Jacobian encountered'
+            status = NF_STATUS_INVALID_STATE
+            goto 100
+        end if
 
-    ! Initial inverted Jacobian
-    call inv (jac, jac_inv, rwork=rwork_inv, iwork=iwork_inv, status=status)
-    if (status /= NF_STATUS_OK) then
-        ptr_res%msg = "Could not invert initial Jacobian"
-        goto 100
+        if (iand(liprint, PRINT_JAC) == PRINT_JAC) then
+            print '(tr1, a)', "ROOT_BROYDEN: initial Jacobian"
+            do i = 1, n
+                print 200, "", jac(i,:)
+            end do
+        end if
+
+        ! Initial inverted Jacobian
+        call inv (jac, jac_inv, rwork=rwork_inv, iwork=iwork_inv, status=status)
+        if (status /= NF_STATUS_OK) then
+            ptr_res%msg = "Could not invert initial Jacobian"
+            goto 100
+        end if
     end if
 
    do k = 1, lmaxiter
@@ -577,13 +598,8 @@ recursive subroutine root_broyden_impl (fcn, x, tol, xtol, &
 100 continue
 
     if (present(res)) then
-        if (associated(fxlast)) then
-            call result_update (ptr_res, x, fxlast, status, nit=k, nfev=fcn%nfev)
-        else
-            ! FXLAST may not be associated if routine exists prematurely
-            ! due to errors
-            call result_update (ptr_res, x, status=status, nit=k, nfev=fcn%nfev)
-        end if
+        call result_update (ptr_res, x, fxlast, jac_inv=jac_inv, &
+            status=status, nit=k, nfev=fcn%nfev)
     end if
 
     ! Clean up local WORKSPACE object if none was passed by client code
