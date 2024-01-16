@@ -421,7 +421,12 @@ recursive subroutine root_broyden_impl (fcn, x, tol, xtol, &
     end if
 
     has_jac_inv = present (jac_inv_init)
-    if (has_jac_inv) has_jac_inv = all (ieee_is_finite (jac_inv_init))
+    if (has_jac_inv) then
+        ! TODO: check whether initial step size implied by Jacobian is smaller than
+        ! xtol, otherwise no point in even trying.
+        has_jac_inv = all (ieee_is_finite (jac_inv_init)) &
+            .and. any (abs(jac_inv_init) > 1.0e-3_PREC)
+    end if
 
     if (has_jac_inv) then
         jac_inv(:,:) = jac_inv_init
