@@ -73,7 +73,7 @@ pure subroutine reset (res)
     res%msg = ""
     if (allocated(res%x)) res%x = 0.0_PREC
     if (allocated(res%fx)) res%fx = 0.0_PREC
-    if (allocated(res%jac_inv)) res%jac_inv(:,:) = ieee_value (0.0, IEEE_SIGNALING_NAN)
+    if (allocated(res%jac_inv)) deallocate (res%jac_inv)
     res%status = NF_STATUS_UNDEFINED
     res%success = .false.
 end subroutine
