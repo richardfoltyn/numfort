@@ -66,7 +66,7 @@ end subroutine
 
 
 
-pure subroutine powerspace (x, xmin, xmax, pow)
+pure subroutine powerspace (x, xmin, xmax, pow, sparse_end)
     !*  POWERSPACE returns a sequence of points obtained by taking the power
     !   of a sequence of uniformly spaced points on [0,1] and applying
     !   an affine transformation to match the given start and end point.
@@ -83,9 +83,15 @@ pure subroutine powerspace (x, xmin, xmax, pow)
         !*  Endpoint value
     real (PREC), intent(in) :: pow
         !*  Exponent used to create power-spaced sequence
+    logical, intent(in), optional :: sparse_end
+        !*  If true (default), create a grid that is sparser towards the end.
 
     integer :: n, i
-    real (PREC) :: slope
+    real (PREC) :: slope, xi
+    logical :: lend
+
+    lend = .true.
+    if (present (sparse_end)) lend = sparse_end
 
     n = size(x)
 
@@ -94,15 +100,25 @@ pure subroutine powerspace (x, xmin, xmax, pow)
 
     call linspace (x, 0.0_PREC, 1.0_PREC)
 
+    x = x ** pow
+
+    if (.not. lend) then
+        ! Make grid more sparse at the end
+        x = 1.0_PREC - x
+        ! Reverse order
+        do i = 1, n / 2
+            xi = x(i)
+            x(i) = x(n-i+1)
+            x(n-i+1) = xi
+        end do
+    end if
+
+    ! Transform to desired range
+    slope = xmax - xmin
+    x = xmin + slope * x
+
     ! Explicitly set boundary values to eliminate any rounding issues
     x(1) = xmin
-
-    slope = xmax - xmin
-    do i = 2, n
-        x(i) = xmin + slope * x(i) ** pow
-    end do
-
-    ! Explicitly set boundary values to eliminate any rounding issues
     if (n > 1) x(n) = xmax
 
 end subroutine
