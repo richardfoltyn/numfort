@@ -59,31 +59,31 @@ endif ()
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     # explicitly add -cpp to run C preprocessor if required
     set(GNU_WARN "-Wall -Wextra -Warray-temporaries -Wrealloc-lhs -pedantic -Wuninitialized")
-    set(F08_FLAGS "${GNU_WARN} -std=f2008")
+    set(F18_FLAGS "${GNU_WARN} -std=f2018")
 
     # Disable "surprising" warnings for older GFORTRAN version as this
     # produces endless warnings about array finalizers
     if (CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 7)
-        set(F08_FLAGS "${F08_FLAGS} -Wno-surprising")
+        set(F18_FLAGS "${F18_FLAGS} -Wno-surprising")
     endif()
-elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel(LLVM)?")
     if (WIN32)
-        set(F08_FLAGS "/warn:all /standard-semantics /stand:f08")
+        set(F18_FLAGS "/warn:all /standard-semantics /stand:f18")
         # NOTE: When setting -standard-semantics, resets any previously
         # given -assume std_mod_proc_name, so we need to append it again!
         if (NOT IFORT_STD_MOD_PROC_NAME)
-            set(F08_FLAGS "${F08_FLAGS} /assume:nostd_mod_proc_name")
+            set(F18_FLAGS "${F18_FLAGS} /assume:nostd_mod_proc_name")
         else ()
-            set(F08_FLAGS "${F08_FLAGS} /assume:std_mod_proc_name")
+            set(F18_FLAGS "${F18_FLAGS} /assume:std_mod_proc_name")
         endif ()
     else ()
-        set(F08_FLAGS "-warn all -standard-semantics -std08")
+        set(F18_FLAGS "-warn all -standard-semantics -std18")
         # NOTE: When setting -standard-semantics, resets any previously
         # given -assume std_mod_proc_name, so we need to append it again!
         if (NOT IFORT_STD_MOD_PROC_NAME)
-            set(F08_FLAGS "${F08_FLAGS} -assume nostd_mod_proc_name")
+            set(F18_FLAGS "${F18_FLAGS} -assume nostd_mod_proc_name")
         else ()
-            set(F08_FLAGS "${F08_FLAGS} -assume std_mod_proc_name")
+            set(F18_FLAGS "${F18_FLAGS} -assume std_mod_proc_name")
         endif ()
     endif (WIN32)
 endif ()
@@ -97,19 +97,19 @@ set(SOURCE_FILES
 
 # additional files replacing original FITPACK implementation, written in F90
 # These FLAGS are appended to any other previously defined FLAGS.
-list(APPEND F08_SOURCES constraints_tree.f90)
-list(APPEND SOURCE_FILES ${F08_SOURCES})
+list(APPEND F18_SOURCES constraints_tree.f90)
+list(APPEND SOURCE_FILES ${F18_SOURCES})
 
-if (F08_FLAGS)
-    set_source_files_properties(${F08_SOURCES} PROPERTIES
-        COMPILE_FLAGS "${F08_FLAGS}"
+if (F18_FLAGS)
+    set_source_files_properties(${F18_SOURCES} PROPERTIES
+        COMPILE_FLAGS "${F18_FLAGS}"
     )
 endif ()
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} _build)
-if (F08_FLAGS_${_build})
-    set_source_files_properties(${F08_SOURCES} PROPERTIES
-        COMPILE_FLAGS "${F08_FLAGS_${_build}}"
+if (F18_FLAGS_${_build})
+    set_source_files_properties(${F18_SOURCES} PROPERTIES
+        COMPILE_FLAGS "${F18_FLAGS_${_build}}"
     )
 endif ()
 

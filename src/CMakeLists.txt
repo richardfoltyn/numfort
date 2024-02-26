@@ -50,7 +50,7 @@ option(IFORT_STD_MOD_PROC_NAME
 # Additional CMAKE modules
 
 list(APPEND CMAKE_MODULE_PATH
-  "${CMAKE_CURRENT_SOURCE_DIR}/../submodules/cmake/Modules")
+  "${CMAKE_CURRENT_SOURCE_DIR}/../submodules/cmake-modules/Modules")
 
 ################################################################################
 # Detect features supported by Fortran compiler
@@ -245,7 +245,7 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
         set(_FFLAGS "${_FFLAGS} -fuse-linker-plugin")
     endif()
     set(_FFLAGS_DEBUG "-fcheck=all -O0")
-elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel(LLVM)?")
     if (WIN32)
         set(_FFLAGS "/warn:all,nounused /auto")
         set(_FFLAGS_DEBUG "/check:all")
@@ -255,6 +255,11 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
         else ()
             set(_FFLAGS "${_FFLAGS} /assume:std_mod_proc_name")
         endif ()
+
+        # Disable seriously annoying warning that ifort is deprecated
+        if (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+            set(_FFLAGS "${_FFLAGS} /Qdiag-disable:10448")
+        endif ()
     else ()
         set(_FFLAGS " -warn all,nounused -auto")
         set(_FFLAGS_DEBUG "-check all")
@@ -263,6 +268,11 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
             set(_FFLAGS "${_FFLAGS} -assume nostd_mod_proc_name")
         else ()
             set(_FFLAGS "${_FFLAGS} -assume std_mod_proc_name")
+        endif ()
+
+        # Disable seriously annoying warning that ifort is deprecated
+        if (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+            set(_FFLAGS "${_FFLAGS} -diag-disable=10448")
         endif ()
     endif (WIN32)
 endif ()

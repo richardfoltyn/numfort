@@ -55,7 +55,7 @@ endif ()
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     set(_FFLAGS "-Wuninitialized -Wconversion")
-elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel(LLVM)?")
     if (WIN32)
         set(_FFLAGS "/warn:all")
     else ()

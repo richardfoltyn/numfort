@@ -58,7 +58,7 @@ endif ()
 
 # The Fortran 77 code uses implicit variable declarations, turn off IFORT
 # warnings
-if (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+if (CMAKE_Fortran_COMPILER_ID MATCHES "Intel(LLVM)?")
     if (WIN32)
         set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} /warn:nodeclarations")
     else ()

@@ -13,26 +13,17 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     # explicitly add -cpp to run C preprocessor if required
     set(GNU_WARN "-Wall -Wextra -Wno-compare-reals -Warray-temporaries -Wrealloc-lhs -pedantic -Wuninitialized")
 
-    # Disable "surprising" warnings for older GFORTRAN version as this
-    # produces endless warnings about array finalizers
-    if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 7)
-        set(GNU_WARN "${GNU_WARN} -Wno-surprising")
-    endif()
-    if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER 6)
-        # breaks compilation with gfortran 5.x, possibly with 6.x as well.
-        set(GNU_WARN "${GNU_WARN} -Wno-unused-dummy-argument")
-    endif()
     if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 9)
         # Skip warning about out-of-bounds array indices in do loops since
         # compiler cannot detect conditional execution.
         set(GNU_WARN "${GNU_WARN} -Wno-do-subscript")
     endif()
-    set(_FFLAGS "${GNU_WARN} --std=f2008")
+    set(_FFLAGS "${GNU_WARN} --std=f2018")
     set(_FFLAGS "${_FFLAGS} -finline-functions -fipa-cp-clone -fgraphite-identity -floop-nest-optimize -ftree-loop-distribution -ftree-vectorize")
     set(_FFLAGS_DEBUG "-fcheck=all -O0")
-elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel(LLVM)?")
     if (WIN32)
-        set(_FFLAGS "/warn:all /standard-semantics /stand:f08 /auto")
+        set(_FFLAGS "/warn:all /standard-semantics /stand:f18 /auto")
         # NOTE: When setting -standard-semantics, resets any previously
         # given -assume std_mod_proc_name, so we need to append it again!
         if (NOT IFORT_STD_MOD_PROC_NAME)
@@ -41,7 +32,7 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
             set(_FFLAGS "${_FFLAGS} /assume:std_mod_proc_name")
         endif ()
     else ()
-        set(_FFLAGS "-warn all -standard-semantics -std08 -auto")
+        set(_FFLAGS "-warn all -standard-semantics -std18 -auto")
         set(_FFLAGS_REPORT "-qopt-report=2 -qopt-report-phase=ipo,loop,par,vec")
         if (OPT_REPORT)
             set(_FFLAGS "${_FFLAGS} ${_FFLAGS_REPORT}")
