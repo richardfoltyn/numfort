@@ -60,6 +60,8 @@ c       to avoid warnings due to DATA statements.
       real (real64) :: wg, xgk, wgk
 c
       dimension fv1(10),fv2(10),wg(5),wgk(11),xgk(11)
+
+      external :: d1mach
 c
 c           the abscissae and weights are given for the interval (-1,1).
 c           because of symmetry only the positive abscissae and their

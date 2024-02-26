@@ -53,6 +53,8 @@ c
      *  oflow,res,result,res3la,ss,tol1,tol2,tol3
       integer i,ib,ib2,ie,indx,k1,k2,k3,limexp,n,newelm,nres,num
       dimension epstab(52),res3la(3)
+
+      external :: d1mach
 c
 c           list of major variables
 c           -----------------------
