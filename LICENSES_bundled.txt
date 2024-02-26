@@ -1,0 +1,59 @@
+The numfort repository bundle a number of libraries which themselves 
+are distributed under various license, summarized below.
+
+Name: ARPACK
+Files: src/external/ARPACK/*
+License: 3-clause BSD
+  For details, see src/external/ARPACK/COPYING.txt
+
+Name: CDFLIB
+Files: src/external/CDFLIB90/*
+License: Public domain
+  For details, see src/external/CDFLIB90/LEGALITIES.txt
+
+Name: FITPACK
+Files: src/external/fitpack/*
+License: obtained from netlib.org, no license specified
+  For details, see src/external/fitpack/README.md
+
+Name: L-BFGS-B
+Files: src/external/lbfgsb_bmnz/*
+License: BSD license
+  For details, see src/external/lbfgsb_bmnz/README
+
+Name: MINPACK
+Files: src/external/minpack/*
+License: BSD license 
+  For details, see src/external/minpack/LICENSE.txt
+
+Name: NEWUOA
+Files: src/external/newuoa2/*
+License: LGPL-2.1
+  For details, see src/external/newuoa2/LICENSE.txt
+
+Name: ORDERPACK
+Files: src/external/orderpack/*
+License: Can be freely downloaded, no other license info 
+  For details, see src/external/orderpack/README.html
+
+Name: QUADPACK
+Files: src/external/quadpack/*
+License: obtained from netlib.org, no license specified
+
+Name: random 
+Files: src/external/random/*
+License: obtained from Alan J. Miller's software repository, no license specified
+
+Name: simplex_csiro
+Files: src/external/simplex_csiro/*
+License: obtained from Alan J. Miller's software repository, no license specified
+
+Name: SLSQP
+Files: src/external/slsqp/*
+License: BSD
+  For details, see src/external/slsqp/LICENSE.txt
+
+Name: sobol
+Files: src/external/sobol/*
+License: BSD 
+  For details, see src/external/sobol/LICENSE.txt
