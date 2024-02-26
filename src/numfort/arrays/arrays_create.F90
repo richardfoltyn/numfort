@@ -75,7 +75,9 @@ subroutine identity_int32 (mat)
 
     n = min(size(mat,1), size(mat,2))
     mat = 0_INTSIZE
-    forall (i=1:n) mat(i,i) = 1_INTSIZE
+    do i = 1, n
+        mat(i,i) = 1_INTSIZE
+    end do
 end subroutine
 
 subroutine identity_int64 (mat)
@@ -86,7 +88,9 @@ subroutine identity_int64 (mat)
 
     n = min(size(mat,1), size(mat,2))
     mat = 0_INTSIZE
-    forall (i=1:n) mat(i,i) = 1_INTSIZE
+    do i = 1, n
+        mat(i,i) = 1_INTSIZE
+    end do
 end subroutine
 
 subroutine identity_real64(mat)
@@ -97,7 +101,9 @@ subroutine identity_real64(mat)
 
     n = min(size(mat,1), size(mat,2))
     mat = 0_PREC
-    forall (i=1:n) mat(i,i) = 1.0_PREC
+    do i = 1, n
+        mat(i,i) = 1.0_PREC
+    end do
 end subroutine
 
 subroutine identity_real32(mat)
@@ -108,7 +114,9 @@ subroutine identity_real32(mat)
 
     n = min(size(mat,1), size(mat,2))
     mat = 0_PREC
-    forall (i=1:n) mat(i,i) = 1.0_PREC
+    do i = 1, n
+        mat(i,i) = 1.0_PREC
+    end do
 end subroutine
 
 ! ******************************************************************************
@@ -131,7 +139,9 @@ pure subroutine diag_create_real64 (v, res)
     if (.not. has_shape (res, shp)) return
 
     res = 0.0_PREC
-    forall (i=1:n) res(i,i) = v(i)
+    do i = 1, n
+        res(i,i) = v(i)
+    end do
 end subroutine
 
 pure subroutine diag_create_real32 (v, res)
@@ -150,7 +160,9 @@ pure subroutine diag_create_real32 (v, res)
     if (.not. has_shape (res, shp)) return
 
     res = 0.0_PREC
-    forall (i=1:n) res(i,i) = v(i)
+    do i = 1, n
+        res(i,i) = v(i)
+    end do
 
 end subroutine
 
@@ -167,7 +179,9 @@ pure subroutine diag_real64 (mat, res)
     n = min(size(mat,1), size(mat,2))
     if (size(res) < n) return
 
-    forall (i=1:n) res(i) = mat(i,i)
+    do i = 1, n
+        res(i) = mat(i,i)
+    end do
 
 end subroutine
 
@@ -181,7 +195,9 @@ pure subroutine diag_real32 (mat, res)
     n = min(size(mat,1), size(mat,2))
     if (size(res) < n) return
 
-    forall (i=1:n) res(i) = mat(i,i)
+    do i = 1, n
+        res(i) = mat(i,i)
+    end do
 
 end subroutine
 

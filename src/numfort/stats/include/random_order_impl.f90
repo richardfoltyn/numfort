@@ -16,7 +16,9 @@ else
 end if
 
 n = size(x)
-forall (i=1:n) x(i) = i + offset
+do i = 1, n
+    x(i) = i + offset
+end do
 
 ! Starting at the end, swap the current last indicator with one
 ! randomly chosen from those preceeding it.

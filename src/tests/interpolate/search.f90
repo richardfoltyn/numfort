@@ -273,7 +273,9 @@ subroutine test_interp_find (tests)
 
     call random_number (rwork)
     call argsort (rwork, iorder)
-    forall (i=1:n) haystack(i) = rwork(iorder(i))
+    do i = 1, n
+        haystack(i) = rwork(iorder(i))
+    end do
 
     allocate (needles(n), source=haystack)
 

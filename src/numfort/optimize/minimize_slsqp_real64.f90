@@ -373,7 +373,9 @@ subroutine minimize_slsqp_impl (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
                 call dispatch_jac (f_eqcons, x, fpx=ptr_cpx_eq)
                 ! Copy Jacobian into array A using a loop, otherwise
                 ! (at least) gfortran allocates a temporary array.
-                forall (k=1:lmeq) ptr_a(k,1:n) = ptr_cpx_eq(k,:)
+                do k = 1, lmeq
+                    ptr_a(k,1:n) = ptr_cpx_eq(k,:)
+                end do
                 ioffset = lmeq
             end if
 
@@ -381,7 +383,9 @@ subroutine minimize_slsqp_impl (fobj, x, lbounds, ubounds, m, meq, f_eqcons, &
                 call dispatch_jac (f_ieqcons, x, fpx=ptr_cpx_ieq)
                 ! Concatenate Jacobian into array A, taking into account
                 ! whether Jacobian of eq. constr. is already present
-                forall (k=1:mieq) ptr_a(ioffset+k,1:n) = ptr_cpx_ieq(k,:)
+                do k = 1, mieq
+                    ptr_a(ioffset+k,1:n) = ptr_cpx_ieq(k,:)
+                end do
             end if
         end if
 

@@ -553,7 +553,9 @@ subroutine test_standardize_2d (tests)
     std_ok = 0.0
     call std (x, dim=dim, m=mean_ok(1:k), s=std_ok(1:k))
     x = x_orig
-    forall (i=1:n) x_ok(:,i) = x_orig(:,i) - mean_ok(i)
+    do i = 1, n
+        x_ok(:,i) = x_orig(:,i) - mean_ok(i)
+    end do
 
     status = NF_STATUS_UNDEFINED
     call standardize (x, dim=dim, center=.true., scale=.false., &
@@ -583,7 +585,9 @@ subroutine test_standardize_2d (tests)
     mean_ok = 0.0
     std_ok = 0.0
     call std (x, dim=dim, m=mean_ok(1:k), s=std_ok(1:k))
-    forall (i=1:m) x_ok(i,:) = x_orig(i,:) - mean_ok(i)
+    do i = 1, m
+        x_ok(i,:) = x_orig(i,:) - mean_ok(i)
+    end do
 
     status = NF_STATUS_UNDEFINED
     call standardize (x, dim=dim, center=.true., scale=.false., &
@@ -617,7 +621,9 @@ subroutine test_standardize_2d (tests)
     mean_ok = 0.0
     std_ok = 0.0
     call std (x, dim=dim, m=mean_ok(1:k), s=std_ok(1:k))
-    forall (i=1:n) x_ok(:,i) = x_orig(:,i) / std_ok(i)
+    do i = 1, n
+        x_ok(:,i) = x_orig(:,i) / std_ok(i)
+    end do
 
     status = NF_STATUS_UNDEFINED
     call standardize (x, dim=dim, center=.false., scale=.true., &
@@ -647,7 +653,9 @@ subroutine test_standardize_2d (tests)
     mean_ok = 0.0
     std_ok = 0.0
     call std (x, dim=dim, m=mean_ok(1:k), s=std_ok(1:k))
-    forall (i=1:m) x_ok(i,:) = x_orig(i,:) / std_ok(i)
+    do i = 1, m
+        x_ok(i,:) = x_orig(i,:) / std_ok(i)
+    end do
 
     status = NF_STATUS_UNDEFINED
     call standardize (x, dim=dim, center=.false., scale=.true., &
@@ -679,7 +687,9 @@ subroutine test_standardize_2d (tests)
     mean_ok = 0.0
     std_ok = 0.0
     call std (x, dim=dim, m=mean_ok(1:k), s=std_ok(1:k))
-    forall (i=1:n) x_ok(:,i) = (x_orig(:,i) - mean_ok(i)) / std_ok(i)
+    do i = 1, n
+        x_ok(:,i) = (x_orig(:,i) - mean_ok(i)) / std_ok(i)
+    end do
 
     status = NF_STATUS_UNDEFINED
     call standardize (x, dim=dim, center=.true., scale=.true., &
@@ -709,7 +719,9 @@ subroutine test_standardize_2d (tests)
     mean_ok = 0.0
     std_ok = 0.0
     call std (x, dim=dim, m=mean_ok(1:k), s=std_ok(1:k))
-    forall (i=1:m) x_ok(i,:) = (x_orig(i,:) - mean_ok(i)) / std_ok(i)
+    do i = 1, m
+        x_ok(i,:) = (x_orig(i,:) - mean_ok(i)) / std_ok(i)
+    end do
 
     status = NF_STATUS_UNDEFINED
     call standardize (x, dim=dim, center=.true., scale=.true., &

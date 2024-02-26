@@ -137,7 +137,9 @@ subroutine test_trapezoid (tests)
             ! Test array API with x-values 
             allocate (fx(n), x(n))
             call linspace (x, a, b)
-            forall (j=1:n) fx(j) = ptr_fcn(x(j))
+            do j = 1, n
+                fx(j) = ptr_fcn(x(j))
+            end do
             status = NF_STATUS_UNDEFINED
             res = 0.0
             call trapezoid (fx, res, x=x, status=status)

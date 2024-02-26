@@ -427,12 +427,16 @@ recursive subroutine slsqp_impl (fobj, x, work, fcon, m, meq, xl, xu, tol, xtol,
         call apply_scaling (autoscale, fx_scale, x_scale, fx, x, g(1:n), a(:,1:n))
 
         if (present(xl)) then
-            forall (i=1:n) xsl(i) = xl(i)
+            do i = 1, n
+                xsl(i) = xl(i)
+            end do
             call apply_scaling (autoscale, fx_scale, x_scale, x=xsl)
         end if
 
         if (present(xu)) then
-            forall (i=1:n) xsu(i) = xu(i)
+            do i = 1, n
+                xsu(i) = xu(i)
+            end do
             call apply_scaling (autoscale, fx_scale, x_scale, x=xsu)
         end if
     else if (maximize) then

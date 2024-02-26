@@ -20,8 +20,12 @@ m2 = size(arr2)
 if (lassume_unique) then
     nwork = m1 + m2
     allocate (work(nwork), iwork(nwork))
-    forall (i=1:m1) work(i) = arr1(i)
-    forall (i=1:m2) work(m1+i) = arr2(i)
+    do i = 1, m1
+        work(i) = arr1(i)
+    end do
+    do i = 1, m2
+        work(m1+i) = arr2(i)
+    end do
 else
     ! Need to determine unique elements first
     allocate (idx1(m1), idx2(m2))
@@ -32,8 +36,12 @@ else
 
     ! Pool unique elements in work array
     allocate (work(nwork), iwork(nwork))
-    forall (i=1:nidx1) work(i) = arr1(idx1(i))
-    forall (i=1:nidx2) work(nidx1+i) = arr2(idx2(i))
+    do i = 1, nidx1
+        work(i) = arr1(idx1(i))
+    end do
+    do i = 1, nidx2
+        work(nidx1+i) = arr2(idx2(i))
+    end do
 
     deallocate (idx1, idx2)
 end if

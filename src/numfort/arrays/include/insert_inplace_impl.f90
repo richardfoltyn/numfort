@@ -10,7 +10,9 @@ if (idx < 1 .or. idx > (ni+1) .or. nv == 0) return
 ! Number of elements if ARR that will come to lie AFTER inserted sequence
 n = max((ni-idx+1) - nv, 0)
 ! Shift at most NV elements in ARR to the right
-forall (i=0:n-1) arr(ni-i) = arr(idx+n-1-i)
+do i = 0, n-1
+    arr(ni-i) = arr(idx+n-1-i)
+end do
 
 ! Insert elements from VAL
 ifrom = idx

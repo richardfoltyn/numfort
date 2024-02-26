@@ -196,7 +196,9 @@ pure subroutine __APPEND(polyshift,__PREC) (coefs, x0, coefs_new, status)
 
     ! Procompute power series in x0
     allocate (xp(0:k))
-    forall (i=0:k) xp(i) = x0 ** i
+    do i = 0, k
+        xp(i) = x0 ** i
+    end do
 
     ! Obtaining the coefficients of the shifted polynomial is an application
     ! of Pascal's triangle.

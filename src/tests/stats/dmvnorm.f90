@@ -196,12 +196,18 @@ subroutine test_rvs (tests)
     call random_number (std_x)
     std_x(:) = std_x * 2.0
     mean_x(:) = 2.0*(mean_x - 0.5)
-    forall (i=1:nvars) corr_x(i,i) = 1.0
+    do i = 1, nvars
+        corr_x(i,i) = 1.0
+    end do
     corr_x(1,2) = 0.5
     corr_x(2,1) = 0.5
 
     ! Compute implied VCV
-    forall (i=1:nvars,j=1:nvars) vcv(i,j) = std_x(i)*std_x(j)*corr_x(i,j)
+    do j = 1, nvars
+        do i = 1, nvars
+            vcv(i,j) = std_x(i)*std_x(j)*corr_x(i,j)
+        end do
+    end do
 
     status = NF_STATUS_UNDEFINED
     call dist_set_params (mvnorm, mean_x, vcv)

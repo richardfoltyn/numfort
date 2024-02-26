@@ -413,7 +413,9 @@ subroutine test_OLS_2d (tests)
     call rvs (norm, x, loc=0.0_PREC, scale=1.0_PREC)
 
     ! Create LHS variables
-    forall (i=1:nlhs) y(:,i) = beta_ok(1,i)
+    do i = 1, nlhs
+        y(:,i) = beta_ok(1,i)
+    end do
     allocate (work(nrhs,nlhs), source=beta_ok(2:,:))
     call BLAS95_GEMM (x, work, y, beta=1.0_PREC)
     deallocate (work)
@@ -443,7 +445,9 @@ subroutine test_OLS_2d (tests)
     call rvs (norm, x, loc=0.0_PREC, scale=1.0_PREC)
 
     ! Create LHS variables
-    forall (i=1:nlhs) y(:,i) = beta_ok(1,i)
+    do i = 1, nlhs
+        y(:,i) = beta_ok(1,i)
+    end do
     allocate (work(nrhs,nlhs), source=beta_ok(2:,:))
     call BLAS95_GEMM (x, work, y, beta=1.0_PREC, transa='T')
     deallocate (work)

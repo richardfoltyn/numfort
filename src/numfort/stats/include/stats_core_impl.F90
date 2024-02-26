@@ -535,11 +535,15 @@ pure subroutine normalize_2d (x, m, s, dim, center, scale, &
         ! Compute running mean and std if variables are stored in columns
         do iv = 1, nvars
             ! Apply normalization in-place
-            forall (iobs=1:nobs) x(iobs, iv) = (x(iobs, iv) - lmean(iv)) / lstd(iv)
+            do iobs = 1, nobs
+                x(iobs, iv) = (x(iobs, iv) - lmean(iv)) / lstd(iv)
+            end do
         end do
     else if (ldim == 2) then
         do iobs = 1, nobs
-            forall (iv = 1:nvars) x(iv, iobs) = (x(iv, iobs) - lmean(iv)) / lstd(iv)
+            do iv = 1, nvars
+                x(iv, iobs) = (x(iv, iobs) - lmean(iv)) / lstd(iv)
+            end do
         end do
     end if
 

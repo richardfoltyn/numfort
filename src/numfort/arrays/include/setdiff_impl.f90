@@ -95,18 +95,26 @@ if (nidx1 > 0 .and. nidx2 > 0) then
     ! constraint.
     ito = min(ndiff_max - n, nidx1 - offset1)
     ! n contains number of elements inserted so far.
-    forall (i=1:ito) diff(n+i) = arr1(idx1(offset1+i))
+    do i = 1, ito
+        diff(n+i) = arr1(idx1(offset1+i))
+    end do
 
     ito = min(nidx_max - n, nidx1 - offset1)
-    forall (i=1:ito) idx(n+i) = idx1(offset1+i)
+    do i = 1, ito
+        idx(n+i) = idx1(offset1+i)
+    end do
 
     n = n + (nidx1 - offset1)
 
 else
     ! Set B is empty, just copy over sorted, unique set A to the extent possible
     n = nidx1
-    forall (i=1:min(n,ndiff_max)) diff(i) = arr1(idx1(i))
-    forall (i=1:min(n,nidx_max)) idx(i) = idx1(i)
+    do i = 1, min(n,ndiff_max)
+        diff(i) = arr1(idx1(i))
+    end do
+    do i = 1, min(n,nidx_max)
+        idx(i) = idx1(i)
+    end do
 end if
 
 deallocate (idx1, idx2)

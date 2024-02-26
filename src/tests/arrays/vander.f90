@@ -51,12 +51,16 @@ subroutine test_scalar (tests)
     call tc%assert_true (all(xp==1.0), "Scalar input, x=1.0")
 
     x = 0.123
-    forall (j=0:np-1) xp0(j+1) = x ** (np-1-j)
+    do j = 0, np-1
+        xp0(j+1) = x ** (np-1-j)
+    end do
     call vander (x, xp)
     call tc%assert_true (all_close(xp, xp0), "Scalar input, default order")
 
     x = 12.345
-    forall (j=0:np-1) xp0(j+1) = x ** j
+    do j = 0, np-1
+        xp0(j+1) = x ** j
+    end do
     call vander (x, xp, increasing=.true.)
     call tc%assert_true (all_close(xp, xp0), "Scalar input, increasing order")
 
@@ -91,7 +95,9 @@ subroutine test_array (tests)
     np = 5
     allocate (x(1), xp(2, np), xp0(1, np))
     x(1) = 2.0
-    forall (j=0:np-1) xp0(:,j+1) = x**(np-1-j)
+    do j = 0, np-1
+        xp0(:,j+1) = x**(np-1-j)
+    end do
     call vander (x, xp)
     call tc%assert_true (all_close (xp(1,:), xp(1,:)), &
         "Vector input, size(x) < size(xp,1)")
@@ -100,7 +106,9 @@ subroutine test_array (tests)
     np = 5
     allocate (x(2), xp(1,np), xp0(1,np))
     x(1) = 123.456
-    forall (j=0:np-1) xp0(:,j+1) = x(1)**(np-1-j)
+    do j = 0, np-1
+        xp0(:,j+1) = x(1)**(np-1-j)
+    end do
     call vander (x, xp)
     call tc%assert_true (all_close (xp(1,:), xp(1,:)), &
         "Vector input, size(x) > size(xp,1)")
@@ -113,12 +121,16 @@ subroutine test_array (tests)
     ! 1. exponents in decreasing order (default)
     allocate (x(nx), xp(nx,np), xp0(nx,np))
     x(:) = [0.1d0, 1.5d0, 10.123d0]
-    forall (j=0:np-1) xp0(:,j+1) = x**(np-1-j)
+    do j = 0, np-1
+        xp0(:,j+1) = x**(np-1-j)
+    end do
     call vander (x, xp)
     call tc%assert_true (all(xp0==xp), "Vector input, default order")
 
     ! 2. Exponents in increasing order
-    forall (j=0:np-1) xp0(:,j+1) = x**j
+    do j = 0, np-1
+        xp0(:,j+1) = x**j
+    end do
     call vander (x, xp, increasing=.true.)
     call tc%assert_true (all(xp0==xp), "Vector input, increasing order")
 

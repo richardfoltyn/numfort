@@ -57,7 +57,9 @@
     if (nidx == 0) then
         m = size(arr, 1)
         ! DIM is irrelevant, just copy over data column-wise
-        forall (i=1:size(arr,2)) out(1:m,i) = arr(1:m,i)
+        do i = 1, size(arr,2)
+            out(1:m,i) = arr(1:m,i)
+        end do
         lstatus = NF_STATUS_OK
         ioffset = narr
         goto 100
@@ -97,7 +99,9 @@
         ! to be dropped.
         ioffset_a = 0
         k = uidx(1)-1
-        forall (i=1:k) out(1:m,ioffset+i) = arr(1:m,ioffset_a+i)
+        do i = 1, k
+            out(1:m,ioffset+i) = arr(1:m,ioffset_a+i)
+        end do
         ioffset = k
 
         do i = 1, nidx-1
@@ -107,14 +111,18 @@
 
             ioffset_a = uidx(i)
             k = uidx(i+1) - ioffset_a - 1
-            forall (j=1:k) out(1:m,ioffset+j) = arr(1:m,ioffset_a+j)
+            do j = 1, k
+                out(1:m,ioffset+j) = arr(1:m,ioffset_a+j)
+            end do
             ioffset = ioffset + k
         end do
 
         ! Copy last segment that with element indices uidx(nidx)+1,...,narr
         ioffset_a = uidx(nidx)
         k = narr - ioffset_a
-        forall (i=1:k) out(1:m,ioffset+i) = arr(1:m,ioffset_a+i)
+        do i = 1, k
+            out(1:m,ioffset+i) = arr(1:m,ioffset_a+i)
+        end do
         ioffset = ioffset + k
     end if
 

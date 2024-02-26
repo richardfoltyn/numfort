@@ -1087,7 +1087,9 @@ subroutine ldp (g, h, x, xnorm, w, index, status, msg)
     ! Compute Lagrange multipliers for primal problem
     ! (this part is not present in original Lawson/Hanson code, but
     ! comes from Dieter Kraft's implementation -- required for SLSQP).
-    forall (j=1:m) w(j) = fac * ptr_x(j)
+    do j = 1, m
+        w(j) = fac * ptr_x(j)
+    end do
 
 100 continue
 

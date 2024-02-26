@@ -103,7 +103,9 @@ pure subroutine transform_regr (X, xout, add_intercept, trans, &
 
     ! Set mask for variables to be included in model to .TRUE.
     allocate (mask_vars(k), source=.false.)
-    forall (i=1:lnkeep) mask_vars(ptr_ikeep(i)) = .true.
+    do i = 1, lnkeep
+        mask_vars(ptr_ikeep(i)) = .true.
+    end do
 
     ! --- Intercept ---
 
@@ -299,7 +301,9 @@ pure subroutine transform_regr_in_place (X, center, scale, drop_const, &
 
     ! Set mask for variables to be included in model to .TRUE.
     allocate (mask_vars(k), source=.false.)
-    forall (i=1:lnkeep) mask_vars(ptr_ikeep(i)) = .true.
+    do i = 1, lnkeep
+        mask_vars(ptr_ikeep(i)) = .true.
+    end do
 
     ! --- Check remaining args ---
 

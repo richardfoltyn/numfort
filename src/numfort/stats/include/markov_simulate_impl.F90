@@ -247,7 +247,9 @@ subroutine simulate_advanced (tm, s0, seq, atol, rtol, prob_low, prob_scale, &
 
     ! ergodic distr. and transition frequency matrix
     call markov_ergodic_dist (ltm, ergodic_dist, transposed=.true., inverse=.false.)
-    forall (i=1:n) freq_pop(:,i) = ltm(:,i) * ergodic_dist(i)
+    do i = 1, n
+        freq_pop(:,i) = ltm(:,i) * ergodic_dist(i)
+    end do
 
     ! draw sequence of random numbers
     allocate (rint(nsim))

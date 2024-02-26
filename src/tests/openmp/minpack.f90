@@ -61,7 +61,9 @@ subroutine test_hybrj (tests)
     n = 1000
     allocate (xx(m,n), fxx(m,n))
 
-    forall (i=1:n) xx(:,i) = x0
+    do i = 1, n
+        xx(:,i) = x0
+    end do
 
     call test_hybrj_dispatch (xx, fxx)
 

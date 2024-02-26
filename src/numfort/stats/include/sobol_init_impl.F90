@@ -117,7 +117,9 @@ pure subroutine __APPEND(sobol_init_array,__INTSIZE) (self, ndim, s, a, m, max_l
     ! compute m_k for each dimension for sequences of max. length given
     ! by 2 ** max_bits.
     ! Dimension 1: Let all m_k = 1
-    forall (i=1:max_bits) self%v(1,i) = ishft(1_int64, int(SOBOL_MAX_BITS - i, int64))
+    do i = 1, max_bits
+        self%v(1,i) = ishft(1_int64, int(SOBOL_MAX_BITS - i, int64))
+    end do
 
     do j = 2, lndim
         if (user_data) then
@@ -132,7 +134,9 @@ pure subroutine __APPEND(sobol_init_array,__INTSIZE) (self, ndim, s, a, m, max_l
         end if
 
         ! scale up by 2 ** 64
-        forall (i=1:s_j) m_j(i) = ishft(m_j(i), int(SOBOL_MAX_BITS - i, int64))
+        do i = 1, s_j
+            m_j(i) = ishft(m_j(i), int(SOBOL_MAX_BITS - i, int64))
+        end do
 
         ! Compute "direction numbers" m_{k,j} for k > s_j
         do k = s_j + 1, max_bits

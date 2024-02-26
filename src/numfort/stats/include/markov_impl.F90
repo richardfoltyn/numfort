@@ -443,7 +443,9 @@ subroutine ergodic_dist (tm, edist, inverse, maxiter, &
     ! compute ergodic distribution using "inverse" method
     if (linverse) then
 
-        forall (i=1:n) tm_T(i,i) = tm_T(i,i) - 1.0_PREC
+        do i = 1, n
+            tm_T(i,i) = tm_T(i,i) - 1.0_PREC
+        end do
 
         tm_T(n, :) = 1.0_PREC
 

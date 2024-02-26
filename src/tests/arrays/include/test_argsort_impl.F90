@@ -14,7 +14,9 @@ do k = 1, size(SIZES)
     ! the element which would be at position i in a sorted array.
     call argsort (arr, iorder, status=status)
 
-    forall (i=1:n) arr_sorted(i) = arr(iorder(i))
+    do i = 1, n
+        arr_sorted(i) = arr(iorder(i))
+    end do
 
     values_ok = all (arr_sorted(1:n-1) <= arr_sorted(2:n))
 

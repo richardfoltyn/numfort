@@ -376,18 +376,26 @@ subroutine ols_2d (conf, X, Y, coefs, intercept, weights, rank, res, status)
         if (lconf%trans_coefs) then
             if (Ncoefs == Nrhs) then
                 ! No intercept should be added to COEFS
-                forall (i=1:Nrhs) coefs(1:Nlhs,i) = Yp(Nconst_add+i,1:Nlhs)
+                do i = 1, Nrhs
+                    coefs(1:Nlhs,i) = Yp(Nconst_add+i,1:Nlhs)
+                end do
             else
                 ! Include added intercept in COEFS
-                forall (i=1:Ncoefs) coefs(1:Nlhs,i) = Yp(i,1:Nlhs)
+                do i = 1, Ncoefs
+                    coefs(1:Nlhs,i) = Yp(i,1:Nlhs)
+                end do
             end if
         else
             if (Ncoefs == Nrhs) then
                 ! No intercept should be added to COEFS
-                forall (i=1:nlhs) coefs(1:Nrhs,i) = Yp(1+Nconst_add:Nrhs+Nconst_add,i)
+                do i = 1, nlhs
+                    coefs(1:Nrhs,i) = Yp(1+Nconst_add:Nrhs+Nconst_add,i)
+                end do
             else
                 ! Include added intercept in COEFS
-                forall (i=1:nlhs) coefs(1:Ncoefs,i) = Yp(1:Ncoefs,i)
+                do i = 1, nlhs
+                    coefs(1:Ncoefs,i) = Yp(1:Ncoefs,i)
+                end do
             end if
         end if
     end if
@@ -960,9 +968,13 @@ subroutine pcr_2d (Y, scores, sval, loadings, coefs, shift_x, scale_x, &
     ! --- Store output ---
 
     if (ltrans_coefs) then
-        forall (i=1:Nrhs) coefs(1:Nlhs,Nconst_coefs+i) = lcoefs(i,1:Nlhs)
+        do i = 1, Nrhs
+            coefs(1:Nlhs,Nconst_coefs+i) = lcoefs(i,1:Nlhs)
+        end do
     else
-        forall (i=1:Nlhs) coefs(1+Nconst_coefs:Ncoefs,i) = lcoefs(:,i)
+        do i = 1, Nlhs
+            coefs(1+Nconst_coefs:Ncoefs,i) = lcoefs(:,i)
+        end do
     end if
 
 100 continue

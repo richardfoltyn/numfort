@@ -279,7 +279,9 @@ subroutine __APPEND(dmvnorm_rvs_2d,__PREC) (obj, x, mean, cov, dim, &
     ! Transform to potentially correlated MV-normal variables
     if (ldim == 1) then
         ! Populate X with mean values first
-        forall (i=1:nvars) x(:,i) = ptr_mean(i)
+        do i = 1, nvars
+            x(:,i) = ptr_mean(i)
+        end do
 
         ! Each column contains one realized variable, compute
         !   X' = Z' * V'
@@ -289,7 +291,9 @@ subroutine __APPEND(dmvnorm_rvs_2d,__PREC) (obj, x, mean, cov, dim, &
             beta=1.0_PREC, c=x, ldc=nobs)
     else
         ! Populate X with mean values first
-        forall (i=1:nobs) x(:,i) = ptr_mean
+        do i = 1, nobs
+            x(:,i) = ptr_mean
+        end do
         ! Each row contains one realized variable, compute
         !   X = V * Z
         ! instead.
