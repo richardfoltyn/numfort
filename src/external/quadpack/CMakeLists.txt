@@ -1,7 +1,7 @@
 # src/external/quadpack/CMakeLists.txt
 # CMake configuration for QUADPACK library
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
 
 project(quadpack Fortran)
 set(PROJECT_NAME_PRETTY QUADPACK)
@@ -12,7 +12,7 @@ if (NOT CMAKE_BUILD_TYPE)
   set (CMAKE_BUILD_TYPE Release CACHE STRING
       "Choose the type of build, options are: None Debug Release."
       FORCE)
-endif (NOT CMAKE_BUILD_TYPE)
+endif ()
 
 ################################################################################
 # User-definable options
@@ -41,7 +41,7 @@ if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
     )
 
     # Store module files in global module directory
-    set(MODULE_DIRECTORY ${NUMFORT_MODULE_DIRECTORY}/external)
+    set(MODULE_DIRECTORY "${EXTERNAL_MODULE_DIRECTORY}/${LIBRARY_NAME}")
 
     message(STATUS "Building ${PROJECT_NAME_PRETTY} as sub-project")
 else ()
@@ -72,6 +72,11 @@ endif ()
 
 set_target_properties(${_name} PROPERTIES
     Fortran_MODULE_DIRECTORY ${MODULE_DIRECTORY}
+)
+
+target_compile_options(${_name} PRIVATE
+    ${EXTERNAL_FFLAGS}
+    $<$<CONFIG:Debug>:${EXTERNAL_FFLAGS_Debug}>
 )
 
 if (USE_LTO)

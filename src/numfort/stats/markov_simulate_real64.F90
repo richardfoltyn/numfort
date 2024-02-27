@@ -17,7 +17,7 @@ module numfort_stats_markov_simulate_real64_default
     public :: markov_simulate_advanced
 
     integer, parameter :: PREC = real64
-    integer, parameter :: INTSIZE = __NUMFORT_DEFAULT_INT_KIND__
+    integer, parameter :: INTSIZE = kind(1)
 
     interface markov_simulate
         procedure simulate

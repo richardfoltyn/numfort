@@ -1,5 +1,5 @@
 
-set(COMPONENT_NAME optimize)
+get_filename_component(COMPONENT_NAME "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
 
 set(SOURCE_FILES
     optimize.f90
@@ -40,12 +40,13 @@ set(SOURCE_FILES
 
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
 add_dependencies(${COMPONENT_NAME} common arrays)
+
 # external libraries
-add_dependencies(${COMPONENT_NAME}
-    interfaces
-    simplex_csiro
-    lbfgsb_bmnz
-    minpack
-    newuoa2
-    slsqp
-)
+set(EXTERNAL interfaces simplex_csiro lbfgsb_bmnz minpack newuoa2 slsqp)
+
+foreach (_ext IN LISTS EXTERNAL)
+    add_dependencies(${COMPONENT_NAME} ${_ext})
+    target_include_directories(${COMPONENT_NAME} PRIVATE
+        "${EXTERNAL_MODULE_DIRECTORY}/${_ext}"
+    )
+endforeach()

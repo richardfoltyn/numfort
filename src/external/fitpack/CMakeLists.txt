@@ -1,7 +1,7 @@
 # src/external/fitpack/CMakeLists.txt
 # CMake configuration for FITPACK library
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
 
 project(fitpack Fortran)
 set(PROJECT_NAME_PRETTY FITPACK)
@@ -12,7 +12,7 @@ if (NOT CMAKE_BUILD_TYPE)
   set (CMAKE_BUILD_TYPE Release CACHE STRING
       "Choose the type of build, options are: None Debug Release."
       FORCE)
-endif (NOT CMAKE_BUILD_TYPE)
+endif ()
 
 ################################################################################
 # User-definable options
@@ -46,7 +46,7 @@ if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
     )
 
     # Store module files in global module directory
-    set(MODULE_DIRECTORY ${NUMFORT_MODULE_DIRECTORY}/external)
+    set(MODULE_DIRECTORY "${EXTERNAL_MODULE_DIRECTORY}/${LIBRARY_NAME}")
 
     message(STATUS "Building ${PROJECT_NAME_PRETTY} as sub-project")
 else ()
@@ -56,35 +56,18 @@ endif ()
 ################################################################################
 # Additional compiler flags for Fortran 2008 source files
 
-if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
-    # explicitly add -cpp to run C preprocessor if required
-    set(GNU_WARN "-Wall -Wextra -Warray-temporaries -Wrealloc-lhs -pedantic -Wuninitialized")
-    set(F18_FLAGS "${GNU_WARN} -std=f2018")
+unset(F18_FLAGS)
+unset(F18_FLAGS_Debug)
 
-    # Disable "surprising" warnings for older GFORTRAN version as this
-    # produces endless warnings about array finalizers
-    if (CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 7)
-        set(F18_FLAGS "${F18_FLAGS} -Wno-surprising")
-    endif()
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
+    set(GNU_WARN -Wall -Wextra -Warray-temporaries -Wrealloc-lhs -pedantic -Wuninitialized)
+    set(F18_FLAGS ${GNU_WARN} -std=f2018)
+
 elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel(LLVM)?")
     if (WIN32)
-        set(F18_FLAGS "/warn:all /standard-semantics /stand:f18")
-        # NOTE: When setting -standard-semantics, resets any previously
-        # given -assume std_mod_proc_name, so we need to append it again!
-        if (NOT IFORT_STD_MOD_PROC_NAME)
-            set(F18_FLAGS "${F18_FLAGS} /assume:nostd_mod_proc_name")
-        else ()
-            set(F18_FLAGS "${F18_FLAGS} /assume:std_mod_proc_name")
-        endif ()
+        set(F18_FLAGS /warn:all /stand:f18)
     else ()
-        set(F18_FLAGS "-warn all -standard-semantics -std18")
-        # NOTE: When setting -standard-semantics, resets any previously
-        # given -assume std_mod_proc_name, so we need to append it again!
-        if (NOT IFORT_STD_MOD_PROC_NAME)
-            set(F18_FLAGS "${F18_FLAGS} -assume nostd_mod_proc_name")
-        else ()
-            set(F18_FLAGS "${F18_FLAGS} -assume std_mod_proc_name")
-        endif ()
+        set(F18_FLAGS -warn all -std18)
     endif (WIN32)
 endif ()
 
@@ -99,20 +82,6 @@ set(SOURCE_FILES
 # These FLAGS are appended to any other previously defined FLAGS.
 list(APPEND F18_SOURCES constraints_tree.f90)
 list(APPEND SOURCE_FILES ${F18_SOURCES})
-
-if (F18_FLAGS)
-    set_source_files_properties(${F18_SOURCES} PROPERTIES
-        COMPILE_FLAGS "${F18_FLAGS}"
-    )
-endif ()
-
-string(TOUPPER ${CMAKE_BUILD_TYPE} _build)
-if (F18_FLAGS_${_build})
-    set_source_files_properties(${F18_SOURCES} PROPERTIES
-        COMPILE_FLAGS "${F18_FLAGS_${_build}}"
-    )
-endif ()
-
 
 set(_name ${LIBRARY_NAME})
 
@@ -130,6 +99,22 @@ endif ()
 set_target_properties(${_name} PROPERTIES
     Fortran_MODULE_DIRECTORY ${MODULE_DIRECTORY}
 )
+
+target_compile_options(${_name} PRIVATE
+    ${EXTERNAL_FFLAGS}
+    $<$<CONFIG:Debug>:${EXTERNAL_FFLAGS_Debug}>
+)
+
+target_include_directories(${_name} PUBLIC
+    "${MODULE_DIRECTORY}"
+)
+
+# These do not support generator expressions
+set_property(SOURCE ${F18_SOURCES} APPEND PROPERTY COMPILE_OPTIONS ${F18_FLAGS})
+set_property(SOURCE ${F18_SOURCES} APPEND PROPERTY COMPILE_OPTIONS 
+    ${F18_FLAGS_${CMAKE_BUILD_TYPE}}
+)
+
 
 # Building original example files shipped with FITPACK does not work ATM
 #if (BUILD_EXAMPLES)

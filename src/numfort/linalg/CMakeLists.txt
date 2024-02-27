@@ -1,6 +1,5 @@
-# src/numfort/numfort/arrays/CMakeLists.txt
 
-set(COMPONENT_NAME linalg)
+get_filename_component(COMPONENT_NAME "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
 
 set(SOURCE_FILES
     linalg.f90

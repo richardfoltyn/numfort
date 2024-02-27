@@ -1,6 +1,5 @@
-# src/numfort/numfort/interpolate/CMakeLists.txt
 
-set(COMPONENT_NAME interpolate)
+get_filename_component(COMPONENT_NAME "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
 
 set(SOURCE_FILES
 	interpolate.f90
@@ -15,3 +14,7 @@ set(SOURCE_FILES
 
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
 add_dependencies(${COMPONENT_NAME} common core fitpack)
+
+target_include_directories(${COMPONENT_NAME} PRIVATE
+    "${EXTERNAL_MODULE_DIRECTORY}/fitpack"
+)

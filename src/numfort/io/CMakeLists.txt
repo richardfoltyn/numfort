@@ -1,6 +1,5 @@
-# src/numfort/numfort/interp/CMakeLists.txt
 
-set(COMPONENT_NAME io)
+get_filename_component(COMPONENT_NAME "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
 
 set(SOURCE_FILES
     io.f90

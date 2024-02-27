@@ -1,7 +1,7 @@
 # src/external/minpack/CMakeLists.txt
 # CMake configuration for MINPACK library
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
 
 project(minpack Fortran)
 set(PROJECT_NAME_PRETTY MINPACK)
@@ -12,7 +12,7 @@ if (NOT CMAKE_BUILD_TYPE)
   set (CMAKE_BUILD_TYPE Release CACHE STRING
       "Choose the type of build, options are: None Debug Release."
       FORCE)
-endif (NOT CMAKE_BUILD_TYPE)
+endif ()
 
 ################################################################################
 # User-definable options
@@ -42,7 +42,7 @@ if (${CMAKE_PROJECT_NAME} STREQUAL "numfort")
     )
 
     # Store module files in global module directory
-    set(MODULE_DIRECTORY ${NUMFORT_MODULE_DIRECTORY}/external)
+    set(MODULE_DIRECTORY "${EXTERNAL_MODULE_DIRECTORY}/${LIBRARY_NAME}")
 
     message(STATUS "Building ${PROJECT_NAME_PRETTY} as sub-project")
 else ()
@@ -54,16 +54,14 @@ endif ()
 # Custom compiler flags
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-    set(_FFLAGS "-Wuninitialized -Wconversion")
+    set(_FFLAGS -Wuninitialized -Wconversion)
 elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel(LLVM)?")
     if (WIN32)
-        set(_FFLAGS "/warn:all")
+        set(_FFLAGS /warn:all)
     else ()
-        set(_FFLAGS "-warn all")
+        set(_FFLAGS -warn all)
     endif (WIN32)
 endif ()
-
-set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS}")
 
 ################################################################################
 # Target definitions
@@ -87,6 +85,12 @@ endif ()
 
 set_target_properties(${_name} PROPERTIES
     Fortran_MODULE_DIRECTORY ${MODULE_DIRECTORY}
+)
+
+target_compile_options(${_name} PRIVATE
+    ${EXTERNAL_FFLAGS}
+    $<$<CONFIG:Debug>:${EXTERNAL_FFLAGS_Debug}>
+    ${_FFLAGS}
 )
 
 if (USE_LTO)

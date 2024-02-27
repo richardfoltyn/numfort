@@ -25,7 +25,7 @@ foreach (_file IN LISTS SOURCE_FILES)
 	)
 
 	target_include_directories(${_target} PRIVATE
-		"${NUMFORT_MODULE_DIRECTORY}"
+		"${CMAKE_Fortran_MODULE_DIRECTORY}"
 		"${BLA_INCLUDE_DIRS}"
 	)
 

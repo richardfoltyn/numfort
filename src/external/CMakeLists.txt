@@ -2,31 +2,21 @@
 ################################################################################
 # Add compiler flags specific to external projects
 
-unset(_FFLAGS)
+unset(EXTERNAL_FFLAGS)
+unset(EXTERNAL_FFLAGS_Debug)
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
-    set(GNU_WARN "-Wall -Wno-uninitialized -Wno-conversion -Wno-unused -Wno-tabs -Wno-unused-dummy-argument")
-    set(_FFLAGS "${GNU_WARN} -std=legacy")
+    set(GNU_WARN -Wall -Wno-uninitialized -Wno-conversion -Wno-unused -Wno-tabs 
+        -Wno-unused-dummy-argument)
+    set(EXTERNAL_FFLAGS ${GNU_WARN} -std=legacy)
 elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel(LLVM)?")
     if (WIN32)
-        set(_FFLAGS "/warn:all,nounused,nousage")
-        #set(_FLAGS_RELEASE "/Qipo")
+        set(EXTERNAL_FFLAGS /warn:all,nounused,nousage)
     else ()
-        set(_FFLAGS "-warn all,nounused,nousage ${OpenMP_Fortran_FLAGS}")
-        #set(_FFLAGS_RELEASE "-ipo")
+        set(EXTERNAL_FFLAGS -warn all,nounused,nousage ${OpenMP_Fortran_FLAGS})
     endif (WIN32)
 endif ()
 
-# Store a copy of "original" FFLAGS without any additional warning options
-# applied to external libraries. These will be used for external examples
-# which otherwise generate a lot of warnings that we want to ignore.
-set(CMAKE_Fortran_FLAGS_DEBUG_ORIG "${CMAKE_Fortran_FLAGS_DEBUG}")
-set(CMAKE_Fortran_FLAGS_ORIG "${CMAKE_Fortran_FLAGS}")
-
-set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS}")
-
-string(TOUPPER "${CMAKE_BUILD_TYPE}" _CONFIG)
-message(STATUS "Flags for EXTERNAL code: ${CMAKE_Fortran_FLAGS} ${CMAKE_Fortran_FLAGS_${_CONFIG}}")
 
 ################################################################################
 

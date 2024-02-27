@@ -27,7 +27,7 @@ if (OPENMP_FOUND)
         )
 
         target_include_directories(${target_name} PRIVATE
-            ${NUMFORT_MODULE_DIRECTORY}
+            ${CMAKE_Fortran_MODULE_DIRECTORY}
             ${BLA_INCLUDE_DIRS}
         )
 

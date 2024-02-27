@@ -16,17 +16,6 @@ set(SOURCE_FILES
 # set output directory to examples directory
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${EXAMPLES_DIRECTORY}")
 
-include_directories("${MODULE_DIRECTORY}")
-
-if (CMAKE_Fortran_FLAGS_ORIG)
-	set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS_ORIG}")
-endif()
-
-if (CMAKE_Fortran_FLAGS_DEBUG_ORIG)
-	set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG_ORIG}")
-endif()
-
-
 # Add all tests as separate executables
 foreach (_file IN LISTS SOURCE_FILES)
 	get_filename_component(exe_name "${_file}" NAME_WE)
@@ -53,7 +42,6 @@ foreach (_file IN LISTS SOURCE_FILES)
 	set(_target ${PROJEC_NAME}_${exe_name})
     add_executable(${_target} ${SOURCE_FILES})
 
-	target_link_libraries(${_target} ${${PROJECT_NAME}_LIBRARIES})
 	set_target_properties(${_target} PROPERTIES OUTPUT_NAME ${exe_name})
 
 endforeach (_file)

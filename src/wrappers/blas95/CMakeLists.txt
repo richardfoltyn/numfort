@@ -23,7 +23,7 @@ if (BUILD_BLAS95)
     # Install blas95 wrappers mod file if not built against MKL; otherwise
     # client code is expected to use the interfaces provided by MKL.
     install(FILES
-        "${NUMFORT_MODULE_DIRECTORY}/blas95.mod"
+        "${CMAKE_Fortran_MODULE_DIRECTORY}/blas95.mod"
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${NUMFORT_INSTALL_DIR}"
     )
 endif()

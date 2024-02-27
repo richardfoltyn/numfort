@@ -3,8 +3,8 @@ module numfort
     use numfort_core
     implicit none
 
-    integer, parameter, dimension(${NUMFORT_VERSION_COUNT}) :: NUMFORT_VERSION_COMPONENTS = &
-        [${NUMFORT_VERSION_MAJOR}, ${NUMFORT_VERSION_MINOR}, ${NUMFORT_VERSION_PATCH}]
+    integer, parameter, dimension(*) :: NUMFORT_VERSION_COMPONENTS = &
+        [${PROJECT_VERSION_MAJOR}, ${PROJECT_VERSION_MINOR}, ${PROJECT_VERSION_PATCH}]
 
     character (*), parameter :: NUMFORT_VERSION = '${NUMFORT_VERSION}'
 

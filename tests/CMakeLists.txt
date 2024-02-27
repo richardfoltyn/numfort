@@ -1,4 +1,7 @@
-# CMake configuration for numfort examples
+# src/tests/CMakeLists.txt
+# Configuration file for numfort unit tests
+
+find_package(fcore REQUIRED)
 
 if (USE_OPENMP)
     find_package(OpenMP)
@@ -9,7 +12,7 @@ if (USE_OPENMP)
 endif()
 
 ################################################################################
-# Additional compiler flags for examples
+# Additional compiler flags for unit tests
 
 unset(_FFLAGS)
 unset(_FFLAGS_DEBUG)
@@ -40,64 +43,85 @@ elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel(LLVM)?")
     endif (WIN32)
 endif ()
 
-# add standard semantics to compiler flags even for F77 files, in case
-# these reference any submodules
 set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS}")
 set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${_FFLAGS_DEBUG}")
 
-message(STATUS "Building examples")
+message(STATUS "Building unit tests")
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" _CONFIG)
-message(STATUS "Flags for EXAMPLES: ${CMAKE_Fortran_FLAGS} ${CMAKE_Fortran_FLAGS_${_CONFIG}}")
+message(STATUS "Flags for TESTS: ${CMAKE_Fortran_FLAGS} ${CMAKE_Fortran_FLAGS_${_CONFIG}}")
+
 
 ################################################################################
 
+list(APPEND COMPONENTS
+    arrays
+    common
+    core
+    integrate
+    interpolate
+    io
+    linalg
+    optimize
+    polynomial
+    stats
+)
 
+if (BUILD_BLAS95)
+    list(APPEND COMPONENTS wrappers)
+endif()
 
-# List of subdirectories to search for example files
-list(APPEND _MODULES interpolate optimize stats)
-
-
-# Add all tests as separate executables
-foreach (_comp IN LISTS _MODULES)
+# keep only child items that are directories
+foreach (_comp IN LISTS COMPONENTS)
     # subdirectory stores source files (without directory prefix) in
     # the following variable
     unset(${_comp}_FILES)
     add_subdirectory(${_comp})
 
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY
-        "${NUMFORT_EXAMPLES_DIRECTORY}/${_comp}"
+        "${NUMFORT_TESTS_DIRECTORY}/${_comp}"
     )
 
-    foreach (_file IN LISTS ${_comp}_FILES)
-        get_filename_component(exe_name "${_file}" NAME_WE)
-        # set target name that does not possibly conflict with other stuff
-        set(_target example_${_comp}_${exe_name})
-        add_executable(${_target} "${_comp}/${_file}")
+    # Collect additional source files for this component and prepend
+    # component directory
+    if (${_comp}_SHARED_FILES)
+        foreach (f IN LISTS ${_comp}_SHARED_FILES)
+            list(APPEND ${_comp}_aux_source "${_comp}/${f}")
+        endforeach()
+    endif()
 
-        target_link_libraries(${_target} PRIVATE
-            ${NUMFORT_LIBRARY_NAME}
-            ${BLA_LIBRARIES}
+    foreach (test_source IN LISTS ${_comp}_FILES)
+        get_filename_component(exe_name "${test_source}" NAME_WE)
+        set(target_name "test_${_comp}_${exe_name}")
+        add_executable(${target_name}
+            "${_comp}/${test_source}"
+            ${${_comp}_aux_source}
         )
 
         if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/${_comp}/include")
-            target_include_directories(${_target} PRIVATE "${_comp}/include")
+            target_include_directories(${target_name} PRIVATE "${_comp}/include")
         endif()
 
-        target_include_directories(${_target} PRIVATE
+        target_link_libraries(${target_name}
+            ${NUMFORT_LIBRARY_NAME}
+            fcore::fcore
+            ${BLA_LIBRARIES}
+        )
+        target_include_directories(${target_name} PRIVATE
             "${NUMFORT_HEADER_INCLUDE_DIR}"
-            "${NUMFORT_MODULE_DIRECTORY}"
-            ${BLA_INCLUDE_DIRS}
+            "${CMAKE_Fortran_MODULE_DIRECTORY}"
+            "${BLA_INCLUDE_DIRS}"
         )
 
-        set_target_properties(${_target} PROPERTIES
+        set_target_properties(${target_name} PROPERTIES
             OUTPUT_NAME ${exe_name}
         )
-    endforeach ()
 
-endforeach ()
+        add_test(NAME ${exe_name} COMMAND ${exe_name}
+            WORKING_DIRECTORY "${NUMFORT_TESTS_DIRECTORY}/${_comp}"
+        )
+    endforeach()
 
+endforeach()
 
-if (OPENMP_FOUND)
-    add_subdirectory(openmp)
-endif()
+add_subdirectory(openmp)
