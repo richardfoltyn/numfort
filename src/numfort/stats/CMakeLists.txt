@@ -40,12 +40,7 @@ set(SOURCE_FILES
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
 add_dependencies(${COMPONENT_NAME} arrays common core linalg interpolate)
 
-# external libraries
-set(EXTERNAL cdflib90 random sobol_direction_num)
-
-foreach (_ext IN LISTS EXTERNAL)
-    add_dependencies(${COMPONENT_NAME} ${_ext})
-    target_include_directories(${COMPONENT_NAME} PRIVATE
-        "${EXTERNAL_MODULE_DIRECTORY}/${_ext}"
-    )
-endforeach()
+# External dependencies
+target_link_libraries(${COMPONENT_NAME} PRIVATE
+    cdflib90 random sobol_direction_num
+)

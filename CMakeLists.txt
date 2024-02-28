@@ -135,6 +135,11 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/include/numfort")
 set(EXTERNAL_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/include/external")
 
+# Output directory for additional static library used for linking tests
+# and examples irrespective of whether main build is shared/static.
+# This is not meant to be installed anywhere, so keep it separate.
+set(NUMFORT_STATIC_DIRECTORY "${CMAKE_BINARY_DIR}/lib-static")
+
 
 ###############################################################################
 # Path suffixes beneath CMAKE_INSTALL_PREFIX
@@ -195,28 +200,29 @@ unset(_FFLAGS_Debug)
 # https://software.intel.com/en-us/articles/consistency-of-floating-point-results-using-the-intel-compiler/
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
-    set(_FFLAGS_Debug -fcheck=all -O0)
+    set(_FFLAGS "-frecursive")
+    set(_FFLAGS_Debug "-fcheck=all -O0")
 elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel(LLVM)?")
     if (WIN32)
-        set(_FFLAGS /auto)
-        set(_FFLAGS_Debug /check:all)
+        set(_FFLAGS "/auto /assume:recursion")
+        set(_FFLAGS_Debug "/check:all")
         # Disable seriously annoying warning that ifort is deprecated
         if (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
-            set(_FFLAGS ${_FFLAGS} /Qdiag-disable:10448)
+            set(_FFLAGS "${_FFLAGS} /Qdiag-disable:10448")
         endif ()
     else ()
-        set(_FFLAGS -auto)
-        set(_FFLAGS_Debug -check all)
+        set(_FFLAGS "-auto -assume recursion")
+        set(_FFLAGS_Debug "-check all")
 
         # Disable seriously annoying warning that ifort is deprecated
         if (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
-            set(_FFLAGS ${_FFLAGS} -diag-disable=10448)
+            set(_FFLAGS "${_FFLAGS} -diag-disable=10448")
         endif ()
     endif (WIN32)
 endif ()
 
-set(CMAKE_Fortran_FLAGS ${CMAKE_Fortran_FLAGS} ${_FFLAGS})
-set(CMAKE_Fortran_FLAGS_Debug ${CMAKE_Fortran_FLAGS_Debug} ${_FFLAGS_Debug})
+set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS}")
+set(CMAKE_Fortran_FLAGS_Debug "${CMAKE_Fortran_FLAGS_Debug} ${_FFLAGS_Debug}")
 
 
 ################################################################################

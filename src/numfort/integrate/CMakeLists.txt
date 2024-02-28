@@ -10,8 +10,7 @@ set(SOURCE_FILES
 )
 
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
-add_dependencies(${COMPONENT_NAME} common quadpack)
+add_dependencies(${COMPONENT_NAME} common)
 
-target_include_directories(${COMPONENT_NAME} PRIVATE
-    "${EXTERNAL_MODULE_DIRECTORY}/quadpack"
-)
+# External dependencies
+target_link_libraries(${COMPONENT_NAME} PRIVATE quadpack)

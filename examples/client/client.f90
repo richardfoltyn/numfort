@@ -1,6 +1,6 @@
 
 
-program numfort_consumer
+program numfort_client
 
     use numfort
     implicit none

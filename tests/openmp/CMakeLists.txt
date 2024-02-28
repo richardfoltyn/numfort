@@ -10,10 +10,6 @@ set(SOURCE_FILES
     minpack.f90
 )
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY
-    "${NUMFORT_TESTS_DIRECTORY}/${_dir}"
-)
-
 if (OPENMP_FOUND)
     set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
     foreach (test_source IN LISTS SOURCE_FILES)
@@ -21,18 +17,24 @@ if (OPENMP_FOUND)
         set(target_name test_${_dir}_${exe_name})
         add_executable(${target_name} "${test_source}")
 
-        target_link_libraries(${target_name} ${NUMFORT_LIBRARY_NAME}
+        target_link_libraries(${target_name} 
+            ${NUMFORT_LIBRARY_NAME}
             fcore::fcore
             ${BLA_LIBRARIES}
         )
 
+        target_link_directories(${target_name}
+            PRIVATE "${NUMFORT_STATIC_DIRECTORY}"
+        )
+
         target_include_directories(${target_name} PRIVATE
-            ${CMAKE_Fortran_MODULE_DIRECTORY}
-            ${BLA_INCLUDE_DIRS}
+            "${CMAKE_Fortran_MODULE_DIRECTORY}"
+            "${BLA_INCLUDE_DIRS}"
         )
 
         set_target_properties(${target_name} PROPERTIES
             OUTPUT_NAME ${exe_name}
+            RUNTIME_OUTPUT_DIRECTORY "${NUMFORT_TESTS_DIRECTORY}/${_dir}"
         )
 
         add_test(NAME ${exe_name} COMMAND ${exe_name}

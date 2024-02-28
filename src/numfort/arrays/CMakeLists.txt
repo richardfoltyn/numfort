@@ -19,8 +19,7 @@ set(SOURCE_FILES
 )
 
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
-add_dependencies(${COMPONENT_NAME} core common orderpack)
+add_dependencies(${COMPONENT_NAME} core common)
 
-target_include_directories(${COMPONENT_NAME} PRIVATE
-    "${EXTERNAL_MODULE_DIRECTORY}/orderpack"
-)
+# External dependencies
+target_link_libraries(${COMPONENT_NAME} PRIVATE orderpack)

@@ -41,12 +41,9 @@ set(SOURCE_FILES
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
 add_dependencies(${COMPONENT_NAME} common arrays)
 
-# external libraries
-set(EXTERNAL interfaces simplex_csiro lbfgsb_bmnz minpack newuoa2 slsqp)
+# additional internal dependencies
+add_dependencies(${COMPONENT_NAME} interfaces)
 
-foreach (_ext IN LISTS EXTERNAL)
-    add_dependencies(${COMPONENT_NAME} ${_ext})
-    target_include_directories(${COMPONENT_NAME} PRIVATE
-        "${EXTERNAL_MODULE_DIRECTORY}/${_ext}"
-    )
-endforeach()
+target_link_libraries(${COMPONENT_NAME} PRIVATE 
+    simplex_csiro lbfgsb_bmnz minpack newuoa2 slsqp
+)

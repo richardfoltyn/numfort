@@ -73,29 +73,32 @@ set(SOURCE_FILES
     cdf_t_mod.f90
 )
 
-set(_name ${LIBRARY_NAME})
 
 # build shared/static library from object library only if standalone build.
 # Otherwise, parent project will use object library directly.
 if (BUILD_STANDALONE)
-    add_library(${_name} ${SOURCE_FILES})
+    add_library(${LIBRARY_NAME} ${SOURCE_FILES})
     if (BUILD_SHARED_LIBS)
-        set_target_properties(${_name} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        set_target_properties(${LIBRARY_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
     endif ()
 else ()
-    add_library(${_name} OBJECT ${SOURCE_FILES})
+    add_library(${LIBRARY_NAME} OBJECT ${SOURCE_FILES})
 endif ()
 
-set_target_properties(${_name} PROPERTIES
-    Fortran_MODULE_DIRECTORY ${MODULE_DIRECTORY}
+set_target_properties(${LIBRARY_NAME} PROPERTIES
+    Fortran_MODULE_DIRECTORY "${MODULE_DIRECTORY}"
 )
 
-target_compile_options(${_name} PRIVATE
+target_include_directories(${LIBRARY_NAME} PUBLIC
+    "${MODULE_DIRECTORY}"
+)
+
+target_compile_options(${LIBRARY_NAME} PRIVATE
     ${EXTERNAL_FFLAGS}
     $<$<CONFIG:Debug>:${EXTERNAL_FFLAGS_Debug}>
 )
 
 if (USE_LTO)
-    set_target_properties(${_name} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+    set_target_properties(${LIBRARY_NAME} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
 

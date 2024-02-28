@@ -4,7 +4,7 @@
 # than flags for external code, examples, unit tests, etc.
 
 unset(_FFLAGS)
-unset(_FFLAGS_DEBUG)
+unset(_FFLAGS_Debug)
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     set(GNU_WARN -Wall -Wextra -Wno-compare-reals -Warray-temporaries 
@@ -24,7 +24,7 @@ elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel(LLVM)?")
     if (WIN32)
         set(_FFLAGS /warn:all /stand:f18 /auto)
     else ()
-        set(_FFLAGS -warn all -standard-semantics -std18 -auto)
+        set(_FFLAGS -warn all -std18 -auto)
         set(_FFLAGS_REPORT -qopt-report=2 -qopt-report-phase=ipo,loop,par,vec)
         if (OPT_REPORT)
             set(_FFLAGS ${_FFLAGS} ${_FFLAGS_REPORT})
@@ -100,6 +100,11 @@ configure_file(numfort.f90.in
     ${CMAKE_BINARY_DIR}/numfort.f90
 )
 
+# Additional sources that are not part of any object library
+set(SOURCE_FILES
+    ${CMAKE_BINARY_DIR}/numfort.f90 
+)
+
 # get list of targets the ultimate library depends on. This list is populated
 # in the sub-components' directories
 get_property(_TARGETS GLOBAL PROPERTY ${CMAKE_PROJECT_NAME}_COMPONENT_TARGETS)
@@ -110,7 +115,8 @@ foreach (_comp IN LISTS _TARGETS)
 endforeach ()
 
 add_library(${NUMFORT_LIBRARY_NAME} 
-    ${CMAKE_BINARY_DIR}/numfort.f90 ${COMPONENT_OBJECTS}
+    ${SOURCE_FILES}
+    ${COMPONENT_OBJECTS}
 )
 
 set_target_properties(${NUMFORT_LIBRARY_NAME} PROPERTIES
@@ -122,3 +128,27 @@ set_target_properties(${NUMFORT_LIBRARY_NAME} PROPERTIES
 set_target_properties(${NUMFORT_LIBRARY_NAME} PROPERTIES
     VERSION ${PROJECT_VERSION}
 )
+
+if (BUILD_TESTS OR BUILD_EXAMPLES)
+    # build static library so tests & examples can link against it
+    add_library(${NUMFORT_LIBRARY_NAME}_static STATIC 
+        ${SOURCE_FILES}
+        ${COMPONENT_OBJECTS}
+    )
+
+    set_target_properties(${NUMFORT_LIBRARY_NAME}_static PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${NUMFORT_STATIC_DIRECTORY}"
+        LIBRARY_OUTPUT_DIRECTORY "${NUMFORT_STATIC_DIRECTORY}"
+        ARCHIVE_OUTPUT_DIRECTORY "${NUMFORT_STATIC_DIRECTORY}"
+        OUTPUT_NAME ${NUMFORT_LIBRARY_NAME}
+    )
+
+    # Add public include directories, this will propagage to tests and 
+    # examples.
+    target_include_directories(${NUMFORT_LIBRARY_NAME}_static
+        PUBLIC
+            "$<BUILD_INTERFACE:${CMAKE_Fortran_MODULE_DIRECTORY}>"
+            "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/numfort/include>"
+    )
+
+endif ()

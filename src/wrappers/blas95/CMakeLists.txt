@@ -7,12 +7,15 @@ set(SOURCE_FILES
     blas95.F90
 )
 
-include_directories(${NUMFORT_HEADER_INCLUDE_DIR})
-
 message(STATUS "Building BLAS95 wrappers")
 
 add_library(${COMPONENT_NAME} OBJECT ${SOURCE_FILES})
 add_dependencies(${COMPONENT_NAME} interfaces)
+
+target_include_directories(${COMPONENT_NAME}
+    PRIVATE
+    "${CMAKE_SOURCE_DIR}/src/numfort/include"
+)
 
 # append to list of object library targets
 set_property(GLOBAL APPEND
