@@ -163,7 +163,9 @@ subroutine power_grid(x, xmin, xmax, pow)
 
     n = size(x)
 
-    forall (i = 1:n) work(i) = ((i-1.0d0) / (n - 1.0d0)) ** pow
+    do i = 1, n 
+        work(i) = ((i-1.0d0) / (n - 1.0d0)) ** pow
+    end do
     x = real(xmin + (xmax - xmin) * work, PREC)
     ! prevent any rounding errors
     x(1) = xmin

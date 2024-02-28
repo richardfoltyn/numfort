@@ -74,7 +74,9 @@ subroutine example1 ()
     ! --- True coefs ---
 
     allocate (coefs_true(Nvars))
-    forall (i=1:Nvars) coefs_true(i) = (-1.0_PREC)**i * exp(-i/10.0_PREC)
+    do i = 1, Nvars
+        coefs_true(i) = (-1.0_PREC)**i * exp(-i/10.0_PREC)
+    end do
 
     ! Set half to 0
     coefs_true(Nvars/2+1:) = 0.0

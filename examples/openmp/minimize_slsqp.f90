@@ -154,7 +154,6 @@ subroutine solve_parallel (alpha, beta, xlb, xub, xmin, fxmin)
     end do
     !$omp end do
 
-    call workspace_finalize (work)
     !$omp end parallel
 
     toc = omp_get_wtime ()
