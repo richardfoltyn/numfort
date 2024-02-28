@@ -4,7 +4,7 @@
 # than flags for external code, examples, unit tests, etc.
 
 unset(_FFLAGS)
-unset(_FFLAGS_Debug)
+unset(_FFLAGS_DEBUG)
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     set(GNU_WARN -Wall -Wextra -Wno-compare-reals -Warray-temporaries 
@@ -16,15 +16,15 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
         # compiler cannot detect conditional execution.
         set(GNU_WARN ${GNU_WARN} -Wno-do-subscript)
     endif()
-    set(_FFLAGS ${GNU_WARN} --std=f2018)
+    set(_FFLAGS ${GNU_WARN} --std=f2018 -fimplicit-none)
     set(_FFLAGS ${_FFLAGS} -finline-functions -fipa-cp-clone -fgraphite-identity 
         -floop-nest-optimize -ftree-loop-distribution -ftree-vectorize
     )
 elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel(LLVM)?")
     if (WIN32)
-        set(_FFLAGS /warn:all /stand:f18 /auto)
+        set(_FFLAGS /warn:all /stand:f18)
     else ()
-        set(_FFLAGS -warn all -std18 -auto)
+        set(_FFLAGS -warn all -std18)
         set(_FFLAGS_REPORT -qopt-report=2 -qopt-report-phase=ipo,loop,par,vec)
         if (OPT_REPORT)
             set(_FFLAGS ${_FFLAGS} ${_FFLAGS_REPORT})
@@ -85,7 +85,7 @@ foreach (_comp IN LISTS COMPONENTS)
 
     target_compile_options(${_comp} BEFORE PRIVATE
         $<$<COMPILE_LANGUAGE:Fortran>:${_FFLAGS}>
-        $<$<COMPILE_LANGUAGE:Fortran>:$<$<CONFIG:Debug>:${_FFLAGS_Debug}>>
+        $<$<COMPILE_LANGUAGE:Fortran>:$<$<CONFIG:Debug>:${_FFLAGS_DEBUG}>>
     )
 
     # append to list of object library targets

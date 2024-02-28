@@ -14,7 +14,7 @@ endif()
 # Additional compiler flags for all examples
 
 unset(_FFLAGS)
-unset(_FFLAGS_Debug)
+unset(_FFLAGS_DEBUG)
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     set(GNU_WARN "-Wall -pedantic -Wuninitialized -Wno-unused")
@@ -28,7 +28,7 @@ elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel(LLVM)?")
 endif ()
 
 set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS}")
-set(CMAKE_Fortran_FLAGS_Debug "${CMAKE_Fortran_FLAGS_DEBUG} ${_FFLAGS_Debug}")
+set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${_FFLAGS_DEBUG}")
 
 message(STATUS "Building examples")
 

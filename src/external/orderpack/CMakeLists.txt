@@ -100,7 +100,7 @@ target_include_directories(${LIBRARY_NAME}
 
 target_compile_options(${LIBRARY_NAME} PRIVATE
     ${EXTERNAL_FFLAGS}
-    $<$<CONFIG:Debug>:${EXTERNAL_FFLAGS_Debug}>
+    $<$<CONFIG:Debug>:${EXTERNAL_FFLAGS_DEBUG}>
 )
 
 if (USE_LTO)

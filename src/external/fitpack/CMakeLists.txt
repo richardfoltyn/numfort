@@ -57,7 +57,7 @@ endif ()
 # Additional compiler flags for Fortran 2008 source files
 
 unset(F18_FLAGS)
-unset(F18_FLAGS_Debug)
+unset(F18_FLAGS_DEBUG)
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     set(GNU_WARN -Wall -Wextra -Warray-temporaries -Wrealloc-lhs -pedantic -Wuninitialized)
@@ -104,7 +104,7 @@ target_include_directories(${LIBRARY_NAME} PUBLIC
 
 target_compile_options(${LIBRARY_NAME} PRIVATE
     ${EXTERNAL_FFLAGS}
-    $<$<CONFIG:Debug>:${EXTERNAL_FFLAGS_Debug}>
+    $<$<CONFIG:Debug>:${EXTERNAL_FFLAGS_DEBUG}>
 )
 
 if (USE_LTO)

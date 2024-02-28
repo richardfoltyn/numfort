@@ -194,25 +194,25 @@ endif()
 # Universal compiler FLAGS for all targets
 
 unset(_FFLAGS)
-unset(_FFLAGS_Debug)
+unset(_FFLAGS_DEBUG)
 
 # Notes on the floating point model used by ifort:
 # https://software.intel.com/en-us/articles/consistency-of-floating-point-results-using-the-intel-compiler/
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     set(_FFLAGS "-frecursive")
-    set(_FFLAGS_Debug "-fcheck=all -O0")
+    set(_FFLAGS_DEBUG "-fcheck=all -O0")
 elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel(LLVM)?")
     if (WIN32)
         set(_FFLAGS "/auto /assume:recursion")
-        set(_FFLAGS_Debug "/check:all")
+        set(_FFLAGS_DEBUG "/check:all")
         # Disable seriously annoying warning that ifort is deprecated
         if (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
             set(_FFLAGS "${_FFLAGS} /Qdiag-disable:10448")
         endif ()
     else ()
         set(_FFLAGS "-auto -assume recursion")
-        set(_FFLAGS_Debug "-check all")
+        set(_FFLAGS_DEBUG "-check all")
 
         # Disable seriously annoying warning that ifort is deprecated
         if (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
@@ -222,7 +222,7 @@ elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel(LLVM)?")
 endif ()
 
 set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS}")
-set(CMAKE_Fortran_FLAGS_Debug "${CMAKE_Fortran_FLAGS_Debug} ${_FFLAGS_Debug}")
+set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${_FFLAGS_DEBUG}")
 
 
 ################################################################################

@@ -14,11 +14,11 @@ endif()
 # Additional compiler flags for all unit tests
 
 unset(_FFLAGS)
-unset(_FFLAGS_Debug)
+unset(_FFLAGS_DEBUG)
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     set(GNU_WARN "-Wall -pedantic -Wuninitialized -Wno-unused")
-    set(_FFLAGS "${GNU_WARN} --std=f2018")
+    set(_FFLAGS "${GNU_WARN} --std=f2018 -fimplicit-none")
 elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel(LLVM)?")
     if (WIN32)
         set(_FFLAGS "/warn:all,nounused,nousage /stand:f18")
@@ -28,7 +28,7 @@ elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel(LLVM)?")
 endif ()
 
 set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${_FFLAGS}")
-set(CMAKE_Fortran_FLAGS_Debug "${CMAKE_Fortran_FLAGS_DEBUG} ${_FFLAGS_Debug}")
+set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${_FFLAGS_DEBUG}")
 
 message(STATUS "Building unit tests")
 

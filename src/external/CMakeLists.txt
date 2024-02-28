@@ -3,7 +3,7 @@
 # Add compiler flags specific to external projects
 
 unset(EXTERNAL_FFLAGS)
-unset(EXTERNAL_FFLAGS_Debug)
+unset(EXTERNAL_FFLAGS_DEBUG)
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
     set(GNU_WARN -Wall -Wno-uninitialized -Wno-conversion -Wno-unused -Wno-tabs 
