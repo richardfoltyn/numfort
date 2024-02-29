@@ -178,11 +178,11 @@ string(REGEX REPLACE "(^[0-9]+).*" "\\1" Fortran_COMPILER_VERSION_MAJOR
 set(Fortran_COMPILER_SUFFIX "${Fortran_COMPILER_ID}-${Fortran_COMPILER_VERSION_MAJOR}")
 
 # Installation directory within <prefix>/lib, <prefix>/include, etc.
-# If ont defined by -DNUMFORT_INSTALL_DIR by the user, create
+# If ont defined by -DINSTALL_DIR_NAME by the user, create
 # version- and compiler-specific directory name.
-if (NOT DEFINED NUMFORT_INSTALL_DIR)
+if (NOT DEFINED INSTALL_DIR_NAME)
     set(_version ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
-    set(NUMFORT_INSTALL_DIR
+    set(INSTALL_DIR_NAME
         "${NUMFORT_LIBRARY_NAME}-${_version}-${Fortran_COMPILER_SUFFIX}"
         CACHE STRING "Install directory name"
         FORCE
@@ -244,7 +244,7 @@ endif ()
 
 # Path there cmake config files will be installed
 set(NUMFORT_INSTALL_CONFIG_PATH
-    ${CMAKE_INSTALL_LIBDIR}/${NUMFORT_INSTALL_DIR}/cmake
+    ${CMAKE_INSTALL_LIBDIR}/${INSTALL_DIR_NAME}/cmake
 )
 
 set(NUMFORT_INSTALL_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/install")
@@ -271,11 +271,11 @@ configure_package_config_file("${NUMFORT_INSTALL_SOURCE_DIR}/config.cmake.in"
 # INTERFACE_INCLUDE_DIRECTORIES property on every exported target
 install(TARGETS ${NUMFORT_LIBRARY_NAME}
     EXPORT ${NUMFORT_LIBRARY_NAME}_targets
-    RUNTIME DESTINATION "${CMAKE_INSTALL_LIBDIR}/${NUMFORT_INSTALL_DIR}"
-    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}/${NUMFORT_INSTALL_DIR}"
-    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}/${NUMFORT_INSTALL_DIR}"
+    RUNTIME DESTINATION "${CMAKE_INSTALL_LIBDIR}/${INSTALL_DIR_NAME}"
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}/${INSTALL_DIR_NAME}"
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}/${INSTALL_DIR_NAME}"
     INCLUDES DESTINATION
-        "${CMAKE_INSTALL_INCLUDEDIR}/${NUMFORT_INSTALL_DIR}"
+        "${CMAKE_INSTALL_INCLUDEDIR}/${INSTALL_DIR_NAME}"
 )
 
 export(EXPORT ${NUMFORT_LIBRARY_NAME}_targets
@@ -303,7 +303,7 @@ install(FILES
 # by external projects
 # TODO: Do not install MOD files that are used only internally.
 install(DIRECTORY "${CMAKE_Fortran_MODULE_DIRECTORY}/"
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${NUMFORT_INSTALL_DIR}"
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${INSTALL_DIR_NAME}"
     FILES_MATCHING PATTERN "numfort*.mod"
     PATTERN "external" EXCLUDE
 )

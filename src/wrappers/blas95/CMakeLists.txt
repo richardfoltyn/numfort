@@ -27,6 +27,6 @@ if (BUILD_BLAS95)
     # client code is expected to use the interfaces provided by MKL.
     install(FILES
         "${CMAKE_Fortran_MODULE_DIRECTORY}/blas95.mod"
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${NUMFORT_INSTALL_DIR}"
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${INSTALL_DIR_NAME}"
     )
 endif()

@@ -16,5 +16,5 @@ set_property(GLOBAL APPEND
 install(FILES
     "${CMAKE_Fortran_MODULE_DIRECTORY}/blas_interfaces.mod"
     "${CMAKE_Fortran_MODULE_DIRECTORY}/lapack_interfaces.mod"
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${NUMFORT_INSTALL_DIR}"
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${INSTALL_DIR_NAME}"
 )
