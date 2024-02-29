@@ -4,33 +4,41 @@
 # than flags for external code, examples, unit tests, etc.
 
 unset(_FFLAGS)
+unset(_FFLAGS_REQUIRED)
 unset(_FFLAGS_DEBUG)
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" OR MINGW)
-    set(GNU_WARN -Wall -Wextra -Wno-compare-reals -Warray-temporaries 
-        -Wrealloc-lhs -pedantic -Wuninitialized
-    )
-
+    set(GNU_WARN "-Wall -Wextra -Wno-compare-reals -Warray-temporaries -Wrealloc-lhs -pedantic -Wuninitialized")
     if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 9)
         # Skip warning about out-of-bounds array indices in do loops since
         # compiler cannot detect conditional execution.
-        set(GNU_WARN ${GNU_WARN} -Wno-do-subscript)
+        set(GNU_WARN "${GNU_WARN} -Wno-do-subscript")
     endif()
-    set(_FFLAGS ${GNU_WARN} --std=f2018 -fimplicit-none)
-    set(_FFLAGS ${_FFLAGS} -finline-functions -fipa-cp-clone -fgraphite-identity 
-        -floop-nest-optimize -ftree-loop-distribution -ftree-vectorize
-    )
+    # Flags controlling optimization
+    set(_FFLAGS_OPTIM "-finline-functions -fipa-cp-clone -fgraphite-identity -floop-nest-optimize -ftree-loop-distribution -ftree-vectorize")
+    set(_FFLAGS "${GNU_WARN} ${_FFLAGS_OPTIM}")
+    # Required flags that we don't allow to be overridden by users
+    set(_FFLAGS_REQUIRED "--std=f2018 -fimplicit-none")
 elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel(LLVM)?")
     if (WIN32)
-        set(_FFLAGS /warn:all /stand:f18)
+        set(_FFLAGS_REQUIRED "/stand:f18")
+        set(_FFLAGS "/warn:all")
     else ()
-        set(_FFLAGS -warn all -std18)
-        set(_FFLAGS_REPORT -qopt-report=2 -qopt-report-phase=ipo,loop,par,vec)
+        set(_FFLAGS_REQUIRED "-std18")
+        set(_FFLAGS "-warn all")
+        set(_FFLAGS_REPORT "-qopt-report=2 -qopt-report-phase=ipo,loop,par,vec")
         if (OPT_REPORT)
             set(_FFLAGS ${_FFLAGS} ${_FFLAGS_REPORT})
         endif()
     endif (WIN32)
 endif ()
+
+# Impose FLAGS at directory level instead of with target_compile_options()
+# With the latter, these seems to be no way to reliably impose an order 
+# of user-specified FLAGS and these definded above.
+# Allow users to overwride _FFLAGS but not _FFLAGS_REQUIRED
+set(CMAKE_Fortran_FLAGS "${_FFLAGS} ${CMAKE_Fortran_FLAGS} ${_FFLAGS_REQUIRED}")
+set(CMAKE_Fortran_FLAGS_DEBUG "${_FFLAGS_DEBUG} ${CMAKE_Fortran_FLAGS_DEBUG}")
 
 if (USE_OPENMP)
     find_package(OpenMP)
@@ -82,11 +90,6 @@ foreach (_comp IN LISTS COMPONENTS)
     if (BUILD_SHARED_LIBS)
         set_target_properties(${_comp} PROPERTIES POSITION_INDEPENDENT_CODE ON)
     endif ()
-
-    target_compile_options(${_comp} BEFORE PRIVATE
-        $<$<COMPILE_LANGUAGE:Fortran>:${_FFLAGS}>
-        $<$<COMPILE_LANGUAGE:Fortran>:$<$<CONFIG:Debug>:${_FFLAGS_DEBUG}>>
-    )
 
     # append to list of object library targets
     set_property(GLOBAL APPEND
