@@ -9,6 +9,7 @@ set(${COMPONENT_NAME}_FILES
     dlognorm.F90
     dmvnorm.f90
     dnorm.f90
+    ineq.f90
     lm.f90
     markov.f90
     glmnet.f90

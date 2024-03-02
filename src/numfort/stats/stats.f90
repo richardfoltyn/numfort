@@ -18,6 +18,9 @@ module numfort_stats
     use numfort_stats_dnorm
     use numfort_stats_duniform
 
+    use numfort_stats_ineq_real32
+    use numfort_stats_ineq_real64
+
     use numfort_stats_lm
 
     use numfort_stats_np
