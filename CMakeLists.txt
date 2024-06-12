@@ -123,24 +123,6 @@ if (USE_LTO)
     message(STATUS "Link-time optimization ENABLED")
 endif()
 
-################################################################################
-# Output directories
-
-set(NUMFORT_TESTS_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")
-set(NUMFORT_EXAMPLES_DIRECTORY "${CMAKE_BINARY_DIR}/bin/examples")
-set(NUMFORT_BENCHMARKS_DIRECTORY "${CMAKE_BINARY_DIR}/bin/benchmarks")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
-
-set(CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/include/numfort")
-set(EXTERNAL_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/include/external")
-
-# Output directory for additional static library used for linking tests
-# and examples irrespective of whether main build is shared/static.
-# This is not meant to be installed anywhere, so keep it separate.
-set(NUMFORT_STATIC_DIRECTORY "${CMAKE_BINARY_DIR}/lib-static")
-
-
 ###############################################################################
 # Path suffixes beneath CMAKE_INSTALL_PREFIX
 
@@ -166,6 +148,24 @@ if (_INSTALL_INCLUDEDDIR)
 elseif (NOT CMAKE_INSTALL_INCLUDEDIR)
     set(CMAKE_INSTALL_INCLUDEDIR include)
 endif()
+
+
+################################################################################
+# Output directories
+
+set(NUMFORT_TESTS_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")
+set(NUMFORT_EXAMPLES_DIRECTORY "${CMAKE_BINARY_DIR}/bin/examples")
+set(NUMFORT_BENCHMARKS_DIRECTORY "${CMAKE_BINARY_DIR}/bin/benchmarks")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
+
+set(CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/numfort")
+set(EXTERNAL_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/external")
+
+# Output directory for additional static library used for linking tests
+# and examples irrespective of whether main build is shared/static.
+# This is not meant to be installed anywhere, so keep it separate.
+set(NUMFORT_STATIC_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}-static")
 
 # Allow for installing ifort and gfortran version of libraries side-by-side by
 # appending compiler suffix

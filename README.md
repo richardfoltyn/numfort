@@ -38,10 +38,10 @@ To compile the library, adapt the following to your environment:
 
 ```bash
 # GCC compiler version
-GCC_VERSION=12
+GCC_VERSION=14
 
 # Define source directory
-SRC_DIR=$HOME/repos/numfort/src
+SRC_DIR=$HOME/repos/numfort
 
 # Build directory
 BUILD_DIR=$HOME/build/gnu/${GCC_VERSION}/numfort
@@ -51,9 +51,16 @@ INSTALL_PREFIX="$HOME/.local"
 
 mkdir -p "${BUILD_DIR}"
 cd "${BUILD_DIR}"
-
+```
+On Debian/Ubuntu, the project can now be configured as follows:
+```bash
 FC=gfortran-${GCC_VERSION} CC=gcc-${GCC_VERSION} \
 cmake -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" "${SRC_DIR}"
+```
+On Fedora, the default GCC compiler does not have a version suffix,
+so the following should be used instead:
+```bash
+FC=gfortran CC=gcc cmake -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" "${SRC_DIR}"
 ```
 
 ```bash
@@ -67,7 +74,7 @@ deprecated `ifort` and optimize the
 code for the host machine architecture, you could run
 ```bash
 FC=ifort FFLAGS="-xHost" \
-cmake -DCMAKE_INSTALL_PREFIX=/path/to/install/ /path/to/numfort/src
+cmake -DCMAKE_INSTALL_PREFIX=/path/to/install/ /path/to/numfort
 ```
 _numfort_ was tested to compile with the following compilers:
 
