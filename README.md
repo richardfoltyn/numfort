@@ -64,7 +64,7 @@ FC=gfortran CC=gcc cmake -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" "${SRC_DIR}"
 ```
 
 ```bash
-cmake --build .
+cmake --build . -j 32
 cmake --install .
 ```
 
