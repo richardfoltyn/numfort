@@ -1705,6 +1705,9 @@ subroutine test_pcr_ols_equiv_1d (tests)
             intercept=intercept_true, add_intercept=.true., &
             var_error=0.1_PREC, status=status)
 
+        allocate (weights(Nobs+Nrhs))
+        call random_number (weights)
+
         ! Force using all available components to get equivalence with OLS
         conf_pcr = lm_config (var_rhs_min=1.0_PREC)
 
@@ -1716,6 +1719,18 @@ subroutine test_pcr_ols_equiv_1d (tests)
         values_ok = all_close (res_pcr%intercept, res_ols%intercept, atol=atol, rtol=rtol) &
             .and. all_close (res_pcr%coefs, res_ols%coefs, atol=atol, rtol=rtol)
         msg = 'Nrhs = ' // str(Nrhs) // '; RES present'
+        call tc%assert_true (status == NF_STATUS_OK .and. values_ok, msg)
+
+        ! Test with weights
+        call lm_result_reset (res_ols)
+        call ols (X=X, y=y, weights=weights, res=res_ols, status=status)
+        status = NF_STATUS_UNDEFINED
+        call lm_result_reset (res_pcr)
+        call pcr (conf_pcr, X=X, y=y, weights=weights, res=res_pcr, status=status)
+
+        values_ok = all_close (res_pcr%intercept, res_ols%intercept, atol=atol, rtol=rtol) &
+            .and. all_close (res_pcr%coefs, res_ols%coefs, atol=atol, rtol=rtol)
+        msg = 'Weighted; Nrhs = ' // str(Nrhs) // '; RES present'
         call tc%assert_true (status == NF_STATUS_OK .and. values_ok, msg)
 
         ! Check with COEFS, INTERCEPT arguments
@@ -1800,6 +1815,8 @@ subroutine test_pcr_ols_equiv_1d (tests)
         values_ok = all_close (coefs_pcr, coefs_ols, atol=atol, rtol=rtol)
         msg = 'Nrhs = ' // str(Nrhs) // '; intercept included in X'
         call tc%assert_true (status == NF_STATUS_OK .and. values_ok, msg)
+
+        deallocate (weights)
 
     end do
 
