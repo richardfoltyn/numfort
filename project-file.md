@@ -2,7 +2,7 @@ project: Numfort
 summary:    Library providing a unified and convenient interface to
             existing and new numerical Fortran routines.
 author: Richard Foltyn
-project_bitbucket: https://bitbucket.org/richardfoltyn/numfort
+project_github: https://github.com/richardfoltyn/numfort
 src_dir: ./src/numfort
 output_dir: ./docs
 docmark: !
