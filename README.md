@@ -20,19 +20,16 @@ models in Fortran easier.
 1. To clone the git repository, run 
     
     ```bash
-    git clone https://github.org/richardfoltyn/numfort.git --recursive
+    git clone https://github.com/richardfoltyn/numfort.git --recursive
     ```
         
 1.  _numfort_ contains a git submodule with CMake scripts required to build the 
     library. It needs to be initialized using
     ```bash
-    git submodule init
+    git submodule update --init --recursive
     ```
-    The submodule can be updated to the latest version by executing
-    ```bash
-    git submodule update --remote
-    ```
-    Note that a simple `git pull` will not update the submodule.
+    This checks out the version recorded by the repository. After a `git pull`,
+    run the same command to update the submodule to the recorded revision.
 
 ***
 ## Build instructions
@@ -44,90 +41,52 @@ The library itself does not have any compile-time dependencies, but
 requires BLAS and LAPACK libraries to be present when linking
 any client application using _numfort_.
 
-To compile the library, adapt the following to your environment:
+Set the GCC major version in your shell. On Fedora this sets the build path;
+the default compiler must be the matching version.
 
-#### Configuration ####
-
-##### Bash #####
-
+Bash:
 ```bash
-# GCC compiler version
 GCC_VERSION=16
-
-# Define source directory
-SRC_DIR=$HOME/repos/numfort
-
-# Build directory
-BUILD_DIR=$HOME/build/gnu/${GCC_VERSION}/numfort
-
-# Installation prefix
-INSTALL_PREFIX="$HOME/.local"
-
-mkdir -p "${BUILD_DIR}"
-cd "${BUILD_DIR}"
 ```
 
-##### Fish #####
-
+Fish:
 ```fish
-# GCC compiler version
 set GCC_VERSION 16
-
-# Define source directory
-set SRC_DIR $HOME/repos/numfort
-
-# Build directory
-set BUILD_DIR $HOME/build/gnu/$GCC_VERSION/numfort
-
-# Installation prefix
-set INSTALL_PREFIX $HOME/.local
-
-mkdir -p $BUILD_DIR
-cd $BUILD_DIR
 ```
 
-The project can now be configured depending on your distribution:
+The remaining commands work in both shells and build outside the source tree.
 
 #### Debian/Ubuntu ####
 
-On Debian/Ubuntu, the compiler executable has a version suffix:
+On Debian/Ubuntu, the compiler executables have version suffixes:
 
-##### Bash #####
-
-```bash
-FC=gfortran-${GCC_VERSION} CC=gcc-${GCC_VERSION} \
-cmake -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" "${SRC_DIR}"
-```
-
-##### Fish #####
-
-```fish
-env FC=gfortran-$GCC_VERSION CC=gcc-$GCC_VERSION \
-cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_PREFIX $SRC_DIR
+```sh
+cmake -S "$HOME/repos/numfort" -B "$HOME/build/gnu/$GCC_VERSION/numfort" \
+    -DCMAKE_Fortran_COMPILER=gfortran-$GCC_VERSION \
+    -DCMAKE_C_COMPILER=gcc-$GCC_VERSION \
+    -DCMAKE_INSTALL_PREFIX="$HOME/.local"
 ```
 
 #### Fedora ####
 
 On Fedora, the default GCC compiler does not have a version suffix:
 
-##### Bash #####
-
-```bash
-FC=gfortran CC=gcc cmake -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" "${SRC_DIR}"
-```
-
-##### Fish #####
-
-```fish
-env FC=gfortran CC=gcc cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_PREFIX $SRC_DIR
+```sh
+cmake -S "$HOME/repos/numfort" -B "$HOME/build/gnu/$GCC_VERSION/numfort" \
+    -DCMAKE_Fortran_COMPILER=gfortran -DCMAKE_C_COMPILER=gcc \
+    -DCMAKE_INSTALL_PREFIX="$HOME/.local"
 ```
 
 #### Building and installing ####
 
-```bash
-cmake --build . -j 32
-cmake --install .
+```sh
+cmake --build "$HOME/build/gnu/$GCC_VERSION/numfort" --parallel 8
+cmake --install "$HOME/build/gnu/$GCC_VERSION/numfort"
 ```
+
+For GCC 16 on Fedora, the CMake package is installed under
+`~/.local/lib64/numfort-0.1-gnu-16/cmake/` and modules under
+`~/.local/include/numfort-0.1-gnu-16/`.
 
 #### Using a specific compiler ####
 
@@ -135,18 +94,10 @@ You may want to specify an alternative Fortran compiler or compile flags (`FFLAG
 For example, to build using Intel's Fortran compiler `ifx` or the now-deprecated `ifort` and optimize the
 code for the host machine architecture, you could run:
 
-##### Bash #####
-
-```bash
-FC=ifort FFLAGS="-xHost" \
-cmake -DCMAKE_INSTALL_PREFIX=/path/to/install/ /path/to/numfort
-```
-
-##### Fish #####
-
-```fish
-env FC=ifort FFLAGS="-xHost" \
-cmake -DCMAKE_INSTALL_PREFIX=/path/to/install/ /path/to/numfort
+```sh
+cmake -S "$HOME/repos/numfort" -B "$HOME/build/intel/numfort" \
+    -DCMAKE_Fortran_COMPILER=ifort -DCMAKE_Fortran_FLAGS=-xHost \
+    -DCMAKE_INSTALL_PREFIX=/path/to/install
 ```
 _numfort_ was tested to compile with the following compilers:
 
@@ -170,29 +121,44 @@ compile time:
         wrappers for BLAS and LAPACK are available (this is only required
         for gfortran, MKL itself ships the required libraries for `ifort` and `ifx`).
         
-        The corresponding CMake invocation on Linux could be something like:
-        
+        On Fedora, after setting `GCC_VERSION` as above and installing fcore
+        and MKL95, set the MKL version in your shell:
+
+        Bash:
         ```bash
-        cmake -DCMAKE_PREFIX_PATH=/path/to/fcore \
-            -DMKL_ROOT=/opt/intel/compilers_and_libraries_20xx/linux/mkl \
-            -DMKL_FORTRAN95_ROOT=/path/to/mkl/fortran95 \
-            -DBUILD_TESTS=ON \
-            -DBUILD_EXAMPLES=ON \
-            <NUMFORT_REPOSITORY>/src
+        MKL_VERSION=2026.1
+        ```
+
+        Fish:
+        ```fish
+        set MKL_VERSION 2026.1
+        ```
+
+        Then configure with either shell:
+
+        ```sh
+        cmake -S "$HOME/repos/numfort" -B "$HOME/build/gnu/$GCC_VERSION/numfort" \
+            -DCMAKE_Fortran_COMPILER=gfortran -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_INSTALL_PREFIX="$HOME/.local" \
+            -DCMAKE_PREFIX_PATH="$HOME/.local" \
+            -DMKL_ROOT="/opt/intel/oneapi/mkl/$MKL_VERSION" \
+            -DMKL_FORTRAN95_ROOT="$HOME/.local/share/mkl/$MKL_VERSION/gnu/$GCC_VERSION" \
+            -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
         ```
                 
     2.  If another BLAS/LAPACK implementation should be used, set
         `USE_MKL=OFF` and _numfort_ will use whichever library is found
         by CMake.
          
-        On Linux, the CMake invocation could be something like:
-         
-        ```bash
-        cmake -DCMAKE_PREFIX_PATH=/path/to/fcore \
+        On Fedora, configure with:
+
+        ```sh
+        cmake -S "$HOME/repos/numfort" -B "$HOME/build/gnu/$GCC_VERSION/numfort" \
+            -DCMAKE_Fortran_COMPILER=gfortran -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_INSTALL_PREFIX="$HOME/.local" \
+            -DCMAKE_PREFIX_PATH="$HOME/.local" \
             -DUSE_MKL=OFF \
-            -DBUILD_TESTS=ON \
-            -DBUILD_EXAMPLES=ON \
-            <NUMFORT_REPOSITORY>/src
+            -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
         ```
 
 ***
