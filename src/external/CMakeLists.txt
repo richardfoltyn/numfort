@@ -9,8 +9,11 @@ function(numfort_add_external name)
     set_target_properties(${target} PROPERTIES
         Fortran_MODULE_DIRECTORY "${NUMFORT_EXTERNAL_MODULE_DIRECTORY}")
     target_include_directories(${target} PRIVATE
-        "${NUMFORT_EXTERNAL_MODULE_DIRECTORY}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include")
+        "${NUMFORT_EXTERNAL_MODULE_DIRECTORY}")
+    if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include")
+        target_include_directories(${target} PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/include")
+    endif()
     if(CMAKE_GENERATOR MATCHES "^Visual Studio")
         target_include_directories(${target} PRIVATE
             "${NUMFORT_EXTERNAL_MODULE_DIRECTORY}/$<CONFIG>")
